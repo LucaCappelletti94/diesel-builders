@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
 
+#[macro_use]
+pub mod utils;
+pub use utils::*;
 pub mod tables;
 pub use tables::Tables;
 pub mod table_model;
@@ -24,5 +27,3 @@ pub mod foreign_key;
 pub use foreign_key::ForeignKey;
 pub mod key;
 pub use key::Key;
-pub mod utils;
-pub use utils::*;

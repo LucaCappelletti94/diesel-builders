@@ -7,17 +7,18 @@ use diesel_additions::{
 };
 use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
 
-use crate::{BuildableColumns, BuildableTables, buildable_table::BuildableTable};
+use crate::{
+    BuildableColumn, BuildableColumns, BuildableTables, TrySetBuilder,
+    buildable_table::BuildableTable,
+};
 
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
     insertable_models: <T::InsertableTables as InsertableTables>::InsertableModels,
-    /// The mandatory associated builders relative to triangular same-as.
-    associated_builders: <<<T::MandatoryTriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output,
-    /// The discretionary associated builders relative to triangular same-as.
-    discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output
+    /// The associated builders relative to triangular same-as.
+    associated_builders: <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output,
 }
 
 impl<C, T> MayGetColumn<C> for TableBuilder<T>
@@ -26,7 +27,7 @@ where
     C: TypedColumn,
     <T::InsertableTables as InsertableTables>::InsertableModels: MayGetColumn<C>,
 {
-    fn maybe_get(&self) -> Option<<C as diesel_additions::TypedColumn>::Type> {
+    fn maybe_get(&self) -> Option<&<C as diesel_additions::TypedColumn>::Type> {
         self.insertable_models.maybe_get()
     }
 }
@@ -67,5 +68,18 @@ where
             C::VerticalSameAsColumns,
         >>::try_set(&mut self.insertable_models, value)?;
         Ok(())
+    }
+}
+
+impl<C, T> TrySetBuilder<C> for TableBuilder<T>
+where
+    T: BuildableTable,
+    C: BuildableColumn,
+    <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output: TrySetBuilder<C>,
+{
+    fn try_set(&mut self, builder: TableBuilder<<C as diesel::Column>::Table>) -> anyhow::Result<()> {
+        // TODO: check whether the associated column was already set
+        // in insertable models, and if so return an error.
+        self.associated_builders.try_set(builder)
     }
 }

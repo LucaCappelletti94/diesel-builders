@@ -1,6 +1,5 @@
 //! Column which is associated to a group of vertical same-as columns.
 
-use diesel::Column;
 use diesel_additions::TypedColumn;
 
 /// A trait for Diesel columns that are associated with a group of vertical

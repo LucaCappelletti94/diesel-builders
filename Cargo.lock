@@ -17,6 +17,7 @@ dependencies = [
  "diesel-additions",
  "diesel-relations",
  "either",
+ "tuple_set",
 ]
 
 [[package]]

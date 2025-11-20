@@ -13,8 +13,6 @@ pub trait BuildableTable:
     /// The collection of insertable tables corresponding to the unique
     /// ancestors of this table.
     type InsertableTables: InsertableTables;
-    /// The mandatory columns defining triangular same-as.
-    type MandatoryTriangularSameAsColumns: BuildableColumns;
-    /// The discretionary columns defining triangular same-as.
-    type DiscretionaryTriangularSameAsColumns: BuildableColumns;
+    /// The columns defining triangular same-as.
+    type TriangularSameAsColumns: BuildableColumns;
 }

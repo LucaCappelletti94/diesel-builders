@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
 
+#[macro_use]
+extern crate diesel_additions;
+
 pub mod buildable_columns;
 pub mod buildable_table;
 pub mod buildable_tables;
@@ -9,4 +12,4 @@ pub use buildable_table::BuildableTable;
 pub use buildable_tables::BuildableTables;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
-pub use set_builder::{SetBuilder, TrySetBuilder};
+pub use set_builder::TrySetBuilder;

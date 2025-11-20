@@ -2,7 +2,7 @@
 
 use diesel::Table;
 
-use crate::{GetColumns, HasTableAddition, MayGetColumns, TrySetColumns};
+use crate::{HasTableAddition, MayGetColumns, TrySetColumns};
 
 /// Trait representing an Insertable Diesel table model.
 pub trait InsertableTableModel:
