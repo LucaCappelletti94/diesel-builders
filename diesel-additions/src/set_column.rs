@@ -1,5 +1,6 @@
 //! Submodule providing the `SetColumn` trait.
 
+mod for_tuple;
 use crate::TypedColumn;
 
 /// Trait providing a setter for a specific Diesel column.
