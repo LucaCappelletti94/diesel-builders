@@ -1,0 +1,15 @@
+edition = "2024"
+max_width = 100
+use_small_heuristics = "Max"
+reorder_imports = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+reorder_modules = true
+wrap_comments = true
+format_code_in_doc_comments = true
+comment_width = 80
+normalize_comments = true
+normalize_doc_attributes = true
+force_multiline_blocks = true
+fn_single_line = false
+where_single_line = false

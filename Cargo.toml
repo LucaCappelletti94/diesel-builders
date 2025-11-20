@@ -1,10 +1,33 @@
 [workspace]
 resolver = "2"
 
-members = [
-	"builder-traits",
-	"concrete-case",
-]
+members = ["diesel-relations", "diesel-builders", "diesel-additions"]
 
 [workspace.dependencies]
 either = "1.11.0"
+diesel = "2.3.0"
+anyhow = "1.0.71"
+typenum = "1.19.0"
+tuple_set = "0.1.2"
+diesel-additions = { path = "diesel-additions" }
+diesel-relations = { path = "diesel-relations" }
+diesel-builders = { path = "diesel-builders" }
+
+[workspace.lints.rust]
+missing_docs = "forbid"
+unused_macro_rules = "forbid"
+unconditional_recursion = "forbid"
+unreachable_patterns = "forbid"
+unused_import_braces = "forbid"
+unused_must_use = "forbid"
+deprecated = "deny"
+
+[workspace.lints.clippy]
+unreadable_literal = "allow"
+missing_panics_doc = "allow"
+new_ret_no_self = "allow"
+struct_excessive_bools = "allow"
+should_panic_without_expect = "allow"
+doc_markdown = "allow"
+clone_on_copy = "forbid"
+pedantic = { level = "deny", priority = -1 }

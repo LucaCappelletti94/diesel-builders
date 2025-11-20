@@ -1,0 +1,71 @@
+//! Submodule defining the `TableBuilder` struct for building Diesel table
+//! insertables.
+
+use diesel_additions::{
+    MayGetColumn, OptionTuple, SetColumn, TrySetColumn, TrySetHomogeneousColumns, TypedColumn,
+    get_set_columns::SetHomogeneousColumns, tables::InsertableTables,
+};
+use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
+
+use crate::{BuildableColumns, BuildableTables, buildable_table::BuildableTable};
+
+/// A builder for creating insertable models for a Diesel table and its
+/// ancestors.
+pub struct TableBuilder<T: BuildableTable> {
+    /// The insertable models for the table and its ancestors.
+    insertable_models: <T::InsertableTables as InsertableTables>::InsertableModels,
+    /// The mandatory associated builders relative to triangular same-as.
+    associated_builders: <<<T::MandatoryTriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output,
+    /// The discretionary associated builders relative to triangular same-as.
+    discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output
+}
+
+impl<C, T> MayGetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable,
+    C: TypedColumn,
+    <T::InsertableTables as InsertableTables>::InsertableModels: MayGetColumn<C>,
+{
+    fn maybe_get(&self) -> Option<<C as diesel_additions::TypedColumn>::Type> {
+        self.insertable_models.maybe_get()
+    }
+}
+
+impl<C, T> SetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable,
+    C: VerticalSameAsGroup + TypedColumn,
+    <T::InsertableTables as InsertableTables>::InsertableModels: SetColumn<C>,
+    <T::InsertableTables as InsertableTables>::InsertableModels:
+        SetHomogeneousColumns<C::VerticalSameAsColumns>,
+{
+    fn set(&mut self, value: &<C as TypedColumn>::Type) {
+        <<T::InsertableTables as InsertableTables>::InsertableModels as SetColumn<C>>::set(
+            &mut self.insertable_models,
+            value,
+        );
+        <<T::InsertableTables as InsertableTables>::InsertableModels as SetHomogeneousColumns<
+            C::VerticalSameAsColumns,
+        >>::set(&mut self.insertable_models, value);
+    }
+}
+
+impl<C, T> TrySetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable,
+    C: VerticalSameAsGroup + TypedColumn,
+    <T::InsertableTables as InsertableTables>::InsertableModels: TrySetColumn<C>,
+    <T::InsertableTables as InsertableTables>::InsertableModels:
+        TrySetHomogeneousColumns<C::VerticalSameAsColumns>,
+{
+    fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
+        <<T::InsertableTables as InsertableTables>::InsertableModels as TrySetColumn<C>>::try_set(
+            &mut self.insertable_models,
+            value,
+        )?;
+        <<T::InsertableTables as InsertableTables>::InsertableModels as TrySetHomogeneousColumns<
+            C::VerticalSameAsColumns,
+        >>::try_set(&mut self.insertable_models, value)?;
+        Ok(())
+    }
+}

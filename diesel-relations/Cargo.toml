@@ -1,0 +1,11 @@
+[package]
+name = "diesel-relations"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+diesel.workspace = true
+diesel-additions.workspace = true
+
+[lints]
+workspace = true

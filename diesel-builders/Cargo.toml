@@ -1,0 +1,14 @@
+[package]
+name = "builder-traits"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+either.workspace = true
+diesel.workspace = true
+diesel-relations.workspace = true
+diesel-additions.workspace = true
+anyhow.workspace = true
+
+[lints]
+workspace = true

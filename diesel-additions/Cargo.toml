@@ -1,0 +1,12 @@
+[package]
+name = "diesel-additions"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+diesel.workspace = true
+anyhow.workspace = true
+typenum.workspace = true
+
+[lints]
+workspace = true
