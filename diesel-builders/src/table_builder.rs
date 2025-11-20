@@ -8,7 +8,7 @@ use diesel_additions::{
 use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
 
 use crate::{
-    BuildableColumn, BuildableColumns, BuildableTables, TrySetBuilder,
+    BuildableColumn, BuildableColumns, BuildableTables, MayGetBuilder, SetBuilder, TrySetBuilder,
     buildable_table::BuildableTable,
 };
 
@@ -75,11 +75,26 @@ impl<C, T> TrySetBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable,
     C: BuildableColumn,
-    <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output: TrySetBuilder<C>,
+    Self: MayGetColumn<C>,
+    <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output: SetBuilder<C> + MayGetBuilder<C>,
 {
     fn try_set(&mut self, builder: TableBuilder<<C as diesel::Column>::Table>) -> anyhow::Result<()> {
-        // TODO: check whether the associated column was already set
-        // in insertable models, and if so return an error.
-        self.associated_builders.try_set(builder)
+        if self.maybe_get().is_some() {
+            anyhow::bail!(
+                "Column {} was already set in insertable models for table {}.",
+                C::NAME,
+                core::any::type_name::<T>(),
+            );
+        }
+        if self.associated_builders.maybe_get().is_some() {
+            anyhow::bail!(
+                "Associated builder for column {} was already set in table {}.",
+                C::NAME,
+                core::any::type_name::<T>(),
+            );
+        }
+
+        self.associated_builders.set(builder);
+        Ok(())
     }
 }

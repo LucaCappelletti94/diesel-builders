@@ -1,16 +1,15 @@
 //! Module for buildable columns in Diesel.
 
-use diesel::Column;
-use diesel_additions::Columns;
+use diesel_additions::{Columns, TypedColumn};
 
 use crate::{BuildableTable, buildable_tables::BuildableTables};
 
 /// A trait for Diesel columns that can be built.
-pub trait BuildableColumn: Column<Table: BuildableTable> {}
+pub trait BuildableColumn: TypedColumn<Table: BuildableTable> {}
 
 impl<C> BuildableColumn for C
 where
-    C: Column,
+    C: TypedColumn,
     C::Table: BuildableTable,
 {
 }

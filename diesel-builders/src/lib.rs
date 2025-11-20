@@ -12,4 +12,6 @@ pub use buildable_table::BuildableTable;
 pub use buildable_tables::BuildableTables;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
-pub use set_builder::TrySetBuilder;
+pub use set_builder::{SetBuilder, TrySetBuilder};
+pub mod get_builder;
+pub use get_builder::MayGetBuilder;
