@@ -13,7 +13,8 @@ pub mod get_column;
 pub use get_column::{GetColumn, MayGetColumn};
 pub mod get_set_columns;
 pub use get_set_columns::{
-    GetColumns, MayGetColumns, SetColumns, TrySetColumns, TrySetHomogeneousColumns,
+    GetColumns, MayGetColumns, SetColumns, SetInsertableTableModelHomogeneousColumn, TrySetColumns,
+    TrySetInsertableTableModelHomogeneousColumn,
 };
 pub mod columns;
 pub use columns::{Columns, HomogeneousColumns};
@@ -22,8 +23,13 @@ pub use table_addition::{HasTableAddition, TableAddition};
 pub mod set_column;
 pub use set_column::{SetColumn, TrySetColumn};
 pub mod insertable_table_model;
-pub use insertable_table_model::{InsertableTable, InsertableTableModel};
+pub use insertable_table_model::{
+    InsertableTableModel, MayGetInsertableTableModelColumn, SetInsertableTableModelColumn,
+    TrySetInsertableTableModelColumn,
+};
 pub mod foreign_key;
 pub use foreign_key::ForeignKey;
 pub mod key;
 pub use key::Key;
+pub mod insert;
+pub use insert::Insert;

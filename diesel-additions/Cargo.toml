@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 diesel.workspace = true
 anyhow.workspace = true
-tuple_set.workspace = true
+typed_tuple.workspace = true
 
 [lints]
 workspace = true

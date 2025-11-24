@@ -1,24 +1,25 @@
 //! Submodule defining the `Descendant` trait.
 
-use diesel_additions::{ExtendTuple, Tables};
+use diesel_additions::{TableAddition, Tables};
+use typed_tuple::{ChainTuple, TypedLast};
 
 /// A trait for Diesel tables that have ancestor tables.
-pub trait Descendant: diesel::Table + Sized {
-    /// The unique ancestor tables of this table.
-    type UniqueAncestors: Tables;
+pub trait Descendant: TableAddition {
+    /// The ancestor tables of this table.
+    type Ancestors: Tables;
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
-    /// The unique ancestor tables of this table, including itself.
-    type UniqueAncestorsWithSelf: Tables;
+    /// The ancestor tables of this table, including itself.
+    type AncestorsWithSelf: Tables + TypedLast<Self>;
 }
 
 impl<T> DescendantWithSelf for T
 where
     T: Descendant,
-    T::UniqueAncestors: ExtendTuple<(T,)>,
-    <T::UniqueAncestors as ExtendTuple<(T,)>>::Output: Tables,
+    T::Ancestors: ChainTuple<(T,)>,
+    <T::Ancestors as ChainTuple<(T,)>>::Output: Tables + TypedLast<T>,
 {
-    type UniqueAncestorsWithSelf = <T::UniqueAncestors as ExtendTuple<(T,)>>::Output;
+    type AncestorsWithSelf = <T::Ancestors as ChainTuple<(T,)>>::Output;
 }

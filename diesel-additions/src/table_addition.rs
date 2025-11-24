@@ -1,29 +1,16 @@
 //! Extended `Table` trait with additional functionality.
 
-/// Extended trait for Diesel tables.
-pub trait TableAddition: diesel::Table<AllColumns = Self::Columns> {
-    /// Columns of the table.
-    type Columns: crate::Columns;
-}
+use crate::{Columns, InsertableTableModel, TableModel};
 
-impl<T> TableAddition for T
-where
-    T: diesel::Table,
-    T::AllColumns: crate::Columns,
-{
-    type Columns = T::AllColumns;
+/// Extended trait for Diesel tables.
+pub trait TableAddition: diesel::Table<AllColumns: Columns> + Default {
+    /// The associated Diesel model type for this table.
+    type Model: TableModel<Table = Self>;
+    /// The associated insertable model for this table.
+    type InsertableModel: InsertableTableModel<Table = Self>;
 }
 
 /// Extended trait for Diesel models associated with a table.
-pub trait HasTableAddition: diesel::associations::HasTable<Table = Self::TableAddition> {
-    /// The table associated with the model.
-    type TableAddition: TableAddition;
-}
+pub trait HasTableAddition: diesel::associations::HasTable<Table: TableAddition> {}
 
-impl<T> HasTableAddition for T
-where
-    T: diesel::associations::HasTable,
-    T::Table: TableAddition,
-{
-    type TableAddition = T::Table;
-}
+impl<T> HasTableAddition for T where T: diesel::associations::HasTable<Table: TableAddition> {}

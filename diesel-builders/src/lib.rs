@@ -14,4 +14,6 @@ pub use table_builder::TableBuilder;
 pub mod set_builder;
 pub use set_builder::{SetBuilder, TrySetBuilder};
 pub mod get_builder;
-pub use get_builder::MayGetBuilder;
+pub use get_builder::{GetBuilder, MayGetBuilder};
+pub mod nested_insert;
+pub use nested_insert::NestedInsert;

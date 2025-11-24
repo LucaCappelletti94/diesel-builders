@@ -1,6 +1,9 @@
 //! Submodule providing the `GetColumns` trait.
 
-use crate::{Columns, GetColumn, HomogeneousColumns, MayGetColumn, TypedColumn};
+use crate::{
+    Columns, GetColumn, HomogeneousColumns, MayGetColumn, SetInsertableTableModelColumn,
+    TypedColumn,
+};
 
 /// Marker trait indicating a builder can get multiple columns.
 pub trait GetColumns<CS: Columns> {}
@@ -12,7 +15,7 @@ pub trait MayGetColumns<CS: Columns> {}
 pub trait SetColumns<CS: Columns> {}
 
 /// Marker trait indicating a builder can set multiple homogeneous columns.
-pub trait SetHomogeneousColumns<CS: HomogeneousColumns>: SetColumns<CS> {
+pub trait SetInsertableTableModelHomogeneousColumn<CS: HomogeneousColumns> {
     /// Set the values of the specified columns.
     fn set(&mut self, value: &<CS as HomogeneousColumns>::Type);
 }
@@ -22,7 +25,7 @@ pub trait TrySetColumns<CS: Columns> {}
 
 /// Marker trait indicating a builder can try to set multiple homogeneous
 /// columns.
-pub trait TrySetHomogeneousColumns<CS: HomogeneousColumns>: TrySetColumns<CS> {
+pub trait TrySetInsertableTableModelHomogeneousColumn<CS: HomogeneousColumns> {
     /// Attempt to set the values of the specified columns.
     fn try_set(&mut self, value: &<CS as HomogeneousColumns>::Type) -> anyhow::Result<()>;
 }
@@ -50,8 +53,8 @@ macro_rules! impl_get_columns {
 		{
 		}
 
-		impl<T, $head> SetHomogeneousColumns<($head,)> for T
-		where T: crate::set_column::SetColumn<$head>, $head: TypedColumn
+		impl<T, $head> SetInsertableTableModelHomogeneousColumn<($head,)> for T
+		where T: SetInsertableTableModelColumn<$head>, $head: TypedColumn
 		{
 			fn set(&mut self, value: &<$head as TypedColumn>::Type) {
 				self.set(value);
@@ -63,7 +66,7 @@ macro_rules! impl_get_columns {
 		{
 		}
 
-		impl<T, $head> TrySetHomogeneousColumns<($head,)> for T
+		impl<T, $head> TrySetInsertableTableModelHomogeneousColumn<($head,)> for T
 		where T: crate::set_column::TrySetColumn<$head>, $head: TypedColumn
 		{
 			fn try_set(&mut self, value: &<$head as TypedColumn>::Type) -> anyhow::Result<()> {
@@ -92,17 +95,17 @@ macro_rules! impl_get_columns {
 		{
 		}
 
-		impl<T, $head, $($tail),+> SetHomogeneousColumns<($head, $($tail),+)> for T
+		impl<T, $head, $($tail),+> SetInsertableTableModelHomogeneousColumn<($head, $($tail),+)> for T
 		where
-			T: crate::set_column::SetColumn<$head>,
-			$(T: crate::set_column::SetColumn<$tail>),+,
+			T: SetInsertableTableModelColumn<$head>,
+			$(T: SetInsertableTableModelColumn<$tail>),+,
 			$head: TypedColumn,
 			$($tail: TypedColumn<Type=$head::Type>),+
 		{
 			fn set(&mut self, value: &<$head as TypedColumn>::Type) {
-				<T as crate::set_column::SetColumn<$head>>::set(self, value);
+				<T as SetInsertableTableModelColumn<$head>>::set(self, value);
 				$(
-					<T as crate::set_column::SetColumn<$tail>>::set(self, value);
+					<T as SetInsertableTableModelColumn<$tail>>::set(self, value);
 				)+
 			}
 		}
@@ -116,7 +119,7 @@ macro_rules! impl_get_columns {
 		{
 		}
 
-		impl<T, $head, $($tail),+> TrySetHomogeneousColumns<($head, $($tail),+)> for T
+		impl<T, $head, $($tail),+> TrySetInsertableTableModelHomogeneousColumn<($head, $($tail),+)> for T
 		where
 			T: crate::set_column::TrySetColumn<$head>,
 			$(T: crate::set_column::TrySetColumn<$tail>),+,

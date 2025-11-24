@@ -1,0 +1,36 @@
+//! Submodule defining the `Insert` trait, which executes the insertion of a
+//! builder into the database, following the dependencies between tables.
+
+use diesel::RunQueryDsl;
+
+use crate::{HasTableAddition, TableAddition};
+
+/// Trait defining the insertion of a builder into the database.
+pub trait Insert<Conn: diesel::connection::LoadConnection>: HasTableAddition {
+    /// Insert the builder's data into the database using the provided
+    /// connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the database connection.
+    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model>;
+}
+
+impl<Conn, T> Insert<Conn> for T
+where
+    Conn: diesel::connection::LoadConnection,
+    T: HasTableAddition<Table: TableAddition>,
+    T: diesel::Insertable<Self::Table>,
+    diesel::query_builder::InsertStatement<
+        Self::Table,
+        <Self as diesel::Insertable<Self::Table>>::Values,
+    >: for<'query> diesel::query_dsl::LoadQuery<
+            'query,
+            Conn,
+            <Self::Table as TableAddition>::Model,
+        >,
+{
+    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
+        diesel::insert_into(T::table()).values(self).get_result(conn)
+    }
+}

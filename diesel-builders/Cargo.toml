@@ -9,7 +9,7 @@ diesel.workspace = true
 diesel-relations.workspace = true
 diesel-additions.workspace = true
 anyhow.workspace = true
-tuple_set.workspace = true
+typed_tuple.workspace = true
 
 [lints]
 workspace = true

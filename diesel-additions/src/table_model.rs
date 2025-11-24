@@ -2,27 +2,17 @@
 
 use diesel::Table;
 
-use crate::{GetColumns, HasTableAddition, MayGetColumns, TrySetColumns};
+use crate::{GetColumns, HasTableAddition, TableAddition};
 
 /// Trait representing a Diesel table model.
-pub trait TableModel: HasTableAddition + GetColumns<<Self::Table as Table>::AllColumns> {}
-
-impl<T> TableModel for T where T: HasTableAddition + GetColumns<<T::Table as Table>::AllColumns> {}
-
-/// Trait representing an Insertable Diesel table model.
-pub trait InsertableTableModel:
-    HasTableAddition
-    + Default
-    + diesel::Insertable<Self::Table>
-    + MayGetColumns<Self::InsertableColumns>
-    + TrySetColumns<Self::InsertableColumns>
+pub trait TableModel:
+    HasTableAddition<Table: TableAddition<Model = Self>>
+    + GetColumns<<Self::Table as Table>::AllColumns>
 {
-    /// The subset of columns this model can insert into.
-    type InsertableColumns: crate::Columns;
 }
 
-/// Trait representing a Diesel table that has an associated insertable model.
-pub trait InsertableTable: Table {
-    /// The associated insertable model type for this table.
-    type InsertableModel: InsertableTableModel<Table = Self>;
+impl<T> TableModel for T where
+    T: HasTableAddition<Table: TableAddition<Model = T>>
+        + GetColumns<<T::Table as Table>::AllColumns>
+{
 }

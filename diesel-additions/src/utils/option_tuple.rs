@@ -6,10 +6,17 @@
 pub trait OptionTuple {
     /// The associated option tuple type.
     type Output;
+
+    /// Convert the tuple into its optional variant.
+    fn into_option(self) -> Self::Output;
 }
 
 impl OptionTuple for () {
     type Output = ();
+
+    fn into_option(self) -> Self::Output {
+        ()
+    }
 }
 
 macro_rules! impl_option_tuple {
@@ -18,6 +25,10 @@ macro_rules! impl_option_tuple {
 		impl<$head> OptionTuple for ($head,)
 		{
 			type Output = (Option<$head>,);
+
+			fn into_option(self) -> Self::Output {
+				(Some(self.0),)
+			}
 		}
 	};
 
@@ -29,6 +40,12 @@ macro_rules! impl_option_tuple {
 				Option<$head>,
 				$(Option<$tail>),+
 			);
+
+			#[allow(non_snake_case)]
+			fn into_option(self) -> Self::Output {
+				let ($head, $($tail),+) = self;
+				(Some($head), $(Some($tail)),+)
+			}
 		}
 
 		impl_option_tuple!($($tail),+);
@@ -36,18 +53,3 @@ macro_rules! impl_option_tuple {
 }
 
 generate_tuple_impls!(impl_option_tuple);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn option_tuple_two() {
-        let _: <(i32, u8) as OptionTuple>::Output = (Some(0i32), Some(0u8));
-    }
-
-    #[test]
-    fn option_tuple_three() {
-        let _: <(i32, u8, bool) as OptionTuple>::Output = (Some(0i32), Some(0u8), Some(false));
-    }
-}

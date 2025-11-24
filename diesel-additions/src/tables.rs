@@ -1,32 +1,66 @@
 //! Submodule defining and implementing the `Tables` trait.
 
-use crate::InsertableTable;
+use diesel::associations::HasTable;
+
+use crate::{InsertableTableModel, TableAddition, TableModel};
 
 /// A trait representing a collection of Diesel tables.
-pub trait Tables {}
-
-/// A trait representing a collection of Diesel insertable tables.
-pub trait InsertableTables {
-    /// The insertable models corresponding to the tables in this collection.
-    type InsertableModels;
+pub trait Tables {
+    /// The n-uple of models corresponding to the tables in this collection.
+    type Models: TableModels;
+    /// The n-uple of insertable models corresponding to the tables in this
+    /// collection.
+    type InsertableModels: InsertableTableModels;
 }
 
-impl Tables for () {}
+impl Tables for () {
+    type Models = ();
+    type InsertableModels = ();
+}
+
+/// Trait representing an n-uple of TableModels.
+pub trait TableModels {
+    /// The n-uple of tables corresponding to these models.
+    type Tables: Tables<Models = Self>;
+}
+
+impl TableModels for () {
+    type Tables = ();
+}
+
+/// Trait representing an n-uple of InsertableTableModels.
+pub trait InsertableTableModels: Sized {
+    /// The n-uple of tables corresponding to these insertable models.
+    type Tables: Tables<InsertableModels = Self>;
+}
+
+impl InsertableTableModels for () {
+    type Tables = ();
+}
 
 macro_rules! impl_tables {
 	// Single-element tuple (must include trailing comma)
 	($head:ident) => {
 		impl<$head> Tables for ($head,)
 		where
-			$head: diesel::Table
+			$head: TableAddition
 		{
+			type Models = (<$head as TableAddition>::Model,);
+			type InsertableModels = (<$head as TableAddition>::InsertableModel,);
 		}
 
-		impl<$head> InsertableTables for ($head,)
+		impl<$head> TableModels for ($head,)
 		where
-			$head: InsertableTable
+			$head: TableModel
 		{
-			type InsertableModels = ($head::InsertableModel,);
+			type Tables = (<$head as HasTable>::Table,);
+		}
+
+		impl<$head> InsertableTableModels for ($head,)
+		where
+			$head: InsertableTableModel
+		{
+			type Tables = (<$head as HasTable>::Table,);
 		}
 	};
 
@@ -34,20 +68,26 @@ macro_rules! impl_tables {
 	($head:ident, $($tail:ident),+) => {
 		impl<$head, $($tail),+> Tables for ($head, $($tail),+)
 		where
-			$head: diesel::Table,
-			$($tail: diesel::Table),+
+			$head: TableAddition,
+			$($tail: TableAddition),+
 		{
+			type Models = (<$head as TableAddition>::Model, $(<$tail as TableAddition>::Model),+);
+			type InsertableModels = (<$head as TableAddition>::InsertableModel, $(<$tail as TableAddition>::InsertableModel),+);
 		}
 
-		impl<$head, $($tail),+> InsertableTables for ($head, $($tail),+)
+		impl<$head, $($tail),+> TableModels for ($head, $($tail),+)
 		where
-			$head: InsertableTable,
-			$($tail: InsertableTable),+
+			$head: TableModel,
+			$($tail: TableModel),+
 		{
-			type InsertableModels = (
-				$head::InsertableModel,
-				$($tail::InsertableModel),+
-			);
+			type Tables = (<$head as HasTable>::Table, $(<$tail as HasTable>::Table),+);
+		}
+		impl<$head, $($tail),+> InsertableTableModels for ($head, $($tail),+)
+		where
+			$head: InsertableTableModel,
+			$($tail: InsertableTableModel),+
+		{
+			type Tables = (<$head as HasTable>::Table, $(<$tail as HasTable>::Table),+);
 		}
 
 		impl_tables!($($tail),+);
