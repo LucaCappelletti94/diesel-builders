@@ -4,3 +4,5 @@
 pub mod tuple_impls;
 pub mod option_tuple;
 pub use option_tuple::OptionTuple;
+pub mod default_tuple;
+pub use default_tuple::DefaultTuple;

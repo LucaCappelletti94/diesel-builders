@@ -10,6 +10,10 @@ pub trait BuildableTables: Tables {
     type Builders: OptionTuple;
 }
 
+impl BuildableTables for () {
+	type Builders = ();
+}
+
 macro_rules! impl_buildable_tables {
 	// Single-element tuple (must include trailing comma)
 	($head:ident) => {

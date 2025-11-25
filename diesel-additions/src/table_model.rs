@@ -8,11 +8,17 @@ use crate::{GetColumns, HasTableAddition, TableAddition};
 pub trait TableModel:
     HasTableAddition<Table: TableAddition<Model = Self>>
     + GetColumns<<Self::Table as Table>::AllColumns>
+    + Sized
+    + Clone
+    + 'static
 {
 }
 
 impl<T> TableModel for T where
     T: HasTableAddition<Table: TableAddition<Model = T>>
         + GetColumns<<T::Table as Table>::AllColumns>
+        + Sized
+        + Clone
+        + 'static
 {
 }

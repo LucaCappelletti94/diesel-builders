@@ -17,7 +17,7 @@ pub use get_set_columns::{
     TrySetInsertableTableModelHomogeneousColumn,
 };
 pub mod columns;
-pub use columns::{Columns, HomogeneousColumns};
+pub use columns::{Columns, HomogeneousColumns, Projection};
 pub mod table_addition;
 pub use table_addition::{HasTableAddition, TableAddition};
 pub mod set_column;
@@ -28,8 +28,6 @@ pub use insertable_table_model::{
     TrySetInsertableTableModelColumn,
 };
 pub mod foreign_key;
-pub use foreign_key::ForeignKey;
-pub mod key;
-pub use key::Key;
+pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
 pub mod insert;
 pub use insert::Insert;

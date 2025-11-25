@@ -5,11 +5,20 @@ use crate::TypedColumn;
 /// A trait representing a collection of Diesel columns.
 pub trait Columns {}
 
+/// A trait representing a projection of Diesel columns.
+pub trait Projection {
+    /// The table to which these columns belong.
+    type Table: diesel::Table;
+}
+
 /// A trait representing a collection of Diesel columns with an associated type.
 pub trait HomogeneousColumns: Columns {
     /// The associated tuple type of the columns.
     type Type;
 }
+
+/// A trait representing columns that are horizontally same-as (same type across different tables).
+pub trait HorizontalSameAsColumns: HomogeneousColumns {}
 
 impl Columns for () {}
 
@@ -22,6 +31,11 @@ macro_rules! impl_columns {
 		impl<$head> Columns for ($head,)
 		where $head: diesel::Column
 		{
+		}
+		impl<$head> Projection for ($head,)
+		where $head: diesel::Column
+		{
+			type Table = <$head as diesel::Column>::Table;
 		}
 		impl<$head> HomogeneousColumns for ($head,)
 		where $head: TypedColumn
@@ -36,7 +50,11 @@ macro_rules! impl_columns {
 		where $head: diesel::Column, $($tail: diesel::Column),+
 		{
 		}
-
+		impl<$head, $($tail),+> Projection for ($head, $($tail),+)
+		where $head: diesel::Column, $($tail: diesel::Column<Table=<$head as diesel::Column>::Table>),+
+		{
+			type Table = <$head as diesel::Column>::Table;
+		}
 		impl<$head, $($tail),+> HomogeneousColumns for ($head, $($tail),+)
 		where $head: TypedColumn, $($tail: TypedColumn),+
 		{

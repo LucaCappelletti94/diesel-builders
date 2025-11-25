@@ -20,6 +20,10 @@ pub trait BuildableColumns: Columns {
     type Tables: BuildableTables;
 }
 
+impl BuildableColumns for () {
+    type Tables = ();
+}
+
 // Recursive macro that implements `Columns` for tuples of decreasing length.
 // Call it with a list of type idents and it will generate impls for the full
 // tuple, then the tuple without the first element, and so on, down to 1.

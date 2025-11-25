@@ -187,7 +187,7 @@ dependencies = [
 [[package]]
 name = "typed_tuple"
 version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/typed_tuple?branch=master#151d4483665b152878d9bf076defeeafdc9571ab"
+source = "git+https://github.com/LucaCappelletti94/typed_tuple?branch=master#7ac9e4b0c135b46cb65fb678a0d3f07224a3fa5d"
 dependencies = [
  "typed_tuple_macros",
 ]
@@ -195,7 +195,7 @@ dependencies = [
 [[package]]
 name = "typed_tuple_macros"
 version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/typed_tuple?branch=master#151d4483665b152878d9bf076defeeafdc9571ab"
+source = "git+https://github.com/LucaCappelletti94/typed_tuple?branch=master#7ac9e4b0c135b46cb65fb678a0d3f07224a3fa5d"
 dependencies = [
  "proc-macro2",
  "quote",

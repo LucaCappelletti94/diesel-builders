@@ -17,3 +17,5 @@ pub mod get_builder;
 pub use get_builder::{GetBuilder, MayGetBuilder};
 pub mod nested_insert;
 pub use nested_insert::NestedInsert;
+pub mod builder_bundle;
+pub use builder_bundle::TableBuilderBundle;

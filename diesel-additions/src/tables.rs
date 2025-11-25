@@ -2,7 +2,7 @@
 
 use diesel::associations::HasTable;
 
-use crate::{InsertableTableModel, TableAddition, TableModel};
+use crate::{DefaultTuple, InsertableTableModel, TableAddition, TableModel};
 
 /// A trait representing a collection of Diesel tables.
 pub trait Tables {
@@ -29,7 +29,7 @@ impl TableModels for () {
 }
 
 /// Trait representing an n-uple of InsertableTableModels.
-pub trait InsertableTableModels: Sized {
+pub trait InsertableTableModels: Sized + DefaultTuple {
     /// The n-uple of tables corresponding to these insertable models.
     type Tables: Tables<InsertableModels = Self>;
 }

@@ -3,25 +3,32 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    Insert, MayGetColumn, MayGetInsertableTableModelColumn, OptionTuple, SetColumn,
+    DefaultTuple, Insert, MayGetColumn, MayGetInsertableTableModelColumn, OptionTuple, SetColumn,
     SetInsertableTableModelColumn, TableAddition, Tables, TrySetColumn,
     TrySetInsertableTableModelColumn, TrySetInsertableTableModelHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
-use typed_tuple::{TypedLast, TypedTuple};
+use typed_tuple::{TupleIndex0, TypedFirst, TypedLast, TypedTuple, TypedTupleExt};
 
 use crate::{
     BuildableColumn, BuildableColumns, BuildableTables, MayGetBuilder, NestedInsert, SetBuilder,
     TrySetBuilder, buildable_table::BuildableTable,
 };
 
+mod nested_table_builder;
+use nested_table_builder::NestedTableBuilder;
+
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
     insertable_models: <T::AncestorsWithSelf as Tables>::InsertableModels,
-    /// The associated builders relative to triangular same-as.
-    associated_builders: <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output,
+}
+
+impl<T: BuildableTable> Default for TableBuilder<T> {
+    fn default() -> Self {
+        Self { insertable_models: DefaultTuple::default_tuple() }
+    }
 }
 
 impl<T> HasTable for TableBuilder<T>
@@ -108,15 +115,18 @@ impl<Conn, T> NestedInsert<Conn> for TableBuilder<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
-    T::InsertableModel: Insert<Conn>,
-    <T::AncestorsWithSelf as Tables>::InsertableModels:
-        TypedLast<<T as TableAddition>::InsertableModel>,
+    NestedTableBuilder<T, T::AncestorsWithSelf, T::TriangularSameAsColumns>:
+        NestedInsert<Conn> + HasTable<Table = T>,
 {
     fn nested_insert(
         self,
         conn: &mut Conn,
     ) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
-        let (inserted_model, others) = self.insertable_models.pop();
-        inserted_model.insert(conn)
+        let nested_builder: NestedTableBuilder<
+            T,
+            T::AncestorsWithSelf,
+            T::TriangularSameAsColumns,
+        > = self.into();
+        nested_builder.nested_insert(conn)
     }
 }

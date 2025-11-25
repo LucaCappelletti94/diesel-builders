@@ -1,11 +1,13 @@
 //! Submodule defining a trait which, for any tuple tuple (T1, T2, ...), defines
 //! an associated type which is the `(Option<T1>, Option<T2>, ...)` tuple.
 
+use crate::DefaultTuple;
+
 /// A trait for converting a tuple type into its corresponding option tuple
 /// type.
 pub trait OptionTuple {
     /// The associated option tuple type.
-    type Output;
+    type Output: DefaultTuple;
 
     /// Convert the tuple into its optional variant.
     fn into_option(self) -> Self::Output;
