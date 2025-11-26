@@ -1,7 +1,7 @@
 //! Submodule defining the `TableModel` trait.
 
 use diesel::Column;
-use typed_tuple::{TupleKey, TypedTuple};
+use typed_tuple::prelude::{TupleKey, TypedTuple};
 
 use crate::{
     HasTableAddition, MayGetColumn, MayGetColumns, SetColumn, TableAddition, TrySetColumn,
@@ -61,7 +61,7 @@ where
     <<C as Column>::Table as TableAddition>::InsertableModel: TrySetColumn<C>,
 {
     fn try_set(&mut self, value: &<C as crate::TypedColumn>::Type) -> anyhow::Result<()> {
-        self.get_mut().try_set(value)
+        TrySetColumn::try_set(self.get_mut(), value)
     }
 }
 

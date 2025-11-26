@@ -4,7 +4,7 @@
 pub mod utils;
 pub use utils::*;
 pub mod tables;
-pub use tables::Tables;
+pub use tables::{NonCompositePrimaryKeyTables, Tables};
 pub mod table_model;
 pub use table_model::TableModel;
 pub mod typed_column;
@@ -31,3 +31,5 @@ pub mod foreign_key;
 pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
 pub mod insert;
 pub use insert::Insert;
+pub mod table_inherits;
+pub use table_inherits::TableInherits;

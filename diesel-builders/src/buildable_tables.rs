@@ -10,36 +10,6 @@ pub trait BuildableTables: Tables {
     type Builders: OptionTuple;
 }
 
-impl BuildableTables for () {
-	type Builders = ();
-}
-
-macro_rules! impl_buildable_tables {
-	// Single-element tuple (must include trailing comma)
-	($head:ident) => {
-		impl<$head> BuildableTables for ($head,)
-		where
-			$head: BuildableTable
-		{
-			type Builders = (TableBuilder<$head>,);
-		}
-	};
-
-	// Multi-element tuple: implement for the full tuple, then recurse on the tail.
-	($head:ident, $($tail:ident),+) => {
-		impl<$head, $($tail),+> BuildableTables for ($head, $($tail),+)
-		where
-			$head: BuildableTable,
-			$($tail: BuildableTable),+
-		{
-			type Builders = (
-				TableBuilder<$head>,
-				$(TableBuilder<$tail>),+
-			);
-		}
-
-		impl_buildable_tables!($($tail),+);
-	};
-}
-
-generate_tuple_impls!(impl_buildable_tables);
+// Generate implementations for all tuple sizes (0-32)
+#[diesel_builders_macros::impl_buildable_tables]
+mod impls {}

@@ -1,7 +1,7 @@
 //! Submodule defining the `Descendant` trait.
 
 use diesel_additions::{TableAddition, Tables};
-use typed_tuple::{ChainRight, TypedLast, TypedFirst};
+use typed_tuple::prelude::{ChainRight, TypedFirst, TypedLast};
 
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableAddition {

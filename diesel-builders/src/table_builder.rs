@@ -8,15 +8,13 @@ use diesel_additions::{
     TrySetInsertableTableModelColumn, TrySetInsertableTableModelHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
-use typed_tuple::{TupleIndex0, TypedFirst, TypedLast, TypedTuple, TypedTupleExt};
+use typed_tuple::prelude::{TupleIndex0, TypedFirst, TypedLast, TypedTuple, TypedTupleExt};
 
 use crate::{
-    BuildableColumn, BuildableColumns, BuildableTables, MayGetBuilder, NestedInsert, SetBuilder,
-    TrySetBuilder, buildable_table::BuildableTable,
+    BuildableColumn, BuildableColumns, BuildableTables, MayGetBuilder, NestedInsert,
+    SetDiscretionaryBuilder, SetMandatoryBuilder, TrySetMandatoryBuilder,
+    buildable_table::BuildableTable,
 };
-
-mod nested_table_builder;
-use nested_table_builder::NestedTableBuilder;
 
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
@@ -83,31 +81,34 @@ where
     }
 }
 
-impl<C, T> TrySetBuilder<C> for TableBuilder<T>
+impl<C, T> TrySetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable,
     C: BuildableColumn,
     Self: MayGetColumn<C>,
-    <<<T::TriangularSameAsColumns as BuildableColumns>::Tables as BuildableTables>::Builders as OptionTuple>::Output: SetBuilder<C> + MayGetBuilder<C>,
 {
-    fn try_set(&mut self, builder: TableBuilder<<C as diesel::Column>::Table>) -> anyhow::Result<()> {
-        if self.maybe_get().is_some() {
-            anyhow::bail!(
-                "Column {} was already set in insertable models for table {}.",
-                C::NAME,
-                core::any::type_name::<T>(),
-            );
-        }
-        if self.associated_builders.maybe_get().is_some() {
-            anyhow::bail!(
-                "Associated builder for column {} was already set in table {}.",
-                C::NAME,
-                core::any::type_name::<T>(),
-            );
-        }
+    fn try_set(
+        &mut self,
+        builder: TableBuilder<<C as diesel::Column>::Table>,
+    ) -> anyhow::Result<()> {
+        // if self.maybe_get().is_some() {
+        //     anyhow::bail!(
+        //         "Column {} was already set in insertable models for table {}.",
+        //         C::NAME,
+        //         core::any::type_name::<T>(),
+        //     );
+        // }
+        // if self.associated_builders.maybe_get().is_some() {
+        //     anyhow::bail!(
+        //         "Associated builder for column {} was already set in table {}.",
+        //         C::NAME,
+        //         core::any::type_name::<T>(),
+        //     );
+        // }
 
-        self.associated_builders.set(builder);
-        Ok(())
+        // self.associated_builders.set(builder);
+        // Ok(())
+        todo!()
     }
 }
 
@@ -115,18 +116,11 @@ impl<Conn, T> NestedInsert<Conn> for TableBuilder<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
-    NestedTableBuilder<T, T::AncestorsWithSelf, T::TriangularSameAsColumns>:
-        NestedInsert<Conn> + HasTable<Table = T>,
 {
     fn nested_insert(
         self,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
-        let nested_builder: NestedTableBuilder<
-            T,
-            T::AncestorsWithSelf,
-            T::TriangularSameAsColumns,
-        > = self.into();
-        nested_builder.nested_insert(conn)
+    ) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
+        todo!()
     }
 }

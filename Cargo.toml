@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["diesel-relations", "diesel-builders", "diesel-additions"]
+members = ["diesel-relations", "diesel-builders", "diesel-additions", "diesel-builders-macros"]
 
 [workspace.dependencies]
 either = "1.11.0"
@@ -12,6 +12,7 @@ typed_tuple = {git = "https://github.com/LucaCappelletti94/typed_tuple", branch 
 diesel-additions = { path = "diesel-additions" }
 diesel-relations = { path = "diesel-relations" }
 diesel-builders = { path = "diesel-builders" }
+diesel-builders-macros = { path = "diesel-builders-macros" }
 
 [workspace.lints.rust]
 missing_docs = "forbid"

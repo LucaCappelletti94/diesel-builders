@@ -10,6 +10,7 @@ diesel-relations.workspace = true
 diesel-additions.workspace = true
 anyhow.workspace = true
 typed_tuple.workspace = true
+diesel-builders-macros.workspace = true
 
 [lints]
 workspace = true

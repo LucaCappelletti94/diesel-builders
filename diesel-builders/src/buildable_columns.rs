@@ -20,41 +20,6 @@ pub trait BuildableColumns: Columns {
     type Tables: BuildableTables;
 }
 
-impl BuildableColumns for () {
-    type Tables = ();
-}
-
-// Recursive macro that implements `Columns` for tuples of decreasing length.
-// Call it with a list of type idents and it will generate impls for the full
-// tuple, then the tuple without the first element, and so on, down to 1.
-macro_rules! impl_buildable_columns {
-	// Single-element tuple (must include trailing comma)
-	($head:ident) => {
-		impl<$head> BuildableColumns for ($head,)
-		where
-			$head: BuildableColumn,
-		{
-			type Tables = (<$head as diesel::Column>::Table,);
-		}
-	};
-
-	// Multi-element tuple: implement for the full tuple, then recurse on the tail.
-	($head:ident, $($tail:ident),+) => {
-		impl<$head, $($tail),+> BuildableColumns for ($head, $($tail),+)
-		where
-			$head: BuildableColumn,
-			$(
-				$tail: BuildableColumn
-			),+
-		{
-			type Tables = (
-				<$head as diesel::Column>::Table,
-				$(<$tail as diesel::Column>::Table),+
-			);
-		}
-
-		impl_buildable_columns!($($tail),+);
-	};
-}
-
-generate_tuple_impls!(impl_buildable_columns);
+// Generate implementations for all tuple sizes (0-32)
+#[diesel_builders_macros::impl_buildable_columns]
+mod impls {}
