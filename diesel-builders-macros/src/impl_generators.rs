@@ -551,27 +551,21 @@ pub fn generate_nested_insert_option_tuple() -> TokenStream {
 /// Generate BuildableTables trait implementations
 pub fn generate_buildable_tables() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            quote! {
-                impl BuildableTables for () {
-                    type Builders = ();
-                }
-            }
-        } else {
-            let type_params = type_params(size);
-            let builder_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { TableBuilder<#t> }
-                })
-                .collect();
+        let type_params = type_params(size);
 
-            quote! {
-                impl<#(#type_params),*> BuildableTables for (#(#type_params,)*)
-                where #(#type_params: BuildableTable),*
-                {
-                    type Builders = (#(#builder_types,)*);
-                }
+        let where_statement = if size == 0 {
+            quote! {}
+        } else {
+            quote! { where #(#type_params: BuildableTable),* }
+        };
+
+        quote! {
+            impl<#(#type_params),*> BuildableTables for (#(#type_params,)*)
+            #where_statement
+            {
+                type Builders = (#(TableBuilder<#type_params>,)*);
+                type BuilderBundles = (#(TableBuilderBundle<#type_params>,)*);
+                type CompletedBuilderBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
             }
         }
     });
@@ -584,28 +578,14 @@ pub fn generate_buildable_tables() -> TokenStream {
 /// Generate BuildableColumns trait implementations
 pub fn generate_buildable_columns() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            quote! {
-                impl BuildableColumns for () {
-                    type Tables = ();
-                }
-            }
-        } else {
-            let type_params = type_params(size);
-            let table_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as diesel::Column>::Table }
-                })
-                .collect();
+        let type_params = type_params(size);
 
-            quote! {
-                impl<#(#type_params),*> BuildableColumns for (#(#type_params,)*)
-                where #(#type_params: BuildableColumn),*
-                {
-                    type Tables = (#(#table_types,)*);
-                }
-            }
+        quote! {
+            impl<#(#type_params),*> BuildableColumns for (#(#type_params,)*)
+            where
+                Self::Tables: BuildableTables,
+                #(#type_params: BuildableColumn),*
+            {}
         }
     });
 
@@ -667,6 +647,46 @@ pub fn generate_table_model() -> TokenStream {
 
                 fn may_get_primary_keys(optional_self: &<Self as OptionTuple>::Output) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
                     (#(#pk_extractors,)*)
+                }
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate BuilderBundles trait implementations
+pub fn generate_builder_bundles() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+
+        // Generate try_from calls for each element
+        let try_from_calls: Vec<_> = indices
+            .iter()
+            .map(|idx| {
+                quote! {
+                    CompletedTableBuilderBundle::try_from(self.#idx)?
+                }
+            })
+            .collect();
+
+        let where_statement = if size == 0 {
+            quote! {}
+        } else {
+            quote! { where #(#type_params: TableBundle),* }
+        };
+
+        quote! {
+            impl<#(#type_params),*> BuilderBundles for (#(TableBuilderBundle<#type_params>,)*)
+            #where_statement
+            {
+                type CompletedBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
+
+                fn try_complete(self) -> anyhow::Result<Self::CompletedBundles> {
+                    Ok((#(#try_from_calls,)*))
                 }
             }
         }

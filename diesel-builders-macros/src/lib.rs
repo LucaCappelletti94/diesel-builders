@@ -297,3 +297,27 @@ pub fn impl_table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     .into()
 }
+
+/// Generate `BuilderBundles` trait implementations for all tuple sizes (1-32).
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_builder_bundles;
+///
+/// #[impl_builder_bundles]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_builder_bundles();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}

@@ -15,10 +15,7 @@ where
 }
 
 /// A trait for collections of Diesel columns that can be built.
-pub trait BuildableColumns: Columns {
-    /// Associated tables for the buildable columns.
-    type Tables: BuildableTables;
-}
+pub trait BuildableColumns: Columns<Tables: BuildableTables> {}
 
 // Generate implementations for all tuple sizes (0-32)
 #[diesel_builders_macros::impl_buildable_columns]

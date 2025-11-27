@@ -2,13 +2,22 @@
 
 use diesel_relations::ancestors::DescendantWithSelf;
 
-use crate::buildable_columns::BuildableColumns;
+use crate::{BuildableTables, TableBuilder, TableBundle};
 
 /// A trait for Diesel tables that can be used to build insertable models for
 /// themselves and their ancestors.
-pub trait BuildableTable: DescendantWithSelf {
-    /// The columns defining mandatory triangular same-as.
-    type MandatoryTriangularSameAsColumns: BuildableColumns;
-    /// The columns defining discretionary triangular same-as.
-    type DiscretionaryTriangularSameAsColumns: BuildableColumns;
+pub trait BuildableTable:
+    TableBundle + DescendantWithSelf<AncestorsWithSelf: BuildableTables>
+{
+    /// Returns a new instance of a builder for the current table.
+    fn builder() -> TableBuilder<Self> {
+        TableBuilder::default()
+    }
+}
+
+impl<T> BuildableTable for T
+where
+    T: TableBundle + DescendantWithSelf,
+    T::AncestorsWithSelf: BuildableTables,
+{
 }

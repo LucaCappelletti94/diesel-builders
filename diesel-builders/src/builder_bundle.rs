@@ -4,8 +4,8 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    Columns, NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, TableAddition, Tables,
-    TransposeOptionTuple, TryMaySetColumns, TrySetColumns,
+    Columns, DefaultTuple, NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, TableAddition,
+    Tables, TransposeOptionTuple, TryMaySetColumns, TrySetColumns,
 };
 use diesel_relations::HorizontalSameAsKeys;
 
@@ -33,6 +33,19 @@ pub struct TableBuilderBundle<T: TableBundle> {
 	mandatory_associated_builders: <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 	/// The discretionary associated builders relative to triangular same-as.
 	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
+}
+
+impl<T> Default for TableBuilderBundle<T>
+where
+    T: TableBundle,
+{
+    fn default() -> Self {
+        Self {
+            insertable_model: Default::default(),
+            mandatory_associated_builders: DefaultTuple::default_tuple(),
+            discretionary_associated_builders: DefaultTuple::default_tuple(),
+        }
+    }
 }
 
 impl<T> HasTable for TableBuilderBundle<T>
@@ -71,7 +84,7 @@ impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
     T: TableBundle,
 {
-    type Error = diesel::result::Error;
+    type Error = anyhow::Error;
 
     fn try_from(
         value: TableBuilderBundle<T>,
@@ -79,7 +92,7 @@ where
         let Some(mandatory_associated_builders) =
             value.mandatory_associated_builders.transpose_option()
         else {
-            return Err(diesel::result::Error::NotFound);
+            return Err(anyhow::anyhow!("Not all mandatory associated builders have been set"));
         };
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
@@ -106,3 +119,17 @@ where
         self.insertable_model.nested_insert(conn)
     }
 }
+
+/// Trait for n-tuples of TableBuilderBundles, providing conversion to
+/// CompletedTableBuilderBundles.
+pub trait BuilderBundles: DefaultTuple {
+    /// The tuple of completed builder bundles.
+    type CompletedBundles;
+
+    /// Attempt to convert all builder bundles to completed builder bundles.
+    fn try_complete(self) -> anyhow::Result<Self::CompletedBundles>;
+}
+
+// Generate implementations for all tuple sizes (1-32)
+#[diesel_builders_macros::impl_builder_bundles]
+mod impls {}
