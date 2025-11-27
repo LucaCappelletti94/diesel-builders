@@ -2,7 +2,9 @@
 
 use diesel::Column;
 
-use crate::{Projection, TypedColumn, table_addition::HasPrimaryKey};
+use crate::{
+    NonCompositePrimaryKeyTableModel, Projection, TypedColumn, table_addition::HasPrimaryKey,
+};
 
 /// A trait for Diesel tables that define foreign key relationships.
 pub trait ForeignKey<ReferencedColumns: Projection>: Projection {}
@@ -23,5 +25,8 @@ where
 /// relationships to tables with a singleton primary key.
 pub trait SingletonForeignKey: TypedColumn {
     /// The referenced table.
-    type ReferencedTable: HasPrimaryKey<PrimaryKey: TypedColumn<Type = <Self as TypedColumn>::Type>>;
+    type ReferencedTable: HasPrimaryKey<
+            PrimaryKey: TypedColumn<Type = <Self as TypedColumn>::Type>,
+            Model: NonCompositePrimaryKeyTableModel,
+        >;
 }

@@ -268,3 +268,32 @@ pub fn impl_buildable_columns(_attr: TokenStream, item: TokenStream) -> TokenStr
     }
     .into()
 }
+
+/// Generate `NonCompositePrimaryKeyTableModels` and `MayGetPrimaryKeys` trait
+/// implementations for all tuple sizes (1-32).
+///
+/// Generates implementations for:
+/// - `NonCompositePrimaryKeyTableModels` for tuples of models
+/// - `MayGetPrimaryKeys` for tuples of optional models
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_table_model;
+///
+/// #[impl_table_model]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_table_model();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}

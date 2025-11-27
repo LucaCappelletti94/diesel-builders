@@ -1,13 +1,13 @@
 //! Submodule defining and implementing the `Columns` trait.
 
-use crate::{OptionTuple, RefTuple, Tables, TypedColumn};
+use crate::{OptionTuple, RefTuple, Tables, TypedColumn, tables::TableModels};
 
 /// A trait representing a collection of Diesel columns.
 pub trait Columns {
     /// Tuple of data types of the columns.
     type Types: OptionTuple + RefTuple;
     /// Tables to which these columns belong.
-    type Tables: Tables;
+    type Tables: Tables<Models: TableModels<Tables = Self::Tables>>;
 }
 
 /// A trait representing a projection of Diesel columns.

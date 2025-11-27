@@ -6,15 +6,17 @@ pub use utils::*;
 pub mod tables;
 pub use tables::{NonCompositePrimaryKeyTables, Tables};
 pub mod table_model;
-pub use table_model::TableModel;
+pub use table_model::{
+    NonCompositePrimaryKeyTableModel, NonCompositePrimaryKeyTableModels, TableModel,
+};
 pub mod typed_column;
 pub use typed_column::TypedColumn;
 pub mod get_column;
 pub use get_column::{GetColumn, MayGetColumn};
 pub mod get_set_columns;
 pub use get_set_columns::{
-    GetColumns, MayGetColumns, SetColumns, SetInsertableTableModelHomogeneousColumn, TrySetColumns,
-    TrySetInsertableTableModelHomogeneousColumn,
+    GetColumns, MayGetColumns, SetColumns, SetInsertableTableModelHomogeneousColumn,
+    TryMaySetColumns, TrySetColumns, TrySetInsertableTableModelHomogeneousColumn,
 };
 pub mod columns;
 pub use columns::{Columns, HomogeneousColumns, Projection};

@@ -1,8 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-#[macro_use]
-extern crate diesel_additions;
-
 pub mod buildable_columns;
 pub mod buildable_table;
 pub mod buildable_tables;

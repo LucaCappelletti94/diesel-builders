@@ -38,6 +38,15 @@ pub trait TrySetColumns<CS: Columns> {
     ) -> anyhow::Result<()>;
 }
 
+/// Marker trait indicating a builder which may try to set multiple columns.
+pub trait TryMaySetColumns<CS: Columns> {
+    /// Attempt to set the values of the specified columns.
+    fn try_may_set(
+        &mut self,
+        values: <<<CS as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output,
+    ) -> anyhow::Result<()>;
+}
+
 /// Marker trait indicating a builder can try to set multiple homogeneous
 /// columns.
 pub trait TrySetInsertableTableModelHomogeneousColumn<CS: HomogeneousColumns> {

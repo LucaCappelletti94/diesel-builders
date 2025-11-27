@@ -1,7 +1,6 @@
 //! Submodule defining an `VerticalSameAs` trait for Diesel columns.
 
-use diesel::{Column, Table};
-use diesel_additions::{ForeignKey, TableInherits, TypedColumn, table_addition::HasPrimaryKey};
+use diesel_additions::{TableInherits, TypedColumn, table_addition::HasPrimaryKey};
 
 /// A trait for Diesel columns that define vertical same-as relationships.
 pub trait VerticalSameAs<AncestorColumn: TypedColumn<Table: HasPrimaryKey>>:

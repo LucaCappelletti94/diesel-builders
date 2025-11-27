@@ -1,8 +1,11 @@
 //! Submodule defining the `TableModel` trait.
 
-use diesel::Table;
+use diesel::{Table, associations::HasTable};
 
-use crate::{GetColumns, HasTableAddition, TableAddition};
+use crate::{
+    Columns, GetColumn, GetColumns, HasTableAddition, NonCompositePrimaryKeyTables, OptionTuple,
+    TableAddition, table_addition::HasPrimaryKey, tables::TableModels,
+};
 
 /// Trait representing a Diesel table model.
 pub trait TableModel:
@@ -22,3 +25,33 @@ impl<T> TableModel for T where
         + 'static
 {
 }
+
+/// Trait representing a Diesel table model associated to a table
+/// which has non-composite primary keys.
+pub trait NonCompositePrimaryKeyTableModel:
+    TableModel<Table: HasPrimaryKey> + GetColumn<<Self::Table as Table>::PrimaryKey>
+{
+}
+
+impl<T> NonCompositePrimaryKeyTableModel for T where
+    T: TableModel<Table: HasPrimaryKey> + GetColumn<<T::Table as Table>::PrimaryKey>
+{
+}
+
+/// Trait for tuples of non-composite primary key table models, providing access
+/// to primary keys.
+pub trait NonCompositePrimaryKeyTableModels:
+    TableModels<Tables: NonCompositePrimaryKeyTables> + OptionTuple
+{
+    /// Get references to the primary keys of all models in the tuple.
+    fn get_primary_keys(&self) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_>;
+
+    /// Get references to the primary keys of all optional models in the tuple.
+    fn may_get_primary_keys(optional_self: &<Self as OptionTuple>::Output) ->
+    <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as
+    Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output;
+}
+
+// Generate implementations for all tuple sizes (1-32)
+#[diesel_builders_macros::impl_table_model]
+mod impls {}

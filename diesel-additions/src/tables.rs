@@ -7,10 +7,10 @@ use crate::{Columns, DefaultTuple, InsertableTableModel, OptionTuple, TableAddit
 /// A trait representing a collection of Diesel tables.
 pub trait Tables {
     /// The n-uple of models corresponding to the tables in this collection.
-    type Models: TableModels;
+    type Models: TableModels<Tables = Self>;
     /// The n-uple of insertable models corresponding to the tables in this
     /// collection.
-    type InsertableModels: InsertableTableModels;
+    type InsertableModels: InsertableTableModels<Tables = Self>;
 }
 
 /// A trait representing a collection of Diesel tables which

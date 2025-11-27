@@ -349,6 +349,18 @@ pub fn generate_get_columns() -> TokenStream {
             })
             .collect();
 
+        let try_may_set_individual_calls: Vec<_> = type_params
+            .iter()
+            .zip(&indices)
+            .map(|(t, idx)| {
+                quote! {
+                    if let Some(value) = values.#idx {
+                        <T as crate::set_column::TrySetColumn<#t>>::try_set(self, value)?;
+                    }
+                }
+            })
+            .collect();
+
         let try_set_calls: Vec<_> = type_params
             .iter()
             .map(|t| {
@@ -414,6 +426,19 @@ pub fn generate_get_columns() -> TokenStream {
             {
                 fn try_set(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<()> {
                     #(#try_set_individual_calls)*
+                    Ok(())
+                }
+            }
+
+            impl<T, #(#type_params),*> TryMaySetColumns<(#(#type_params,)*)> for T
+            where
+                T: crate::set_column::TrySetColumn<#first_type>,
+                #(T: crate::set_column::TrySetColumn<#type_params>),*,
+                #first_type: TypedColumn,
+                #(#type_params: TypedColumn),*
+            {
+                fn try_may_set(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<()> {
+                    #(#try_may_set_individual_calls)*
                     Ok(())
                 }
             }
@@ -579,6 +604,69 @@ pub fn generate_buildable_columns() -> TokenStream {
                 where #(#type_params: BuildableColumn),*
                 {
                     type Tables = (#(#table_types,)*);
+                }
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate NonCompositePrimaryKeyTableModels and MayGetPrimaryKeys trait
+/// implementations
+pub fn generate_table_model() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        if size == 0 {
+            return quote! {};
+        }
+
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+
+        let get_pk_calls: Vec<_> = indices
+            .iter()
+            .map(|idx| {
+                quote! {
+                    GetColumn::get(&self.#idx)
+                }
+            })
+            .collect();
+
+        // For may_get_primary_keys, build extractors for each optional model
+        let pk_extractors: Vec<_> = type_params
+            .iter()
+            .zip(&indices)
+            .map(|(t, idx)| {
+                quote! {
+                    optional_self.#idx.as_ref().map(|model: &#t| GetColumn::get(model))
+                }
+            })
+            .collect();
+
+        // Build the PrimaryKeys type for the where clause
+        let primary_key_types: Vec<_> = type_params
+            .iter()
+            .map(|t| {
+                quote! { <<#t as HasTable>::Table as diesel::Table>::PrimaryKey }
+            })
+            .collect();
+
+        quote! {
+            impl<#(#type_params),*> NonCompositePrimaryKeyTableModels for (#(#type_params,)*)
+            where
+                #(#type_params: NonCompositePrimaryKeyTableModel),*,
+                Self::Tables: NonCompositePrimaryKeyTables<
+                    PrimaryKeys = (#(#primary_key_types,)*),
+                >,
+            {
+                fn get_primary_keys(&self) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_> {
+                    (#(#get_pk_calls,)*)
+                }
+
+                fn may_get_primary_keys(optional_self: &<Self as OptionTuple>::Output) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
+                    (#(#pk_extractors,)*)
                 }
             }
         }

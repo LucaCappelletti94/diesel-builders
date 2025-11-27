@@ -4,8 +4,8 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    Columns, NonCompositePrimaryKeyTables, OptionTuple, RefTuple, TableAddition, Tables,
-    TransposeOptionTuple, TrySetColumns,
+    Columns, NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, TableAddition, Tables,
+    TransposeOptionTuple, TryMaySetColumns, TrySetColumns,
 };
 use diesel_relations::HorizontalSameAsKeys;
 
@@ -92,15 +92,17 @@ where
 impl<T, Conn> NestedInsert<Conn> for CompletedTableBuilderBundle<T>
 where
     T: TableBundle,
-    T::InsertableModel: NestedInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns>,
+    T::InsertableModel: NestedInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models>,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
 {
-    fn nested_insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+    fn nested_insert(mut self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
-        let mandatory_primary_keys: <<<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as RefTuple>::Output<'_> = todo!();
-        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
+        let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
         self.insertable_model.try_set(mandatory_primary_keys)?;
+        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
+        let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
+        self.insertable_model.try_may_set(discretionary_primary_keys)?;
         self.insertable_model.nested_insert(conn)
     }
 }

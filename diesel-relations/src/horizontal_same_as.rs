@@ -2,8 +2,9 @@
 
 use diesel::{Column, Table};
 use diesel_additions::{
-    Columns, ForeignKey, NonCompositePrimaryKeyTables, Projection, SingleColumnForeignKey,
-    SingletonForeignKey, Tables, TypedColumn, table_addition::HasPrimaryKey,
+    Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
+    Projection, SingleColumnForeignKey, SingletonForeignKey, TypedColumn,
+    table_addition::HasPrimaryKey,
 };
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
@@ -40,8 +41,9 @@ pub trait HorizontalSameAsKey: SingletonForeignKey {
 pub trait HorizontalSameAsKeys: Projection {
     /// The set of referenced tables.
     type ReferencedTables: NonCompositePrimaryKeyTables<
-        PrimaryKeys: Columns<Types = <Self as Columns>::Types>,
-    >;
+            PrimaryKeys: Columns<Types = <Self as Columns>::Types>,
+            Models: NonCompositePrimaryKeyTableModels,
+        >;
 }
 
 macro_rules! impl_horizontal_same_as_keys {

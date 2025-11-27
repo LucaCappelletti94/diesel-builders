@@ -3,17 +3,14 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    DefaultTuple, Insert, MayGetColumn, MayGetInsertableTableModelColumn, OptionTuple, SetColumn,
+    DefaultTuple, MayGetColumn, MayGetInsertableTableModelColumn, SetColumn,
     SetInsertableTableModelColumn, TableAddition, Tables, TrySetColumn,
     TrySetInsertableTableModelColumn, TrySetInsertableTableModelHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
-use typed_tuple::prelude::{TupleIndex0, TypedFirst, TypedLast, TypedTuple, TypedTupleExt};
 
 use crate::{
-    BuildableColumn, BuildableColumns, BuildableTables, MayGetBuilder, NestedInsert,
-    SetDiscretionaryBuilder, SetMandatoryBuilder, TrySetMandatoryBuilder,
-    buildable_table::BuildableTable,
+    BuildableColumn, NestedInsert, TrySetMandatoryBuilder, buildable_table::BuildableTable,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -89,7 +86,7 @@ where
 {
     fn try_set(
         &mut self,
-        builder: TableBuilder<<C as diesel::Column>::Table>,
+        _builder: TableBuilder<<C as diesel::Column>::Table>,
     ) -> anyhow::Result<()> {
         // if self.maybe_get().is_some() {
         //     anyhow::bail!(
@@ -119,7 +116,7 @@ where
 {
     fn nested_insert(
         self,
-        conn: &mut Conn,
+        _conn: &mut Conn,
     ) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         todo!()
     }
