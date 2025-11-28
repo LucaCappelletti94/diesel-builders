@@ -45,59 +45,25 @@ pub fn generate_default_tuple() -> TokenStream {
 /// Generate OptionTuple and TransposeOptionTuple trait implementations
 pub fn generate_option_tuple() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            quote! {
-                impl OptionTuple for () {
-                    type Output = ();
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
-                    fn into_option(self) -> Self::Output {
-                        ()
-                    }
-                }
+        let indices_tokens: Vec<_> = indices.iter().collect();
 
-                impl TransposeOptionTuple for () {
-                    type Transposed = ();
+        quote! {
+            impl<#(#type_params: Clone + core::fmt::Debug),*> OptionTuple for (#(#type_params,)*) {
+                type Output = (#(Option<#type_params>,)*);
 
-                    fn transpose_option(self) -> Option<Self::Transposed> {
-                        Some(())
-                    }
+                fn into_option(self) -> Self::Output {
+                    (#(Some(self.#indices_tokens),)*)
                 }
             }
-        } else {
-            let type_params = type_params(size);
-            let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
-            let option_types: Vec<_> = type_params.iter().map(|t| quote! { Option<#t> }).collect();
-            let indices_tokens: Vec<_> = indices.iter().collect();
+            impl<#(#type_params: Clone + core::fmt::Debug),*> TransposeOptionTuple for (#(Option<#type_params>,)*) {
+                type Transposed = (#(#type_params,)*);
 
-            // For single-element tuples, trailing comma is needed in value context
-            let (into_value, transpose_value) = if size == 1 {
-                (
-                    quote! { (#(Some(self.#indices_tokens),)*) },
-                    quote! { Some((#(self.#indices_tokens?,)*)) },
-                )
-            } else {
-                (
-                    quote! { (#(Some(self.#indices_tokens)),*) },
-                    quote! { Some((#(self.#indices_tokens?),*)) },
-                )
-            };
-
-            quote! {
-                impl<#(#type_params),*> OptionTuple for (#(#type_params,)*) {
-                    type Output = (#(#option_types,)*);
-
-                    fn into_option(self) -> Self::Output {
-                        #into_value
-                    }
-                }
-
-                impl<#(#type_params),*> TransposeOptionTuple for (#(#option_types,)*) {
-                    type Transposed = (#(#type_params,)*);
-
-                    fn transpose_option(self) -> Option<Self::Transposed> {
-                        #transpose_value
-                    }
+                fn transpose_option(self) -> Option<Self::Transposed> {
+                    Some((#(self.#indices_tokens?,)*))
                 }
             }
         }
@@ -113,8 +79,53 @@ pub fn generate_ref_tuple() -> TokenStream {
     let impls = generate_all_sizes(|size| {
         let type_params = type_params(size);
         quote! {
-            impl<#(#type_params,)*> RefTuple for (#(#type_params,)*) {
+            impl<#(#type_params: Clone + core::fmt::Debug,)*> RefTuple for (#(#type_params,)*) {
                 type Output<'a> = (#(&'a #type_params,)*) where Self: 'a;
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate ClonableTuple trait implementations for all tuple sizes
+pub fn generate_clonable_tuple() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+        let clones = indices.iter().map(|idx| quote! { self.#idx.clone() });
+
+        quote! {
+            impl<#(#type_params: Clone),*> ClonableTuple for (#(#type_params,)*)
+            {
+                fn clone_tuple(&self) -> Self {
+                    (#(#clones,)*)
+                }
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate DebuggableTuple trait implementations for all tuple sizes
+pub fn generate_debuggable_tuple() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+        let format_str = format!("({})", vec!["{:?}"; size].join(", "));
+        let debug_refs = indices.iter().map(|idx| quote! { &self.#idx });
+
+        quote! {
+            impl<#(#type_params: std::fmt::Debug),*> DebuggableTuple for (#(#type_params,)*)
+            {
+                fn debug_tuple(&self) -> String {
+                    format!(#format_str, #(#debug_refs),*)
+                }
             }
         }
     });
@@ -152,7 +163,7 @@ pub fn generate_columns() -> TokenStream {
                 .collect();
 
             quote! {
-                impl<#(#type_params),*> NonEmptyProjection for (#(#type_params,)*)
+                impl<#(#type_params: Clone + core::fmt::Debug),*> NonEmptyProjection for (#(#type_params,)*)
                 where #first_type: TypedColumn, #(#projection_bounds),*
                 {
                     type Table = <#first_type as diesel::Column>::Table;
@@ -164,7 +175,7 @@ pub fn generate_columns() -> TokenStream {
                     type Tables = (#(<#type_params as diesel::Column>::Table,)*);
                 }
 
-                impl<#(#type_params),*> Projection<<#first_type as diesel::Column>::Table> for (#(#type_params,)*)
+                impl<#(#type_params: Clone + core::fmt::Debug),*> Projection<<#first_type as diesel::Column>::Table> for (#(#type_params,)*)
                 where #first_type: TypedColumn, #(#projection_bounds),*
                 {
                 }
@@ -303,8 +314,9 @@ pub fn generate_get_columns() -> TokenStream {
             where T: crate::set_column::SetColumn<#first_type>, #(T: crate::set_column::SetColumn<#type_params>),*,
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
-                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) {
+                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> &mut Self {
                     #(#set_individual_calls)*
+                    self
                 }
             }
 
@@ -313,8 +325,9 @@ pub fn generate_get_columns() -> TokenStream {
                     #(T: crate::set_column::SetColumn<#type_params>),*,
                     #(#type_params: TypedColumn<Type = Type>),*
             {
-                fn set_homogeneous_columns(&mut self, value: &Type) {
+                fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self {
                     #(#set_homogeneous_calls)*
+                    self
                 }
             }
 
@@ -322,9 +335,9 @@ pub fn generate_get_columns() -> TokenStream {
             where
                 #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
-                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<()> {
+                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<&mut Self> {
                     #(#try_set_individual_calls)*
-                    Ok(())
+                    Ok(self)
                 }
             }
 
@@ -333,9 +346,9 @@ pub fn generate_get_columns() -> TokenStream {
                     #(T: crate::set_column::TrySetColumn<#type_params>),*,
                     #(#type_params: TypedColumn<Type = Type>),*
             {
-                fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<()> {
+                fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self> {
                     #(#try_set_homogeneous_calls)*
-                    Ok(())
+                    Ok(self)
                 }
             }
 
@@ -343,9 +356,9 @@ pub fn generate_get_columns() -> TokenStream {
             where
                 #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
-                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<()> {
+                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<&mut Self> {
                     #(#try_may_set_individual_calls)*
-                    Ok(())
+                    Ok(self)
                 }
             }
         }

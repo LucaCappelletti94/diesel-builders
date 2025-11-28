@@ -4,13 +4,10 @@
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{
-    GetColumnExt, MayGetColumnExt, TableAddition, TrySetColumnExt, TypedColumn,
+    GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt, TypedColumn,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{
-    GetColumn as GetColumnDerive, HasTable, MayGetColumn as MayGetColumnDerive,
-    SetColumn as SetColumnDerive,
-};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
 use diesel_relations::{AncestorOfIndex, Descendant};
 use typed_tuple::prelude::TupleIndex0;
 
@@ -26,7 +23,7 @@ table! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumnDerive)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
 #[diesel(table_name = users)]
 /// A simple user model.
 pub struct User {
@@ -47,7 +44,7 @@ impl Descendant for users::table {
     type Root = Self;
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumnDerive, SetColumnDerive, HasTable)]
+#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[diesel(table_name = users)]
 /// A new user model for insertions.
 pub struct NewUser {
@@ -113,13 +110,23 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user.name, "Alice");
     assert_eq!(user.email, "alice@example.com");
 
-    // Demonstrate cleaner API with extension traits for model structs
     assert_eq!(user.get_column::<users::name>(), &"Alice".to_string());
     assert_eq!(user.get_column::<users::email>(), &"alice@example.com".to_string());
 
     // We attempt to query the inserted user to ensure everything worked correctly.
     let queried_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
     assert_eq!(user, queried_user);
+
+    // We test the chained variant.
+    let another_user = <users::table as BuildableTable>::builder()
+        .set_column::<users::name>(&"Bob".to_string())
+        .set_column::<users::email>(&"bob@example.com".to_string())
+        .insert(&mut conn)?;
+
+    assert_eq!(another_user.get_column::<users::name>(), &"Bob".to_string());
+    assert_eq!(another_user.get_column::<users::email>(), &"bob@example.com".to_string());
+
+    assert_ne!(user.get_column::<users::id>(), another_user.get_column::<users::id>());
 
     Ok(())
 }

@@ -87,6 +87,54 @@ pub fn impl_ref_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Generate `ClonableTuple` trait implementations for all tuple sizes (0-32).
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_clonable_tuple;
+///
+/// #[impl_clonable_tuple]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_clonable_tuple();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `DebuggableTuple` trait implementations for all tuple sizes (0-32).
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_debuggable_tuple;
+///
+/// #[impl_debuggable_tuple]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_debuggable_tuple();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `Columns`, `Projection`, and `HomogeneousColumns` trait
 /// implementations for all tuple sizes (1-32).
 ///
@@ -630,16 +678,17 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         vec![
             quote::quote! {
                 impl diesel_additions::SetColumn<#table_name::#field_name> for #struct_name {
-                    fn set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) {
+                    fn set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> &mut Self {
                         self.#field_name = Some(value.clone());
+                        self
                     }
                 }
             },
             quote::quote! {
                 impl diesel_additions::TrySetColumn<#table_name::#field_name> for #struct_name {
-                    fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> anyhow::Result<()> {
+                    fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> anyhow::Result<&mut Self> {
                         self.#field_name = Some(value.clone());
-                        Ok(())
+                        Ok(self)
                     }
                 }
             }

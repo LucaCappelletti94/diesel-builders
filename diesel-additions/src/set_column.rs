@@ -5,7 +5,7 @@ use crate::TypedColumn;
 /// Trait providing a setter for a specific Diesel column.
 pub trait SetColumn<Column: TypedColumn> {
     /// Set the value of the specified column.
-    fn set_column(&mut self, value: &<Column as TypedColumn>::Type);
+    fn set_column(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self;
 }
 
 impl<C, T> SetColumn<C> for Option<T>
@@ -13,17 +13,21 @@ where
     C: crate::TypedColumn,
     T: SetColumn<C>,
 {
-    fn set_column(&mut self, value: &<C as crate::TypedColumn>::Type) {
+    fn set_column(&mut self, value: &<C as crate::TypedColumn>::Type) -> &mut Self {
         if let Some(inner) = self {
             inner.set_column(value);
         }
+        self
     }
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetColumn<Column: TypedColumn> {
     /// Attempt to set the value of the specified column.
-    fn try_set_column(&mut self, value: &<Column as TypedColumn>::Type) -> anyhow::Result<()>;
+    fn try_set_column(
+        &mut self,
+        value: &<Column as TypedColumn>::Type,
+    ) -> anyhow::Result<&mut Self>;
 }
 
 impl<C, T> TrySetColumn<C> for Option<T>
@@ -31,11 +35,17 @@ where
     C: crate::TypedColumn,
     T: TrySetColumn<C>,
 {
-    fn try_set_column(&mut self, value: &<C as crate::TypedColumn>::Type) -> anyhow::Result<()> {
+    fn try_set_column(
+        &mut self,
+        value: &<C as crate::TypedColumn>::Type,
+    ) -> anyhow::Result<&mut Self> {
         match self {
-            Some(inner) => inner.try_set_column(value),
-            None => Ok(()),
+            Some(inner) => {
+                inner.try_set_column(value)?;
+            }
+            None => {}
         }
+        Ok(self)
     }
 }
 
@@ -56,14 +66,14 @@ where
 /// ```
 pub trait SetColumnExt {
     /// Set the value of the specified column.
-    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type)
+    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>;
 }
 
 impl<T> SetColumnExt for T {
-    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type)
+    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>,
@@ -92,7 +102,7 @@ pub trait TrySetColumnExt {
     fn try_set_column<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<()>
+    ) -> anyhow::Result<&mut Self>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>;
@@ -102,7 +112,7 @@ impl<T> TrySetColumnExt for T {
     fn try_set_column<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<()>
+    ) -> anyhow::Result<&mut Self>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,

@@ -1,12 +1,12 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    DefaultTuple, GetColumn, MayGetColumn, SetColumn, TableAddition, TrySetColumn,
-    TrySetHomogeneousColumn, TypedColumn,
+    ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, SetColumn,
+    TableAddition, TrySetColumn, TrySetHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::{
     AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
@@ -24,6 +24,18 @@ use crate::{
 pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
     /// The insertable models for the table and its ancestors.
     bundles: <T::AncestorsWithSelf as BundlableTables>::BuilderBundles,
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuilder<T> {
+    fn clone(&self) -> Self {
+        Self { bundles: self.bundles.clone_tuple() }
+    }
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("TableBuilder").field("bundles", &self.bundles.debug_tuple()).finish()
+    }
 }
 
 impl<T: BuildableTable> Default for TableBuilder<T> {
@@ -93,9 +105,12 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn set_column(&mut self, value: &<C as TypedColumn>::Type) {
-        self.bundles.apply(|builder_bundle| builder_bundle.set_column(value));
+    fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
+        self.bundles.apply(|builder_bundle| {
+            builder_bundle.set_column(value);
+        });
         // TODO: set vertical same-as columns in associated builders here.
+        self
     }
 }
 
@@ -121,9 +136,12 @@ where
     TableBuilderBundle<C::Table>: SetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn set_column(&mut self, value: &<C as TypedColumn>::Type) {
-        self.bundles.apply(|builder_bundle| builder_bundle.set_column(value));
+    fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
+        self.bundles.apply(|builder_bundle| {
+            builder_bundle.set_column(value);
+        });
         // TODO: set vertical same-as columns in associated builders here.
+        self
     }
 }
 
@@ -136,10 +154,10 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
-        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value))?;
+    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
-        Ok(())
+        Ok(self)
     }
 }
 
@@ -151,10 +169,10 @@ where
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
-        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value))?;
+    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
-        Ok(())
+        Ok(self)
     }
 }
 
@@ -196,11 +214,11 @@ where
     CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
         NestedInsert<Conn, Table = T>,
 {
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
+    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        > = self.try_into()?;
+        > = self.clone().try_into()?;
         completed_builder.insert(conn)
     }
 }
@@ -211,7 +229,7 @@ where
     T: BuildableTable,
     CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
 {
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         Ok(self.bundles.0.insert(conn)?)
     }
 }
@@ -236,8 +254,8 @@ where
             <<T1 as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
         >,
 {
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
-        let ((first,), bundles) = self.bundles.split_left();
+    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+        let ((first,), bundles) = self.bundles.clone().split_left();
         let model: T1::Model = first.insert(conn)?;
         let mut next_builder: CompletedTableBuilder<T, _> =
             CompletedTableBuilder { bundles, table: PhantomData };

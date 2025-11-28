@@ -3,13 +3,16 @@
 
 use diesel_builders_macros::impl_option_tuple;
 
-use crate::DefaultTuple;
+use crate::{ClonableTuple, DebuggableTuple, DefaultTuple};
 
 /// A trait for converting a tuple type into its corresponding option tuple
 /// type.
 pub trait OptionTuple {
     /// The associated option tuple type.
-    type Output: DefaultTuple + TransposeOptionTuple<Transposed = Self>;
+    type Output: DefaultTuple
+        + TransposeOptionTuple<Transposed = Self>
+        + ClonableTuple
+        + DebuggableTuple;
 
     /// Convert the tuple into its optional variant.
     fn into_option(self) -> Self::Output;

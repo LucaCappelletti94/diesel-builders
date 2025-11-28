@@ -31,21 +31,28 @@ impl<T> MayGetColumns<()> for T {
 /// Marker trait indicating a builder can set multiple columns.
 pub trait SetColumns<CS: Columns> {
     /// Set the values of the specified columns.
-    fn set_columns(&mut self, values: <<CS as Columns>::Types as crate::RefTuple>::Output<'_>);
+    fn set_columns(
+        &mut self,
+        values: <<CS as Columns>::Types as crate::RefTuple>::Output<'_>,
+    ) -> &mut Self;
 }
 
 impl<T> SetColumns<()> for T {
-    fn set_columns(&mut self, _values: ()) {}
+    fn set_columns(&mut self, _values: ()) -> &mut Self {
+        self
+    }
 }
 
 /// Marker trait indicating a builder can set multiple homogeneous columns.
 pub trait SetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: SetColumns<CS> {
     /// Set the values of the specified columns.
-    fn set_homogeneous_columns(&mut self, value: &Type);
+    fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self;
 }
 
 impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
-    fn set_homogeneous_columns(&mut self, _value: &Type) {}
+    fn set_homogeneous_columns(&mut self, _value: &Type) -> &mut Self {
+        self
+    }
 }
 
 /// Marker trait indicating a builder can try to set multiple columns.
@@ -54,12 +61,12 @@ pub trait TrySetColumns<CS: Columns> {
     fn try_set_columns(
         &mut self,
         values: <<CS as Columns>::Types as crate::RefTuple>::Output<'_>,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<&mut Self>;
 }
 
 impl<T> TrySetColumns<()> for T {
-    fn try_set_columns(&mut self, _values: ()) -> anyhow::Result<()> {
-        Ok(())
+    fn try_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
+        Ok(self)
     }
 }
 
@@ -69,12 +76,12 @@ pub trait TryMaySetColumns<CS: Columns> {
     fn try_may_set_columns(
         &mut self,
         values: <<<CS as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output,
-    ) -> anyhow::Result<()>;
+    ) -> anyhow::Result<&mut Self>;
 }
 
 impl<T> TryMaySetColumns<()> for T {
-    fn try_may_set_columns(&mut self, _values: ()) -> anyhow::Result<()> {
-        Ok(())
+    fn try_may_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
+        Ok(self)
     }
 }
 
@@ -82,12 +89,12 @@ impl<T> TryMaySetColumns<()> for T {
 /// columns.
 pub trait TrySetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: TrySetColumns<CS> {
     /// Attempt to set the values of the specified columns.
-    fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<()>;
+    fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self>;
 }
 
 impl<T, Type> TrySetHomogeneousColumn<Type, ()> for T {
-    fn try_set_homogeneous_columns(&mut self, _value: &Type) -> anyhow::Result<()> {
-        Ok(())
+    fn try_set_homogeneous_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
+        Ok(self)
     }
 }
 

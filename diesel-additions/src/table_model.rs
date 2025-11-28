@@ -13,6 +13,7 @@ pub trait TableModel:
     + GetColumns<<Self::Table as Table>::AllColumns>
     + Sized
     + Clone
+    + core::fmt::Debug
     + 'static
 {
 }
@@ -22,6 +23,7 @@ impl<T> TableModel for T where
         + GetColumns<<T::Table as Table>::AllColumns>
         + Sized
         + Clone
+        + core::fmt::Debug
         + 'static
 {
 }

@@ -4,9 +4,9 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    Columns, DefaultTuple, FlatInsert, MayGetColumn, NonCompositePrimaryKeyTableModels,
-    OptionTuple, RefTuple, SetColumn, TableAddition, Tables, TransposeOptionTuple,
-    TryMaySetColumns, TrySetColumn, TrySetColumns, TypedColumn,
+    ClonableTuple, Columns, DebuggableTuple, DefaultTuple, FlatInsert, MayGetColumn,
+    NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition, Tables,
+    TransposeOptionTuple, TryMaySetColumns, TrySetColumn, TrySetColumns, TypedColumn,
 };
 use diesel_relations::HorizontalSameAsKeys;
 
@@ -32,6 +32,32 @@ pub struct TableBuilderBundle<T: BundlableTable> {
 	mandatory_associated_builders: <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 	/// The discretionary associated builders relative to triangular same-as.
 	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
+}
+
+impl<T: BundlableTable> Clone for TableBuilderBundle<T> {
+    fn clone(&self) -> Self {
+        Self {
+            insertable_model: self.insertable_model.clone(),
+            mandatory_associated_builders: self.mandatory_associated_builders.clone_tuple(),
+            discretionary_associated_builders: self.discretionary_associated_builders.clone_tuple(),
+        }
+    }
+}
+
+impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("TableBuilderBundle")
+            .field("insertable_model", &self.insertable_model)
+            .field(
+                "mandatory_associated_builders",
+                &self.mandatory_associated_builders.debug_tuple(),
+            )
+            .field(
+                "discretionary_associated_builders",
+                &self.discretionary_associated_builders.debug_tuple(),
+            )
+            .finish()
+    }
 }
 
 impl<T> Default for TableBuilderBundle<T>
@@ -68,6 +94,32 @@ pub struct CompletedTableBuilderBundle<T: BundlableTable> {
 	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 }
 
+impl<T: BundlableTable> Clone for CompletedTableBuilderBundle<T> {
+    fn clone(&self) -> Self {
+        Self {
+            insertable_model: self.insertable_model.clone(),
+            mandatory_associated_builders: self.mandatory_associated_builders.clone_tuple(),
+            discretionary_associated_builders: self.discretionary_associated_builders.clone_tuple(),
+        }
+    }
+}
+
+impl<T: BundlableTable> core::fmt::Debug for CompletedTableBuilderBundle<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("CompletedTableBuilderBundle")
+            .field("insertable_model", &self.insertable_model)
+            .field(
+                "mandatory_associated_builders",
+                &self.mandatory_associated_builders.debug_tuple(),
+            )
+            .field(
+                "discretionary_associated_builders",
+                &self.discretionary_associated_builders.debug_tuple(),
+            )
+            .finish()
+    }
+}
+
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,
@@ -96,8 +148,9 @@ where
     C: TypedColumn,
     T::InsertableModel: TrySetColumn<C>,
 {
-    fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<()> {
-        self.insertable_model.try_set_column(value)
+    fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<&mut Self> {
+        self.insertable_model.try_set_column(value)?;
+        Ok(self)
     }
 }
 
@@ -107,8 +160,9 @@ where
     C: TypedColumn,
     T::InsertableModel: SetColumn<C>,
 {
-    fn set_column(&mut self, value: &C::Type) {
-        self.insertable_model.set_column(value)
+    fn set_column(&mut self, value: &C::Type) -> &mut Self {
+        self.insertable_model.set_column(value);
+        self
     }
 }
 
@@ -142,20 +196,21 @@ where
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
 {
-    fn insert(mut self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
-        let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
+    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+        let mut cloned = self.clone();
+        let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = cloned.mandatory_associated_builders.nested_insert_tuple(conn)?;
         let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
-        self.insertable_model.try_set_columns(mandatory_primary_keys)?;
-        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
+        cloned.insertable_model.try_set_columns(mandatory_primary_keys)?;
+        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = cloned.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
         let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
-        self.insertable_model.try_may_set_columns(discretionary_primary_keys)?;
-        Ok(self.insertable_model.flat_insert(conn)?)
+        cloned.insertable_model.try_may_set_columns(discretionary_primary_keys)?;
+        Ok(cloned.insertable_model.flat_insert(conn)?)
     }
 }
 
 /// Trait for n-tuples of TableBuilderBundles, providing conversion to
 /// CompletedTableBuilderBundles.
-pub trait BuilderBundles: DefaultTuple {
+pub trait BuilderBundles: DefaultTuple + ClonableTuple + DebuggableTuple {
     /// The tuple of completed builder bundles.
     type CompletedBundles;
 
