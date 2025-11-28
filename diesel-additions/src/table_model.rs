@@ -29,12 +29,12 @@ impl<T> TableModel for T where
 /// Trait representing a Diesel table model associated to a table
 /// which has non-composite primary keys.
 pub trait NonCompositePrimaryKeyTableModel:
-    TableModel<Table: HasPrimaryKey> + GetColumn<<Self::Table as Table>::PrimaryKey>
+    TableModel<Table: HasPrimaryKey<Model = Self>> + GetColumn<<Self::Table as Table>::PrimaryKey>
 {
 }
 
 impl<T> NonCompositePrimaryKeyTableModel for T where
-    T: TableModel<Table: HasPrimaryKey> + GetColumn<<T::Table as Table>::PrimaryKey>
+    T: TableModel<Table: HasPrimaryKey<Model = T>> + GetColumn<<T::Table as Table>::PrimaryKey>
 {
 }
 

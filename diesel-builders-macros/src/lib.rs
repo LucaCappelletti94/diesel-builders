@@ -321,3 +321,27 @@ pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStrea
     }
     .into()
 }
+
+/// Generate `AncestorsOf` trait implementations for all tuple sizes (0-32).
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_ancestors_of;
+///
+/// #[impl_ancestors_of]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_ancestors_of();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}

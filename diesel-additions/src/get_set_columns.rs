@@ -1,8 +1,7 @@
 //! Submodule providing the `GetColumns` trait.
 
 use crate::{
-    Columns, GetColumn, HomogeneousColumns, MayGetColumn, OptionTuple,
-    SetInsertableTableModelColumn, TypedColumn,
+    Columns, GetColumn, HomogeneousColumns, MayGetColumn, OptionTuple, SetColumn, TypedColumn,
 };
 
 /// Marker trait indicating a builder can get multiple columns.
@@ -24,7 +23,7 @@ pub trait SetColumns<CS: Columns> {
 }
 
 /// Marker trait indicating a builder can set multiple homogeneous columns.
-pub trait SetInsertableTableModelHomogeneousColumn<CS: HomogeneousColumns> {
+pub trait SetHomogeneousColumn<CS: HomogeneousColumns> {
     /// Set the values of the specified columns.
     fn set(&mut self, value: &<CS as HomogeneousColumns>::Type);
 }
@@ -49,7 +48,7 @@ pub trait TryMaySetColumns<CS: Columns> {
 
 /// Marker trait indicating a builder can try to set multiple homogeneous
 /// columns.
-pub trait TrySetInsertableTableModelHomogeneousColumn<CS: HomogeneousColumns> {
+pub trait TrySetHomogeneousColumn<CS: HomogeneousColumns> {
     /// Attempt to set the values of the specified columns.
     fn try_set(&mut self, value: &<CS as HomogeneousColumns>::Type) -> anyhow::Result<()>;
 }

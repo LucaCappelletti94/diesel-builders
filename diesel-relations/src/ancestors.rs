@@ -1,12 +1,25 @@
 //! Submodule defining the `Descendant` trait.
 
-use diesel_additions::{TableAddition, Tables};
-use typed_tuple::prelude::{ChainRight, TypedFirst, TypedLast};
+use diesel_additions::{TableAddition, Tables, table_addition::HasPrimaryKey};
+use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
+
+/// A trait marker for getting the ancestor index of a table.
+pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + HasPrimaryKey {
+    /// Tuple index marker of the ancestor table in the descendant's ancestor
+    /// list.
+    type Idx: TupleIndex;
+}
+
+/// A trait for Diesel tables that have ancestor tables.
+pub trait DescendantOf<T: AncestorOfIndex<Self>>: Descendant {}
+
+/// A trait marker for getting the ancestor tables of a descendant table.
+pub trait AncestorsOf<T: Descendant<Ancestors = Self>>: Tables {}
 
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableAddition {
     /// The ancestor tables of this table.
-    type Ancestors: Tables;
+    type Ancestors: AncestorsOf<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
     type Root: TableAddition;
@@ -26,3 +39,7 @@ where
 {
     type AncestorsWithSelf = <T::Ancestors as ChainRight<(T,)>>::Output;
 }
+
+// Generate implementations for all tuple sizes (0-32)
+#[diesel_builders_macros::impl_ancestors_of]
+mod impls {}

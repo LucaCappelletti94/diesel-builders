@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 diesel.workspace = true
 diesel-additions.workspace = true
+diesel-builders-macros.workspace = true
 typed_tuple.workspace = true
 
 [lints]

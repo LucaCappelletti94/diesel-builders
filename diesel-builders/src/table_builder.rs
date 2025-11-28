@@ -5,16 +5,17 @@ use std::marker::PhantomData;
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    DefaultTuple, MayGetColumn, MayGetInsertableTableModelColumn, SetColumn,
-    SetInsertableTableModelColumn, TableAddition, Tables, TrySetColumn,
-    TrySetInsertableTableModelColumn, TrySetInsertableTableModelHomogeneousColumn, TypedColumn,
+    DefaultTuple, GetColumn, MayGetColumn, MayGetInsertableTableModelColumn, SetColumn,
+    TableAddition, Tables, TrySetColumn, TrySetHomogeneousColumn, TypedColumn,
 };
-use diesel_relations::vertical_same_as_group::VerticalSameAsGroup;
-use typed_tuple::prelude::{TupleIndex0, TypedTuple};
+use diesel_relations::{
+    AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
+};
+use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
 use crate::{
     BuildableColumn, BuildableTables, BuilderBundles, CompletedTableBuilderBundle, NestedInsert,
-    TrySetMandatoryBuilder, buildable_table::BuildableTable,
+    TableBuilderBundle, TableBundle, TrySetMandatoryBuilder, buildable_table::BuildableTable,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -95,25 +96,61 @@ where
 
 impl<C, T> SetColumn<C> for TableBuilder<T>
 where
-    T: BuildableTable,
-    C: VerticalSameAsGroup + TypedColumn,
-    <T::AncestorsWithSelf as Tables>::InsertableModels: SetInsertableTableModelColumn<C>,
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: VerticalSameAsGroup<T>,
+    C::Table: AncestorOfIndex<T> + TableBundle,
+    TableBuilderBundle<C::Table>: SetColumn<C>,
+    <T::AncestorsWithSelf as BuildableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     fn set(&mut self, value: &<C as TypedColumn>::Type) {
-        todo!()
+        self.bundles.apply(|builder_bundle| SetColumn::<C>::set(builder_bundle, value));
+        // TODO: set vertical same-as columns in associated builders here.
+    }
+}
+
+impl<C, T, Bundles> SetColumn<C> for CompletedTableBuilder<T, Bundles>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: VerticalSameAsGroup<T> + TypedColumn,
+    C::Table: AncestorOfIndex<T> + TableBundle,
+    TableBuilderBundle<C::Table>: SetColumn<C>,
+    Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn set(&mut self, value: &<C as TypedColumn>::Type) {
+        self.bundles.apply(|builder_bundle| SetColumn::<C>::set(builder_bundle, value));
+        // TODO: set vertical same-as columns in associated builders here.
     }
 }
 
 impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
-    T: BuildableTable,
-    C: VerticalSameAsGroup + TypedColumn,
-    <T::AncestorsWithSelf as Tables>::InsertableModels: TrySetInsertableTableModelColumn<C>,
-    <T::AncestorsWithSelf as Tables>::InsertableModels:
-        TrySetInsertableTableModelHomogeneousColumn<C::VerticalSameAsColumns>,
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: VerticalSameAsGroup<T> + TypedColumn,
+    C::Table: AncestorOfIndex<T> + TableBundle,
+    TableBuilderBundle<C::Table>: TrySetColumn<C>,
+    <T::AncestorsWithSelf as BuildableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
-        todo!()
+        self.bundles.map_mut(|builder_bundle| TrySetColumn::<C>::try_set(builder_bundle, value))?;
+        // TODO: set vertical same-as columns in associated builders here.
+        Ok(())
+    }
+}
+
+impl<C, T, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: VerticalSameAsGroup<T> + TypedColumn,
+    C::Table: AncestorOfIndex<T> + TableBundle,
+    TableBuilderBundle<C::Table>: TrySetColumn<C>,
+    Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
+        self.bundles.map_mut(|builder_bundle| TrySetColumn::<C>::try_set(builder_bundle, value))?;
+        // TODO: set vertical same-as columns in associated builders here.
+        Ok(())
     }
 }
 
@@ -182,23 +219,28 @@ impl<Conn, T, T1> NestedInsert<Conn>
     for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>)>
 where
     Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    T1: BuildableTable,
+    T: BuildableTable + DescendantOf<T1>,
+    T1: BuildableTable<PrimaryKey: VerticalSameAsGroup<T>> + AncestorOfIndex<T>,
+    T1::Model: GetColumn<<T1 as Table>::PrimaryKey>,
     CompletedTableBuilderBundle<T1>: NestedInsert<Conn, Table = T1>,
-    (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>): TypedTuple<
-            TupleIndex0,
+    (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>): TypedFirst<
             CompletedTableBuilderBundle<T1>,
             SplitLeftInclusive = (CompletedTableBuilderBundle<T1>,),
             SplitRightExclusive = (CompletedTableBuilderBundle<T>,),
         >,
-    CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>: NestedInsert<Conn, Table = T>,
+    CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>: NestedInsert<Conn, Table = T>
+        + TrySetHomogeneousColumn<
+            <<T1 as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
+        >,
 {
     fn nested_insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         let ((first,), bundles) = self.bundles.split_left();
         let model: T1::Model = first.nested_insert(conn)?;
-        // TODO: execute updates relative to extensions and triangular same-as here.
-        let next_builder: CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)> =
+        let mut next_builder: CompletedTableBuilder<T, _> =
             CompletedTableBuilder { bundles, table: PhantomData };
+        TrySetHomogeneousColumn::<
+            <<T1 as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
+        >::try_set(&mut next_builder, &model.get())?;
         next_builder.nested_insert(conn)
     }
 }

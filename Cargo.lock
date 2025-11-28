@@ -91,6 +91,7 @@ version = "0.1.0"
 dependencies = [
  "diesel",
  "diesel-additions",
+ "diesel-builders-macros",
  "typed_tuple",
 ]
 

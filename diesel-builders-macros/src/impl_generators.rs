@@ -287,37 +287,6 @@ pub fn generate_get_columns() -> TokenStream {
         let type_params = type_params(size);
         let first_type = &type_params[0];
 
-        let get_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as GetColumn<#t>>::get(self)
-                }
-            })
-            .collect();
-
-        // For single-element tuples, trailing comma is needed
-        let get_tuple = if size == 1 {
-            quote! { (#(#get_calls,)*) }
-        } else {
-            quote! { (#(#get_calls),*) }
-        };
-
-        let may_get_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as MayGetColumn<#t>>::maybe_get(self)
-                }
-            })
-            .collect();
-
-        let may_get_tuple = if size == 1 {
-            quote! { (#(#may_get_calls,)*) }
-        } else {
-            quote! { (#(#may_get_calls),*) }
-        };
-
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
         let set_individual_calls: Vec<_> = type_params
@@ -326,15 +295,6 @@ pub fn generate_get_columns() -> TokenStream {
             .map(|(t, idx)| {
                 quote! {
                     <T as crate::set_column::SetColumn<#t>>::set(self, &values.#idx);
-                }
-            })
-            .collect();
-
-        let set_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as SetInsertableTableModelColumn<#t>>::set(self, value);
                 }
             })
             .collect();
@@ -361,14 +321,6 @@ pub fn generate_get_columns() -> TokenStream {
             })
             .collect();
 
-        let try_set_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as crate::set_column::TrySetColumn<#t>>::try_set(self, value)?;
-                }
-            })
-            .collect();
         let same_type_bounds: Vec<_> = type_params
             .iter()
             .skip(1)
@@ -383,7 +335,7 @@ pub fn generate_get_columns() -> TokenStream {
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
                 fn get(&self) -> <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> {
-                    #get_tuple
+                    (#(<T as GetColumn<#type_params>>::get(self),)*)
                 }
             }
 
@@ -392,7 +344,7 @@ pub fn generate_get_columns() -> TokenStream {
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
                 fn may_get(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
-                    #may_get_tuple
+                    (#(<T as MayGetColumn<#type_params>>::maybe_get(self),)*)
                 }
             }
 
@@ -405,15 +357,15 @@ pub fn generate_get_columns() -> TokenStream {
                 }
             }
 
-            impl<T, #(#type_params),*> SetInsertableTableModelHomogeneousColumn<(#(#type_params,)*)> for T
+            impl<T, #(#type_params),*> SetHomogeneousColumn<(#(#type_params,)*)> for T
             where
-                T: SetInsertableTableModelColumn<#first_type>,
-                #(T: SetInsertableTableModelColumn<#type_params>),*,
+                T: SetColumn<#first_type>,
+                #(T: SetColumn<#type_params>),*,
                 #first_type: TypedColumn,
                 #(#same_type_bounds),*
             {
                 fn set(&mut self, value: &<#first_type as TypedColumn>::Type) {
-                    #(#set_calls)*
+                    #(<T as SetColumn<#type_params>>::set(self, value);)*
                 }
             }
 
@@ -443,7 +395,7 @@ pub fn generate_get_columns() -> TokenStream {
                 }
             }
 
-            impl<T, #(#type_params),*> TrySetInsertableTableModelHomogeneousColumn<(#(#type_params,)*)> for T
+            impl<T, #(#type_params),*> TrySetHomogeneousColumn<(#(#type_params,)*)> for T
             where
                 T: crate::set_column::TrySetColumn<#first_type>,
                 #(T: crate::set_column::TrySetColumn<#type_params>),*,
@@ -451,7 +403,7 @@ pub fn generate_get_columns() -> TokenStream {
                 #(#same_type_bounds),*
             {
                 fn try_set(&mut self, value: &<#first_type as TypedColumn>::Type) -> anyhow::Result<()> {
-                    #(#try_set_calls)*
+                    #(<T as crate::set_column::TrySetColumn<#type_params>>::try_set(self, value)?;)*
                     Ok(())
                 }
             }
@@ -688,6 +640,35 @@ pub fn generate_builder_bundles() -> TokenStream {
                 fn try_complete(self) -> anyhow::Result<Self::CompletedBundles> {
                     Ok((#(#try_from_calls,)*))
                 }
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate AncestorsOf trait implementations
+pub fn generate_ancestors_of() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+
+        // Generate where clauses for T: DescendantOf<A1>, T: DescendantOf<A2>, etc.
+        let descendant_of_bounds: Vec<_> = type_params
+            .iter()
+            .map(|t| {
+                quote! { T: DescendantOf<#t> }
+            })
+            .collect();
+
+        quote! {
+            impl<T, #(#type_params),*> AncestorsOf<T> for (#(#type_params,)*)
+            where
+                T: Descendant<Ancestors = Self>,
+                #(#type_params: AncestorOfIndex<T>,)*
+                #(#descendant_of_bounds,)*
+            {
             }
         }
     });

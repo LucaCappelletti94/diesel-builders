@@ -1,9 +1,9 @@
 //! Extended `Table` trait with additional functionality.
 
-use crate::{Columns, InsertableTableModel, TableModel, TypedColumn};
+use crate::{InsertableTableModel, Projection, TableModel, TypedColumn};
 
 /// Extended trait for Diesel tables.
-pub trait TableAddition: 'static + diesel::Table<AllColumns: Columns> + Default {
+pub trait TableAddition: 'static + diesel::Table<AllColumns: Projection> + Default {
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The associated insertable model for this table.

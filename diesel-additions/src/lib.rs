@@ -15,8 +15,8 @@ pub mod get_column;
 pub use get_column::{GetColumn, MayGetColumn};
 pub mod get_set_columns;
 pub use get_set_columns::{
-    GetColumns, MayGetColumns, SetColumns, SetInsertableTableModelHomogeneousColumn,
-    TryMaySetColumns, TrySetColumns, TrySetInsertableTableModelHomogeneousColumn,
+    GetColumns, MayGetColumns, SetColumns, SetHomogeneousColumn, TryMaySetColumns, TrySetColumns,
+    TrySetHomogeneousColumn,
 };
 pub mod columns;
 pub use columns::{Columns, HomogeneousColumns, Projection};
