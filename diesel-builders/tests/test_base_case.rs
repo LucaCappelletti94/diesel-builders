@@ -90,7 +90,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     )
     .execute(&mut conn)?;
 
-    let mut builder = <users::table as BuildableTable>::builder();
+    let mut builder = users::table::builder();
 
     assert_eq!(builder.may_get_column::<users::name>(), None);
     assert_eq!(builder.may_get_column::<users::email>(), None);
@@ -118,7 +118,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user, queried_user);
 
     // We test the chained variant.
-    let another_user = <users::table as BuildableTable>::builder()
+    let another_user = users::table::builder()
         .set_column::<users::name>(&"Bob".to_string())
         .set_column::<users::email>(&"bob@example.com".to_string())
         .insert(&mut conn)?;
