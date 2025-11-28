@@ -5,12 +5,11 @@ use std::marker::PhantomData;
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    DefaultTuple, FlatInsert, GetColumn, MayGetColumn, OptionTuple, SetColumn, TableAddition,
-    Tables, TryMaySetColumns, TrySetColumn, TrySetColumns, TrySetHomogeneousColumn, TypedColumn,
+    DefaultTuple, GetColumn, MayGetColumn, SetColumn, TableAddition, TrySetColumn,
+    TrySetHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::{
-    AncestorOfIndex, DescendantOf, HorizontalSameAsKeys,
-    vertical_same_as_group::VerticalSameAsGroup,
+    AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
 };
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
@@ -18,7 +17,6 @@ use crate::{
     BuildableColumn, BuildableTables, BuilderBundles, BundlableTable, BundlableTables,
     CompletedTableBuilderBundle, NestedInsert, TableBuilderBundle, TrySetMandatoryBuilder,
     buildable_table::BuildableTable,
-    nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -183,13 +181,6 @@ where
     T: BuildableTable,
     CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
         NestedInsert<Conn, Table = T>,
-    CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
-    Conn: diesel::connection::LoadConnection,
-    T: BundlableTable,
-    T::InsertableModel: FlatInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
-
 {
     fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
