@@ -16,7 +16,7 @@ use crate::{
 
 /// Trait representing a Diesel table with associated mandatory and
 /// discretionary triangular same-as columns.
-pub trait TableBundle: TableAddition {
+pub trait BundlableTable: TableAddition {
     /// The columns defining mandatory triangular same-as.
     type MandatoryTriangularSameAsColumns: HorizontalSameAsKeys<Self, ReferencedTables: BuildableTables>;
     /// The columns defining discretionary triangular same-as.
@@ -24,7 +24,7 @@ pub trait TableBundle: TableAddition {
 }
 
 /// A bundle of a table's insertable model and its associated builders.
-pub struct TableBuilderBundle<T: TableBundle> {
+pub struct TableBuilderBundle<T: BundlableTable> {
 	/// The insertable model for the table.
 	insertable_model: T::InsertableModel,
 	/// The mandatory associated builders relative to triangular same-as.
@@ -35,7 +35,7 @@ pub struct TableBuilderBundle<T: TableBundle> {
 
 impl<T> Default for TableBuilderBundle<T>
 where
-    T: TableBundle,
+    T: BundlableTable,
 {
     fn default() -> Self {
         Self {
@@ -48,7 +48,7 @@ where
 
 impl<T> HasTable for TableBuilderBundle<T>
 where
-    T: TableBundle,
+    T: BundlableTable,
 {
     type Table = T;
 
@@ -58,7 +58,7 @@ where
 }
 
 /// The build-ready variant of a table builder bundle.
-pub struct CompletedTableBuilderBundle<T: TableBundle> {
+pub struct CompletedTableBuilderBundle<T: BundlableTable> {
 	/// The insertable model for the table.
 	insertable_model: T::InsertableModel,
 	/// The mandatory associated builders relative to triangular same-as.
@@ -69,7 +69,7 @@ pub struct CompletedTableBuilderBundle<T: TableBundle> {
 
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
-    T: TableBundle,
+    T: BundlableTable,
 {
     type Table = T;
 
@@ -80,7 +80,7 @@ where
 
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
-    T: TableBundle,
+    T: BundlableTable,
 {
     type Error = anyhow::Error;
 
@@ -102,7 +102,7 @@ where
 
 impl<T, Conn> NestedInsert<Conn> for CompletedTableBuilderBundle<T>
 where
-    T: TableBundle,
+    T: BundlableTable,
     T::InsertableModel: NestedInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,

@@ -244,6 +244,19 @@ pub fn impl_buildable_tables(_attr: TokenStream, item: TokenStream) -> TokenStre
     .into()
 }
 
+/// Generate `BundlableTables` trait implementations for all tuple sizes (1-32).
+#[proc_macro_attribute]
+pub fn impl_bundlable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_bundlable_tables();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `BuildableColumns` trait implementations for all tuple sizes
 /// (1-32).
 ///

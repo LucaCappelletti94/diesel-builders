@@ -4,8 +4,9 @@
 
 use diesel::{associations::HasTable, prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{GetColumn, MayGetColumn, TableAddition, TrySetColumn, TypedColumn};
-use diesel_builders::{BuildableTable, TableBundle};
-use diesel_relations::Descendant;
+use diesel_builders::{BuildableTable, BundlableTable};
+use diesel_relations::{AncestorOfIndex, Descendant, DescendantOf};
+use typed_tuple::prelude::TupleIndex0;
 
 table! {
     /// Define a simple users table for testing.
@@ -30,6 +31,12 @@ pub struct User {
     /// The email of the user.
     pub email: String,
 }
+
+impl AncestorOfIndex<users::table> for users::table {
+    type Idx = TupleIndex0;
+}
+
+impl DescendantOf<users::table> for users::table {}
 
 impl Descendant for users::table {
     type Ancestors = ();
@@ -72,7 +79,7 @@ impl TypedColumn for users::email {
     type Type = String;
 }
 
-impl TableBundle for users::table {
+impl BundlableTable for users::table {
     type MandatoryTriangularSameAsColumns = ();
     type DiscretionaryTriangularSameAsColumns = ();
 }

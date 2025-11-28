@@ -468,6 +468,23 @@ pub fn generate_buildable_tables() -> TokenStream {
             #where_statement
             {
                 type Builders = (#(TableBuilder<#type_params>,)*);
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate BundlableTables trait implementations
+pub fn generate_bundlable_tables() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+
+        quote! {
+            impl<#(#type_params: BundlableTable),*> BundlableTables for (#(#type_params,)*)
+            {
                 type BuilderBundles = (#(TableBuilderBundle<#type_params>,)*);
                 type CompletedBuilderBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
             }
@@ -573,15 +590,8 @@ pub fn generate_builder_bundles() -> TokenStream {
             })
             .collect();
 
-        let where_statement = if size == 0 {
-            quote! {}
-        } else {
-            quote! { where #(#type_params: TableBundle),* }
-        };
-
         quote! {
-            impl<#(#type_params),*> BuilderBundles for (#(TableBuilderBundle<#type_params>,)*)
-            #where_statement
+            impl<#(#type_params: BundlableTable),*> BuilderBundles for (#(TableBuilderBundle<#type_params>,)*)
             {
                 type CompletedBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
 

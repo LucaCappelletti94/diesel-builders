@@ -19,5 +19,7 @@ pub mod nested_insert;
 pub use nested_insert::NestedInsert;
 pub mod builder_bundle;
 pub use builder_bundle::{
-    BuilderBundles, CompletedTableBuilderBundle, TableBuilderBundle, TableBundle,
+    BuilderBundles, BundlableTable, CompletedTableBuilderBundle, TableBuilderBundle,
 };
+pub mod bundlable_tables;
+pub use bundlable_tables::BundlableTables;

@@ -14,15 +14,16 @@ use diesel_relations::{
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
 use crate::{
-    BuildableColumn, BuildableTables, BuilderBundles, CompletedTableBuilderBundle, NestedInsert,
-    TableBuilderBundle, TableBundle, TrySetMandatoryBuilder, buildable_table::BuildableTable,
+    BuildableColumn, BuildableTables, BuilderBundles, BundlableTable, BundlableTables,
+    CompletedTableBuilderBundle, NestedInsert, TableBuilderBundle, TrySetMandatoryBuilder,
+    buildable_table::BuildableTable,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
-pub struct TableBuilder<T: BuildableTable> {
+pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
     /// The insertable models for the table and its ancestors.
-    bundles: <T::AncestorsWithSelf as BuildableTables>::BuilderBundles,
+    bundles: <T::AncestorsWithSelf as BundlableTables>::BuilderBundles,
 }
 
 impl<T: BuildableTable> Default for TableBuilder<T> {
@@ -63,7 +64,7 @@ where
 }
 
 impl<T> TryFrom<TableBuilder<T>>
-    for CompletedTableBuilder<T, <T::AncestorsWithSelf as BuildableTables>::CompletedBuilderBundles>
+    for CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>
 where
     T: BuildableTable,
 {
@@ -74,7 +75,7 @@ where
     ) -> Result<
         CompletedTableBuilder<
             T,
-            <T::AncestorsWithSelf as BuildableTables>::CompletedBuilderBundles,
+            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
         >,
         Self::Error,
     > {
@@ -87,9 +88,9 @@ impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup<T>,
-    C::Table: AncestorOfIndex<T> + TableBundle,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
-    <T::AncestorsWithSelf as BuildableTables>::BuilderBundles:
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     fn set(&mut self, value: &<C as TypedColumn>::Type) {
@@ -102,7 +103,7 @@ impl<C, T, Bundles> SetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup<T> + TypedColumn,
-    C::Table: AncestorOfIndex<T> + TableBundle,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
@@ -116,9 +117,9 @@ impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup<T> + TypedColumn,
-    C::Table: AncestorOfIndex<T> + TableBundle,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
-    <T::AncestorsWithSelf as BuildableTables>::BuilderBundles:
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
@@ -132,7 +133,7 @@ impl<C, T, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup<T> + TypedColumn,
-    C::Table: AncestorOfIndex<T> + TableBundle,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
@@ -155,7 +156,7 @@ where
     ) -> anyhow::Result<()> {
         // if self.may_get().is_some() {
         //     anyhow::bail!(
-        //         "Column {} was already set in insertable models for table {}.",
+        //         "Column {} was already set in insertable models for table{}.",
         //         C::NAME,
         //         core::any::type_name::<T>(),
         //     );
@@ -178,7 +179,7 @@ impl<Conn, T> NestedInsert<Conn> for TableBuilder<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BuildableTables>::CompletedBuilderBundles>:
+    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
         NestedInsert<Conn, Table = T>,
 {
     fn nested_insert(
@@ -187,7 +188,7 @@ where
     ) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
-            <T::AncestorsWithSelf as BuildableTables>::CompletedBuilderBundles,
+            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
         > = self.try_into()?;
         completed_builder.nested_insert(conn)
     }
@@ -209,7 +210,8 @@ impl<Conn, T, T1> NestedInsert<Conn>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable + DescendantOf<T1>,
-    T1: BuildableTable<PrimaryKey: VerticalSameAsGroup<T>> + AncestorOfIndex<T>,
+    T1: BuildableTable<AncestorsWithSelf: BuildableTables, PrimaryKey: VerticalSameAsGroup<T>>
+        + AncestorOfIndex<T>,
     T1::Model: GetColumn<<T1 as Table>::PrimaryKey>,
     CompletedTableBuilderBundle<T1>: NestedInsert<Conn, Table = T1>,
     (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>): TypedFirst<

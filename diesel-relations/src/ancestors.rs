@@ -11,18 +11,18 @@ pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + HasPrimaryKey 
 }
 
 /// A trait for Diesel tables that have ancestor tables.
-pub trait DescendantOf<T: AncestorOfIndex<Self>>: Descendant {}
+pub trait DescendantOf<T: AncestorOfIndex<Self>>: TableAddition {}
 
 /// A trait marker for getting the ancestor tables of a descendant table.
 pub trait AncestorsOf<T: Descendant<Ancestors = Self>>: Tables {}
 
 /// A trait for Diesel tables that have ancestor tables.
-pub trait Descendant: TableAddition {
+pub trait Descendant: TableAddition + DescendantOf<Self::Root> {
     /// The ancestor tables of this table.
     type Ancestors: AncestorsOf<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
-    type Root: TableAddition;
+    type Root: AncestorOfIndex<Self>;
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.
