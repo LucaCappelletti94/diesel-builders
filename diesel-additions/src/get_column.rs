@@ -26,3 +26,69 @@ where
         }
     }
 }
+
+/// Extension trait for `GetColumn` that allows specifying the column at the
+/// method level.
+///
+/// This trait provides a cleaner API where the column marker is specified as a
+/// type parameter on the method rather than on the trait itself.
+///
+/// # Example
+///
+/// ```ignore
+/// // Instead of:
+/// <User as GetColumn<users::name>>::get_column(&user)
+///
+/// // You can write:
+/// user.get_column::<users::name>()
+/// ```
+pub trait GetColumnExt {
+    /// Get the value of the specified column.
+    fn get_column<Column>(&self) -> &<Column as TypedColumn>::Type
+    where
+        Column: TypedColumn,
+        Self: GetColumn<Column>;
+}
+
+impl<T> GetColumnExt for T {
+    fn get_column<Column>(&self) -> &<Column as TypedColumn>::Type
+    where
+        Column: TypedColumn,
+        Self: GetColumn<Column>,
+    {
+        <Self as GetColumn<Column>>::get_column(self)
+    }
+}
+
+/// Extension trait for `MayGetColumn` that allows specifying the column at the
+/// method level.
+///
+/// This trait provides a cleaner API where the column marker is specified as a
+/// type parameter on the method rather than on the trait itself.
+///
+/// # Example
+///
+/// ```ignore
+/// // Instead of:
+/// <NewUser as MayGetColumn<users::name>>::may_get_column(&new_user)
+///
+/// // You can write:
+/// new_user.may_get_column::<users::name>()
+/// ```
+pub trait MayGetColumnExt {
+    /// Get the value of the specified column, returning `None` if not present.
+    fn may_get_column<Column>(&self) -> Option<&<Column as TypedColumn>::Type>
+    where
+        Column: TypedColumn,
+        Self: MayGetColumn<Column>;
+}
+
+impl<T> MayGetColumnExt for T {
+    fn may_get_column<Column>(&self) -> Option<&<Column as TypedColumn>::Type>
+    where
+        Column: TypedColumn,
+        Self: MayGetColumn<Column>,
+    {
+        <Self as MayGetColumn<Column>>::may_get_column(self)
+    }
+}

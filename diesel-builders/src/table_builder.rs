@@ -99,6 +99,20 @@ where
     }
 }
 
+impl<C, T> MayGetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: VerticalSameAsGroup<T>,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
+    TableBuilderBundle<C::Table>: MayGetColumn<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn may_get_column(&self) -> Option<&<C as TypedColumn>::Type> {
+        self.bundles.get().may_get_column()
+    }
+}
+
 impl<C, T, Bundles> SetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
     T: BuildableTable + DescendantOf<C::Table>,

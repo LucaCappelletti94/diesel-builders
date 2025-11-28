@@ -4,9 +4,9 @@
 
 use diesel::associations::HasTable;
 use diesel_additions::{
-    Columns, DefaultTuple, FlatInsert, NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple,
-    SetColumn, TableAddition, Tables, TransposeOptionTuple, TryMaySetColumns, TrySetColumn,
-    TrySetColumns, TypedColumn,
+    Columns, DefaultTuple, FlatInsert, MayGetColumn, NonCompositePrimaryKeyTableModels,
+    OptionTuple, RefTuple, SetColumn, TableAddition, Tables, TransposeOptionTuple,
+    TryMaySetColumns, TrySetColumn, TrySetColumns, TypedColumn,
 };
 use diesel_relations::HorizontalSameAsKeys;
 
@@ -76,6 +76,17 @@ where
 
     fn table() -> Self::Table {
         T::default()
+    }
+}
+
+impl<T, C> MayGetColumn<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: TypedColumn,
+    T::InsertableModel: MayGetColumn<C>,
+{
+    fn may_get_column(&self) -> Option<&C::Type> {
+        self.insertable_model.may_get_column()
     }
 }
 

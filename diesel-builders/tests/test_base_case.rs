@@ -2,9 +2,15 @@
 //! of a single table with no ancestors and no vertical/horizontal same-as
 //! relationships.
 
-use diesel::{associations::HasTable, prelude::*, sqlite::SqliteConnection};
-use diesel_additions::{GetColumn, MayGetColumn, TableAddition, TrySetColumn, TypedColumn};
+use diesel::{prelude::*, sqlite::SqliteConnection};
+use diesel_additions::{
+    GetColumnExt, MayGetColumnExt, TableAddition, TrySetColumnExt, TypedColumn,
+};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
+use diesel_builders_macros::{
+    GetColumn as GetColumnDerive, HasTable, MayGetColumn as MayGetColumnDerive,
+    SetColumn as SetColumnDerive,
+};
 use diesel_relations::{AncestorOfIndex, Descendant};
 use typed_tuple::prelude::TupleIndex0;
 
@@ -20,7 +26,7 @@ table! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumnDerive)]
 #[diesel(table_name = users)]
 /// A simple user model.
 pub struct User {
@@ -41,7 +47,7 @@ impl Descendant for users::table {
     type Root = Self;
 }
 
-#[derive(Debug, Default, Clone, Insertable)]
+#[derive(Debug, Default, Clone, Insertable, MayGetColumnDerive, SetColumnDerive, HasTable)]
 #[diesel(table_name = users)]
 /// A new user model for insertions.
 pub struct NewUser {
@@ -49,14 +55,6 @@ pub struct NewUser {
     pub name: Option<String>,
     /// The email of the user.
     pub email: Option<String>,
-}
-
-impl HasTable for NewUser {
-    type Table = users::table;
-
-    fn table() -> Self::Table {
-        users::table
-    }
 }
 
 impl TableAddition for users::table {
@@ -82,50 +80,6 @@ impl BundlableTable for users::table {
     type DiscretionaryTriangularSameAsColumns = ();
 }
 
-impl GetColumn<users::id> for User {
-    fn get_column(&self) -> &i32 {
-        &self.id
-    }
-}
-
-impl GetColumn<users::name> for User {
-    fn get_column(&self) -> &String {
-        &self.name
-    }
-}
-
-impl GetColumn<users::email> for User {
-    fn get_column(&self) -> &String {
-        &self.email
-    }
-}
-
-impl MayGetColumn<users::name> for NewUser {
-    fn may_get_column(&self) -> Option<&String> {
-        self.name.as_ref()
-    }
-}
-
-impl MayGetColumn<users::email> for NewUser {
-    fn may_get_column(&self) -> Option<&String> {
-        self.email.as_ref()
-    }
-}
-
-impl TrySetColumn<users::name> for NewUser {
-    fn try_set_column(&mut self, value: &String) -> anyhow::Result<()> {
-        self.name = Some(value.clone());
-        Ok(())
-    }
-}
-
-impl TrySetColumn<users::email> for NewUser {
-    fn try_set_column(&mut self, value: &String) -> anyhow::Result<()> {
-        self.email = Some(value.clone());
-        Ok(())
-    }
-}
-
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = SqliteConnection::establish(":memory:")?;
@@ -140,12 +94,28 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&mut conn)?;
 
     let mut builder = <users::table as BuildableTable>::builder();
-    TrySetColumn::<users::name>::try_set_column(&mut builder, &"Alice".to_string())?;
-    TrySetColumn::<users::email>::try_set_column(&mut builder, &"alice@example.com".to_string())?;
+
+    assert_eq!(builder.may_get_column::<users::name>(), None);
+    assert_eq!(builder.may_get_column::<users::email>(), None);
+
+    builder.try_set_column::<users::name>(&"Alice".to_string())?;
+
+    assert_eq!(builder.may_get_column::<users::name>(), Some(&"Alice".to_string()));
+    assert_eq!(builder.may_get_column::<users::email>(), None);
+
+    builder.try_set_column::<users::email>(&"alice@example.com".to_string())?;
+
+    assert_eq!(builder.may_get_column::<users::name>(), Some(&"Alice".to_string()));
+    assert_eq!(builder.may_get_column::<users::email>(), Some(&"alice@example.com".to_string()));
+
     let user = builder.insert(&mut conn)?;
 
     assert_eq!(user.name, "Alice");
     assert_eq!(user.email, "alice@example.com");
+
+    // Demonstrate cleaner API with extension traits for model structs
+    assert_eq!(user.get_column::<users::name>(), &"Alice".to_string());
+    assert_eq!(user.get_column::<users::email>(), &"alice@example.com".to_string());
 
     // We attempt to query the inserted user to ensure everything worked correctly.
     let queried_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
