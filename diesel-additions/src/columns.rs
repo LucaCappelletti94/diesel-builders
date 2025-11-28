@@ -20,14 +20,7 @@ pub trait NonEmptyProjection: Projection<Self::Table> {
 }
 
 /// A trait representing a collection of Diesel columns with an associated type.
-pub trait HomogeneousColumns: Columns {
-    /// The associated tuple type of the columns.
-    type Type;
-}
-
-/// A trait representing columns that are horizontally same-as (same type across
-/// different tables).
-pub trait HorizontalSameAsColumns: HomogeneousColumns {}
+pub trait HomogeneousColumns<Type>: Columns {}
 
 // Generate implementations for all tuple sizes (0-32)
 #[diesel_builders_macros::impl_columns]

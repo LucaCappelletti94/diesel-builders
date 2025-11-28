@@ -5,11 +5,12 @@ use std::marker::PhantomData;
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    DefaultTuple, GetColumn, MayGetColumn, SetColumn, TableAddition, TrySetColumn,
-    TrySetHomogeneousColumn, TypedColumn,
+    DefaultTuple, FlatInsert, GetColumn, MayGetColumn, OptionTuple, SetColumn, TableAddition,
+    Tables, TryMaySetColumns, TrySetColumn, TrySetColumns, TrySetHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::{
-    AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
+    AncestorOfIndex, DescendantOf, HorizontalSameAsKeys,
+    vertical_same_as_group::VerticalSameAsGroup,
 };
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
@@ -17,6 +18,7 @@ use crate::{
     BuildableColumn, BuildableTables, BuilderBundles, BundlableTable, BundlableTables,
     CompletedTableBuilderBundle, NestedInsert, TableBuilderBundle, TrySetMandatoryBuilder,
     buildable_table::BuildableTable,
+    nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -93,8 +95,8 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn set(&mut self, value: &<C as TypedColumn>::Type) {
-        self.bundles.apply(|builder_bundle| SetColumn::<C>::set(builder_bundle, value));
+    fn set_column(&mut self, value: &<C as TypedColumn>::Type) {
+        self.bundles.apply(|builder_bundle| builder_bundle.set_column(value));
         // TODO: set vertical same-as columns in associated builders here.
     }
 }
@@ -107,8 +109,8 @@ where
     TableBuilderBundle<C::Table>: SetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn set(&mut self, value: &<C as TypedColumn>::Type) {
-        self.bundles.apply(|builder_bundle| SetColumn::<C>::set(builder_bundle, value));
+    fn set_column(&mut self, value: &<C as TypedColumn>::Type) {
+        self.bundles.apply(|builder_bundle| builder_bundle.set_column(value));
         // TODO: set vertical same-as columns in associated builders here.
     }
 }
@@ -122,8 +124,8 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
-        self.bundles.map_mut(|builder_bundle| TrySetColumn::<C>::try_set(builder_bundle, value))?;
+    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
+        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value))?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(())
     }
@@ -137,8 +139,8 @@ where
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn try_set(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
-        self.bundles.map_mut(|builder_bundle| TrySetColumn::<C>::try_set(builder_bundle, value))?;
+    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<()> {
+        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value))?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(())
     }
@@ -181,16 +183,20 @@ where
     T: BuildableTable,
     CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
         NestedInsert<Conn, Table = T>,
+    CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
+    Conn: diesel::connection::LoadConnection,
+    T: BundlableTable,
+    T::InsertableModel: FlatInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
+
 {
-    fn nested_insert(
-        self,
-        conn: &mut Conn,
-    ) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
         > = self.try_into()?;
-        completed_builder.nested_insert(conn)
+        completed_builder.insert(conn)
     }
 }
 
@@ -200,8 +206,8 @@ where
     T: BuildableTable,
     CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
 {
-    fn nested_insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
-        Ok(self.bundles.0.nested_insert(conn)?)
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+        Ok(self.bundles.0.insert(conn)?)
     }
 }
 
@@ -221,17 +227,16 @@ where
         >,
     CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>: NestedInsert<Conn, Table = T>
         + TrySetHomogeneousColumn<
+            <<T1 as Table>::PrimaryKey as TypedColumn>::Type,
             <<T1 as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
         >,
 {
-    fn nested_insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         let ((first,), bundles) = self.bundles.split_left();
-        let model: T1::Model = first.nested_insert(conn)?;
+        let model: T1::Model = first.insert(conn)?;
         let mut next_builder: CompletedTableBuilder<T, _> =
             CompletedTableBuilder { bundles, table: PhantomData };
-        TrySetHomogeneousColumn::<
-            <<T1 as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
-        >::try_set(&mut next_builder, &model.get())?;
-        next_builder.nested_insert(conn)
+        next_builder.try_set_homogeneous_columns(model.get_column())?;
+        next_builder.insert(conn)
     }
 }

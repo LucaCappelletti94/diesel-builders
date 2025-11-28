@@ -13,6 +13,6 @@ pub trait RefTuple {
         Self: 'a;
 }
 
-// Generate implementations for all tuple sizes (1-32)
+/// Generate implementations for all tuple sizes (1-32)
 #[impl_ref_tuple]
 mod impls {}

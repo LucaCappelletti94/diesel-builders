@@ -25,12 +25,10 @@ pub use table_addition::{HasTableAddition, TableAddition};
 pub mod set_column;
 pub use set_column::{SetColumn, TrySetColumn};
 pub mod insertable_table_model;
-pub use insertable_table_model::{
-    InsertableTableModel, SetInsertableTableModelColumn, TrySetInsertableTableModelColumn,
-};
+pub use insertable_table_model::{InsertableTableModel, SetInsertableTableModelColumn};
 pub mod foreign_key;
 pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
-pub mod insert;
-pub use insert::Insert;
+pub mod flat_insert;
+pub use flat_insert::FlatInsert;
 pub mod table_inherits;
 pub use table_inherits::TableInherits;

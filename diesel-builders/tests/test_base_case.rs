@@ -4,8 +4,8 @@
 
 use diesel::{associations::HasTable, prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{GetColumn, MayGetColumn, TableAddition, TrySetColumn, TypedColumn};
-use diesel_builders::{BuildableTable, BundlableTable};
-use diesel_relations::{AncestorOfIndex, Descendant, DescendantOf};
+use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
+use diesel_relations::{AncestorOfIndex, Descendant};
 use typed_tuple::prelude::TupleIndex0;
 
 table! {
@@ -20,7 +20,7 @@ table! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq)]
 #[diesel(table_name = users)]
 /// A simple user model.
 pub struct User {
@@ -35,8 +35,6 @@ pub struct User {
 impl AncestorOfIndex<users::table> for users::table {
     type Idx = TupleIndex0;
 }
-
-impl DescendantOf<users::table> for users::table {}
 
 impl Descendant for users::table {
     type Ancestors = ();
@@ -85,44 +83,44 @@ impl BundlableTable for users::table {
 }
 
 impl GetColumn<users::id> for User {
-    fn get(&self) -> &i32 {
+    fn get_column(&self) -> &i32 {
         &self.id
     }
 }
 
 impl GetColumn<users::name> for User {
-    fn get(&self) -> &String {
+    fn get_column(&self) -> &String {
         &self.name
     }
 }
 
 impl GetColumn<users::email> for User {
-    fn get(&self) -> &String {
+    fn get_column(&self) -> &String {
         &self.email
     }
 }
 
 impl MayGetColumn<users::name> for NewUser {
-    fn may_get(&self) -> Option<&String> {
+    fn may_get_column(&self) -> Option<&String> {
         self.name.as_ref()
     }
 }
 
 impl MayGetColumn<users::email> for NewUser {
-    fn may_get(&self) -> Option<&String> {
+    fn may_get_column(&self) -> Option<&String> {
         self.email.as_ref()
     }
 }
 
 impl TrySetColumn<users::name> for NewUser {
-    fn try_set(&mut self, value: &String) -> anyhow::Result<()> {
+    fn try_set_column(&mut self, value: &String) -> anyhow::Result<()> {
         self.name = Some(value.clone());
         Ok(())
     }
 }
 
 impl TrySetColumn<users::email> for NewUser {
-    fn try_set(&mut self, value: &String) -> anyhow::Result<()> {
+    fn try_set_column(&mut self, value: &String) -> anyhow::Result<()> {
         self.email = Some(value.clone());
         Ok(())
     }
@@ -142,6 +140,16 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&mut conn)?;
 
     let mut builder = <users::table as BuildableTable>::builder();
+    TrySetColumn::<users::name>::try_set_column(&mut builder, &"Alice".to_string())?;
+    TrySetColumn::<users::email>::try_set_column(&mut builder, &"alice@example.com".to_string())?;
+    let user = builder.insert(&mut conn)?;
+
+    assert_eq!(user.name, "Alice");
+    assert_eq!(user.email, "alice@example.com");
+
+    // We attempt to query the inserted user to ensure everything worked correctly.
+    let queried_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
+    assert_eq!(user, queried_user);
 
     Ok(())
 }

@@ -111,20 +111,10 @@ pub fn generate_option_tuple() -> TokenStream {
 /// Generate RefTuple trait implementations
 pub fn generate_ref_tuple() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            quote! {
-                impl RefTuple for () {
-                    type Output<'a> = () where Self: 'a;
-                }
-            }
-        } else {
-            let type_params = type_params(size);
-            let ref_types: Vec<_> = type_params.iter().map(|t| quote! { &'a #t }).collect();
-
-            quote! {
-                impl<#(#type_params),*> RefTuple for (#(#type_params,)*) {
-                    type Output<'a> = (#(#ref_types,)*) where Self: 'a;
-                }
+        let type_params = type_params(size);
+        quote! {
+            impl<#(#type_params,)*> RefTuple for (#(#type_params,)*) {
+                type Output<'a> = (#(&'a #type_params,)*) where Self: 'a;
             }
         }
     });
@@ -145,6 +135,8 @@ pub fn generate_columns() -> TokenStream {
                 }
 
                 impl<T: diesel::Table> Projection<T> for () {}
+
+                impl<Type> HomogeneousColumns<Type> for () {}
             }
         } else {
             let type_params = type_params(size);
@@ -166,8 +158,7 @@ pub fn generate_columns() -> TokenStream {
                     type Table = <#first_type as diesel::Column>::Table;
                 }
 
-                impl<#(#type_params),*> Columns for (#(#type_params,)*)
-                where #(#type_params: TypedColumn),*
+                impl<#(#type_params: TypedColumn),*> Columns for (#(#type_params,)*)
                 {
                     type Types = (#(<#type_params as TypedColumn>::Type,)*);
                     type Tables = (#(<#type_params as diesel::Column>::Table,)*);
@@ -178,10 +169,8 @@ pub fn generate_columns() -> TokenStream {
                 {
                 }
 
-                impl<#(#type_params),*> HomogeneousColumns for (#(#type_params,)*)
-                where #(#type_params: TypedColumn),*
+                impl<Type, #(#type_params: TypedColumn<Type=Type>),*> HomogeneousColumns<Type> for (#(#type_params,)*)
                 {
-                    type Type = <#first_type as TypedColumn>::Type;
                 }
             }
         }
@@ -246,7 +235,7 @@ pub fn generate_get_columns() -> TokenStream {
             .zip(&indices)
             .map(|(t, idx)| {
                 quote! {
-                    <T as crate::set_column::SetColumn<#t>>::set(self, &values.#idx);
+                    <T as crate::set_column::SetColumn<#t>>::set_column(self, &values.#idx);
                 }
             })
             .collect();
@@ -256,7 +245,7 @@ pub fn generate_get_columns() -> TokenStream {
             .zip(&indices)
             .map(|(t, idx)| {
                 quote! {
-                    <T as crate::set_column::TrySetColumn<#t>>::try_set(self, &values.#idx)?;
+                    <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, &values.#idx)?;
                 }
             })
             .collect();
@@ -267,17 +256,27 @@ pub fn generate_get_columns() -> TokenStream {
             .map(|(t, idx)| {
                 quote! {
                     if let Some(value) = values.#idx {
-                        <T as crate::set_column::TrySetColumn<#t>>::try_set(self, value)?;
+                        <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, value)?;
                     }
                 }
             })
             .collect();
 
-        let same_type_bounds: Vec<_> = type_params
+        let set_homogeneous_calls: Vec<_> = type_params
             .iter()
-            .skip(1)
             .map(|t| {
-                quote! { #t: TypedColumn<Type=#first_type::Type> }
+                quote! {
+                    <T as crate::set_column::SetColumn<#t>>::set_column(self, value);
+                }
+            })
+            .collect();
+
+        let try_set_homogeneous_calls: Vec<_> = type_params
+            .iter()
+            .map(|t| {
+                quote! {
+                    <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, value)?;
+                }
             })
             .collect();
 
@@ -286,8 +285,8 @@ pub fn generate_get_columns() -> TokenStream {
             where T: GetColumn<#first_type>, #(T: GetColumn<#type_params>),*,
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
-                fn get(&self) -> <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> {
-                    (#(<T as GetColumn<#type_params>>::get(self),)*)
+                fn get_columns(&self) -> <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> {
+                    (#(<T as GetColumn<#type_params>>::get_column(self),)*)
                 }
             }
 
@@ -295,8 +294,8 @@ pub fn generate_get_columns() -> TokenStream {
             where T: MayGetColumn<#first_type>, #(T: MayGetColumn<#type_params>),*,
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
-                fn may_get(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
-                    (#(<T as MayGetColumn<#type_params>>::may_get(self),)*)
+                fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
+                    (#(<T as MayGetColumn<#type_params>>::may_get_column(self),)*)
                 }
             }
 
@@ -304,58 +303,48 @@ pub fn generate_get_columns() -> TokenStream {
             where T: crate::set_column::SetColumn<#first_type>, #(T: crate::set_column::SetColumn<#type_params>),*,
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
-                fn set(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) {
+                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) {
                     #(#set_individual_calls)*
                 }
             }
 
-            impl<T, #(#type_params),*> SetHomogeneousColumn<(#(#type_params,)*)> for T
-            where
-                T: SetColumn<#first_type>,
-                #(T: SetColumn<#type_params>),*,
-                #first_type: TypedColumn,
-                #(#same_type_bounds),*
+            impl<T, Type, #(#type_params),*> SetHomogeneousColumn<Type, (#(#type_params,)*)> for T
+            where T: SetColumns<(#(#type_params,)*)>,
+                    #(T: crate::set_column::SetColumn<#type_params>),*,
+                    #(#type_params: TypedColumn<Type = Type>),*
             {
-                fn set(&mut self, value: &<#first_type as TypedColumn>::Type) {
-                    #(<T as SetColumn<#type_params>>::set(self, value);)*
+                fn set_homogeneous_columns(&mut self, value: &Type) {
+                    #(#set_homogeneous_calls)*
                 }
             }
 
-            impl<T, #(#type_params),*> TrySetColumns<(#(#type_params,)*)> for T
+            impl<T, #(#type_params: TypedColumn,)*> TrySetColumns<(#(#type_params,)*)> for T
             where
-                T: crate::set_column::TrySetColumn<#first_type>,
-                #(T: crate::set_column::TrySetColumn<#type_params>),*,
-                #first_type: TypedColumn,
-                #(#type_params: TypedColumn),*
+                #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
-                fn try_set(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<()> {
+                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<()> {
                     #(#try_set_individual_calls)*
                     Ok(())
                 }
             }
 
-            impl<T, #(#type_params),*> TryMaySetColumns<(#(#type_params,)*)> for T
-            where
-                T: crate::set_column::TrySetColumn<#first_type>,
-                #(T: crate::set_column::TrySetColumn<#type_params>),*,
-                #first_type: TypedColumn,
-                #(#type_params: TypedColumn),*
+            impl<T, Type, #(#type_params),*> TrySetHomogeneousColumn<Type, (#(#type_params,)*)> for T
+            where T: TrySetColumns<(#(#type_params,)*)>,
+                    #(T: crate::set_column::TrySetColumn<#type_params>),*,
+                    #(#type_params: TypedColumn<Type = Type>),*
             {
-                fn try_may_set(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<()> {
-                    #(#try_may_set_individual_calls)*
+                fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<()> {
+                    #(#try_set_homogeneous_calls)*
                     Ok(())
                 }
             }
 
-            impl<T, #(#type_params),*> TrySetHomogeneousColumn<(#(#type_params,)*)> for T
+            impl<T, #(#type_params: TypedColumn),*> TryMaySetColumns<(#(#type_params,)*)> for T
             where
-                T: crate::set_column::TrySetColumn<#first_type>,
-                #(T: crate::set_column::TrySetColumn<#type_params>),*,
-                #first_type: TypedColumn,
-                #(#same_type_bounds),*
+                #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
-                fn try_set(&mut self, value: &<#first_type as TypedColumn>::Type) -> anyhow::Result<()> {
-                    #(<T as crate::set_column::TrySetColumn<#type_params>>::try_set(self, value)?;)*
+                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<()> {
+                    #(#try_may_set_individual_calls)*
                     Ok(())
                 }
             }
@@ -390,7 +379,7 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
                 type ModelsTuple = (#(#model_types,)*);
 
                 fn nested_insert_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::ModelsTuple> {
-                    Ok((#(self.#indices_tokens.nested_insert(conn)?,)*))
+                    Ok((#(self.#indices_tokens.insert(conn)?,)*))
                 }
             }
         }
@@ -404,10 +393,6 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
 /// Generate NestedInsertOptionTuple trait implementations
 pub fn generate_nested_insert_option_tuple() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            return quote! {};
-        }
-
         let type_params = type_params(size);
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
@@ -419,29 +404,19 @@ pub fn generate_nested_insert_option_tuple() -> TokenStream {
             .collect();
         let indices_tokens: Vec<_> = indices.iter().collect();
 
-        // For single-element tuples, trailing comma is needed in value context
-        let result_value = if size == 1 {
-            quote! { Ok((#(match self.#indices_tokens {
-                Some(builder) => Some(builder.nested_insert(conn)?),
-                None => None,
-            },)*)) }
-        } else {
-            quote! { Ok((#(match self.#indices_tokens {
-                Some(builder) => Some(builder.nested_insert(conn)?),
-                None => None,
-            }),*)) }
-        };
-
         quote! {
-            impl<Conn, #(#type_params),*> NestedInsertOptionTuple<Conn> for (#(Option<#type_params>,)*)
+            impl<Conn, #(#type_params,)*> NestedInsertOptionTuple<Conn> for (#(Option<#type_params>,)*)
             where
                 Conn: LoadConnection,
-                #(#type_params: NestedInsert<Conn> + HasTableAddition),*
+                #(#type_params: NestedInsert<Conn> + HasTableAddition,)*
             {
                 type OptionModelsTuple = (#(#option_model_types,)*);
 
                 fn nested_insert_option_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::OptionModelsTuple> {
-                    #result_value
+                    Ok((#(match self.#indices_tokens {
+                        Some(builder) => Some(builder.insert(conn)?),
+                        None => None,
+                    },)*))
                 }
             }
         }
@@ -526,7 +501,7 @@ pub fn generate_table_model() -> TokenStream {
             .iter()
             .map(|idx| {
                 quote! {
-                    GetColumn::get(&self.#idx)
+                    self.#idx.get_column()
                 }
             })
             .collect();
@@ -537,7 +512,7 @@ pub fn generate_table_model() -> TokenStream {
             .zip(&indices)
             .map(|(t, idx)| {
                 quote! {
-                    optional_self.#idx.as_ref().map(|model: &#t| GetColumn::get(model))
+                    optional_self.#idx.as_ref().map(|model: &#t| model.get_column())
                 }
             })
             .collect();

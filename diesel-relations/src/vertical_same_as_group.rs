@@ -1,6 +1,6 @@
 //! Column which is associated to a group of vertical same-as columns.
 
-use diesel_additions::TypedColumn;
+use diesel_additions::{HomogeneousColumns, TypedColumn};
 
 use crate::{AncestorOfIndex, DescendantOf};
 
@@ -10,5 +10,13 @@ pub trait VerticalSameAsGroup<T: DescendantOf<Self::Table>>:
     TypedColumn<Table: AncestorOfIndex<T>>
 {
     /// The group of vertical same-as columns associated with this column.
-    type VerticalSameAsColumns: diesel_additions::HomogeneousColumns<Type = <Self as TypedColumn>::Type>;
+    type VerticalSameAsColumns: HomogeneousColumns<<Self as TypedColumn>::Type>;
+}
+
+impl<C> VerticalSameAsGroup<C::Table> for C
+where
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<C::Table>,
+{
+    type VerticalSameAsColumns = ();
 }
