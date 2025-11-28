@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    DefaultTuple, GetColumn, MayGetColumn, MayGetInsertableTableModelColumn, SetColumn,
-    TableAddition, Tables, TrySetColumn, TrySetHomogeneousColumn, TypedColumn,
+    DefaultTuple, GetColumn, MayGetColumn, SetColumn, TableAddition, TrySetColumn,
+    TrySetHomogeneousColumn, TypedColumn,
 };
 use diesel_relations::{
     AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
@@ -83,17 +83,6 @@ where
     }
 }
 
-impl<C, T> MayGetColumn<C> for TableBuilder<T>
-where
-    T: BuildableTable,
-    C: TypedColumn,
-    <T::AncestorsWithSelf as Tables>::InsertableModels: MayGetInsertableTableModelColumn<C>,
-{
-    fn maybe_get(&self) -> Option<&<C as diesel_additions::TypedColumn>::Type> {
-        todo!()
-    }
-}
-
 impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
@@ -164,14 +153,14 @@ where
         &mut self,
         _builder: TableBuilder<<C as diesel::Column>::Table>,
     ) -> anyhow::Result<()> {
-        // if self.maybe_get().is_some() {
+        // if self.may_get().is_some() {
         //     anyhow::bail!(
         //         "Column {} was already set in insertable models for table {}.",
         //         C::NAME,
         //         core::any::type_name::<T>(),
         //     );
         // }
-        // if self.associated_builders.maybe_get().is_some() {
+        // if self.associated_builders.may_get().is_some() {
         //     anyhow::bail!(
         //         "Associated builder for column {} was already set in table {}.",
         //         C::NAME,

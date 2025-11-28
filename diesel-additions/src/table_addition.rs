@@ -3,11 +3,13 @@
 use crate::{InsertableTableModel, Projection, TableModel, TypedColumn};
 
 /// Extended trait for Diesel tables.
-pub trait TableAddition: 'static + diesel::Table<AllColumns: Projection> + Default {
+pub trait TableAddition: 'static + diesel::Table<AllColumns: Projection<Self>> + Default {
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The associated insertable model for this table.
     type InsertableModel: InsertableTableModel<Table = Self>;
+    /// The set of insertable columns for this table.
+    type InsertableColumns: Projection<Self>;
 }
 
 /// Extended trait for Diesel models associated with a table.

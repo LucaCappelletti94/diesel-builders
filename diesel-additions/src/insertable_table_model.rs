@@ -4,8 +4,8 @@ use diesel::Column;
 use typed_tuple::prelude::{TupleKey, TypedTuple};
 
 use crate::{
-    HasTableAddition, MayGetColumn, MayGetColumns, SetColumn, TableAddition, TrySetColumn,
-    TrySetColumns, tables::InsertableTableModels,
+    HasTableAddition, MayGetColumns, SetColumn, TableAddition, TrySetColumn, TrySetColumns,
+    tables::InsertableTableModels,
 };
 
 /// Trait representing an Insertable Diesel table model.
@@ -14,11 +14,19 @@ pub trait InsertableTableModel:
     + HasTableAddition<Table: TableAddition<InsertableModel = Self>>
     + Default
     + diesel::Insertable<Self::Table>
-    + MayGetColumns<Self::InsertableColumns>
-    + TrySetColumns<Self::InsertableColumns>
+    + MayGetColumns<<Self::Table as TableAddition>::InsertableColumns>
+    + TrySetColumns<<Self::Table as TableAddition>::InsertableColumns>
 {
-    /// The subset of columns this model can insert into.
-    type InsertableColumns: crate::Columns;
+}
+
+impl<T> InsertableTableModel for T where
+    T: 'static
+        + HasTableAddition<Table: TableAddition<InsertableModel = T>>
+        + Default
+        + diesel::Insertable<T::Table>
+        + MayGetColumns<<T::Table as TableAddition>::InsertableColumns>
+        + TrySetColumns<<T::Table as TableAddition>::InsertableColumns>
+{
 }
 
 /// Set the value of a column in a tuple of insertable table models.
@@ -62,26 +70,5 @@ where
 {
     fn try_set(&mut self, value: &<C as crate::TypedColumn>::Type) -> anyhow::Result<()> {
         TrySetColumn::try_set(self.get_mut(), value)
-    }
-}
-
-/// Get the value of a column from a tuple of insertable table models.
-pub trait MayGetInsertableTableModelColumn<C: crate::TypedColumn>: InsertableTableModels {
-    /// Get the value of the specified column.
-    fn maybe_get(&self) -> Option<&<C as crate::TypedColumn>::Type>;
-}
-
-impl<C, T> MayGetInsertableTableModelColumn<C> for T
-where
-    C: crate::TypedColumn + TupleKey<T>,
-    T: InsertableTableModels
-        + TypedTuple<
-            <C as TupleKey<T>>::Idx,
-            <<C as Column>::Table as TableAddition>::InsertableModel,
-        >,
-    <<C as Column>::Table as TableAddition>::InsertableModel: MayGetColumn<C>,
-{
-    fn maybe_get(&self) -> Option<&<C as crate::TypedColumn>::Type> {
-        self.get().maybe_get()
     }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "builder-traits"
+name = "diesel-builders"
 version = "0.1.0"
 edition = "2024"
 
@@ -11,6 +11,9 @@ diesel-additions.workspace = true
 anyhow.workspace = true
 typed_tuple.workspace = true
 diesel-builders-macros.workspace = true
+
+[dev-dependencies]
+diesel = { workspace = true, features = ["sqlite"] }
 
 [lints]
 workspace = true

@@ -18,11 +18,9 @@ use crate::{
 /// discretionary triangular same-as columns.
 pub trait TableBundle: TableAddition {
     /// The columns defining mandatory triangular same-as.
-    type MandatoryTriangularSameAsColumns: HorizontalSameAsKeys<ReferencedTables: BuildableTables>;
+    type MandatoryTriangularSameAsColumns: HorizontalSameAsKeys<Self, ReferencedTables: BuildableTables>;
     /// The columns defining discretionary triangular same-as.
-    type DiscretionaryTriangularSameAsColumns: HorizontalSameAsKeys<
-        ReferencedTables: BuildableTables,
-    >;
+    type DiscretionaryTriangularSameAsColumns: HorizontalSameAsKeys<Self, ReferencedTables: BuildableTables>;
 }
 
 /// A bundle of a table's insertable model and its associated builders.
@@ -30,9 +28,9 @@ pub struct TableBuilderBundle<T: TableBundle> {
 	/// The insertable model for the table.
 	insertable_model: T::InsertableModel,
 	/// The mandatory associated builders relative to triangular same-as.
-	mandatory_associated_builders: <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
+	mandatory_associated_builders: <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 	/// The discretionary associated builders relative to triangular same-as.
-	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
+	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 }
 
 impl<T> Default for TableBuilderBundle<T>
@@ -64,9 +62,9 @@ pub struct CompletedTableBuilderBundle<T: TableBundle> {
 	/// The insertable model for the table.
 	insertable_model: T::InsertableModel,
 	/// The mandatory associated builders relative to triangular same-as.
-	mandatory_associated_builders: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders,
+	mandatory_associated_builders: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders,
 	/// The discretionary associated builders relative to triangular same-as.
-	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
+	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output,
 }
 
 impl<T> HasTable for CompletedTableBuilderBundle<T>
@@ -106,15 +104,15 @@ impl<T, Conn> NestedInsert<Conn> for CompletedTableBuilderBundle<T>
 where
     T: TableBundle,
     T::InsertableModel: NestedInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
 {
     fn nested_insert(mut self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
-        let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
+        let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
         let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
         self.insertable_model.try_set(mandatory_primary_keys)?;
-        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
-        let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
+        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
+        let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
         self.insertable_model.try_may_set(discretionary_primary_keys)?;
         self.insertable_model.nested_insert(conn)
     }

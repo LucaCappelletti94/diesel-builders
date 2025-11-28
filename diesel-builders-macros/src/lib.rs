@@ -345,3 +345,28 @@ pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     .into()
 }
+
+/// Generate `HorizontalSameAsKeys` trait implementations for all tuple sizes
+/// (0-32).
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_horizontal_same_as_keys;
+///
+/// #[impl_horizontal_same_as_keys]
+/// mod my_module {
+///     // Your code here
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_horizontal_same_as_keys();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}

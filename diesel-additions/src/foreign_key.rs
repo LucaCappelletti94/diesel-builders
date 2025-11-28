@@ -3,11 +3,12 @@
 use diesel::Column;
 
 use crate::{
-    NonCompositePrimaryKeyTableModel, Projection, TypedColumn, table_addition::HasPrimaryKey,
+    NonCompositePrimaryKeyTableModel, TypedColumn, columns::NonEmptyProjection,
+    table_addition::HasPrimaryKey,
 };
 
 /// A trait for Diesel tables that define foreign key relationships.
-pub trait ForeignKey<ReferencedColumns: Projection>: Projection {}
+pub trait ForeignKey<ReferencedColumns: NonEmptyProjection>: NonEmptyProjection {}
 
 /// A trait for Diesel columns that define single-column foreign key
 /// relationships.

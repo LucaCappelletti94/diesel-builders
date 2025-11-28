@@ -4,8 +4,9 @@ use diesel::{Column, Table};
 use diesel_additions::{
     Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
     Projection, SingleColumnForeignKey, SingletonForeignKey, TypedColumn,
-    table_addition::HasPrimaryKey,
+    columns::NonEmptyProjection, table_addition::HasPrimaryKey,
 };
+use diesel_builders_macros::impl_horizontal_same_as_keys;
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<
@@ -30,48 +31,19 @@ where
 pub trait HorizontalSameAsKey: SingletonForeignKey {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: Projection<Table = Self::Table>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
-    type ForeignColumns: Projection<Table = Self::ReferencedTable>;
+    type ForeignColumns: NonEmptyProjection<Table = Self::ReferencedTable>;
 }
 
 /// A trait for Diesel columns collections that define horizontal same-as
 /// relationships.
-pub trait HorizontalSameAsKeys: Projection {
+#[impl_horizontal_same_as_keys]
+pub trait HorizontalSameAsKeys<T: diesel::Table>: Projection<T> {
     /// The set of referenced tables.
     type ReferencedTables: NonCompositePrimaryKeyTables<
             PrimaryKeys: Columns<Types = <Self as Columns>::Types>,
             Models: NonCompositePrimaryKeyTableModels,
         >;
 }
-
-macro_rules! impl_horizontal_same_as_keys {
-	// Single-element tuple (must include trailing comma)
-	($head:ident) => {
-		impl<$head> HorizontalSameAsKeys for ($head,)
-		where
-			$head: HorizontalSameAsKey,
-		{
-            type ReferencedTables = (<$head as SingletonForeignKey>::ReferencedTable,);
-		}
-	};
-
-	// Multi-element tuple: implement for the full tuple, then recurse on the tail.
-	($head:ident, $($tail:ident),+) => {
-		impl<$head, $($tail),+> HorizontalSameAsKeys for ($head, $($tail),+)
-		where
-			$head: HorizontalSameAsKey,
-			$($tail: HorizontalSameAsKey<Table = <$head as Column>::Table>),+
-		{
-            type ReferencedTables = (
-                <$head as SingletonForeignKey>::ReferencedTable,
-                $(<$tail as SingletonForeignKey>::ReferencedTable),+
-            );
-		}
-
-		impl_horizontal_same_as_keys!($($tail),+);
-	};
-}
-
-generate_tuple_impls!(impl_horizontal_same_as_keys);

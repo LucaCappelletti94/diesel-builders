@@ -15,9 +15,7 @@ pub trait BuildableTable:
     }
 }
 
-impl<T> BuildableTable for T
-where
-    T: TableBundle + DescendantWithSelf,
-    T::AncestorsWithSelf: BuildableTables,
+impl<T> BuildableTable for T where
+    T: TableBundle + DescendantWithSelf<AncestorsWithSelf: BuildableTables>
 {
 }

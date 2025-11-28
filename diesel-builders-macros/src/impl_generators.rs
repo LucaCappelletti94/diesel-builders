@@ -143,21 +143,11 @@ pub fn generate_columns() -> TokenStream {
                     type Types = ();
                     type Tables = ();
                 }
+
+                impl<T: diesel::Table> Projection<T> for () {}
             }
         } else {
             let type_params = type_params(size);
-            let column_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as TypedColumn>::Type }
-                })
-                .collect();
-            let table_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as diesel::Column>::Table }
-                })
-                .collect();
 
             // Projection impl - requires all columns have same table
             let first_type = &type_params[0];
@@ -170,17 +160,22 @@ pub fn generate_columns() -> TokenStream {
                 .collect();
 
             quote! {
-                impl<#(#type_params),*> Columns for (#(#type_params,)*)
-                where #(#type_params: TypedColumn),*
-                {
-                    type Types = (#(#column_types,)*);
-                    type Tables = (#(#table_types,)*);
-                }
-
-                impl<#(#type_params),*> Projection for (#(#type_params,)*)
+                impl<#(#type_params),*> NonEmptyProjection for (#(#type_params,)*)
                 where #first_type: TypedColumn, #(#projection_bounds),*
                 {
                     type Table = <#first_type as diesel::Column>::Table;
+                }
+
+                impl<#(#type_params),*> Columns for (#(#type_params,)*)
+                where #(#type_params: TypedColumn),*
+                {
+                    type Types = (#(<#type_params as TypedColumn>::Type,)*);
+                    type Tables = (#(<#type_params as diesel::Column>::Table,)*);
+                }
+
+                impl<#(#type_params),*> Projection<<#first_type as diesel::Column>::Table> for (#(#type_params,)*)
+                where #first_type: TypedColumn, #(#projection_bounds),*
+                {
                 }
 
                 impl<#(#type_params),*> HomogeneousColumns for (#(#type_params,)*)
@@ -200,74 +195,31 @@ pub fn generate_columns() -> TokenStream {
 /// Generate Tables trait implementations
 pub fn generate_tables() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            quote! {
-                impl Tables for () {
-                    type Models = ();
-                    type InsertableModels = ();
-                }
+        let type_params = type_params(size);
 
-                impl TableModels for () {
-                    type Tables = ();
-                }
+        let maybe_where = if size == 0 { None } else { Some(quote! { where }) };
 
-                impl InsertableTableModels for () {
-                    type Tables = ();
-                }
+        quote! {
+            impl<#(#type_params),*> Tables for (#(#type_params,)*)
+                #maybe_where #(#type_params: TableAddition,)*
+            {
+                type Models = (#(<#type_params as TableAddition>::Model,)*);
+                type InsertableModels = (#(<#type_params as TableAddition>::InsertableModel,)*);
             }
-        } else {
-            let type_params = type_params(size);
-
-            let model_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as TableAddition>::Model }
-                })
-                .collect();
-            let insertable_model_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as TableAddition>::InsertableModel }
-                })
-                .collect();
-            let table_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as HasTable>::Table }
-                })
-                .collect();
-            let primary_key_types: Vec<_> = type_params
-                .iter()
-                .map(|t| {
-                    quote! { <#t as diesel::Table>::PrimaryKey }
-                })
-                .collect();
-
-            quote! {
-                impl<#(#type_params),*> Tables for (#(#type_params,)*)
-                where #(#type_params: TableAddition),*
-                {
-                    type Models = (#(#model_types,)*);
-                    type InsertableModels = (#(#insertable_model_types,)*);
-                }
-
-                impl<#(#type_params),*> NonCompositePrimaryKeyTables for (#(#type_params,)*)
-                where #(#type_params: crate::table_addition::HasPrimaryKey),*
-                {
-                    type PrimaryKeys = (#(#primary_key_types,)*);
-                }
-
-                impl<#(#type_params),*> TableModels for (#(#type_params,)*)
-                where #(#type_params: TableModel),*
-                {
-                    type Tables = (#(#table_types,)*);
-                }
-
-                impl<#(#type_params),*> InsertableTableModels for (#(#type_params,)*)
-                where #(#type_params: InsertableTableModel),*
-                {
-                    type Tables = (#(#table_types,)*);
-                }
+            impl<#(#type_params),*> NonCompositePrimaryKeyTables for (#(#type_params,)*)
+                #maybe_where #(#type_params: crate::table_addition::HasPrimaryKey,)*
+            {
+                type PrimaryKeys = (#(<#type_params as diesel::Table>::PrimaryKey,)*);
+            }
+            impl<#(#type_params),*> TableModels for (#(#type_params,)*)
+                #maybe_where #(#type_params: TableModel,)*
+            {
+                type Tables = (#(<#type_params as HasTable>::Table,)*);
+            }
+            impl<#(#type_params),*> InsertableTableModels for (#(#type_params,)*)
+                #maybe_where #(#type_params: InsertableTableModel,)*
+            {
+                type Tables = (#(<#type_params as HasTable>::Table,)*);
             }
         }
     });
@@ -344,7 +296,7 @@ pub fn generate_get_columns() -> TokenStream {
                     #first_type: TypedColumn, #(#type_params: TypedColumn),*
             {
                 fn may_get(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
-                    (#(<T as MayGetColumn<#type_params>>::maybe_get(self),)*)
+                    (#(<T as MayGetColumn<#type_params>>::may_get(self),)*)
                 }
             }
 
@@ -550,10 +502,6 @@ pub fn generate_buildable_columns() -> TokenStream {
 /// implementations
 pub fn generate_table_model() -> TokenStream {
     let impls = generate_all_sizes(|size| {
-        if size == 0 {
-            return quote! {};
-        }
-
         let type_params = type_params(size);
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
@@ -588,7 +536,7 @@ pub fn generate_table_model() -> TokenStream {
         quote! {
             impl<#(#type_params),*> NonCompositePrimaryKeyTableModels for (#(#type_params,)*)
             where
-                #(#type_params: NonCompositePrimaryKeyTableModel),*,
+                #(#type_params: NonCompositePrimaryKeyTableModel,)*
                 Self::Tables: NonCompositePrimaryKeyTables<
                     PrimaryKeys = (#(#primary_key_types,)*),
                 >,
@@ -669,6 +617,27 @@ pub fn generate_ancestors_of() -> TokenStream {
                 #(#type_params: AncestorOfIndex<T>,)*
                 #(#descendant_of_bounds,)*
             {
+            }
+        }
+    });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate HorizontalSameAsKeys trait implementations
+pub fn generate_horizontal_same_as_keys() -> TokenStream {
+    let impls = generate_all_sizes(|size| {
+        let type_params = type_params(size);
+
+        quote! {
+            impl<T, #(#type_params),*> HorizontalSameAsKeys<T> for (#(#type_params,)*)
+            where
+                T: diesel::Table,
+                #(#type_params: HorizontalSameAsKey<Table = T>,)*
+            {
+                type ReferencedTables = (#(<#type_params as SingletonForeignKey>::ReferencedTable,)*);
             }
         }
     });

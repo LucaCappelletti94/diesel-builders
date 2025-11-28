@@ -10,9 +10,12 @@ pub trait Columns {
     type Tables: Tables<Models: TableModels<Tables = Self::Tables>>;
 }
 
-/// A trait representing a projection of Diesel columns.
-pub trait Projection: Columns {
-    /// The table to which these columns belong.
+/// A trait representing a potentially empty projection of Diesel columns.
+pub trait Projection<T: diesel::Table>: Columns {}
+
+/// A trait representing a non-empty projection of Diesel columns.
+pub trait NonEmptyProjection: Projection<Self::Table> {
+    /// The table associated to this projection.
     type Table: diesel::Table;
 }
 
