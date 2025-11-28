@@ -4,14 +4,14 @@
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{
-    GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt, TypedColumn,
+    GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
 use diesel_relations::{AncestorOfIndex, Descendant};
 use typed_tuple::prelude::TupleIndex0;
 
-table! {
+diesel_builders_macros::table_extension! {
     /// Define a simple users table for testing.
     users (id) {
         /// The ID of the user.
@@ -58,18 +58,6 @@ impl TableAddition for users::table {
     type InsertableModel = NewUser;
     type Model = User;
     type InsertableColumns = (users::name, users::email);
-}
-
-impl TypedColumn for users::id {
-    type Type = i32;
-}
-
-impl TypedColumn for users::name {
-    type Type = String;
-}
-
-impl TypedColumn for users::email {
-    type Type = String;
 }
 
 impl BundlableTable for users::table {

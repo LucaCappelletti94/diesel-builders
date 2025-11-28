@@ -32,3 +32,5 @@ pub mod flat_insert;
 pub use flat_insert::FlatInsert;
 pub mod table_inherits;
 pub use table_inherits::TableInherits;
+pub mod rust_sql_type;
+pub use rust_sql_type::RustSqlType;
