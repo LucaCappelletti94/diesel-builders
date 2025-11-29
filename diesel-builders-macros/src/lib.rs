@@ -88,17 +88,6 @@ pub fn impl_ref_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate `ClonableTuple` trait implementations for all tuple sizes (0-32).
-///
-/// # Usage
-///
-/// ```ignore
-/// use diesel_builders_macros::impl_clonable_tuple;
-///
-/// #[impl_clonable_tuple]
-/// mod my_module {
-///     // Your code here
-/// }
-/// ```
 #[proc_macro_attribute]
 pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_clonable_tuple();
@@ -112,17 +101,6 @@ pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream
 }
 
 /// Generate `DebuggableTuple` trait implementations for all tuple sizes (0-32).
-///
-/// # Usage
-///
-/// ```ignore
-/// use diesel_builders_macros::impl_debuggable_tuple;
-///
-/// #[impl_debuggable_tuple]
-/// mod my_module {
-///     // Your code here
-/// }
-/// ```
 #[proc_macro_attribute]
 pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_debuggable_tuple();
@@ -813,7 +791,7 @@ fn parse_table_definition(input: proc_macro2::TokenStream) -> syn::Result<TableD
     struct TableDef {
         table_name: syn::Ident,
         _paren_token: syn::token::Paren,
-        _primary_key: syn::Ident,
+        _primary_keys: Punctuated<syn::Ident, Token![,]>,
         _brace_token: syn::token::Brace,
         columns: Punctuated<ColumnDef, Token![,]>,
     }
@@ -843,7 +821,7 @@ fn parse_table_definition(input: proc_macro2::TokenStream) -> syn::Result<TableD
             let table_name = input.parse()?;
             let content;
             let paren_token = syn::parenthesized!(content in input);
-            let primary_key = content.parse()?;
+            let primary_keys = content.parse_terminated(syn::Ident::parse, Token![,])?;
 
             let content2;
             let brace_token = syn::braced!(content2 in input);
@@ -852,7 +830,7 @@ fn parse_table_definition(input: proc_macro2::TokenStream) -> syn::Result<TableD
             Ok(TableDef {
                 table_name,
                 _paren_token: paren_token,
-                _primary_key: primary_key,
+                _primary_keys: primary_keys,
                 _brace_token: brace_token,
                 columns,
             })

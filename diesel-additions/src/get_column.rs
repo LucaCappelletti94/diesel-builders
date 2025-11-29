@@ -62,19 +62,6 @@ impl<T> GetColumnExt for T {
 
 /// Extension trait for `MayGetColumn` that allows specifying the column at the
 /// method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <NewUser as MayGetColumn<users::name>>::may_get_column(&new_user)
-///
-/// // You can write:
-/// new_user.may_get_column::<users::name>()
-/// ```
 pub trait MayGetColumnExt {
     /// Get the value of the specified column, returning `None` if not present.
     fn may_get_column<Column>(&self) -> Option<&<Column as TypedColumn>::Type>

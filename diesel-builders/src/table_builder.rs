@@ -7,6 +7,7 @@ use diesel::{Table, associations::HasTable};
 use diesel_additions::{
     ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, SetColumn,
     TableAddition, TrySetColumn, TrySetHomogeneousColumn, TypedColumn,
+    table_addition::HasPrimaryKey,
 };
 use diesel_relations::{
     AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
@@ -99,7 +100,7 @@ where
 impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<T>,
+    C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
@@ -117,7 +118,7 @@ where
 impl<C, T> MayGetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<T>,
+    C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
@@ -131,7 +132,7 @@ where
 impl<C, T, Bundles> SetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<T> + TypedColumn,
+    C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
@@ -148,7 +149,7 @@ where
 impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<T> + TypedColumn,
+    C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
@@ -164,7 +165,7 @@ where
 impl<C, T, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<T> + TypedColumn,
+    C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
@@ -238,9 +239,10 @@ impl<Conn, T, T1> NestedInsert<Conn>
     for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>)>
 where
     Conn: diesel::connection::LoadConnection,
-    T: BuildableTable + DescendantOf<T1>,
+    T: BuildableTable + DescendantOf<T1> + HasPrimaryKey,
     T1: BuildableTable<AncestorsWithSelf: BuildableTables, PrimaryKey: VerticalSameAsGroup<T>>
-        + AncestorOfIndex<T>,
+        + AncestorOfIndex<T>
+        + HasPrimaryKey,
     T1::Model: GetColumn<<T1 as Table>::PrimaryKey>,
     CompletedTableBuilderBundle<T1>: NestedInsert<Conn, Table = T1>,
     (CompletedTableBuilderBundle<T1>, CompletedTableBuilderBundle<T>): TypedFirst<

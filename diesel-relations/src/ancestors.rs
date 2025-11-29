@@ -4,7 +4,7 @@ use diesel_additions::{TableAddition, Tables, table_addition::HasPrimaryKey};
 use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
 
 /// A trait marker for getting the ancestor index of a table.
-pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + HasPrimaryKey {
+pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition {
     /// Tuple index marker of the ancestor table in the descendant's ancestor
     /// list.
     type Idx: TupleIndex;
@@ -19,12 +19,12 @@ impl<T> DescendantOf<T> for T where T: TableAddition {}
 pub trait AncestorsOf<T: Descendant<Ancestors = Self>>: Tables {}
 
 /// A trait for Diesel tables that have ancestor tables.
-pub trait Descendant: TableAddition + DescendantOf<Self::Root> {
+pub trait Descendant: TableAddition {
     /// The ancestor tables of this table.
     type Ancestors: AncestorsOf<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
-    type Root: AncestorOfIndex<Self>;
+    type Root;
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.
