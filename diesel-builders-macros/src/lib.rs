@@ -246,6 +246,36 @@ pub fn impl_nested_insert_option_tuple(_attr: TokenStream, item: TokenStream) ->
     .into()
 }
 
+/// Generate `CompletedTableBuilder` `NestedInsert` trait implementations for
+/// all tuple sizes (2-32).
+///
+/// This generates the recursive nested insert implementations for
+/// `CompletedTableBuilder` with varying tuple sizes. The size 1 case is handled
+/// separately as a base case.
+///
+/// # Usage
+///
+/// ```ignore
+/// use diesel_builders_macros::impl_completed_table_builder_nested_insert;
+///
+/// #[impl_completed_table_builder_nested_insert]
+/// mod impls {}
+/// ```
+#[proc_macro_attribute]
+pub fn impl_completed_table_builder_nested_insert(
+    _attr: TokenStream,
+    item: TokenStream,
+) -> TokenStream {
+    let impls = impl_generators::generate_completed_table_builder_nested_insert();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `BuildableTables` trait implementations for all tuple sizes (1-32).
 ///
 /// # Usage
@@ -869,4 +899,176 @@ fn normalize_sql_type(ty: &syn::Type) -> proc_macro2::TokenStream {
 
     // Fallback: return as-is
     ty.to_token_stream()
+}
+
+/// Generate `Descendant` and related trait implementations for a table.
+///
+/// This macro automatically generates the necessary trait implementations for a
+/// descendant table:
+/// - `Descendant` with `Ancestors` and `Root` types
+/// - `AncestorOfIndex` for the table itself and all ancestors
+/// - `VerticalSameAsGroup` for the root table's primary key (if the table has
+///   ancestors)
+///
+/// # Syntax
+///
+/// The macro takes no arguments and reads the `Ancestors` type from the trait
+/// implementation:
+///
+/// For a table with no ancestors (root table):
+/// ```ignore
+/// #[descendant_of]
+/// impl Descendant for my_table::table {
+///     type Ancestors = ();
+///     type Root = Self;
+/// }
+/// ```
+///
+/// For a table with ancestors:
+/// ```ignore
+/// #[descendant_of]
+/// impl Descendant for child_table::table {
+///     type Ancestors = (grandparent_table::table, parent_table::table);
+///     type Root = grandparent_table::table;
+/// }
+/// ```
+///
+/// # Generated Implementations
+///
+/// The macro parses the `Ancestors` tuple type and automatically generates:
+///
+/// 1. `AncestorOfIndex<Self>` - maps the table to its position in its own
+///    ancestors list
+/// 2. `AncestorOfIndex<Self>` for each ancestor - maps each ancestor to its
+///    position
+/// 3. `VerticalSameAsGroup` for the root's primary key (if there are ancestors)
+///    - automatically uses the descendant table's primary key as the vertical
+///    same-as columns
+///
+/// # Examples
+///
+/// ```ignore
+/// // Root table (no ancestors)
+/// #[descendant_of]
+/// impl Descendant for users::table {
+///     type Ancestors = ();
+///     type Root = Self;
+/// }
+///
+/// // Child table extending users
+/// #[descendant_of]
+/// impl Descendant for user_profiles::table {
+///     type Ancestors = (users::table,);
+///     type Root = users::table;
+/// }
+///
+/// // Grandchild table extending user_profiles and users
+/// #[descendant_of]
+/// impl Descendant for user_settings::table {
+///     type Ancestors = (users::table, user_profiles::table);
+///     type Root = users::table;
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn descendant_of(attr: TokenStream, item: TokenStream) -> TokenStream {
+    match descendant_of_impl(attr, item) {
+        Ok(tokens) => tokens,
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
+    use quote::quote;
+
+    let item_impl: syn::ItemImpl = syn::parse(item)?;
+
+    // Extract the table type from the impl block
+    let table_type = &item_impl.self_ty;
+
+    // Find the Ancestors associated type
+    let mut ancestors_type: Option<&syn::Type> = None;
+    let mut root_type: Option<&syn::Type> = None;
+
+    for item in &item_impl.items {
+        if let syn::ImplItem::Type(type_item) = item {
+            if type_item.ident == "Ancestors" {
+                ancestors_type = Some(&type_item.ty);
+            } else if type_item.ident == "Root" {
+                root_type = Some(&type_item.ty);
+            }
+        }
+    }
+
+    let ancestors_type = ancestors_type
+        .ok_or_else(|| syn::Error::new_spanned(&item_impl, "Missing Ancestors associated type"))?;
+
+    let _root_type = root_type
+        .ok_or_else(|| syn::Error::new_spanned(&item_impl, "Missing Root associated type"))?;
+
+    // Parse the ancestors from the type - it should be a tuple like (T1, T2, T3) or
+    // ()
+    let ancestors = extract_tuple_types(ancestors_type)?;
+
+    let num_ancestors = ancestors.len();
+
+    // Generate TupleIndex for self (last position in ancestors + self)
+    let self_idx =
+        syn::Ident::new(&format!("TupleIndex{}", num_ancestors), proc_macro2::Span::call_site());
+
+    // Generate AncestorOfIndex implementations for each ancestor
+    let ancestor_of_index_impls: Vec<_> = ancestors
+        .iter()
+        .enumerate()
+        .map(|(i, ancestor)| {
+            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            quote! {
+                impl diesel_relations::AncestorOfIndex<#table_type> for #ancestor {
+                    type Idx = typed_tuple::prelude::#idx;
+                }
+            }
+        })
+        .collect();
+
+    // Generate AncestorOfIndex for self
+    let self_ancestor_of_index = quote! {
+        impl diesel_relations::AncestorOfIndex<#table_type> for #table_type {
+            type Idx = typed_tuple::prelude::#self_idx;
+        }
+    };
+
+    // Generate VerticalSameAsGroup if there are ancestors
+    // The columns are automatically inferred from the descendant table's primary
+    // key
+    let vertical_same_as_impl = if !ancestors.is_empty() {
+        let root = &ancestors[0];
+
+        quote! {
+            impl diesel_relations::vertical_same_as_group::VerticalSameAsGroup<#table_type>
+                for <#root as diesel::Table>::PrimaryKey
+            {
+                type VerticalSameAsColumns = (<#table_type as diesel::Table>::PrimaryKey,);
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    Ok(quote! {
+        #item_impl
+
+        #self_ancestor_of_index
+
+        #(#ancestor_of_index_impls)*
+
+        #vertical_same_as_impl
+    }
+    .into())
+}
+
+/// Helper function to extract types from a tuple type
+fn extract_tuple_types(ty: &syn::Type) -> syn::Result<Vec<syn::Type>> {
+    match ty {
+        syn::Type::Tuple(tuple) => Ok(tuple.elems.iter().cloned().collect()),
+        _ => Err(syn::Error::new_spanned(ty, "Expected a tuple type for Ancestors")),
+    }
 }

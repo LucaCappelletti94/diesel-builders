@@ -6,8 +6,7 @@ use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{GetColumnExt, SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
-use diesel_relations::{AncestorOfIndex, Descendant, vertical_same_as_group::VerticalSameAsGroup};
-use typed_tuple::prelude::{TupleIndex0, TupleIndex1};
+use diesel_relations::Descendant;
 
 diesel_builders_macros::table_extension! {
     /// Define a users table as the base/ancestor table.
@@ -56,14 +55,7 @@ pub struct User {
     pub email: String,
 }
 
-impl AncestorOfIndex<users::table> for users::table {
-    type Idx = TupleIndex0;
-}
-
-impl AncestorOfIndex<user_profiles::table> for users::table {
-    type Idx = TupleIndex0;
-}
-
+#[diesel_builders_macros::descendant_of]
 impl Descendant for users::table {
     type Ancestors = ();
     type Root = Self;
@@ -104,17 +96,10 @@ pub struct UserProfile {
     pub avatar_url: String,
 }
 
-impl AncestorOfIndex<user_profiles::table> for user_profiles::table {
-    type Idx = TupleIndex1;
-}
-
+#[diesel_builders_macros::descendant_of]
 impl Descendant for user_profiles::table {
     type Ancestors = (users::table,);
     type Root = users::table;
-}
-
-impl VerticalSameAsGroup<user_profiles::table> for users::id {
-    type VerticalSameAsColumns = (user_profiles::id,);
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -141,7 +126,7 @@ impl BundlableTable for user_profiles::table {
 }
 
 #[test]
-fn test_foreign_key_inheritance() -> Result<(), Box<dyn std::error::Error>> {
+fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = SqliteConnection::establish(":memory:")?;
 
     // Create the users table
@@ -163,6 +148,15 @@ fn test_foreign_key_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         )",
     )
     .execute(&mut conn)?;
+
+    // We create a user without a profile
+    let user = users::table::builder()
+        .set_column::<users::name>(&"Bob".to_string())
+        .set_column::<users::email>(&"bob@example.com".to_string())
+        .insert(&mut conn)?;
+
+    let loaded_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
+    assert_eq!(loaded_user, user);
 
     // Now create a user profile for this user
     let profile = user_profiles::table::builder()

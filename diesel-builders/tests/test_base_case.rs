@@ -8,8 +8,7 @@ use diesel_additions::{
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
-use diesel_relations::{AncestorOfIndex, Descendant};
-use typed_tuple::prelude::TupleIndex0;
+use diesel_relations::Descendant;
 
 diesel_builders_macros::table_extension! {
     /// Define a simple users table for testing.
@@ -35,10 +34,7 @@ pub struct User {
     pub email: String,
 }
 
-impl AncestorOfIndex<users::table> for users::table {
-    type Idx = TupleIndex0;
-}
-
+#[diesel_builders_macros::descendant_of]
 impl Descendant for users::table {
     type Ancestors = ();
     type Root = Self;

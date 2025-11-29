@@ -7,8 +7,7 @@ use diesel_additions::{
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
-use diesel_relations::{AncestorOfIndex, Descendant};
-use typed_tuple::prelude::TupleIndex0;
+use diesel_relations::Descendant;
 
 diesel_builders_macros::table_extension! {
     /// Define a user_roles table with composite primary key for testing.
@@ -35,13 +34,10 @@ pub struct UserRole {
     pub assigned_at: String,
 }
 
+#[diesel_builders_macros::descendant_of]
 impl Descendant for user_roles::table {
     type Ancestors = ();
     type Root = Self;
-}
-
-impl AncestorOfIndex<Self> for user_roles::table {
-    type Idx = TupleIndex0;
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]

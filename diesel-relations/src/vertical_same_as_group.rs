@@ -15,7 +15,7 @@ pub trait VerticalSameAsGroup<T: DescendantOf<Self::Table> + HasPrimaryKey>:
 
 impl<C> VerticalSameAsGroup<C::Table> for C
 where
-    C: TypedColumn<Table: AncestorOfIndex<C::Table> + HasPrimaryKey>,
+    C: TypedColumn<Table: AncestorOfIndex<C::Table> + HasPrimaryKey + DescendantOf<C::Table>>,
 {
     type VerticalSameAsColumns = ();
 }

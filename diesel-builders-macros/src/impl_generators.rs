@@ -7,7 +7,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tuple_generator::{generate_all_sizes, type_params};
+use crate::tuple_generator::{generate_all_sizes, type_params, MAX_TUPLE_SIZE};
 
 /// Generate DefaultTuple trait implementations for all tuple sizes
 pub fn generate_default_tuple() -> TokenStream {
@@ -616,6 +616,62 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
             }
         }
     });
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate CompletedTableBuilder NestedInsert trait implementations for all
+/// tuple sizes (2-32).
+///
+/// The size 1 case is handled separately in the main codebase as a base case.
+/// This generates implementations for tuples of size 2 and up, where the
+/// pattern is:
+/// - Pop the first bundle from the tuple
+/// - Insert it to get the parent model
+/// - Set the foreign key columns in the remaining bundles
+/// - Recursively insert the remaining bundles
+pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
+    // Start from size 2 since size 1 is the base case handled separately
+    let impls = (2..=MAX_TUPLE_SIZE).map(|size| {
+        let type_params = type_params(size);
+        let first_type = &type_params[0];
+        let remaining_types = &type_params[1..];
+
+        // Build the full tuple type
+        let full_tuple = quote! { (#(CompletedTableBuilderBundle<#type_params>,)*) };
+
+        quote! {
+            impl<Conn, T, #(#type_params),*> NestedInsert<Conn>
+                for CompletedTableBuilder<T, #full_tuple>
+            where
+                Conn: diesel::connection::LoadConnection,
+                T: BuildableTable + HasPrimaryKey,
+                #(T: DescendantOf<#type_params>,)*
+                #(#type_params: AncestralBuildableTable<T>,)*
+                CompletedTableBuilderBundle<#first_type>: NestedInsert<Conn, Table = #first_type>,
+                #full_tuple: TypedFirst<
+                    CompletedTableBuilderBundle<#first_type>,
+                    PopOutput = (#(CompletedTableBuilderBundle<#remaining_types>,)*),
+                >,
+                CompletedTableBuilder<T, (#(CompletedTableBuilderBundle<#remaining_types>,)*)>: NestedInsert<Conn, Table = T>
+                    + TrySetHomogeneousColumn<
+                        <<#first_type as Table>::PrimaryKey as TypedColumn>::Type,
+                        <<#first_type as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
+                    >,
+            {
+                fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+                    let (first, bundles) = self.bundles.clone().pop();
+                    let model: <#first_type as TableAddition>::Model = first.insert(conn)?;
+                    let mut next_builder: CompletedTableBuilder<T, _> =
+                        CompletedTableBuilder { bundles, table: PhantomData };
+                    next_builder.try_set_homogeneous_columns(model.get_column())?;
+                    next_builder.insert(conn)
+                }
+            }
+        }
+    }).collect::<proc_macro2::TokenStream>();
 
     quote! {
         #impls

@@ -1,19 +1,19 @@
 //! Submodule defining the `Descendant` trait.
 
-use diesel_additions::{TableAddition, Tables, table_addition::HasPrimaryKey};
+use diesel_additions::{TableAddition, Tables};
 use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
 
 /// A trait marker for getting the ancestor index of a table.
-pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition {
+pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + DescendantOf<T::Root> {
     /// Tuple index marker of the ancestor table in the descendant's ancestor
     /// list.
     type Idx: TupleIndex;
 }
 
 /// A trait for Diesel tables that have ancestor tables.
-pub trait DescendantOf<T>: TableAddition {}
+pub trait DescendantOf<T>: Descendant {}
 
-impl<T> DescendantOf<T> for T where T: TableAddition {}
+impl<T> DescendantOf<T> for T where T: Descendant {}
 
 /// A trait marker for getting the ancestor tables of a descendant table.
 pub trait AncestorsOf<T: Descendant<Ancestors = Self>>: Tables {}
