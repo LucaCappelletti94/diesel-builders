@@ -656,6 +656,7 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         vec![
             quote::quote! {
                 impl diesel_additions::SetColumn<#table_name::#field_name> for #struct_name {
+                    #[inline]
                     fn set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> &mut Self {
                         self.#field_name = Some(value.clone());
                         self
@@ -664,6 +665,7 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
             },
             quote::quote! {
                 impl diesel_additions::TrySetColumn<#table_name::#field_name> for #struct_name {
+                    #[inline]
                     fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> anyhow::Result<&mut Self> {
                         self.#field_name = Some(value.clone());
                         Ok(self)

@@ -273,23 +273,7 @@ pub fn generate_get_columns() -> TokenStream {
             })
             .collect();
 
-        let set_homogeneous_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as crate::set_column::SetColumn<#t>>::set_column(self, value);
-                }
-            })
-            .collect();
-
-        let try_set_homogeneous_calls: Vec<_> = type_params
-            .iter()
-            .map(|t| {
-                quote! {
-                    <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, value)?;
-                }
-            })
-            .collect();
+        let value_replicates = type_params.iter().map(|_| quote! { value }).collect::<Vec<_>>();
 
         quote! {
             impl<T, #(#type_params),*> GetColumns<(#(#type_params,)*)> for T
@@ -311,8 +295,9 @@ pub fn generate_get_columns() -> TokenStream {
             }
 
             impl<T, #(#type_params),*> SetColumns<(#(#type_params,)*)> for T
-            where T: crate::set_column::SetColumn<#first_type>, #(T: crate::set_column::SetColumn<#type_params>),*,
-                    #first_type: TypedColumn, #(#type_params: TypedColumn),*
+                where
+                    #(T: crate::set_column::SetColumn<#type_params>,)*
+                    #(#type_params: TypedColumn,)*
             {
                 fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> &mut Self {
                     #(#set_individual_calls)*
@@ -320,14 +305,10 @@ pub fn generate_get_columns() -> TokenStream {
                 }
             }
 
-            impl<T, Type, #(#type_params),*> SetHomogeneousColumn<Type, (#(#type_params,)*)> for T
-            where T: SetColumns<(#(#type_params,)*)>,
-                    #(T: crate::set_column::SetColumn<#type_params>),*,
-                    #(#type_params: TypedColumn<Type = Type>),*
+            impl<T: SetColumns<(#(#type_params,)*)>, Type: core::fmt::Debug + Clone, #(#type_params: TypedColumn<Type = Type>),*> SetHomogeneousColumn<Type, (#(#type_params,)*)> for T
             {
                 fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self {
-                    #(#set_homogeneous_calls)*
-                    self
+                    <T as SetColumns<(#(#type_params,)*)>>::set_columns(self, (#(#value_replicates,)*))
                 }
             }
 
@@ -341,14 +322,10 @@ pub fn generate_get_columns() -> TokenStream {
                 }
             }
 
-            impl<T, Type, #(#type_params),*> TrySetHomogeneousColumn<Type, (#(#type_params,)*)> for T
-            where T: TrySetColumns<(#(#type_params,)*)>,
-                    #(T: crate::set_column::TrySetColumn<#type_params>),*,
-                    #(#type_params: TypedColumn<Type = Type>),*
+            impl<T: TrySetColumns<(#(#type_params,)*)>, Type: core::fmt::Debug + Clone, #(#type_params: TypedColumn<Type = Type>),*> TrySetHomogeneousColumn<Type, (#(#type_params,)*)> for T
             {
                 fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self> {
-                    #(#try_set_homogeneous_calls)*
-                    Ok(self)
+                    <T as TrySetColumns<(#(#type_params,)*)>>::try_set_columns(self, (#(#value_replicates,)*))
                 }
             }
 

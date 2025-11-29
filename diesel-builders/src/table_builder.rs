@@ -12,6 +12,7 @@ use diesel_additions::{
 use diesel_relations::{
     AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
 };
+use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
 use crate::{
@@ -47,7 +48,7 @@ impl<T: BuildableTable> Default for TableBuilder<T> {
 
 /// A completed builder for creating insertable models for a Diesel table and
 /// its ancestors.
-pub struct CompletedTableBuilder<T: Table, Bundles> {
+struct CompletedTableBuilder<T: Table, Bundles> {
     /// The insertable models for the table and its ancestors.
     bundles: Bundles,
     /// The table type.
@@ -134,11 +135,16 @@ where
     T: BuildableTable + DescendantOf<C::Table>,
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
-    TableBuilderBundle<C::Table>: SetColumn<C>,
-    Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+    CompletedTableBuilderBundle<C::Table>: SetColumn<C>,
+    // We require for the non-completed variant of the builder
+    // to implement SetColumn as well so to have a compile-time
+    // verification of the availability of the column which
+    // the `TupleSet` dynamic trait cannot guarantee.
+    TableBuilder<T>: SetColumn<C>,
+    Bundles: TupleSet,
 {
     fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
-        self.bundles.apply(|builder_bundle| {
+        self.bundles.map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
             builder_bundle.set_column(value);
         });
         // TODO: set vertical same-as columns in associated builders here.
@@ -167,11 +173,20 @@ where
     T: BuildableTable + DescendantOf<C::Table>,
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
-    TableBuilderBundle<C::Table>: TrySetColumn<C>,
-    Bundles: TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+    CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
+    // We require for the non-completed variant of the builder
+    // to implement TrySetColumn as well so to have a compile-time
+    // verification of the availability of the column which
+    // the `TupleSet` dynamic trait cannot guarantee.
+    TableBuilder<T>: TrySetColumn<C>,
+    Bundles: TupleSet,
 {
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
-        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
+        self.bundles
+            .map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+                builder_bundle.try_set_column(value).map(|_| ())
+            })
+            .transpose()?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }

@@ -166,6 +166,30 @@ where
     }
 }
 
+impl<T, C> SetColumn<C> for CompletedTableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: TypedColumn,
+    T::InsertableModel: SetColumn<C>,
+{
+    fn set_column(&mut self, value: &C::Type) -> &mut Self {
+        self.insertable_model.set_column(value);
+        self
+    }
+}
+
+impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: TypedColumn,
+    T::InsertableModel: TrySetColumn<C>,
+{
+    fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<&mut Self> {
+        self.insertable_model.try_set_column(value)?;
+        Ok(self)
+    }
+}
+
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,
