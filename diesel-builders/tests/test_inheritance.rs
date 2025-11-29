@@ -38,9 +38,6 @@ diesel::joinable!(user_profiles -> users (id));
 // Allow tables to appear together in queries
 diesel::allow_tables_to_appear_in_same_query!(users, user_profiles);
 
-// Establish the descendant relationship
-impl diesel_relations::DescendantOf<users::table> for user_profiles::table {}
-
 // Users table models
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
