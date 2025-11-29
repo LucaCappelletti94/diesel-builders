@@ -13,7 +13,8 @@ typed_tuple.workspace = true
 diesel-builders-macros.workspace = true
 
 [dev-dependencies]
-diesel = { workspace = true, features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel = { workspace = true, features = ["sqlite", "returning_clauses_for_sqlite_3_35", "extras"] }
+chrono = "0.4"
 
 [lints]
 workspace = true
