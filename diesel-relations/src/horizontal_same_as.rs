@@ -7,6 +7,7 @@ use diesel_additions::{
     columns::NonEmptyProjection, table_addition::HasPrimaryKey,
 };
 use diesel_builders_macros::impl_horizontal_same_as_keys;
+use typed_tuple::prelude::TupleIndex;
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<
@@ -35,6 +36,20 @@ pub trait HorizontalSameAsKey: SingletonForeignKey {
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
     type ForeignColumns: NonEmptyProjection<Table = Self::ReferencedTable>;
+}
+
+/// Index in a tuple for a mandatory same-as relationship.
+pub trait MandatorySameAsIndex: HorizontalSameAsKey {
+    /// The index in the n-uple of host columns where the mandatory same-as
+    /// relationship is defined.
+    type Idx: TupleIndex;
+}
+
+/// Index in a tuple for a discretionary same-as relationship.
+pub trait DiscretionarySameAsIndex: HorizontalSameAsKey {
+    /// The index in the n-uple of host columns where the discretionary same-as
+    /// relationship is defined.
+    type Idx: TupleIndex;
 }
 
 /// A trait for Diesel columns collections that define horizontal same-as

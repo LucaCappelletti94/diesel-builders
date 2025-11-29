@@ -1054,3 +1054,96 @@ fn extract_tuple_types(ty: &syn::Type) -> syn::Result<Vec<syn::Type>> {
         _ => Err(syn::Error::new_spanned(ty, "Expected a tuple type for Ancestors")),
     }
 }
+
+/// Generate `MandatorySameAsIndex` and `DiscretionarySameAsIndex` trait
+/// implementations for a table.
+///
+/// This macro should be applied to the `impl BundlableTable for table` block.
+/// It will automatically generate index trait implementations for each column
+/// listed in `MandatoryTriangularSameAsColumns` and
+/// `DiscretionaryTriangularSameAsColumns`.
+#[proc_macro_attribute]
+pub fn bundlable_table(attr: TokenStream, item: TokenStream) -> TokenStream {
+    match bundlable_table_impl(attr, item) {
+        Ok(tokens) => tokens,
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
+    use quote::quote;
+
+    let item_impl: syn::ItemImpl = syn::parse(item)?;
+
+    // Find the MandatoryTriangularSameAsColumns and
+    // DiscretionaryTriangularSameAsColumns associated types
+    let mut mandatory_columns_type: Option<&syn::Type> = None;
+    let mut discretionary_columns_type: Option<&syn::Type> = None;
+
+    for item in &item_impl.items {
+        if let syn::ImplItem::Type(type_item) = item {
+            if type_item.ident == "MandatoryTriangularSameAsColumns" {
+                mandatory_columns_type = Some(&type_item.ty);
+            } else if type_item.ident == "DiscretionaryTriangularSameAsColumns" {
+                discretionary_columns_type = Some(&type_item.ty);
+            }
+        }
+    }
+
+    let mandatory_columns_type = mandatory_columns_type.ok_or_else(|| {
+        syn::Error::new_spanned(
+            &item_impl,
+            "Missing MandatoryTriangularSameAsColumns associated type",
+        )
+    })?;
+
+    let discretionary_columns_type = discretionary_columns_type.ok_or_else(|| {
+        syn::Error::new_spanned(
+            &item_impl,
+            "Missing DiscretionaryTriangularSameAsColumns associated type",
+        )
+    })?;
+
+    // Parse the columns from the types - they should be tuples like (C1, C2, C3) or
+    // ()
+    let mandatory_columns = extract_tuple_types(mandatory_columns_type)?;
+    let discretionary_columns = extract_tuple_types(discretionary_columns_type)?;
+
+    // Generate MandatorySameAsIndex implementations for each mandatory column
+    let mandatory_impls: Vec<_> = mandatory_columns
+        .iter()
+        .enumerate()
+        .map(|(i, column)| {
+            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            quote! {
+                impl diesel_relations::MandatorySameAsIndex for #column {
+                    type Idx = typed_tuple::prelude::#idx;
+                }
+            }
+        })
+        .collect();
+
+    // Generate DiscretionarySameAsIndex implementations for each discretionary
+    // column
+    let discretionary_impls: Vec<_> = discretionary_columns
+        .iter()
+        .enumerate()
+        .map(|(i, column)| {
+            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            quote! {
+                impl diesel_relations::DiscretionarySameAsIndex for #column {
+                    type Idx = typed_tuple::prelude::#idx;
+                }
+            }
+        })
+        .collect();
+
+    Ok(quote! {
+        #item_impl
+
+        #(#mandatory_impls)*
+
+        #(#discretionary_impls)*
+    }
+    .into())
+}

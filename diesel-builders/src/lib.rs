@@ -10,8 +10,9 @@ pub use buildable_tables::BuildableTables;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
 pub use set_builder::{
-    SetDiscretionaryBuilder, SetMandatoryBuilder, TrySetDiscretionaryBuilder,
-    TrySetMandatoryBuilder,
+    SetDiscretionaryBuilder, SetDiscretionaryBuilderExt, SetMandatoryBuilder,
+    SetMandatoryBuilderExt, TrySetDiscretionaryBuilder, TrySetDiscretionaryBuilderExt,
+    TrySetMandatoryBuilder, TrySetMandatoryBuilderExt,
 };
 pub mod get_builder;
 pub use get_builder::{GetBuilder, MayGetBuilder};

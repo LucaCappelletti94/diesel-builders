@@ -16,7 +16,7 @@ use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
 use crate::{
-    AncestralBuildableTable, BuildableColumn, BuilderBundles, BundlableTable, BundlableTables,
+    AncestralBuildableTable, BuilderBundles, BundlableTable, BundlableTables,
     CompletedTableBuilderBundle, NestedInsert, TableBuilderBundle, TrySetMandatoryBuilder,
     buildable_table::BuildableTable,
 };
@@ -194,32 +194,85 @@ where
 
 impl<C, T> TrySetMandatoryBuilder<C> for TableBuilder<T>
 where
-    T: BuildableTable,
-    C: BuildableColumn,
-    Self: MayGetColumn<C>,
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: diesel_relations::MandatorySameAsIndex,
+    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::ReferencedTable: BuildableTable,
+    TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
-    fn try_set(
+    fn try_set_mandatory_builder(
         &mut self,
-        _builder: TableBuilder<<C as diesel::Column>::Table>,
-    ) -> anyhow::Result<()> {
-        // if self.may_get().is_some() {
-        //     anyhow::bail!(
-        //         "Column {} was already set in insertable models for table{}.",
-        //         C::NAME,
-        //         core::any::type_name::<T>(),
-        //     );
-        // }
-        // if self.associated_builders.may_get().is_some() {
-        //     anyhow::bail!(
-        //         "Associated builder for column {} was already set in table {}.",
-        //         C::NAME,
-        //         core::any::type_name::<T>(),
-        //     );
-        // }
+        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+    ) -> anyhow::Result<&mut Self> {
+        self.bundles.map_mut(|builder_bundle| {
+            builder_bundle.try_set_mandatory_builder(builder.clone()).map(|_| ())
+        })?;
+        Ok(self)
+    }
+}
 
-        // self.associated_builders.set(builder);
-        // Ok(())
-        todo!()
+impl<C, T> crate::SetMandatoryBuilder<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: diesel_relations::MandatorySameAsIndex,
+    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::ReferencedTable: BuildableTable,
+    TableBuilderBundle<C::Table>: crate::SetMandatoryBuilder<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn set_mandatory_builder(
+        &mut self,
+        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+    ) -> &mut Self {
+        self.bundles.apply(|builder_bundle| {
+            builder_bundle.set_mandatory_builder(builder.clone());
+        });
+        self
+    }
+}
+
+impl<C, T> crate::TrySetDiscretionaryBuilder<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: diesel_relations::DiscretionarySameAsIndex,
+    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::ReferencedTable: BuildableTable,
+    TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn try_set_discretionary_builder(
+        &mut self,
+        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+    ) -> anyhow::Result<&mut Self> {
+        self.bundles.map_mut(|builder_bundle| {
+            builder_bundle.try_set_discretionary_builder(builder.clone()).map(|_| ())
+        })?;
+        Ok(self)
+    }
+}
+
+impl<C, T> crate::SetDiscretionaryBuilder<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: diesel_relations::DiscretionarySameAsIndex,
+    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::ReferencedTable: BuildableTable,
+    TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    fn set_discretionary_builder(
+        &mut self,
+        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+    ) -> &mut Self {
+        self.bundles.apply(|builder_bundle| {
+            builder_bundle.set_discretionary_builder(builder.clone());
+        });
+        self
     }
 }
 

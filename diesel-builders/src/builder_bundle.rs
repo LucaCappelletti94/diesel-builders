@@ -190,6 +190,88 @@ where
     }
 }
 
+impl<C, T> crate::SetMandatoryBuilder<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: diesel_relations::MandatorySameAsIndex,
+    C::ReferencedTable: crate::BuildableTable,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
+{
+    fn set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
+        self.mandatory_associated_builders.apply(|opt| {
+            *opt = Some(builder.clone());
+        });
+        self
+    }
+}
+
+impl<C, T> crate::TrySetMandatoryBuilder<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: diesel_relations::MandatorySameAsIndex,
+    C::ReferencedTable: crate::BuildableTable,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
+{
+    fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
+        if self.mandatory_associated_builders.get().is_some() {
+            anyhow::bail!(
+                "Mandatory associated builder for column {} was already set in table {}.",
+                C::NAME,
+                core::any::type_name::<T>(),
+            );
+        }
+        self.mandatory_associated_builders.apply(|opt| {
+            *opt = Some(builder.clone());
+        });
+        Ok(self)
+    }
+}
+
+impl<C, T> crate::SetDiscretionaryBuilder<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: diesel_relations::DiscretionarySameAsIndex,
+    C::ReferencedTable: crate::BuildableTable,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
+{
+    fn set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
+        self.discretionary_associated_builders.apply(|opt| {
+            *opt = Some(builder.clone());
+        });
+        self
+    }
+}
+
+impl<C, T> crate::TrySetDiscretionaryBuilder<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: diesel_relations::DiscretionarySameAsIndex,
+    C::ReferencedTable: crate::BuildableTable,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
+{
+    fn try_set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
+        if self.discretionary_associated_builders.get().is_some() {
+            anyhow::bail!(
+                "Discretionary associated builder for column {} was already set in table {}.",
+                C::NAME,
+                core::any::type_name::<T>(),
+            );
+        }
+        self.discretionary_associated_builders.apply(|opt| {
+            *opt = Some(builder.clone());
+        });
+        Ok(self)
+    }
+}
+
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,
