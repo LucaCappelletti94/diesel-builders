@@ -61,6 +61,7 @@ where
 {
     type Table = T;
 
+    #[inline]
     fn table() -> Self::Table {
         T::default()
     }
@@ -72,6 +73,7 @@ where
 {
     type Table = T;
 
+    #[inline]
     fn table() -> Self::Table {
         T::default()
     }
@@ -107,6 +109,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
         self.bundles.apply(|builder_bundle| {
             builder_bundle.set_column(value);
@@ -125,6 +128,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn may_get_column(&self) -> Option<&<C as TypedColumn>::Type> {
         self.bundles.get().may_get_column()
     }
@@ -143,6 +147,7 @@ where
     TableBuilder<T>: SetColumn<C>,
     Bundles: TupleSet,
 {
+    #[inline]
     fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
         self.bundles.map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
             builder_bundle.set_column(value);
@@ -161,6 +166,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
         self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
@@ -181,6 +187,7 @@ where
     TableBuilder<T>: TrySetColumn<C>,
     Bundles: TupleSet,
 {
+    #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
         self.bundles
             .map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
@@ -244,6 +251,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
@@ -265,6 +273,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,

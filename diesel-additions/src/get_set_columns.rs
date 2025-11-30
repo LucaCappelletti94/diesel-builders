@@ -9,6 +9,7 @@ pub trait GetColumns<CS: Columns> {
 }
 
 impl<T> GetColumns<()> for T {
+    #[inline]
     fn get_columns(&self) -> () {
         ()
     }
@@ -23,6 +24,7 @@ pub trait MayGetColumns<CS: Columns> {
 }
 
 impl<T> MayGetColumns<()> for T {
+    #[inline]
     fn may_get_columns(&self) -> () {
         ()
     }
@@ -38,6 +40,7 @@ pub trait SetColumns<CS: Columns> {
 }
 
 impl<T> SetColumns<()> for T {
+    #[inline]
     fn set_columns(&mut self, _values: ()) -> &mut Self {
         self
     }
@@ -50,6 +53,7 @@ pub trait SetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: SetColumns<C
 }
 
 impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
+    #[inline]
     fn set_homogeneous_columns(&mut self, _value: &Type) -> &mut Self {
         self
     }
@@ -65,6 +69,7 @@ pub trait TrySetColumns<CS: Columns> {
 }
 
 impl<T> TrySetColumns<()> for T {
+    #[inline]
     fn try_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
         Ok(self)
     }
@@ -80,6 +85,7 @@ pub trait TryMaySetColumns<CS: Columns> {
 }
 
 impl<T> TryMaySetColumns<()> for T {
+    #[inline]
     fn try_may_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
         Ok(self)
     }
@@ -93,6 +99,7 @@ pub trait TrySetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: TrySetCol
 }
 
 impl<T, Type> TrySetHomogeneousColumn<Type, ()> for T {
+    #[inline]
     fn try_set_homogeneous_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
         Ok(self)
     }

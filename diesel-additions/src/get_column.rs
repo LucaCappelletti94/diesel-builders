@@ -19,6 +19,7 @@ where
     C: crate::TypedColumn,
     T: MayGetColumn<C>,
 {
+    #[inline]
     fn may_get_column(&self) -> Option<&<C as crate::TypedColumn>::Type> {
         match self {
             Some(inner) => inner.may_get_column(),
@@ -51,6 +52,7 @@ pub trait GetColumnExt {
 }
 
 impl<T> GetColumnExt for T {
+    #[inline]
     fn get_column<Column>(&self) -> &<Column as TypedColumn>::Type
     where
         Column: TypedColumn,
@@ -71,6 +73,7 @@ pub trait MayGetColumnExt {
 }
 
 impl<T> MayGetColumnExt for T {
+    #[inline]
     fn may_get_column<Column>(&self) -> Option<&<Column as TypedColumn>::Type>
     where
         Column: TypedColumn,

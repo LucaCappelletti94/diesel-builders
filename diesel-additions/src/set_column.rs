@@ -13,6 +13,7 @@ where
     C: crate::TypedColumn,
     T: SetColumn<C>,
 {
+    #[inline]
     fn set_column(&mut self, value: &<C as crate::TypedColumn>::Type) -> &mut Self {
         if let Some(inner) = self {
             inner.set_column(value);
@@ -35,6 +36,7 @@ where
     C: crate::TypedColumn,
     T: TrySetColumn<C>,
 {
+    #[inline]
     fn try_set_column(
         &mut self,
         value: &<C as crate::TypedColumn>::Type,
@@ -73,6 +75,7 @@ pub trait SetColumnExt {
 }
 
 impl<T> SetColumnExt for T {
+    #[inline]
     fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
     where
         Column: TypedColumn,
@@ -109,6 +112,7 @@ pub trait TrySetColumnExt {
 }
 
 impl<T> TrySetColumnExt for T {
+    #[inline]
     fn try_set_column<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,

@@ -49,6 +49,7 @@ where
         >,
     <<C as Column>::Table as TableAddition>::InsertableModel: SetColumn<C>,
 {
+    #[inline]
     fn set(&mut self, value: &<C as crate::TypedColumn>::Type) {
         self.apply(|model| {
             model.set_column(value);

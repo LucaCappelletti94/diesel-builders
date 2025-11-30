@@ -15,6 +15,7 @@ pub trait BuildableTable:
     BundlableTable + DescendantWithSelf<AncestorsWithSelf: BundlableTables>
 {
     /// Returns a new instance of a builder for the current table.
+    #[inline]
     fn builder() -> TableBuilder<Self> {
         TableBuilder::default()
     }

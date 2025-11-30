@@ -79,6 +79,7 @@ where
 {
     type Table = T;
 
+    #[inline]
     fn table() -> Self::Table {
         T::default()
     }
@@ -126,6 +127,7 @@ where
 {
     type Table = T;
 
+    #[inline]
     fn table() -> Self::Table {
         T::default()
     }
@@ -137,6 +139,7 @@ where
     C: TypedColumn,
     T::InsertableModel: MayGetColumn<C>,
 {
+    #[inline]
     fn may_get_column(&self) -> Option<&C::Type> {
         self.insertable_model.may_get_column()
     }
@@ -148,6 +151,7 @@ where
     C: TypedColumn,
     T::InsertableModel: TrySetColumn<C>,
 {
+    #[inline]
     fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<&mut Self> {
         self.insertable_model.try_set_column(value)?;
         Ok(self)
@@ -160,6 +164,7 @@ where
     C: TypedColumn,
     T::InsertableModel: SetColumn<C>,
 {
+    #[inline]
     fn set_column(&mut self, value: &C::Type) -> &mut Self {
         self.insertable_model.set_column(value);
         self
@@ -172,6 +177,7 @@ where
     C: TypedColumn,
     T::InsertableModel: SetColumn<C>,
 {
+    #[inline]
     fn set_column(&mut self, value: &C::Type) -> &mut Self {
         self.insertable_model.set_column(value);
         self
@@ -184,6 +190,7 @@ where
     C: TypedColumn,
     T::InsertableModel: TrySetColumn<C>,
 {
+    #[inline]
     fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<&mut Self> {
         self.insertable_model.try_set_column(value)?;
         Ok(self)
@@ -198,6 +205,7 @@ where
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
     <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
 {
+    #[inline]
     fn set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
         use typed_tuple::prelude::TypedTuple;
         self.mandatory_associated_builders.apply(|opt| {
@@ -215,6 +223,7 @@ where
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
     <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
 {
+    #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
         use typed_tuple::prelude::TypedTuple;
         if self.mandatory_associated_builders.get().is_some() {
@@ -239,6 +248,7 @@ where
     <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
 {
+    #[inline]
     fn set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
         use typed_tuple::prelude::TypedTuple;
         self.discretionary_associated_builders.apply(|opt| {
@@ -256,6 +266,7 @@ where
     <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
 {
+    #[inline]
     fn try_set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
         use typed_tuple::prelude::TypedTuple;
         if self.discretionary_associated_builders.get().is_some() {

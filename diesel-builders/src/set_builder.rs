@@ -74,6 +74,7 @@ pub trait SetMandatoryBuilderExt {
 }
 
 impl<T> SetMandatoryBuilderExt for T {
+    #[inline]
     fn set_mandatory_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
@@ -113,6 +114,7 @@ pub trait SetDiscretionaryBuilderExt {
 }
 
 impl<T> SetDiscretionaryBuilderExt for T {
+    #[inline]
     fn set_discretionary_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
@@ -152,6 +154,7 @@ pub trait TrySetMandatoryBuilderExt {
 }
 
 impl<T> TrySetMandatoryBuilderExt for T {
+    #[inline]
     fn try_set_mandatory_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
@@ -191,6 +194,7 @@ pub trait TrySetDiscretionaryBuilderExt {
 }
 
 impl<T> TrySetDiscretionaryBuilderExt for T {
+    #[inline]
     fn try_set_discretionary_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
