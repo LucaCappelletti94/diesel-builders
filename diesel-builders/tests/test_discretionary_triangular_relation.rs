@@ -252,12 +252,17 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
-    let triangular_b = table_b::table::builder()
+    let mut triangular_b_builder = table_b::table::builder();
+    triangular_b_builder
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
         .set_discretionary_builder::<table_b::c_id>(c_builder.clone())
-        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?
-        .insert(&mut conn)?;
+        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?;
+
+    // Debug formatting test
+    let _formatted = format!("{:?}", triangular_b_builder);
+
+    let triangular_b = triangular_b_builder.insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(triangular_b.id))

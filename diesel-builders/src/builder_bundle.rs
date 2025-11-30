@@ -106,22 +106,6 @@ impl<T: BundlableTable> Clone for CompletedTableBuilderBundle<T> {
     }
 }
 
-impl<T: BundlableTable> core::fmt::Debug for CompletedTableBuilderBundle<T> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("CompletedTableBuilderBundle")
-            .field("insertable_model", &self.insertable_model)
-            .field(
-                "mandatory_associated_builders",
-                &self.mandatory_associated_builders.debug_tuple(),
-            )
-            .field(
-                "discretionary_associated_builders",
-                &self.discretionary_associated_builders.debug_tuple(),
-            )
-            .finish()
-    }
-}
-
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,

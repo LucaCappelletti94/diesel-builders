@@ -8,6 +8,19 @@ pub trait GetColumns<CS: Columns> {
     fn get_columns(&self) -> <CS::Types as crate::RefTuple>::Output<'_>;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::GetColumns;
+///
+/// struct MyBuilder;
+///
+/// let builder = MyBuilder;
+/// // Empty tuple columns can be retrieved
+/// builder.get_columns();
+/// ```
 impl<T> GetColumns<()> for T {
     #[inline]
     fn get_columns(&self) {}
@@ -21,6 +34,19 @@ pub trait MayGetColumns<CS: Columns> {
     ) -> <<CS::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::MayGetColumns;
+///
+/// struct MyBuilder;
+///
+/// let builder = MyBuilder;
+/// // Empty tuple columns can be optionally retrieved
+/// builder.may_get_columns();
+/// ```
 impl<T> MayGetColumns<()> for T {
     #[inline]
     fn may_get_columns(&self) {}
@@ -35,6 +61,19 @@ pub trait SetColumns<CS: Columns> {
     ) -> &mut Self;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::SetColumns;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// // Empty tuple columns can be set
+/// builder.set_columns(());
+/// ```
 impl<T> SetColumns<()> for T {
     #[inline]
     fn set_columns(&mut self, _values: ()) -> &mut Self {
@@ -51,6 +90,19 @@ pub trait MaySetColumns<CS: Columns> {
     ) -> &mut Self;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::MaySetColumns;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// // Empty tuple columns can be optionally set
+/// builder.may_set_columns(());
+/// ```
 impl<T> MaySetColumns<()> for T {
     #[inline]
     fn may_set_columns(&mut self, _values: ()) -> &mut Self {
@@ -64,6 +116,20 @@ pub trait SetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: SetColumns<C
     fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::SetHomogeneousColumn;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// let value = 42i32;
+/// // Empty tuple homogeneous columns can be set
+/// builder.set_homogeneous_columns(&value);
+/// ```
 impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
     #[inline]
     fn set_homogeneous_columns(&mut self, _value: &Type) -> &mut Self {
@@ -84,6 +150,19 @@ pub trait TrySetColumns<CS: Columns> {
     ) -> anyhow::Result<&mut Self>;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::TrySetColumns;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// // Empty tuple columns can be fallibly set
+/// builder.try_set_columns(()).unwrap();
+/// ```
 impl<T> TrySetColumns<()> for T {
     #[inline]
     fn try_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
@@ -104,6 +183,19 @@ pub trait TryMaySetColumns<CS: Columns> {
     ) -> anyhow::Result<&mut Self>;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::TryMaySetColumns;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// // Empty tuple columns can be optionally fallibly set
+/// builder.try_may_set_columns(()).unwrap();
+/// ```
 impl<T> TryMaySetColumns<()> for T {
     #[inline]
     fn try_may_set_columns(&mut self, _values: ()) -> anyhow::Result<&mut Self> {
@@ -122,6 +214,20 @@ pub trait TrySetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: TrySetCol
     fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self>;
 }
 
+/// Doc test for empty tuple implementation.
+///
+/// # Examples
+///
+/// ```
+/// use diesel_builders::TrySetHomogeneousColumn;
+///
+/// struct MyBuilder;
+///
+/// let mut builder = MyBuilder;
+/// let value = 42i32;
+/// // Empty tuple homogeneous columns can be fallibly set
+/// builder.try_set_homogeneous_columns(&value).unwrap();
+/// ```
 impl<T, Type> TrySetHomogeneousColumn<Type, ()> for T {
     #[inline]
     fn try_set_homogeneous_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {

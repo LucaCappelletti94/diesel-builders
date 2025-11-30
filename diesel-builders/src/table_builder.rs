@@ -144,31 +144,6 @@ where
     }
 }
 
-impl<C, T, Bundles> SetColumn<C> for CompletedTableBuilder<T, Bundles>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
-    CompletedTableBuilderBundle<C::Table>: SetColumn<C>,
-    // We require for the non-completed variant of the builder
-    // to implement SetColumn as well so to have a compile-time
-    // verification of the availability of the column which
-    // the `TupleSet` dynamic trait cannot guarantee.
-    TableBuilder<T>: SetColumn<C>,
-    Bundles: TupleSet,
-{
-    #[inline]
-    fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
-        self.bundles.map(
-            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                builder_bundle.set_column(value);
-            },
-        );
-        // TODO: set vertical same-as columns in associated builders here.
-        self
-    }
-}
-
 impl<C, T> MaySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
@@ -205,32 +180,6 @@ where
             .map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
-    }
-}
-
-impl<C, T, Bundles> MaySetColumn<C> for CompletedTableBuilder<T, Bundles>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
-    CompletedTableBuilderBundle<C::Table>: MaySetColumn<C>,
-    // We require for the non-completed variant of the builder
-    // to implement MaySetColumn as well so to have a compile-time
-    // verification of the availability of the column which
-    // the `TupleSet` dynamic trait cannot guarantee.
-    TableBuilder<T>: MaySetColumn<C>,
-    Bundles: TupleSet,
-{
-    #[inline]
-    fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
-        <Bundles as TupleSet>::map(
-            &mut self.bundles,
-            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                builder_bundle.may_set_column(value);
-            },
-        );
-        // TODO: set vertical same-as columns in associated builders here.
-        self
     }
 }
 
