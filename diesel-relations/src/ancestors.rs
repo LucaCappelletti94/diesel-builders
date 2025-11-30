@@ -3,6 +3,12 @@
 use diesel_additions::{TableAddition, Tables};
 use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
 
+/// Marker trait for root table models (tables with no ancestors).
+///
+/// This trait should be derived on Model structs to automatically generate
+/// the `Descendant` implementation for their associated table type.
+pub trait Root: diesel_additions::HasTableAddition {}
+
 /// A trait marker for getting the ancestor index of a table.
 pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + DescendantOf<T::Root> {
     /// Tuple index marker of the ancestor table in the descendant's ancestor
@@ -24,7 +30,7 @@ pub trait Descendant: TableAddition {
     type Ancestors: AncestorsOf<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
-    type Root;
+    type Root: Root;
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.

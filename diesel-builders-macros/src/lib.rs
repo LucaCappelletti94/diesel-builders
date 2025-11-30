@@ -601,6 +601,62 @@ pub fn derive_has_table(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Derive macro to automatically implement `Descendant` trait for root tables.
+///
+/// This macro should be derived on Model structs to automatically generate
+/// the `Descendant` implementation for their associated table type, marking it
+/// as a root table with no ancestors.
+#[proc_macro_derive(Root)]
+pub fn derive_root(input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    // Find the diesel(table_name = ...) attribute
+    let table_name = input.attrs.iter().find_map(|attr| {
+        if !attr.path().is_ident("diesel") {
+            return None;
+        }
+
+        let mut table_name = None;
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("table_name") {
+                let value = meta.value()?;
+                let lit: syn::Ident = value.parse()?;
+                table_name = Some(lit);
+                Ok(())
+            } else {
+                Ok(())
+            }
+        });
+        table_name
+    });
+
+    let table_name = match table_name {
+        Some(name) => name,
+        None => {
+            return syn::Error::new_spanned(
+                &input,
+                "Root derive requires a #[diesel(table_name = ...)] attribute",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    quote::quote! {
+        impl diesel_relations::Root for #table_name::table {}
+
+        impl diesel_relations::Descendant for #table_name::table {
+            type Ancestors = ();
+            type Root = Self;
+        }
+
+        impl diesel_relations::AncestorOfIndex<#table_name::table> for #table_name::table {
+            type Idx = typed_tuple::prelude::TupleIndex0;
+        }
+    }
+    .into()
+}
+
 /// Generate `TypedColumn` implementations for all columns in a table
 /// definition.
 #[proc_macro]

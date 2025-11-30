@@ -9,7 +9,7 @@
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
 use diesel_relations::Descendant;
 
 // Define table A (root table)
@@ -66,18 +66,12 @@ diesel::joinable!(table_d -> table_c (id));
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
 
 // Table A models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
 #[diesel(table_name = table_a)]
 /// A model for table A.
 pub struct TableA {
     id: i32,
     column_a: String,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for table_a::table {
-    type Ancestors = ();
-    type Root = Self;
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]

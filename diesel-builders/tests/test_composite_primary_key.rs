@@ -6,8 +6,7 @@ use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
-use diesel_relations::Descendant;
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
 
 diesel_builders_macros::table_extension! {
     /// Define a user_roles table with composite primary key for testing.
@@ -21,7 +20,7 @@ diesel_builders_macros::table_extension! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
 #[diesel(table_name = user_roles)]
 #[diesel(primary_key(user_id, role_id))]
 /// A user role assignment model.
@@ -32,12 +31,6 @@ pub struct UserRole {
     pub role_id: i32,
     /// When the role was assigned.
     pub assigned_at: String,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for user_roles::table {
-    type Ancestors = ();
-    type Root = Self;
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]

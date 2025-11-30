@@ -1,18 +1,19 @@
-//! Submodule to test a mandatory triangular relation between tables.
+//! Submodule to test a discretionary triangular relation between tables.
 //!
 //! This test sets up three tables: A, B, and C. B extends C, and C contains
 //! a column that references A, and B has a column that references C, forming a
 //! triangular relationship. The test verifies that inserts and queries work
 //! correctly through this relationship.
 //!
-//! Specifically, the relationship is mandatory, that is the foreign key from
-//! C to A is referenced in B using a same-as relationship, which means that
-//! the C record associated with a B record must reference the same A record as
-//! B does.
+//! Specifically, the relationship is discretionary, that is the foreign key
+//! from C to A is NOT referenced in B using a same-as relationship, which means
+//! that the C record associated with a B record may reference the same A record
+//! as B does, but it is not required to and the user can choose to set it or
+//! not.
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
-use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
+use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetDiscretionaryBuilderExt};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
 use diesel_relations::Descendant;
 
@@ -46,7 +47,7 @@ diesel_builders_macros::table_extension! {
     table_b (id) {
         /// Primary key of table B, foreign key to table_c.id.
         id -> Integer,
-        /// Foreign key to table C (must match C's a_id - mandatory triangular relation).
+        /// Foreign key to table C (must match C's a_id - discretionary triangular relation).
         c_id -> Integer,
         /// A simple column for table B.
         column_b -> Text,
@@ -183,12 +184,12 @@ impl diesel_relations::HorizontalSameAsKey for table_b::c_id {
 
 #[diesel_builders_macros::bundlable_table]
 impl BundlableTable for table_b::table {
-    type MandatoryTriangularSameAsColumns = (table_b::c_id,);
-    type DiscretionaryTriangularSameAsColumns = ();
+    type MandatoryTriangularSameAsColumns = ();
+    type DiscretionaryTriangularSameAsColumns = (table_b::c_id,);
 }
 
 #[test]
-fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
+fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = SqliteConnection::establish(":memory:")?;
 
     // Create table A
@@ -244,12 +245,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .set_column::<table_c::column_c>(&"Value C".to_string());
 
     // Insert into table B (extends C and references A)
-    // The mandatory triangular relation means B's a_id should automatically
+    // The discretionary triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
     let b = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
-        .set_mandatory_builder::<table_b::c_id>(c_builder)
+        .set_discretionary_builder::<table_b::c_id>(c_builder)
         .insert(&mut conn)?;
 
     let associated_a: TableA =

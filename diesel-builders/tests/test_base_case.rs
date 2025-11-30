@@ -7,8 +7,7 @@ use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, SetColumn};
-use diesel_relations::Descendant;
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
 
 diesel_builders_macros::table_extension! {
     /// Define a simple users table for testing.
@@ -22,7 +21,7 @@ diesel_builders_macros::table_extension! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
 #[diesel(table_name = users)]
 /// A simple user model.
 pub struct User {
@@ -32,12 +31,6 @@ pub struct User {
     pub name: String,
     /// The email of the user.
     pub email: String,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for users::table {
-    type Ancestors = ();
-    type Root = Self;
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
