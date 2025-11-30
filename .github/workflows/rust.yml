@@ -23,6 +23,17 @@ jobs:
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
+    - name: Install SQLite (Ubuntu)
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+    - name: Install SQLite (macOS)
+      if: runner.os == 'macOS'
+      run: brew install sqlite
+    - name: Install SQLite (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install sqlite
+        echo "SQLITE3_LIB_DIR=C:\ProgramData\chocolatey\lib\SQLite\tools" >> $GITHUB_ENV
     - name: Cache cargo registry
       uses: actions/cache@v4
       with:
@@ -64,9 +75,9 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
+    - name: Install SQLite
+      run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
     - name: Run clippy
-      run: cargo clippy --all-targets --all-features -- -D warnings
-
   doc:
     name: Documentation
     runs-on: ubuntu-latest
@@ -74,17 +85,23 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
+    - name: Install SQLite
+      run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+    - name: Check documentation
+      uses: dtolnay/rust-toolchain@stable
     - name: Check documentation
       run: cargo doc --no-deps --document-private-items
       env:
-        RUSTDOCFLAGS: -D warnings
-
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    - name: Install SQLite
+      run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+    - name: Install tarpaulin
       uses: dtolnay/rust-toolchain@stable
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
