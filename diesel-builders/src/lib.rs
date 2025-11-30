@@ -23,9 +23,7 @@ pub use columns::{Columns, HomogeneousColumns, Projection};
 pub mod table_addition;
 pub use table_addition::{HasPrimaryKey, HasTableAddition, TableAddition};
 pub mod set_column;
-pub use set_column::{
-    MaySetColumn, MaySetColumnExt, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt,
-};
+pub use set_column::{MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt};
 pub mod insertable_table_model;
 pub use insertable_table_model::InsertableTableModel;
 pub mod foreign_key;
@@ -117,7 +115,7 @@ pub mod prelude {
     pub use crate::{
         builder_bundle::BundlableTable,
         nested_insert::NestedInsert,
-        set_column::{MaySetColumnExt, SetColumnExt, TrySetColumnExt},
+        set_column::{SetColumnExt, TrySetColumnExt},
         table_addition::TableAddition,
     };
 }

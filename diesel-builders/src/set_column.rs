@@ -8,38 +8,10 @@ pub trait SetColumn<Column: TypedColumn> {
     fn set_column(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self;
 }
 
-impl<C, T> SetColumn<C> for Option<T>
-where
-    C: crate::TypedColumn,
-    T: SetColumn<C>,
-{
-    #[inline]
-    fn set_column(&mut self, value: &<C as crate::TypedColumn>::Type) -> &mut Self {
-        if let Some(inner) = self {
-            inner.set_column(value);
-        }
-        self
-    }
-}
-
 /// Trait providing a failable setter for a specific Diesel column.
 pub trait MaySetColumn<Column: TypedColumn> {
     /// Set the value of the specified column if the value is present.
     fn may_set_column(&mut self, value: Option<&<Column as TypedColumn>::Type>) -> &mut Self;
-}
-
-impl<C, T> MaySetColumn<C> for Option<T>
-where
-    C: crate::TypedColumn,
-    T: MaySetColumn<C>,
-{
-    #[inline]
-    fn may_set_column(&mut self, value: Option<&<C as crate::TypedColumn>::Type>) -> &mut Self {
-        if let Some(inner) = self {
-            inner.may_set_column(value);
-        }
-        self
-    }
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -53,23 +25,6 @@ pub trait TrySetColumn<Column: TypedColumn> {
         &mut self,
         value: &<Column as TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self>;
-}
-
-impl<C, T> TrySetColumn<C> for Option<T>
-where
-    C: crate::TypedColumn,
-    T: TrySetColumn<C>,
-{
-    #[inline]
-    fn try_set_column(
-        &mut self,
-        value: &<C as crate::TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self> {
-        if let Some(inner) = self {
-            inner.try_set_column(value)?;
-        }
-        Ok(self)
-    }
 }
 
 /// Extension trait for `SetColumn` that allows specifying the column at the
@@ -93,33 +48,6 @@ impl<T> SetColumnExt for T {
         Self: SetColumn<Column>,
     {
         <Self as SetColumn<Column>>::set_column(self, value)
-    }
-}
-
-/// Extension trait for `MaySetColumn` that allows specifying the column at the
-/// method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-pub trait MaySetColumnExt {
-    /// Set the value of the specified column if the value is present.
-    fn may_set_column<Column>(
-        &mut self,
-        value: Option<&<Column as TypedColumn>::Type>,
-    ) -> &mut Self
-    where
-        Column: TypedColumn,
-        Self: MaySetColumn<Column>;
-}
-
-impl<T> MaySetColumnExt for T {
-    #[inline]
-    fn may_set_column<Column>(&mut self, value: Option<&<Column as TypedColumn>::Type>) -> &mut Self
-    where
-        Column: TypedColumn,
-        Self: MaySetColumn<Column>,
-    {
-        <Self as MaySetColumn<Column>>::may_set_column(self, value)
     }
 }
 

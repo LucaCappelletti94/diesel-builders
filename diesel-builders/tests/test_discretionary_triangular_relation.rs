@@ -40,7 +40,7 @@ diesel::table! {
         /// Foreign key to table A.
         a_id -> Integer,
         /// A simple column for table C.
-        column_c -> Text,
+        column_c -> Nullable<Text>,
     }
 }
 
@@ -55,7 +55,7 @@ diesel::table! {
         /// A simple column for table B.
         column_b -> Text,
         /// The remote column_c value from table C that B references via c_id.
-        remote_column_c -> Text,
+        remote_column_c -> Nullable<Text>,
     }
 }
 
@@ -106,7 +106,7 @@ pub struct TableC {
     /// Foreign key to table A.
     pub a_id: i32,
     /// Column C value.
-    pub column_c: String,
+    pub column_c: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -116,7 +116,7 @@ pub struct NewTableC {
     /// Foreign key to table A.
     pub a_id: Option<i32>,
     /// Column C value.
-    pub column_c: Option<String>,
+    pub column_c: Option<Option<String>>,
 }
 
 impl TableAddition for table_c::table {
@@ -137,7 +137,7 @@ pub struct TableB {
     /// Column B value.
     pub column_b: String,
     /// The remote column_c value from table C that B references via c_id.
-    pub remote_column_c: String,
+    pub remote_column_c: Option<String>,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -157,7 +157,7 @@ pub struct NewTableB {
     /// Column B value.
     pub column_b: Option<String>,
     /// The remote column_c value from table C that B references via c_id.
-    pub remote_column_c: Option<String>,
+    pub remote_column_c: Option<Option<String>>,
 }
 
 impl TableAddition for table_b::table {
@@ -212,7 +212,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         "CREATE TABLE table_c (
             id INTEGER PRIMARY KEY NOT NULL,
             a_id INTEGER NOT NULL REFERENCES table_a(id),
-            column_c TEXT NOT NULL,
+            column_c TEXT,
 			UNIQUE(id, column_c)
         )",
     )
@@ -224,7 +224,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
             id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id),
             c_id INTEGER NOT NULL REFERENCES table_c(id),
             column_b TEXT NOT NULL,
-            remote_column_c TEXT NOT NULL,
+            remote_column_c TEXT,
 			FOREIGN KEY (c_id, remote_column_c) REFERENCES table_c(id, column_c)
         )",
     )
@@ -240,14 +240,14 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Insert into table C (references A)
     let c = table_c::table::builder()
         .set_column::<table_c::a_id>(&a.id)
-        .set_column::<table_c::column_c>(&"Value C".to_string())
+        .set_column::<table_c::column_c>(&Some("Value C".to_string()))
         .insert(&mut conn)?;
 
-    assert_eq!(c.column_c, "Value C");
+    assert_eq!(c.column_c, Some("Value C".to_string()));
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
-    c_builder.set_column::<table_c::column_c>(&"Value C for B".to_string());
+    c_builder.set_column::<table_c::column_c>(&Some("Value C for B".to_string()));
 
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means B's a_id should automatically
@@ -269,7 +269,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .filter(table_c::id.eq(triangular_b.c_id))
         .first(&mut conn)
         .unwrap();
-    assert_eq!(associated_c.column_c, "Value C for B");
+    assert_eq!(associated_c.column_c, Some("Value C for B".to_string()));
     assert_eq!(associated_c.a_id, triangular_b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
 
@@ -281,7 +281,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .insert(&mut conn)?;
 
     assert_eq!(indipendent_b.column_b, "Independent B");
-    assert_eq!(indipendent_b.remote_column_c, "Value C");
+    assert_eq!(indipendent_b.remote_column_c, Some("Value C".to_string()));
     assert_ne!(indipendent_b.id, triangular_b.id);
     assert_ne!(indipendent_b.id, c.a_id);
 
