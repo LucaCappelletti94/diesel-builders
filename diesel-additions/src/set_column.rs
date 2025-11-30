@@ -56,16 +56,6 @@ where
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <NewUser as SetColumn<users::name>>::set_column(&mut new_user, &value)
-///
-/// // You can write:
-/// new_user.set_column::<users::name>(&value)
-/// ```
 pub trait SetColumnExt {
     /// Set the value of the specified column.
     fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
@@ -90,16 +80,6 @@ impl<T> SetColumnExt for T {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <NewUser as TrySetColumn<users::name>>::try_set_column(&mut new_user, &value)?
-///
-/// // You can write:
-/// new_user.try_set_column::<users::name>(&value)?
-/// ```
 pub trait TrySetColumnExt {
     /// Attempt to set the value of the specified column.
     fn try_set_column<Column>(

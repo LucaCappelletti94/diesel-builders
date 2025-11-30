@@ -52,16 +52,6 @@ pub trait TrySetDiscretionaryBuilder<
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <TableBuilder<TableB> as SetMandatoryBuilder<table_b::a_id>>::set_mandatory_builder(&mut builder, a_builder)
-///
-/// // You can write:
-/// builder.set_mandatory_builder::<table_b::a_id>(a_builder)
-/// ```
 pub trait SetMandatoryBuilderExt {
     /// Set the mandatory builder for the specified column.
     fn set_mandatory_builder<Column>(
@@ -92,16 +82,6 @@ impl<T> SetMandatoryBuilderExt for T {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <TableBuilder<TableB> as SetDiscretionaryBuilder<table_b::a_id>>::set_discretionary_builder(&mut builder, a_builder)
-///
-/// // You can write:
-/// builder.set_discretionary_builder::<table_b::a_id>(a_builder)
-/// ```
 pub trait SetDiscretionaryBuilderExt {
     /// Set the discretionary builder for the specified column.
     fn set_discretionary_builder<Column>(
@@ -132,16 +112,6 @@ impl<T> SetDiscretionaryBuilderExt for T {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <TableBuilder<TableB> as TrySetMandatoryBuilder<table_b::a_id>>::try_set_mandatory_builder(&mut builder, a_builder)?
-///
-/// // You can write:
-/// builder.try_set_mandatory_builder::<table_b::a_id>(a_builder)?
-/// ```
 pub trait TrySetMandatoryBuilderExt {
     /// Attempt to set the mandatory builder for the specified column.
     fn try_set_mandatory_builder<Column>(
@@ -172,16 +142,6 @@ impl<T> TrySetMandatoryBuilderExt for T {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-///
-/// # Example
-///
-/// ```ignore
-/// // Instead of:
-/// <TableBuilder<TableB> as TrySetDiscretionaryBuilder<table_b::a_id>>::try_set_discretionary_builder(&mut builder, a_builder)?
-///
-/// // You can write:
-/// builder.try_set_discretionary_builder::<table_b::a_id>(a_builder)?
-/// ```
 pub trait TrySetDiscretionaryBuilderExt {
     /// Attempt to set the discretionary builder for the specified column.
     fn try_set_discretionary_builder<Column>(

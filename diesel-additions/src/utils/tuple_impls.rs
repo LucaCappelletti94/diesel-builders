@@ -11,20 +11,6 @@ pub const MAX_TUPLE_SIZE: usize = 32;
 /// This macro invokes the provided macro name with a standardized list of
 /// type parameters representing tuples up to 32 elements. This ensures
 /// consistency across all tuple-based trait implementations in the codebase.
-///
-/// # Usage
-///
-/// ```ignore
-/// macro_rules! impl_my_trait {
-///     ($head:ident) => { /* single element impl */ };
-///     ($head:ident, $($tail:ident),+) => {
-///         /* multi-element impl */
-///         impl_my_trait!($($tail),+);
-///     };
-/// }
-///
-/// generate_tuple_impls!(impl_my_trait);
-/// ```
 #[macro_export]
 macro_rules! generate_tuple_impls {
     ($macro_name:ident) => {
