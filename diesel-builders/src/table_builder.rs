@@ -5,12 +5,12 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use diesel::{Table, associations::HasTable};
 use diesel_additions::{
-    ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, SetColumn,
-    TableAddition, TrySetColumn, TrySetHomogeneousColumn, TypedColumn,
-    table_addition::HasPrimaryKey,
+    ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, MayGetColumns,
+    MaySetColumn, MaySetColumns, SetColumn, SingletonForeignKey, TableAddition, TryMaySetColumns,
+    TrySetColumn, TrySetHomogeneousColumn, TypedColumn, table_addition::HasPrimaryKey,
 };
 use diesel_relations::{
-    AncestorOfIndex, DescendantOf, vertical_same_as_group::VerticalSameAsGroup,
+    AncestorOfIndex, DescendantOf, HorizontalSameAsKey, vertical_same_as_group::VerticalSameAsGroup,
 };
 use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
@@ -160,6 +160,25 @@ where
     }
 }
 
+impl<C, T> MaySetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
+    TableBuilderBundle<C::Table>: MaySetColumn<C>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+{
+    #[inline]
+    fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
+        self.bundles.map_mut(|builder_bundle| {
+            builder_bundle.may_set_column(value);
+        });
+        // TODO: set vertical same-as columns in associated builders here.
+        self
+    }
+}
+
 impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
@@ -174,6 +193,29 @@ where
         self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
+    }
+}
+
+impl<C, T, Bundles> MaySetColumn<C> for CompletedTableBuilder<T, Bundles>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
+    CompletedTableBuilderBundle<C::Table>: MaySetColumn<C>,
+    // We require for the non-completed variant of the builder
+    // to implement MaySetColumn as well so to have a compile-time
+    // verification of the availability of the column which
+    // the `TupleSet` dynamic trait cannot guarantee.
+    TableBuilder<T>: MaySetColumn<C>,
+    Bundles: TupleSet,
+{
+    #[inline]
+    fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
+        self.bundles.map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+            builder_bundle.may_set_column(value);
+        });
+        // TODO: set vertical same-as columns in associated builders here.
+        self
     }
 }
 
@@ -208,6 +250,9 @@ where
     C: diesel_relations::MandatorySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
+    Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
+    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
@@ -215,8 +260,10 @@ where
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
+        let columns = builder.may_get_columns();
+        self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
             builder_bundle.try_set_mandatory_builder(builder.clone()).map(|_| ())
         })?;
@@ -230,15 +277,20 @@ where
     C: diesel_relations::MandatorySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
+    Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
     TableBuilderBundle<C::Table>: crate::SetMandatoryBuilder<C>,
+    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
+        let columns = builder.may_get_columns();
+        self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {
             builder_bundle.set_mandatory_builder(builder.clone());
         });
@@ -252,6 +304,9 @@ where
     C: diesel_relations::DiscretionarySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
+    Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
+    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
@@ -261,6 +316,8 @@ where
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
+        let columns = builder.may_get_columns();
+        self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
             builder_bundle.try_set_discretionary_builder(builder.clone()).map(|_| ())
         })?;
@@ -274,6 +331,9 @@ where
     C: diesel_relations::DiscretionarySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
+    Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
+    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
@@ -283,6 +343,8 @@ where
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
+        let columns = builder.may_get_columns();
+        self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {
             builder_bundle.set_discretionary_builder(builder.clone());
         });

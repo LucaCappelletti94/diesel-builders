@@ -272,6 +272,21 @@ pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> To
     .into()
 }
 
+/// Generate `TrySetMandatorySameAsColumns` and
+/// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
+/// (0-32).
+#[proc_macro_attribute]
+pub fn impl_try_set_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_try_set_same_as_columns();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Derive macro to automatically implement `GetColumn` for all fields of a
 /// struct.
 ///
@@ -441,19 +456,20 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Derive macro to automatically implement `SetColumn` and `TrySetColumn` for
-/// all fields of a struct.
+/// Derive macro to automatically implement `SetColumn`, `MaySetColumn`, and
+/// `TrySetColumn` for all fields of a struct.
 ///
-/// This macro generates both `SetColumn` and `TrySetColumn` implementations for
-/// each field in the struct, assuming:
+/// This macro generates `SetColumn`, `MaySetColumn`, and `TrySetColumn`
+/// implementations for each field in the struct, assuming:
 /// - The struct has a `#[diesel(table_name = ...)]` attribute
 /// - Each field name matches a column name in the table
 /// - Each field is wrapped in `Option<T>`
 /// - Each column implements `TypedColumn` trait
 ///
 /// The `SetColumn` implementation will set the field to `Some(value.clone())`.
-/// The `TrySetColumn` implementation does the same but returns `Ok(())` for
-/// compatibility with fallible operations.
+/// The `MaySetColumn` implementation will set the field if the value is `Some`.
+/// The `TrySetColumn` implementation does the same as `SetColumn` but returns
+/// `Ok(())` for compatibility with fallible operations.
 #[proc_macro_derive(SetColumn)]
 pub fn derive_set_column(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -521,6 +537,17 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
                     #[inline]
                     fn set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> &mut Self {
                         self.#field_name = Some(value.clone());
+                        self
+                    }
+                }
+            },
+            quote::quote! {
+                impl diesel_additions::MaySetColumn<#table_name::#field_name> for #struct_name {
+                    #[inline]
+                    fn may_set_column(&mut self, value: Option<&<#table_name::#field_name as diesel_additions::TypedColumn>::Type>) -> &mut Self {
+                        if let Some(v) = value {
+                            self.#field_name = Some(v.clone());
+                        }
                         self
                     }
                 }
@@ -665,25 +692,6 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 /// This macro should be derived on Model structs to automatically generate
 /// `TypedColumn` implementations for each column based on the struct's field
 /// types.
-///
-/// # Requirements
-///
-/// The struct must have a `#[diesel(table_name = ...)]` attribute.
-///
-/// # Example
-///
-/// ```rust,ignore
-/// #[derive(TableModel)]
-/// #[diesel(table_name = users)]
-/// pub struct User {
-///     pub id: i32,
-///     pub name: String,
-///     pub email: String,
-/// }
-/// ```
-///
-/// This will generate `TypedColumn` implementations for `users::id`,
-/// `users::name`, and `users::email`.
 #[proc_macro_derive(TableModel)]
 pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -1003,4 +1011,86 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         #(#discretionary_impls)*
     }
     .into())
+}
+
+/// Derive macro to automatically implement `HorizontalSameAsGroup` for all
+/// columns in a model struct with empty tuples.
+///
+/// This macro generates `HorizontalSameAsGroup` implementations for each column
+/// in the struct, setting both `MandatoryHorizontalSameAsKeys` and
+/// `DiscretionaryHorizontalSameAsKeys` to `()`.
+#[proc_macro_derive(NoHorizontalSameAsGroup)]
+pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+
+    // Find the diesel(table_name = ...) attribute
+    let table_name = input.attrs.iter().find_map(|attr| {
+        if !attr.path().is_ident("diesel") {
+            return None;
+        }
+
+        let mut table_name = None;
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("table_name") {
+                let value = meta.value()?;
+                let lit: syn::Ident = value.parse()?;
+                table_name = Some(lit);
+                Ok(())
+            } else {
+                Ok(())
+            }
+        });
+        table_name
+    });
+
+    let table_name = match table_name {
+        Some(name) => name,
+        None => {
+            return syn::Error::new_spanned(
+                &input,
+                "NoHorizontalSameAsGroup derive requires a #[diesel(table_name = ...)] attribute",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    let fields = match &input.data {
+        syn::Data::Struct(data) => {
+            match &data.fields {
+                syn::Fields::Named(fields) => &fields.named,
+                _ => {
+                    return syn::Error::new_spanned(
+                        &input,
+                        "NoHorizontalSameAsGroup can only be derived for structs with named fields",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+            }
+        }
+        _ => {
+            return syn::Error::new_spanned(
+                &input,
+                "NoHorizontalSameAsGroup can only be derived for structs",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    let impls = fields.iter().map(|field| {
+        let field_name = field.ident.as_ref().unwrap();
+        quote::quote! {
+            impl diesel_relations::HorizontalSameAsGroup for #table_name::#field_name {
+                type MandatoryHorizontalSameAsKeys = ();
+                type DiscretionaryHorizontalSameAsKeys = ();
+            }
+        }
+    });
+
+    quote::quote! {
+        #(#impls)*
+    }
+    .into()
 }

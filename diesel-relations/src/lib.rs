@@ -9,3 +9,5 @@ pub use horizontal_same_as::{
     DiscretionarySameAsIndex, HorizontalSameAsColumn, HorizontalSameAsKey, HorizontalSameAsKeys,
     MandatorySameAsIndex,
 };
+pub mod horizontal_same_as_group;
+pub use horizontal_same_as_group::HorizontalSameAsGroup;

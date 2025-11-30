@@ -5,7 +5,9 @@
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{GetColumnExt, SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{
+    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+};
 use diesel_relations::Descendant;
 
 diesel::table! {
@@ -41,7 +43,16 @@ diesel::allow_tables_to_appear_in_same_query!(users, user_profiles);
 // Users table models
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = users)]
 /// A user model.
@@ -72,7 +83,17 @@ impl TableAddition for users::table {
 
 // UserProfiles table models
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
+#[derive(
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    TableModel,
+    NoHorizontalSameAsGroup,
+)]
 #[diesel(table_name = user_profiles)]
 /// A user profile model.
 pub struct UserProfile {

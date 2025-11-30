@@ -253,6 +253,16 @@ pub fn generate_get_columns() -> TokenStream {
             })
             .collect();
 
+        let may_set_individual_calls: Vec<_> = type_params
+            .iter()
+            .zip(&indices)
+            .map(|(t, idx)| {
+                quote! {
+                    <T as crate::set_column::MaySetColumn<#t>>::may_set_column(self, values.#idx);
+                }
+            })
+            .collect();
+
         let try_may_set_individual_calls: Vec<_> = type_params
             .iter()
             .zip(&indices)
@@ -296,6 +306,17 @@ pub fn generate_get_columns() -> TokenStream {
                 #[inline]
                 fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> &mut Self {
                     #(#set_individual_calls)*
+                    self
+                }
+            }
+
+            impl<T, #(#type_params: TypedColumn),*> MaySetColumns<(#(#type_params,)*)> for T
+            where
+                #(T: crate::set_column::MaySetColumn<#type_params>,)*
+            {
+                #[inline]
+                fn may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> &mut Self {
+                    #(#may_set_individual_calls)*
                     self
                 }
             }
@@ -609,13 +630,16 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
     let impls = generate_all_sizes(|size| {
         let type_params = type_params(size);
 
+        let additional_requirements = if size > 0 { Some(quote! {+ HasPrimaryKey }) } else { None };
+
         quote! {
             impl<T, #(#type_params),*> HorizontalSameAsKeys<T> for (#(#type_params,)*)
             where
-                T: diesel::Table,
+                T: diesel::Table #additional_requirements,
                 #(#type_params: HorizontalSameAsKey<Table = T>,)*
             {
                 type ReferencedTables = (#(<#type_params as SingletonForeignKey>::ReferencedTable,)*);
+                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as NthIndex<TupleIndex0>>::NthType,)*);
             }
         }
     });
@@ -679,5 +703,123 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
 
     quote! {
         #impls
+    }
+}
+
+/// Generate `TrySetMandatorySameAsColumns` and
+/// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
+/// (0-32).
+pub fn generate_try_set_same_as_columns() -> TokenStream {
+    // Generate empty tuple implementation
+    let empty_impl = quote! {
+        impl<Type, T: HasTable> TrySetMandatorySameAsColumns<Type, (), ()> for T
+        {
+            #[inline]
+            fn try_set_mandatory_same_as_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
+                Ok(self)
+            }
+        }
+
+        impl<Type, T: HasTable> TryMaySetDiscretionarySameAsColumns<Type, (), ()> for T
+        {
+            #[inline]
+            fn try_may_set_discretionary_same_as_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
+                Ok(self)
+            }
+        }
+    };
+
+    // Generate implementations for tuples of size 1-32
+    let tuple_impls = (1..=MAX_TUPLE_SIZE).map(|size| {
+        let keys = type_params(size);
+        let column_types = keys.iter().map(|key| {
+            quote! {
+                <<#key as HorizontalSameAsKey>::ForeignColumns as typed_tuple::prelude::NthIndex<typed_tuple::prelude::TupleIndex0>>::NthType
+            }
+        }).collect::<Vec<_>>();
+
+        // Generate the try_set_mandatory_same_as_column calls
+        let mandatory_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
+            quote! {
+                <
+                    Self as TrySetMandatorySameAsColumn<
+                        #key,
+                        #column_type
+                    >
+                >::try_set_mandatory_same_as_column(self, value)?;
+            }
+        });
+        // Generate the try_set_discretionary_same_as_column calls
+        let discretionary_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
+            quote! {
+                <
+                    Self as TryMaySetDiscretionarySameAsColumn<
+                        #key,
+                        #column_type
+                    >
+                >::try_may_set_discretionary_same_as_column(self, value)?;
+            }
+        });
+        // Generate where clauses for TrySetMandatorySameAsColumn
+        let mandatory_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
+            quote! {
+                Self: TrySetMandatorySameAsColumn<#key, #column_type>
+            }
+        });
+        // Generate where clauses for TryMaySetDiscretionarySameAsColumn
+        let discretionary_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
+            quote! {
+                Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type>
+            }
+        });
+
+        quote! {
+            impl<
+                #(#keys: MandatorySameAsIndex<Table = T>,)*
+                T: BundlableTable + HasPrimaryKey
+            > TrySetMandatorySameAsColumns<
+                <<T as Table>::PrimaryKey as TypedColumn>::Type,
+                (#(#keys,)*),
+                (#(#column_types,)*)
+            > for CompletedTableBuilderBundle<T>
+            where
+                #(#mandatory_trait_bounds,)*
+            {
+                #[inline]
+                fn try_set_mandatory_same_as_columns(
+                    &mut self,
+                    value: &<<T as diesel::Table>::PrimaryKey as TypedColumn>::Type
+                ) -> anyhow::Result<&mut Self> {
+                    #(#mandatory_calls)*
+                    Ok(self)
+                }
+            }
+
+            impl<
+                #(#keys: DiscretionarySameAsIndex<Table = T>,)*
+                T: BundlableTable + HasPrimaryKey
+            > TryMaySetDiscretionarySameAsColumns<
+                <<T as Table>::PrimaryKey as TypedColumn>::Type,
+                (#(#keys,)*),
+                (#(#column_types,)*)
+            > for CompletedTableBuilderBundle<T>
+            where
+                #(#discretionary_trait_bounds,)*
+            {
+                #[inline]
+                fn try_may_set_discretionary_same_as_columns(
+                    &mut self,
+                    value: &<<Self::Table as diesel::Table>::PrimaryKey as TypedColumn>::Type
+                ) -> anyhow::Result<&mut Self> {
+                    #(#discretionary_calls)*
+                    Ok(self)
+                }
+            }
+        }
+    }).collect::<TokenStream>();
+
+    quote! {
+        #empty_impl
+        #tuple_impls
     }
 }

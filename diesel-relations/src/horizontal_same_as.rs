@@ -7,7 +7,9 @@ use diesel_additions::{
     columns::NonEmptyProjection, table_addition::HasPrimaryKey,
 };
 use diesel_builders_macros::impl_horizontal_same_as_keys;
-use typed_tuple::prelude::TupleIndex;
+use typed_tuple::prelude::{NthIndex, TupleIndex, TupleIndex0, TypedFirst};
+
+use crate::ancestors::DescendantWithSelf;
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<
@@ -29,13 +31,25 @@ where
 }
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
-pub trait HorizontalSameAsKey: SingletonForeignKey {
+pub trait HorizontalSameAsKey:
+    SingletonForeignKey<ReferencedTable: DescendantWithSelf, Table: HasPrimaryKey>
+{
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: NonEmptyProjection<Table = Self::Table>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table>
+        + TypedFirst<<<Self as Column>::Table as Table>::PrimaryKey>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
-    type ForeignColumns: NonEmptyProjection<Table = Self::ReferencedTable>;
+    type ForeignColumns: NonEmptyProjection<
+            Table = Self::ReferencedTable,
+            Types = <Self::HostColumns as Columns>::Types,
+        > + NthIndex<
+            TupleIndex0,
+            NthType: TypedColumn<
+                Type = <<<Self as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
+                Table = Self::ReferencedTable,
+            >,
+        >;
 }
 
 /// Index in a tuple for a mandatory same-as relationship.
@@ -61,4 +75,7 @@ pub trait HorizontalSameAsKeys<T: diesel::Table>: Projection<T> {
             PrimaryKeys: Columns<Types = <Self as Columns>::Types>,
             Models: NonCompositePrimaryKeyTableModels,
         >;
+    /// The set of foreign columns in other tables which have
+    /// an horizontal same-as relationship defined by this key.
+    type FirstForeignColumns: Columns;
 }

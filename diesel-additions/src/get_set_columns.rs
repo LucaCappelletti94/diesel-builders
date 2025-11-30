@@ -46,6 +46,22 @@ impl<T> SetColumns<()> for T {
     }
 }
 
+/// Marker trait indicating a builder which may set multiple columns.
+pub trait MaySetColumns<CS: Columns> {
+    /// May set the values of the specified columns.
+    fn may_set_columns(
+        &mut self,
+        values: <<<CS as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output,
+    ) -> &mut Self;
+}
+
+impl<T> MaySetColumns<()> for T {
+    #[inline]
+    fn may_set_columns(&mut self, _values: ()) -> &mut Self {
+        self
+    }
+}
+
 /// Marker trait indicating a builder can set multiple homogeneous columns.
 pub trait SetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: SetColumns<CS> {
     /// Set the values of the specified columns.

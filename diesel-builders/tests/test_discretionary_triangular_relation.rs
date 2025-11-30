@@ -9,13 +9,21 @@
 //! from C to A is NOT referenced in B using a same-as relationship, which means
 //! that the C record associated with a B record may reference the same A record
 //! as B does, but it is not required to and the user can choose to set it or
-//! not.
+//! not. Additionally, there exist a same-as relationship between B and C on
+//! another column, which means that when setting the builder for the C record
+//! in the B builder, that column value needs to be set, and when it is not set
+//! by setting the associated C builder, it must be set manually in B.
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
-use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetDiscretionaryBuilderExt};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
-use diesel_relations::Descendant;
+use diesel_builders::{
+    BuildableTable, BundlableTable, NestedInsert, SetDiscretionaryBuilderExt,
+    SetDiscretionaryModelExt,
+};
+use diesel_builders_macros::{
+    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+};
+use diesel_relations::{Descendant, HorizontalSameAsGroup};
 
 // Define table A (root table)
 diesel::table! {
@@ -51,6 +59,8 @@ diesel::table! {
         c_id -> Integer,
         /// A simple column for table B.
         column_b -> Text,
+        /// The remote column_c value from table C that B references via c_id.
+        remote_column_c -> Text,
     }
 }
 
@@ -64,7 +74,16 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Table A models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_a)]
 /// Model for table A.
@@ -91,7 +110,16 @@ impl TableAddition for table_a::table {
 
 // Table C models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.
@@ -131,6 +159,13 @@ pub struct TableB {
     pub c_id: i32,
     /// Column B value.
     pub column_b: String,
+    /// The remote column_c value from table C that B references via c_id.
+    pub remote_column_c: String,
+}
+
+impl HorizontalSameAsGroup for table_b::id {
+    type MandatoryHorizontalSameAsKeys = ();
+    type DiscretionaryHorizontalSameAsKeys = (table_b::c_id,);
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -149,12 +184,15 @@ pub struct NewTableB {
     pub c_id: Option<i32>,
     /// Column B value.
     pub column_b: Option<String>,
+    /// The remote column_c value from table C that B references via c_id.
+    pub remote_column_c: Option<String>,
 }
 
 impl TableAddition for table_b::table {
     type InsertableModel = NewTableB;
     type Model = TableB;
-    type InsertableColumns = (table_b::id, table_b::c_id, table_b::column_b);
+    type InsertableColumns =
+        (table_b::id, table_b::c_id, table_b::column_b, table_b::remote_column_c);
 }
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references
@@ -170,8 +208,8 @@ impl diesel_relations::HorizontalSameAsKey for table_b::c_id {
     // HostColumns are columns in table_b (the same table) that relate to this key
     // In this case, there are no other columns in table_b that need to match
     // Actually, we need to think about this differently...
-    type HostColumns = (table_b::id,);
-    type ForeignColumns = (table_c::a_id,);
+    type HostColumns = (table_b::id, table_b::remote_column_c);
+    type ForeignColumns = (table_c::a_id, table_c::column_c);
 }
 
 #[diesel_builders_macros::bundlable_table]
@@ -199,7 +237,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
             id INTEGER PRIMARY KEY NOT NULL,
             a_id INTEGER NOT NULL REFERENCES table_a(id),
             column_c TEXT NOT NULL,
-			UNIQUE(id, a_id)
+			UNIQUE(id, column_c)
         )",
     )
     .execute(&mut conn)?;
@@ -210,7 +248,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
             id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id),
             c_id INTEGER NOT NULL REFERENCES table_c(id),
             column_b TEXT NOT NULL,
-			FOREIGN KEY (id, c_id) REFERENCES table_c(id, a_id)
+            remote_column_c TEXT NOT NULL,
+			FOREIGN KEY (c_id, remote_column_c) REFERENCES table_c(id, column_c)
         )",
     )
     .execute(&mut conn)?;
@@ -234,24 +273,37 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let mut c_builder = table_c::table::builder();
     c_builder
         .set_column::<table_c::a_id>(&a.id)
-        .set_column::<table_c::column_c>(&"Value C".to_string());
+        .set_column::<table_c::column_c>(&"Value C for B".to_string());
 
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
-    let b = table_b::table::builder()
+    let triangular_b = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
         .set_discretionary_builder::<table_b::c_id>(c_builder)
         .insert(&mut conn)?;
 
     let associated_a: TableA =
-        table_a::table.filter(table_a::id.eq(b.id)).first(&mut conn).unwrap();
+        table_a::table.filter(table_a::id.eq(triangular_b.id)).first(&mut conn).unwrap();
     assert_eq!(associated_a.column_a, "Value A for B");
 
     let associated_c: TableC =
-        table_c::table.filter(table_c::id.eq(b.c_id)).first(&mut conn).unwrap();
-    assert_eq!(associated_c.column_c, "Value C");
+        table_c::table.filter(table_c::id.eq(triangular_b.c_id)).first(&mut conn).unwrap();
+    assert_eq!(associated_c.column_c, "Value C for B");
+    assert_eq!(associated_c.a_id, triangular_b.id);
+    assert_eq!(associated_c.a_id, associated_a.id);
+
+    let indipendent_b = table_b::table::builder()
+        .set_column::<table_a::column_a>(&"Independent A for B".to_string())
+        .set_column::<table_b::column_b>(&"Independent B".to_string())
+        .set_discretionary_model::<table_b::c_id>(&c)
+        .insert(&mut conn)?;
+
+    assert_eq!(indipendent_b.column_b, "Independent B");
+    assert_eq!(indipendent_b.remote_column_c, "Value C");
+    assert_ne!(indipendent_b.id, triangular_b.id);
+    assert_ne!(indipendent_b.id, c.a_id);
 
     Ok(())
 }

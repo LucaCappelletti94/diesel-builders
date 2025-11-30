@@ -8,7 +8,7 @@ either = "1.11.0"
 diesel = "2.3.4"
 anyhow = "1.0.71"
 typenum = "1.19.0"
-tuple_set = "0.1.2"
+tuple_set = "0.1.3"
 typed_tuple = {git = "https://github.com/LucaCappelletti94/typed_tuple", branch = "master"}
 diesel-additions = { path = "diesel-additions" }
 diesel-relations = { path = "diesel-relations" }

@@ -2,16 +2,21 @@
 //! a table `InsertableModel` and its mandatory and discretionary associated
 //! builders.
 
-use diesel::associations::HasTable;
+use diesel::{Column, associations::HasTable};
 use diesel_additions::{
-    ClonableTuple, Columns, DebuggableTuple, DefaultTuple, FlatInsert, MayGetColumn,
+    ClonableTuple, Columns, DebuggableTuple, DefaultTuple, FlatInsert, MayGetColumn, MaySetColumn,
     NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition, Tables,
     TransposeOptionTuple, TryMaySetColumns, TrySetColumn, TrySetColumns, TypedColumn,
 };
-use diesel_relations::HorizontalSameAsKeys;
+use diesel_relations::{
+    DiscretionarySameAsIndex, HorizontalSameAsGroup, HorizontalSameAsKeys, MandatorySameAsIndex,
+};
+use typed_tuple::prelude::TypedTuple;
 
 use crate::{
-    BuildableTables, NestedInsert,
+    BuildableTable, BuildableTables, NestedInsert, TableBuilder,
+    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns,
+    TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
@@ -145,10 +150,23 @@ where
     }
 }
 
-impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
+impl<T, C> MaySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable,
     C: TypedColumn,
+    T::InsertableModel: MaySetColumn<C>,
+{
+    #[inline]
+    fn may_set_column(&mut self, value: Option<&C::Type>) -> &mut Self {
+        self.insertable_model.may_set_column(value);
+        self
+    }
+}
+
+impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: TypedColumn<Table = T> + HorizontalSameAsGroup,
     T::InsertableModel: TrySetColumn<C>,
 {
     #[inline]
@@ -184,14 +202,39 @@ where
     }
 }
 
-impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
+impl<T, C> MaySetColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,
     C: TypedColumn,
+    T::InsertableModel: MaySetColumn<C>,
+{
+    #[inline]
+    fn may_set_column(&mut self, value: Option<&C::Type>) -> &mut Self {
+        self.insertable_model.may_set_column(value);
+        self
+    }
+}
+
+impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
+where
+    T: BundlableTable,
+    C: TypedColumn<Table=<Self as HasTable>::Table> + HorizontalSameAsGroup,
+    Self: TryMaySetDiscretionarySameAsColumns<
+        C::Type,
+        C::DiscretionaryHorizontalSameAsKeys,
+        <C::DiscretionaryHorizontalSameAsKeys as HorizontalSameAsKeys<C::Table>>::FirstForeignColumns,
+    >,
+    Self: TrySetMandatorySameAsColumns<
+        C::Type,
+        C::MandatoryHorizontalSameAsKeys,
+        <C::MandatoryHorizontalSameAsKeys as HorizontalSameAsKeys<C::Table>>::FirstForeignColumns,
+    >,
     T::InsertableModel: TrySetColumn<C>,
 {
     #[inline]
     fn try_set_column(&mut self, value: &C::Type) -> anyhow::Result<&mut Self> {
+        self.try_may_set_discretionary_same_as_columns(value)?;
+        self.try_set_mandatory_same_as_columns(value)?;
         self.insertable_model.try_set_column(value)?;
         Ok(self)
     }
@@ -267,7 +310,10 @@ where
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as diesel_relations::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
-    fn try_set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
+    fn try_set_discretionary_builder(
+        &mut self,
+        builder: crate::TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+    ) -> anyhow::Result<&mut Self> {
         use typed_tuple::prelude::TypedTuple;
         if self.discretionary_associated_builders.get().is_some() {
             anyhow::bail!(
@@ -279,6 +325,48 @@ where
         self.discretionary_associated_builders.apply(|opt| {
             *opt = Some(builder.clone());
         });
+        Ok(self)
+    }
+}
+
+impl<Key: MandatorySameAsIndex<Table: BundlableTable, ReferencedTable: BuildableTable>, C> TrySetMandatorySameAsColumn<Key, C>
+    for CompletedTableBuilderBundle<<Key as Column>::Table>
+where
+    C: TypedColumn<Table= Key::ReferencedTable>,
+    <<<<Key as Column>::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders: TypedTuple<<Key as MandatorySameAsIndex>::Idx, TableBuilder<<C as Column>::Table>>,
+    TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
+{
+    #[inline]
+    fn try_set_mandatory_same_as_column(
+        &mut self,
+        value: &<C as TypedColumn>::Type,
+    ) -> anyhow::Result<&mut Self> {
+        self.mandatory_associated_builders.map_mut(|builder: &mut TableBuilder<<C as Column>::Table>| {
+            builder.try_set_column(value).map(|_| ())
+        })?;
+        Ok(self)
+    }
+}
+
+impl<Key: DiscretionarySameAsIndex<Table: BundlableTable, ReferencedTable: BuildableTable>, C> TryMaySetDiscretionarySameAsColumn<Key, C>
+    for CompletedTableBuilderBundle<<Key as Column>::Table>
+where
+    C: TypedColumn<Table= Key::ReferencedTable>,
+    <<<<<Key as Column>::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders as diesel_additions::OptionTuple>::Output: TypedTuple<<Key as DiscretionarySameAsIndex>::Idx, Option<TableBuilder<<C as Column>::Table>>>,
+    TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
+{
+    #[inline]
+    fn try_may_set_discretionary_same_as_column(
+        &mut self,
+        value: &<C as TypedColumn>::Type,
+    ) -> anyhow::Result<&mut Self> {
+        self.discretionary_associated_builders.map_mut(|opt_builder: &mut Option<TableBuilder<<C as Column>::Table>>| {
+            if let Some(builder) = opt_builder {
+                builder.try_set_column(value).map(|_| ())
+            } else {
+                Ok(())
+            }
+        })?;
         Ok(self)
     }
 }

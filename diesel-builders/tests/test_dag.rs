@@ -9,7 +9,9 @@
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{
+    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+};
 use diesel_relations::Descendant;
 
 // Define table A (root table)
@@ -67,7 +69,16 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d
 
 // Table A models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_a)]
 /// A model for table A.
@@ -90,7 +101,17 @@ impl TableAddition for table_a::table {
 }
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
+#[derive(
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    TableModel,
+    NoHorizontalSameAsGroup,
+)]
 #[diesel(table_name = table_b)]
 /// A model for table B.
 pub struct TableB {
@@ -124,7 +145,17 @@ impl BundlableTable for table_b::table {
 }
 
 // Table C models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
+#[derive(
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    TableModel,
+    NoHorizontalSameAsGroup,
+)]
 #[diesel(table_name = table_c)]
 /// A model for table C.
 pub struct TableC {
@@ -158,7 +189,17 @@ impl BundlableTable for table_c::table {
 }
 
 // Table D models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
+#[derive(
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    TableModel,
+    NoHorizontalSameAsGroup,
+)]
 #[diesel(table_name = table_d)]
 /// A model for table D.
 pub struct TableD {

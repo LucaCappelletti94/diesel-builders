@@ -8,13 +8,17 @@
 //! Specifically, the relationship is mandatory, that is the foreign key from
 //! C to A is referenced in B using a same-as relationship, which means that
 //! the C record associated with a B record must reference the same A record as
-//! B does.
+//! B does. Furthermore, another column in B is linked via the same-as
+//! relationship to a column in C, value which needs to be set when setting the
+//! builder for the C record in the B builder.
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
-use diesel_relations::Descendant;
+use diesel_builders_macros::{
+    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+};
+use diesel_relations::{Descendant, HorizontalSameAsGroup};
 
 // Define table A (root table)
 diesel::table! {
@@ -50,6 +54,8 @@ diesel::table! {
         c_id -> Integer,
         /// A simple column for table B.
         column_b -> Text,
+        /// The remote column_c value from table C that B references via c_id.
+        remote_column_c -> Text,
     }
 }
 
@@ -63,7 +69,16 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Table A models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_a)]
 /// Model for table A.
@@ -90,7 +105,16 @@ impl TableAddition for table_a::table {
 
 // Table C models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.
@@ -130,6 +154,13 @@ pub struct TableB {
     pub c_id: i32,
     /// Column B value.
     pub column_b: String,
+    /// The remote column_c value from table C that B references via c_id.
+    pub remote_column_c: String,
+}
+
+impl HorizontalSameAsGroup for table_b::id {
+    type MandatoryHorizontalSameAsKeys = (table_b::c_id,);
+    type DiscretionaryHorizontalSameAsKeys = ();
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -148,12 +179,15 @@ pub struct NewTableB {
     pub c_id: Option<i32>,
     /// Column B value.
     pub column_b: Option<String>,
+    /// The remote column_c value from table C that B references via c_id.
+    pub remote_column_c: Option<String>,
 }
 
 impl TableAddition for table_b::table {
     type InsertableModel = NewTableB;
     type Model = TableB;
-    type InsertableColumns = (table_b::id, table_b::c_id, table_b::column_b);
+    type InsertableColumns =
+        (table_b::id, table_b::c_id, table_b::column_b, table_b::remote_column_c);
 }
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references
@@ -169,8 +203,8 @@ impl diesel_relations::HorizontalSameAsKey for table_b::c_id {
     // HostColumns are columns in table_b (the same table) that relate to this key
     // In this case, there are no other columns in table_b that need to match
     // Actually, we need to think about this differently...
-    type HostColumns = (table_b::id,);
-    type ForeignColumns = (table_c::a_id,);
+    type HostColumns = (table_b::id, table_b::remote_column_c);
+    type ForeignColumns = (table_c::a_id, table_c::column_c);
 }
 
 #[diesel_builders_macros::bundlable_table]
@@ -198,7 +232,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
             id INTEGER PRIMARY KEY NOT NULL,
             a_id INTEGER NOT NULL REFERENCES table_a(id),
             column_c TEXT NOT NULL,
-			UNIQUE(id, a_id)
+			UNIQUE(id, a_id),
+            UNIQUE(id, column_c)
         )",
     )
     .execute(&mut conn)?;
@@ -209,7 +244,9 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
             id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id),
             c_id INTEGER NOT NULL REFERENCES table_c(id),
             column_b TEXT NOT NULL,
-			FOREIGN KEY (id, c_id) REFERENCES table_c(id, a_id)
+            remote_column_c TEXT NOT NULL,
+			FOREIGN KEY (c_id, id) REFERENCES table_c(id, a_id),
+            FOREIGN KEY (c_id, remote_column_c) REFERENCES table_c(id, column_c)
         )",
     )
     .execute(&mut conn)?;
@@ -251,6 +288,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let associated_c: TableC =
         table_c::table.filter(table_c::id.eq(b.c_id)).first(&mut conn).unwrap();
     assert_eq!(associated_c.column_c, "Value C");
+    assert_eq!(associated_c.a_id, b.id);
+    assert_eq!(associated_c.a_id, associated_a.id);
 
     Ok(())
 }
