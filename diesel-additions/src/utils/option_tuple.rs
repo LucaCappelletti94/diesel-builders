@@ -28,5 +28,6 @@ pub trait TransposeOptionTuple {
 }
 
 // Generate implementations for all tuple sizes (1-32)
+#[allow(clippy::unused_unit)]
 #[impl_option_tuple]
 mod impls {}

@@ -9,6 +9,7 @@ pub trait DefaultTuple {
 }
 
 // Generate implementations for all tuple sizes (1-32)
+#[allow(clippy::unused_unit)]
 #[impl_default_tuple]
 mod impls {}
 
@@ -18,8 +19,8 @@ mod tests {
 
     #[test]
     fn default_tuple_unit() {
-        let result = <()>::default_tuple();
-        assert_eq!(result, ());
+        <()>::default_tuple();
+        assert_eq!((), ());
     }
 
     #[test]

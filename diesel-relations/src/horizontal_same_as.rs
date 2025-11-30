@@ -25,8 +25,10 @@ where
     KeyColumn: SingleColumnForeignKey<<<Self as Column>::Table as Table>::PrimaryKey>,
     HostColumn: TypedColumn<Table = KeyColumn::Table>,
     ForeignColumn: TypedColumn<Table: HasPrimaryKey>,
-    (KeyColumn, HostColumn):
-        ForeignKey<(<<ForeignColumn as Column>::Table as Table>::PrimaryKey, ForeignColumn)>,
+    (KeyColumn, HostColumn): ForeignKey<(
+        <<ForeignColumn as Column>::Table as Table>::PrimaryKey,
+        ForeignColumn,
+    )>,
 {
 }
 

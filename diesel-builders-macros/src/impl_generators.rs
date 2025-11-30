@@ -189,7 +189,11 @@ pub fn generate_tables() -> TokenStream {
     let impls = generate_all_sizes(|size| {
         let type_params = type_params(size);
 
-        let maybe_where = if size == 0 { None } else { Some(quote! { where }) };
+        let maybe_where = if size == 0 {
+            None
+        } else {
+            Some(quote! { where })
+        };
 
         quote! {
             impl<#(#type_params),*> Tables for (#(#type_params,)*)
@@ -222,6 +226,7 @@ pub fn generate_tables() -> TokenStream {
 }
 
 /// Generate GetColumns and related trait implementations
+#[allow(clippy::too_many_lines)]
 pub fn generate_get_columns() -> TokenStream {
     let impls = generate_all_sizes(|size| {
         if size == 0 {
@@ -275,7 +280,10 @@ pub fn generate_get_columns() -> TokenStream {
             })
             .collect();
 
-        let value_replicates = type_params.iter().map(|_| quote! { value }).collect::<Vec<_>>();
+        let value_replicates = type_params
+            .iter()
+            .map(|_| quote! { value })
+            .collect::<Vec<_>>();
 
         quote! {
             impl<T, #(#type_params),*> GetColumns<(#(#type_params,)*)> for T
@@ -630,7 +638,11 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
     let impls = generate_all_sizes(|size| {
         let type_params = type_params(size);
 
-        let additional_requirements = if size > 0 { Some(quote! {+ HasPrimaryKey }) } else { None };
+        let additional_requirements = if size > 0 {
+            Some(quote! {+ HasPrimaryKey })
+        } else {
+            None
+        };
 
         quote! {
             impl<T, #(#type_params),*> HorizontalSameAsKeys<T> for (#(#type_params,)*)

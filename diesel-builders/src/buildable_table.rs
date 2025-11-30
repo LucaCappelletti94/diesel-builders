@@ -16,6 +16,7 @@ pub trait BuildableTable:
 {
     /// Returns a new instance of a builder for the current table.
     #[inline]
+    #[must_use]
     fn builder() -> TableBuilder<Self> {
         TableBuilder::default()
     }

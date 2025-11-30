@@ -10,9 +10,7 @@ pub trait GetColumns<CS: Columns> {
 
 impl<T> GetColumns<()> for T {
     #[inline]
-    fn get_columns(&self) -> () {
-        ()
-    }
+    fn get_columns(&self) {}
 }
 
 /// Marker trait indicating a builder which may get multiple columns.
@@ -25,9 +23,7 @@ pub trait MayGetColumns<CS: Columns> {
 
 impl<T> MayGetColumns<()> for T {
     #[inline]
-    fn may_get_columns(&self) -> () {
-        ()
-    }
+    fn may_get_columns(&self) {}
 }
 
 /// Marker trait indicating a builder can set multiple columns.
@@ -78,6 +74,10 @@ impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
 /// Marker trait indicating a builder can try to set multiple columns.
 pub trait TrySetColumns<CS: Columns> {
     /// Attempt to set the values of the specified columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any column cannot be set.
     fn try_set_columns(
         &mut self,
         values: <<CS as Columns>::Types as crate::RefTuple>::Output<'_>,
@@ -94,6 +94,10 @@ impl<T> TrySetColumns<()> for T {
 /// Marker trait indicating a builder which may try to set multiple columns.
 pub trait TryMaySetColumns<CS: Columns> {
     /// Attempt to set the values of the specified columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any column cannot be set.
     fn try_may_set_columns(
         &mut self,
         values: <<<CS as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output,
@@ -111,6 +115,10 @@ impl<T> TryMaySetColumns<()> for T {
 /// columns.
 pub trait TrySetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: TrySetColumns<CS> {
     /// Attempt to set the values of the specified columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any column cannot be set.
     fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self>;
 }
 

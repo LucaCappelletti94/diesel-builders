@@ -10,7 +10,9 @@ pub const MAX_TUPLE_SIZE: usize = 32;
 
 /// Generate a list of type parameter identifiers (T1, T2, ..., TN)
 pub fn type_params(count: usize) -> Vec<Ident> {
-    (1..=count).map(|i| Ident::new(&format!("T{}", i), Span::call_site())).collect()
+    (1..=count)
+        .map(|i| Ident::new(&format!("T{i}"), Span::call_site()))
+        .collect()
 }
 
 /// Generate all tuple implementations from size 0 (unit) to MAX_TUPLE_SIZE
@@ -18,5 +20,5 @@ pub fn generate_all_sizes<F>(impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
 {
-    (0..=MAX_TUPLE_SIZE).map(|size| impl_fn(size)).collect()
+    (0..=MAX_TUPLE_SIZE).map(impl_fn).collect()
 }

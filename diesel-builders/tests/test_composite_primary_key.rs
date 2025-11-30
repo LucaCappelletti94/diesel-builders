@@ -52,7 +52,11 @@ pub struct NewUserRole {
 impl TableAddition for user_roles::table {
     type InsertableModel = NewUserRole;
     type Model = UserRole;
-    type InsertableColumns = (user_roles::user_id, user_roles::role_id, user_roles::assigned_at);
+    type InsertableColumns = (
+        user_roles::user_id,
+        user_roles::role_id,
+        user_roles::assigned_at,
+    );
 }
 
 #[test]
@@ -99,7 +103,10 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     assert_eq!(user_role.get_column::<user_roles::user_id>(), &1);
     assert_eq!(user_role.get_column::<user_roles::role_id>(), &10);
-    assert_eq!(user_role.get_column::<user_roles::assigned_at>(), &"2025-01-01".to_string());
+    assert_eq!(
+        user_role.get_column::<user_roles::assigned_at>(),
+        &"2025-01-01".to_string()
+    );
 
     // We attempt to query the inserted user role to ensure everything worked
     let queried_user_role: UserRole = user_roles::table

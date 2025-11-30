@@ -73,13 +73,22 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     builder.try_set_column::<users::name>(&"Alice".to_string())?;
 
-    assert_eq!(builder.may_get_column::<users::name>(), Some(&"Alice".to_string()));
+    assert_eq!(
+        builder.may_get_column::<users::name>(),
+        Some(&"Alice".to_string())
+    );
     assert_eq!(builder.may_get_column::<users::email>(), None);
 
     builder.try_set_column::<users::email>(&"alice@example.com".to_string())?;
 
-    assert_eq!(builder.may_get_column::<users::name>(), Some(&"Alice".to_string()));
-    assert_eq!(builder.may_get_column::<users::email>(), Some(&"alice@example.com".to_string()));
+    assert_eq!(
+        builder.may_get_column::<users::name>(),
+        Some(&"Alice".to_string())
+    );
+    assert_eq!(
+        builder.may_get_column::<users::email>(),
+        Some(&"alice@example.com".to_string())
+    );
 
     let user = builder.insert(&mut conn)?;
 
@@ -87,10 +96,15 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user.email, "alice@example.com");
 
     assert_eq!(user.get_column::<users::name>(), &"Alice".to_string());
-    assert_eq!(user.get_column::<users::email>(), &"alice@example.com".to_string());
+    assert_eq!(
+        user.get_column::<users::email>(),
+        &"alice@example.com".to_string()
+    );
 
     // We attempt to query the inserted user to ensure everything worked correctly.
-    let queried_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
+    let queried_user: User = users::table
+        .filter(users::id.eq(user.id))
+        .first(&mut conn)?;
     assert_eq!(user, queried_user);
 
     // We test the chained variant.
@@ -100,9 +114,15 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     assert_eq!(another_user.get_column::<users::name>(), &"Bob".to_string());
-    assert_eq!(another_user.get_column::<users::email>(), &"bob@example.com".to_string());
+    assert_eq!(
+        another_user.get_column::<users::email>(),
+        &"bob@example.com".to_string()
+    );
 
-    assert_ne!(user.get_column::<users::id>(), another_user.get_column::<users::id>());
+    assert_ne!(
+        user.get_column::<users::id>(),
+        another_user.get_column::<users::id>()
+    );
 
     Ok(())
 }

@@ -383,7 +383,9 @@ where
         let Some(mandatory_associated_builders) =
             value.mandatory_associated_builders.transpose_option()
         else {
-            return Err(anyhow::anyhow!("Not all mandatory associated builders have been set"));
+            return Err(anyhow::anyhow!(
+                "Not all mandatory associated builders have been set"
+            ));
         };
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
@@ -420,6 +422,10 @@ pub trait BuilderBundles: DefaultTuple + ClonableTuple + DebuggableTuple {
     type CompletedBundles;
 
     /// Attempt to convert all builder bundles to completed builder bundles.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any builder bundle cannot be completed.
     fn try_complete(self) -> anyhow::Result<Self::CompletedBundles>;
 }
 

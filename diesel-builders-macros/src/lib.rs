@@ -321,32 +321,27 @@ pub fn derive_get_column(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "GetColumn derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "GetColumn derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "GetColumn can only be derived for structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "GetColumn can only be derived for structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(&input, "GetColumn can only be derived for structs")
                 .to_compile_error()
@@ -406,32 +401,27 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "MayGetColumn derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "MayGetColumn derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "MayGetColumn can only be derived for structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "MayGetColumn can only be derived for structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(&input, "MayGetColumn can only be derived for structs")
                 .to_compile_error()
@@ -496,32 +486,27 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "SetColumn derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "SetColumn derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "SetColumn can only be derived for structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "SetColumn can only be derived for structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(&input, "SetColumn can only be derived for structs")
                 .to_compile_error()
@@ -604,16 +589,13 @@ pub fn derive_has_table(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "HasTable derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "HasTable derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     quote::quote! {
@@ -657,33 +639,28 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "Root derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "Root derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     // Extract struct fields to generate HorizontalSameAsGroup impls
     let fields = match &input.data {
-        syn::Data::Struct(data_struct) => {
-            match &data_struct.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "Root can only be derived on structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data_struct) => match &data_struct.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "Root can only be derived on structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(&input, "Root can only be derived on structs")
                 .to_compile_error()
@@ -752,32 +729,27 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "TableModel derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "TableModel derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "TableModel can only be derived for structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "TableModel can only be derived for structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(&input, "TableModel can only be derived for structs")
                 .to_compile_error()
@@ -811,6 +783,7 @@ pub fn descendant_of(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     use quote::quote;
 
@@ -846,8 +819,10 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
     let num_ancestors = ancestors.len();
 
     // Generate TupleIndex for self (last position in ancestors + self)
-    let self_idx =
-        syn::Ident::new(&format!("TupleIndex{}", num_ancestors), proc_macro2::Span::call_site());
+    let self_idx = syn::Ident::new(
+        &format!("TupleIndex{num_ancestors}"),
+        proc_macro2::Span::call_site(),
+    );
 
     // Generate DescendantOf implementations for each direct ancestor
     let descendant_of_impls: Vec<_> = ancestors
@@ -861,7 +836,9 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
 
     // Generate DescendantOf implementation for the root (if it's not already in
     // ancestors) We need to check if root_type is different from all ancestors
-    let root_descendant_of_impl = if !ancestors.is_empty() {
+    let root_descendant_of_impl = if ancestors.is_empty() {
+        quote! {}
+    } else {
         // Check if the root is already in the ancestors list by comparing token streams
         let root_tokens = quote! { #root_type }.to_string();
         let is_root_in_ancestors = ancestors.iter().any(|ancestor| {
@@ -869,15 +846,13 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
             ancestor_tokens == root_tokens
         });
 
-        if !is_root_in_ancestors {
+        if is_root_in_ancestors {
+            quote! {}
+        } else {
             quote! {
                 impl diesel_relations::DescendantOf<#root_type> for #table_type {}
             }
-        } else {
-            quote! {}
         }
-    } else {
-        quote! {}
     };
 
     // Generate AncestorOfIndex implementations for each ancestor
@@ -885,7 +860,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         .iter()
         .enumerate()
         .map(|(i, ancestor)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_relations::AncestorOfIndex<#table_type> for #ancestor {
                     type Idx = typed_tuple::prelude::#idx;
@@ -902,7 +877,9 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
     };
 
     // Generate VerticalSameAsGroup implementations for all ancestors
-    let vertical_same_as_impls: Vec<_> = if !ancestors.is_empty() {
+    let vertical_same_as_impls: Vec<_> = if ancestors.is_empty() {
+        vec![]
+    } else {
         let non_root_ancestors = &ancestors[1..];
         ancestors
             .iter()
@@ -932,8 +909,6 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                 }
             })
             .collect()
-    } else {
-        Vec::new()
     };
 
     Ok(quote! {
@@ -956,7 +931,10 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
 fn extract_tuple_types(ty: &syn::Type) -> syn::Result<Vec<syn::Type>> {
     match ty {
         syn::Type::Tuple(tuple) => Ok(tuple.elems.iter().cloned().collect()),
-        _ => Err(syn::Error::new_spanned(ty, "Expected a tuple type for Ancestors")),
+        _ => Err(syn::Error::new_spanned(
+            ty,
+            "Expected a tuple type for Ancestors",
+        )),
     }
 }
 
@@ -1019,7 +997,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .iter()
         .enumerate()
         .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_relations::MandatorySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
@@ -1034,7 +1012,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .iter()
         .enumerate()
         .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{}", i), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_relations::DiscretionarySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
@@ -1098,32 +1076,27 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
         table_name
     });
 
-    let table_name = match table_name {
-        Some(name) => name,
-        None => {
-            return syn::Error::new_spanned(
-                &input,
-                "NoHorizontalSameAsGroup derive requires a #[diesel(table_name = ...)] attribute",
-            )
-            .to_compile_error()
-            .into();
-        }
+    let Some(table_name) = table_name else {
+        return syn::Error::new_spanned(
+            &input,
+            "NoHorizontalSameAsGroup derive requires a #[diesel(table_name = ...)] attribute",
+        )
+        .to_compile_error()
+        .into();
     };
 
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return syn::Error::new_spanned(
-                        &input,
-                        "NoHorizontalSameAsGroup can only be derived for structs with named fields",
-                    )
-                    .to_compile_error()
-                    .into();
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return syn::Error::new_spanned(
+                    &input,
+                    "NoHorizontalSameAsGroup can only be derived for structs with named fields",
+                )
+                .to_compile_error()
+                .into();
             }
-        }
+        },
         _ => {
             return syn::Error::new_spanned(
                 &input,

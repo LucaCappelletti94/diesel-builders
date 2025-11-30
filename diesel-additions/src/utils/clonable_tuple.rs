@@ -7,10 +7,12 @@ use diesel_builders_macros::impl_clonable_tuple;
 /// This trait provides a method to clone a tuple by cloning each element.
 pub trait ClonableTuple {
     /// Clone the tuple by cloning each element.
+    #[must_use]
     fn clone_tuple(&self) -> Self;
 }
 
 /// Generate implementations for all tuple sizes (0-32)
+#[allow(clippy::unused_unit)]
 #[impl_clonable_tuple]
 mod impls {}
 
@@ -19,10 +21,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_clone_tuple_unit() {
+    fn test_clonable_tuple_unit() {
         let tuple = ();
-        let cloned = tuple.clone_tuple();
-        assert_eq!(tuple, cloned);
+        // Call clone_tuple to test it compiles, result is always ()
+        assert_eq!(tuple.clone_tuple(), ());
     }
 
     #[test]
@@ -43,10 +45,10 @@ mod tests {
 
     #[test]
     fn test_clone_tuple_three() {
-        let tuple = (1, 2.5, vec![1, 2, 3]);
+        let tuple = (1, 2.5_f64, vec![1, 2, 3]);
         let cloned = tuple.clone_tuple();
         assert_eq!(tuple.0, cloned.0);
-        assert_eq!(tuple.1, cloned.1);
+        assert!((tuple.1 - cloned.1).abs() < f64::EPSILON);
         assert_eq!(tuple.2, cloned.2);
     }
 

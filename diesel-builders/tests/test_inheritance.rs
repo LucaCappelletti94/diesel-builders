@@ -119,7 +119,11 @@ pub struct NewUserProfile {
 impl TableAddition for user_profiles::table {
     type InsertableModel = NewUserProfile;
     type Model = UserProfile;
-    type InsertableColumns = (user_profiles::id, user_profiles::bio, user_profiles::avatar_url);
+    type InsertableColumns = (
+        user_profiles::id,
+        user_profiles::bio,
+        user_profiles::avatar_url,
+    );
 }
 
 impl BundlableTable for user_profiles::table {
@@ -157,7 +161,9 @@ fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .set_column::<users::email>(&"bob@example.com".to_string())
         .insert(&mut conn)?;
 
-    let loaded_user: User = users::table.filter(users::id.eq(user.id)).first(&mut conn)?;
+    let loaded_user: User = users::table
+        .filter(users::id.eq(user.id))
+        .first(&mut conn)?;
     assert_eq!(loaded_user, user);
 
     // Now create a user profile for this user
@@ -172,8 +178,9 @@ fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(profile.avatar_url, "https://example.com/alice.jpg");
 
     // Verify the profile can be queried
-    let queried_profile: UserProfile =
-        user_profiles::table.filter(user_profiles::id.eq(profile.id)).first(&mut conn)?;
+    let queried_profile: UserProfile = user_profiles::table
+        .filter(user_profiles::id.eq(profile.id))
+        .first(&mut conn)?;
     assert_eq!(profile, queried_profile);
 
     // Verify we can join the tables

@@ -163,8 +163,12 @@ pub struct NewTableB {
 impl TableAddition for table_b::table {
     type InsertableModel = NewTableB;
     type Model = TableB;
-    type InsertableColumns =
-        (table_b::id, table_b::c_id, table_b::column_b, table_b::remote_column_c);
+    type InsertableColumns = (
+        table_b::id,
+        table_b::c_id,
+        table_b::column_b,
+        table_b::remote_column_c,
+    );
 }
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references
@@ -258,12 +262,16 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .set_mandatory_builder::<table_b::c_id>(c_builder)
         .insert(&mut conn)?;
 
-    let associated_a: TableA =
-        table_a::table.filter(table_a::id.eq(b.id)).first(&mut conn).unwrap();
+    let associated_a: TableA = table_a::table
+        .filter(table_a::id.eq(b.id))
+        .first(&mut conn)
+        .unwrap();
     assert_eq!(associated_a.column_a, "Value A for B");
 
-    let associated_c: TableC =
-        table_c::table.filter(table_c::id.eq(b.c_id)).first(&mut conn).unwrap();
+    let associated_c: TableC = table_c::table
+        .filter(table_c::id.eq(b.c_id))
+        .first(&mut conn)
+        .unwrap();
     assert_eq!(associated_c.column_c, "Value C");
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);

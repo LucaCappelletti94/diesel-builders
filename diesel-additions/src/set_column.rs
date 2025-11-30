@@ -45,6 +45,10 @@ where
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetColumn<Column: TypedColumn> {
     /// Attempt to set the value of the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the column cannot be set.
     fn try_set_column(
         &mut self,
         value: &<Column as TypedColumn>::Type,
@@ -61,11 +65,8 @@ where
         &mut self,
         value: &<C as crate::TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self> {
-        match self {
-            Some(inner) => {
-                inner.try_set_column(value)?;
-            }
-            None => {}
+        if let Some(inner) = self {
+            inner.try_set_column(value)?;
         }
         Ok(self)
     }
@@ -129,6 +130,10 @@ impl<T> MaySetColumnExt for T {
 /// type parameter on the method rather than on the trait itself.
 pub trait TrySetColumnExt {
     /// Attempt to set the value of the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,

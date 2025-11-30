@@ -55,5 +55,6 @@ pub trait NonCompositePrimaryKeyTableModels:
 }
 
 // Generate implementations for all tuple sizes (1-32)
+#[allow(clippy::unused_unit)]
 #[diesel_builders_macros::impl_table_model]
 mod impls {}

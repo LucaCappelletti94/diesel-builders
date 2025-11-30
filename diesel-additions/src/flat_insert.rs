@@ -13,6 +13,10 @@ pub trait FlatInsert<Conn: diesel::connection::LoadConnection>: HasTableAddition
     /// # Arguments
     ///
     /// * `conn` - A mutable reference to the database connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `diesel::QueryResult` error if the insertion fails.
     fn flat_insert(
         self,
         conn: &mut Conn,
@@ -37,6 +41,8 @@ where
         self,
         conn: &mut Conn,
     ) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
-        diesel::insert_into(T::table()).values(self).get_result(conn)
+        diesel::insert_into(T::table())
+            .values(self)
+            .get_result(conn)
     }
 }

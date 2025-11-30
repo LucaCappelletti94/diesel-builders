@@ -31,20 +31,26 @@ pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuilder<T> {
     #[inline]
     fn clone(&self) -> Self {
-        Self { bundles: self.bundles.clone_tuple() }
+        Self {
+            bundles: self.bundles.clone_tuple(),
+        }
     }
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("TableBuilder").field("bundles", &self.bundles.debug_tuple()).finish()
+        f.debug_struct("TableBuilder")
+            .field("bundles", &self.bundles.debug_tuple())
+            .finish()
     }
 }
 
 impl<T: BuildableTable> Default for TableBuilder<T> {
     #[inline]
     fn default() -> Self {
-        Self { bundles: DefaultTuple::default_tuple() }
+        Self {
+            bundles: DefaultTuple::default_tuple(),
+        }
     }
 }
 
@@ -99,7 +105,10 @@ where
         Self::Error,
     > {
         let bundles = value.bundles.try_complete()?;
-        Ok(CompletedTableBuilder { bundles, table: PhantomData })
+        Ok(CompletedTableBuilder {
+            bundles,
+            table: PhantomData,
+        })
     }
 }
 
@@ -152,9 +161,11 @@ where
 {
     #[inline]
     fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
-        self.bundles.map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-            builder_bundle.set_column(value);
-        });
+        self.bundles.map(
+            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+                builder_bundle.set_column(value);
+            },
+        );
         // TODO: set vertical same-as columns in associated builders here.
         self
     }
@@ -190,7 +201,8 @@ where
 {
     #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
-        self.bundles.map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
+        self.bundles
+            .map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }
@@ -211,9 +223,11 @@ where
 {
     #[inline]
     fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
-        self.bundles.map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-            builder_bundle.may_set_column(value);
-        });
+        self.bundles.map(
+            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+                builder_bundle.may_set_column(value);
+            },
+        );
         // TODO: set vertical same-as columns in associated builders here.
         self
     }
@@ -235,9 +249,11 @@ where
     #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
         self.bundles
-            .map(|builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                builder_bundle.try_set_column(value).map(|_| ())
-            })
+            .map(
+                |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+                    builder_bundle.try_set_column(value).map(|_| ())
+                },
+            )
             .transpose()?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
@@ -265,7 +281,9 @@ where
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
-            builder_bundle.try_set_mandatory_builder(builder.clone()).map(|_| ())
+            builder_bundle
+                .try_set_mandatory_builder(builder.clone())
+                .map(|_| ())
         })?;
         Ok(self)
     }
@@ -319,7 +337,9 @@ where
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
-            builder_bundle.try_set_discretionary_builder(builder.clone()).map(|_| ())
+            builder_bundle
+                .try_set_discretionary_builder(builder.clone())
+                .map(|_| ())
         })?;
         Ok(self)
     }
@@ -378,7 +398,7 @@ where
 {
     #[inline]
     fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
-        Ok(self.bundles.0.insert(conn)?)
+        self.bundles.0.insert(conn)
     }
 }
 

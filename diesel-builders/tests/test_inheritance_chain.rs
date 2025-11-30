@@ -221,7 +221,9 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(b.column_b, "Value B");
 
     // Verify B can be queried
-    let queried_b: TableB = table_b::table.filter(table_b::id.eq(b.id)).first(&mut conn)?;
+    let queried_b: TableB = table_b::table
+        .filter(table_b::id.eq(b.id))
+        .first(&mut conn)?;
     assert_eq!(queried_b, b);
 
     // Insert into table C (extends B, transitively extends A)
@@ -234,32 +236,38 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(c.column_c, "Value C");
 
     // Verify C can be queried
-    let queried_c: TableC = table_c::table.filter(table_c::id.eq(c.id)).first(&mut conn)?;
+    let queried_c: TableC = table_c::table
+        .filter(table_c::id.eq(c.id))
+        .first(&mut conn)?;
     assert_eq!(queried_c, c);
 
     // Verify we can join through the chain: A -> B
-    let (loaded_a, loaded_b): (TableA, TableB) =
-        table_a::table.inner_join(table_b::table).filter(table_b::id.eq(b.id)).first(&mut conn)?;
+    let (loaded_a, loaded_b): (TableA, TableB) = table_a::table
+        .inner_join(table_b::table)
+        .filter(table_b::id.eq(b.id))
+        .first(&mut conn)?;
 
     assert_eq!(loaded_a.id, loaded_b.id);
     assert_eq!(loaded_b, b);
 
     // Verify we can join through the chain: B -> C
-    let (loaded_b2, loaded_c): (TableB, TableC) =
-        table_b::table.inner_join(table_c::table).filter(table_c::id.eq(c.id)).first(&mut conn)?;
+    let (loaded_b2, loaded_c): (TableB, TableC) = table_b::table
+        .inner_join(table_c::table)
+        .filter(table_c::id.eq(c.id))
+        .first(&mut conn)?;
 
     assert_eq!(loaded_b2.id, loaded_c.id);
     assert_eq!(loaded_c, c);
 
     // Verify we can join through the full chain: A -> B -> C
-    let (loaded_a2, (loaded_b3, loaded_c2)): (TableA, (TableB, TableC)) = table_a::table
+    let (full_chain_a, (full_chain_b, full_chain_c)): (TableA, (TableB, TableC)) = table_a::table
         .inner_join(table_b::table.inner_join(table_c::table))
         .filter(table_c::id.eq(c.id))
         .first(&mut conn)?;
 
-    assert_eq!(loaded_a2.id, loaded_b3.id);
-    assert_eq!(loaded_b3.id, loaded_c2.id);
-    assert_eq!(loaded_c2, c);
+    assert_eq!(full_chain_a.id, full_chain_b.id);
+    assert_eq!(full_chain_b.id, full_chain_c.id);
+    assert_eq!(full_chain_c, c);
 
     Ok(())
 }
