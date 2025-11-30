@@ -1,0 +1,7 @@
+error: Missing DiscretionaryTriangularSameAsColumns associated type
+  --> tests/ui/fail/bundlable_table_missing_discretionary.rs:13:1
+   |
+13 | / impl BundlableTable for TableA {
+14 | |     type MandatoryTriangularSameAsColumns = ();
+15 | | }
+   | |_^

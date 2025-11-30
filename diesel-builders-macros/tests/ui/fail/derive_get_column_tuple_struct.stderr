@@ -1,0 +1,22 @@
+error: GetColumn can only be derived for structs with named fields
+  --> tests/ui/fail/derive_get_column_tuple_struct.rs:10:1
+   |
+10 | / #[diesel(table_name = table_a)]
+11 | | struct User(i32, String);
+   | |_________________________^
+
+error: cannot find attribute `diesel` in this scope
+  --> tests/ui/fail/derive_get_column_tuple_struct.rs:10:3
+   |
+10 | #[diesel(table_name = table_a)]
+   |   ^^^^^^
+   |
+   = note: `diesel` is in scope, but it is a crate, not an attribute
+
+warning: type `table` should have an upper camel case name
+ --> tests/ui/fail/derive_get_column_tuple_struct.rs:6:16
+  |
+6 |     pub struct table;
+  |                ^^^^^ help: convert the identifier to upper camel case: `Table`
+  |
+  = note: `#[warn(non_camel_case_types)]` (part of `#[warn(nonstandard_style)]`) on by default

@@ -1,0 +1,8 @@
+error: MayGetColumn derive requires a #[diesel(table_name = ...)] attribute
+ --> tests/ui/fail/derive_may_get_column_no_diesel_attr.rs:6:1
+  |
+6 | / struct NewUser {
+7 | |     id: Option<i32>,
+8 | |     name: Option<String>,
+9 | | }
+  | |_^
