@@ -103,6 +103,7 @@ Tables extending a parent table via foreign key on the primary key:
 
 ```mermaid
 classDiagram
+    direction BT
     class Users {
         +Integer id PK
         +Text name
@@ -204,6 +205,7 @@ Multiple inheritance where a child table extends multiple parent tables:
 
 ```mermaid
 classDiagram
+    direction BT
     class TableA {
         +Integer id PK
         +Text column_a
@@ -234,6 +236,7 @@ Linear inheritance where tables form a chain:
 
 ```mermaid
 classDiagram
+    direction BT
     class TableA {
         +Integer id PK
         +Text column_a
@@ -258,6 +261,7 @@ A triangular foreign key relationship where values must be consistent:
 
 ```mermaid
 classDiagram
+    direction BT
     class TableA {
         +Integer id PK
         +Text column_a
@@ -429,6 +433,7 @@ Similar to mandatory, but the relationship is optional:
 
 ```mermaid
 classDiagram
+    direction BT
     class TableA {
         +Integer id PK
         +Text column_a
@@ -650,70 +655,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user_role.user_id, 1);
     assert_eq!(user_role.role_id, 10);
     assert_eq!(user_role.assigned_at, "2025-01-01");
-    Ok(())
-}
-```
-
-## Usage Example
-
-```rust
-use diesel_builders::prelude::*;
-
-// Define your table schema
-diesel::table! {
-    users (id) {
-        id -> Integer,
-        name -> Text,
-        email -> Text,
-        bio -> Nullable<Text>,
-    }
-}
-
-// Define your models with derives
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, Root, TableModel)]
-#[diesel(table_name = users)]
-pub struct User {
-    pub id: i32,
-    pub name: String,
-    pub email: String,
-    pub bio: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = users)]
-pub struct NewUser {
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub bio: Option<Option<String>>,
-}
-
-impl TableAddition for users::table {
-    type InsertableModel = NewUser;
-    type Model = User;
-    type InsertableColumns = (users::name, users::email, users::bio);
-}
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
-    
-    // Create the table
-    diesel::sql_query(
-        "CREATE TABLE users (
-            id INTEGER PRIMARY KEY NOT NULL,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL,
-            bio TEXT
-        )"
-    ).execute(&mut conn)?;
-    
-    // Build and insert a user
-    let user: User = users::table::builder()
-        .try_set_column::<users::name>(&"Alice".to_string())?
-        .try_set_column::<users::email>(&"alice@example.com".to_string())?
-        .insert(&mut conn)?;
-    
-    assert_eq!(user.name, "Alice");
-    assert_eq!(user.email, "alice@example.com");
     Ok(())
 }
 ```
