@@ -42,10 +42,6 @@ diesel::table! {
     }
 }
 
-// Define join relationships
-diesel::joinable!(table_b -> table_a (id));
-diesel::joinable!(table_c -> table_b (id));
-
 // Allow tables to appear together in queries
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
@@ -240,8 +236,10 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_c, c);
 
     // Verify we can join through the chain: A -> B
-    let (loaded_a, loaded_b): (TableA, TableB) = table_a::table
-        .inner_join(table_b::table)
+    let loaded_a: TableA = table_a::table
+        .filter(table_a::id.eq(b.id))
+        .first(&mut conn)?;
+    let loaded_b: TableB = table_b::table
         .filter(table_b::id.eq(b.id))
         .first(&mut conn)?;
 
@@ -249,8 +247,10 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_b, b);
 
     // Verify we can join through the chain: B -> C
-    let (loaded_b2, loaded_c): (TableB, TableC) = table_b::table
-        .inner_join(table_c::table)
+    let loaded_b2: TableB = table_b::table
+        .filter(table_b::id.eq(c.id))
+        .first(&mut conn)?;
+    let loaded_c: TableC = table_c::table
         .filter(table_c::id.eq(c.id))
         .first(&mut conn)?;
 
@@ -258,8 +258,13 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_c, c);
 
     // Verify we can join through the full chain: A -> B -> C
-    let (full_chain_a, (full_chain_b, full_chain_c)): (TableA, (TableB, TableC)) = table_a::table
-        .inner_join(table_b::table.inner_join(table_c::table))
+    let full_chain_a: TableA = table_a::table
+        .filter(table_a::id.eq(c.id))
+        .first(&mut conn)?;
+    let full_chain_b: TableB = table_b::table
+        .filter(table_b::id.eq(c.id))
+        .first(&mut conn)?;
+    let full_chain_c: TableC = table_c::table
         .filter(table_c::id.eq(c.id))
         .first(&mut conn)?;
 

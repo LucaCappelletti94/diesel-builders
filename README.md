@@ -123,7 +123,6 @@ use diesel_builders::prelude::*;
 
 diesel::table! { users (id) { id -> Integer, name -> Text, email -> Text, } }
 diesel::table! { user_profiles (id) { id -> Integer, bio -> Text, avatar_url -> Text, } }
-diesel::joinable!(user_profiles -> users (id));
 diesel::allow_tables_to_appear_in_same_query!(users, user_profiles);
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, Root, TableModel)]
@@ -240,10 +239,6 @@ diesel::table! { table_b (id) { id -> Integer, column_b -> Text, } }
 diesel::table! { table_c (id) { id -> Integer, column_c -> Text, } }
 diesel::table! { table_d (id) { id -> Integer, column_d -> Text, } }
 
-diesel::joinable!(table_b -> table_a (id));
-diesel::joinable!(table_c -> table_a (id));
-diesel::joinable!(table_d -> table_b (id));
-diesel::joinable!(table_d -> table_c (id));
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
 
 // Table A (Root)
@@ -432,9 +427,6 @@ diesel::table! {
     table_b (id) { id -> Integer, c_id -> Integer, column_b -> Text, remote_column_c -> Text, }
 }
 
-diesel::joinable!(table_c -> table_a (a_id));
-diesel::joinable!(table_b -> table_c (id));
-diesel::joinable!(table_b -> table_a (c_id));
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Models for table A
@@ -602,9 +594,6 @@ diesel::table! {
     table_b (id) { id -> Integer, c_id -> Integer, column_b -> Text, remote_column_c -> Text, }
 }
 
-diesel::joinable!(table_c -> table_a (a_id));
-diesel::joinable!(table_b -> table_c (id));
-diesel::joinable!(table_b -> table_a (c_id));
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Models (same as mandatory example)

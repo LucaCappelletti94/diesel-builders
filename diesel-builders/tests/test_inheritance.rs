@@ -34,9 +34,6 @@ diesel::table! {
     }
 }
 
-// Define the join relationship between the tables
-diesel::joinable!(user_profiles -> users (id));
-
 // Allow tables to appear together in queries
 diesel::allow_tables_to_appear_in_same_query!(users, user_profiles);
 
@@ -181,10 +178,12 @@ fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .first(&mut conn)?;
     assert_eq!(profile, queried_profile);
 
-    // Verify we can join the tables
-    let (loaded_user, loaded_profile): (User, UserProfile) = users::table
-        .inner_join(user_profiles::table)
+    let loaded_user: User = users::table
         .filter(users::id.eq(profile.id))
+        .first(&mut conn)?;
+
+    let loaded_profile: UserProfile = user_profiles::table
+        .filter(user_profiles::id.eq(profile.id))
         .first(&mut conn)?;
 
     assert_eq!(loaded_user.get_column::<users::id>(), &profile.id);

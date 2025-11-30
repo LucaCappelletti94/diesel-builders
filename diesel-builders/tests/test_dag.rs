@@ -58,12 +58,6 @@ diesel::table! {
     }
 }
 
-// Define join relationships
-diesel::joinable!(table_b -> table_a (id));
-diesel::joinable!(table_c -> table_a (id));
-diesel::joinable!(table_d -> table_b (id));
-diesel::joinable!(table_d -> table_c (id));
-
 // Allow tables to appear together in queries
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
 
