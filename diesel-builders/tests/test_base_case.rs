@@ -112,6 +112,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .try_set_column::<users::name>(&"Bob".to_string())?
         .try_set_column::<users::email>(&"bob@example.com".to_string())?
         .try_set_column::<users::bio>(&Some("I love Rust!".to_string()))?
+        .set_column::<users::bio>(&Some("I love Rust!".to_string()))
         .insert(&mut conn)?;
 
     assert_eq!(user_with_bio.bio, Some("I love Rust!".to_string()));

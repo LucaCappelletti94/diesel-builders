@@ -77,7 +77,6 @@ pub use builder_bundle::{
 pub mod bundlable_tables;
 pub use bundlable_tables::BundlableTables;
 
-/// Prelude module containing the most commonly used items.
 pub mod prelude {
     //! Prelude module containing the most commonly used items from
     //! diesel-builders.

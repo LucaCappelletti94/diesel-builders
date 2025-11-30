@@ -230,6 +230,138 @@ classDiagram
 
 The builder ensures proper insertion order: A → B, C → D.
 
+```rust
+// DAG example - complete working code
+use diesel_builders::prelude::*;
+
+// Define tables
+diesel::table! { table_a (id) { id -> Integer, column_a -> Text, } }
+diesel::table! { table_b (id) { id -> Integer, column_b -> Text, } }
+diesel::table! { table_c (id) { id -> Integer, column_c -> Text, } }
+diesel::table! { table_d (id) { id -> Integer, column_d -> Text, } }
+
+diesel::joinable!(table_b -> table_a (id));
+diesel::joinable!(table_c -> table_a (id));
+diesel::joinable!(table_d -> table_b (id));
+diesel::joinable!(table_d -> table_c (id));
+diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
+
+// Table A (Root)
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, Root, TableModel)]
+#[diesel(table_name = table_a)]
+pub struct TableA { pub id: i32, pub column_a: String }
+
+#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[diesel(table_name = table_a)]
+pub struct NewTableA { pub column_a: Option<String> }
+
+impl TableAddition for table_a::table {
+    type InsertableModel = NewTableA;
+    type Model = TableA;
+    type InsertableColumns = (table_a::column_a,);
+}
+
+// Table B (extends A)
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, TableModel, NoHorizontalSameAsGroup)]
+#[diesel(table_name = table_b)]
+pub struct TableB { pub id: i32, pub column_b: String }
+
+#[descendant_of]
+impl Descendant for table_b::table {
+    type Ancestors = (table_a::table,);
+    type Root = table_a::table;
+}
+
+#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[diesel(table_name = table_b)]
+pub struct NewTableB { pub id: Option<i32>, pub column_b: Option<String> }
+
+impl TableAddition for table_b::table {
+    type InsertableModel = NewTableB;
+    type Model = TableB;
+    type InsertableColumns = (table_b::id, table_b::column_b);
+}
+
+impl BundlableTable for table_b::table {
+    type MandatoryTriangularSameAsColumns = ();
+    type DiscretionaryTriangularSameAsColumns = ();
+}
+
+// Table C (extends A)
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, TableModel, NoHorizontalSameAsGroup)]
+#[diesel(table_name = table_c)]
+pub struct TableC { pub id: i32, pub column_c: String }
+
+#[descendant_of]
+impl Descendant for table_c::table {
+    type Ancestors = (table_a::table,);
+    type Root = table_a::table;
+}
+
+#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[diesel(table_name = table_c)]
+pub struct NewTableC { pub id: Option<i32>, pub column_c: Option<String> }
+
+impl TableAddition for table_c::table {
+    type InsertableModel = NewTableC;
+    type Model = TableC;
+    type InsertableColumns = (table_c::id, table_c::column_c);
+}
+
+impl BundlableTable for table_c::table {
+    type MandatoryTriangularSameAsColumns = ();
+    type DiscretionaryTriangularSameAsColumns = ();
+}
+
+// Table D (extends B and C, which both extend A)
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, GetColumn, TableModel, NoHorizontalSameAsGroup)]
+#[diesel(table_name = table_d)]
+pub struct TableD { pub id: i32, pub column_d: String }
+
+#[descendant_of]
+impl Descendant for table_d::table {
+    type Ancestors = (table_a::table, table_b::table, table_c::table);
+    type Root = table_a::table;
+}
+
+#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[diesel(table_name = table_d)]
+pub struct NewTableD { pub id: Option<i32>, pub column_d: Option<String> }
+
+impl TableAddition for table_d::table {
+    type InsertableModel = NewTableD;
+    type Model = TableD;
+    type InsertableColumns = (table_d::id, table_d::column_d);
+}
+
+impl BundlableTable for table_d::table {
+    type MandatoryTriangularSameAsColumns = ();
+    type DiscretionaryTriangularSameAsColumns = ();
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = SqliteConnection::establish(":memory:")?;
+    
+    // Create tables
+    diesel::sql_query("CREATE TABLE table_a (id INTEGER PRIMARY KEY NOT NULL, column_a TEXT NOT NULL)").execute(&mut conn)?;
+    diesel::sql_query("CREATE TABLE table_b (id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id), column_b TEXT NOT NULL)").execute(&mut conn)?;
+    diesel::sql_query("CREATE TABLE table_c (id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id), column_c TEXT NOT NULL)").execute(&mut conn)?;
+    diesel::sql_query("CREATE TABLE table_d (id INTEGER PRIMARY KEY NOT NULL REFERENCES table_b(id), column_d TEXT NOT NULL, FOREIGN KEY (id) REFERENCES table_c(id))").execute(&mut conn)?;
+    
+    // Insert into table D (which extends both B and C, which both extend A)
+    // The builder automatically handles the insertion order: A → B, C → D
+    let d: TableD = table_d::table::builder()
+        .set_column::<table_a::column_a>(&"Value A for D".to_string())
+        .set_column::<table_b::column_b>(&"Value B for D".to_string())
+        .set_column::<table_c::column_c>(&"Value C for D".to_string())
+        .set_column::<table_d::column_d>(&"Value D".to_string())
+        .insert(&mut conn)?;
+    
+    assert_eq!(d.column_d, "Value D");
+    Ok(())
+}
+```
+
 ### 4. Inheritance Chain
 
 Linear inheritance where tables form a chain:
@@ -560,7 +692,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Option 1: With the optional relationship
     let mut c_builder = table_c::table::builder();
     c_builder
-        .set_column::<table_c::a_id>(&a.id)
         .set_column::<table_c::column_c>(&"Value C for B".to_string());
     
     let triangular_b: TableB = table_b::table::builder()
