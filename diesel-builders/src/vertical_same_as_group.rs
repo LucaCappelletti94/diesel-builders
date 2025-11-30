@@ -1,8 +1,8 @@
 //! Column which is associated to a group of vertical same-as columns.
 
-use crate::{HomogeneousColumns, TypedColumn, table_addition::HasPrimaryKey};
-
-use crate::{AncestorOfIndex, DescendantOf};
+use crate::{
+    AncestorOfIndex, DescendantOf, HomogeneousColumns, TypedColumn, table_addition::HasPrimaryKey,
+};
 
 /// A trait for Diesel columns that are associated with a group of vertical
 /// same-as columns.

@@ -1,8 +1,6 @@
 //! Column which is associated to a group of horizontal same-as columns.
 
-use crate::{HomogeneousColumns, TypedColumn};
-
-use crate::HorizontalSameAsKeys;
+use crate::{HomogeneousColumns, HorizontalSameAsKeys, TypedColumn};
 
 /// A trait for Diesel columns that are associated with a group of horizontal
 /// same-as columns.

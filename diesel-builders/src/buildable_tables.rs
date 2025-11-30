@@ -1,9 +1,8 @@
 //! Module for buildable columns in Diesel.
 
-use crate::{ClonableTuple, DebuggableTuple, OptionTuple, Tables};
 use tuple_set::TupleSet;
 
-use crate::{BuildableTable, TableBuilder};
+use crate::{BuildableTable, ClonableTuple, DebuggableTuple, OptionTuple, TableBuilder, Tables};
 
 /// A trait for collections of Diesel tables that can be built.
 pub trait BuildableTables: Tables {

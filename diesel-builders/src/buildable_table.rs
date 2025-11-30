@@ -1,13 +1,12 @@
 //! Submodule providing the `BuildableTables` trait and its implementations.
 
-use crate::{
-    AncestorOfIndex, DescendantOf, ancestors::DescendantWithSelf,
-    vertical_same_as_group::VerticalSameAsGroup,
-};
-use crate::{GetColumn, table_addition::HasPrimaryKey};
 use diesel::Table;
 
-use crate::{BundlableTable, BundlableTables, TableBuilder};
+use crate::{
+    AncestorOfIndex, BundlableTable, BundlableTables, DescendantOf, GetColumn, TableBuilder,
+    ancestors::DescendantWithSelf, table_addition::HasPrimaryKey,
+    vertical_same_as_group::VerticalSameAsGroup,
+};
 
 /// A trait for Diesel tables that can be used to build insertable models for
 /// themselves and their ancestors.

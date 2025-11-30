@@ -3,22 +3,18 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
-use crate::{
-    AncestorOfIndex, DescendantOf, HorizontalSameAsKey, vertical_same_as_group::VerticalSameAsGroup,
-};
-use crate::{
-    ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, MayGetColumns,
-    MaySetColumn, MaySetColumns, SetColumn, SingletonForeignKey, TableAddition, TryMaySetColumns,
-    TrySetColumn, TrySetHomogeneousColumn, TypedColumn, table_addition::HasPrimaryKey,
-};
 use diesel::{Table, associations::HasTable};
 use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
 use crate::{
-    AncestralBuildableTable, BuilderBundles, BundlableTable, BundlableTables,
-    CompletedTableBuilderBundle, NestedInsert, TableBuilderBundle, TrySetMandatoryBuilder,
-    buildable_table::BuildableTable,
+    AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BundlableTable, BundlableTables,
+    ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple, DefaultTuple, DescendantOf,
+    GetColumn, HorizontalSameAsKey, MayGetColumn, MayGetColumns, MaySetColumn, MaySetColumns,
+    NestedInsert, SetColumn, SingletonForeignKey, TableAddition, TableBuilderBundle,
+    TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
+    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
+    vertical_same_as_group::VerticalSameAsGroup,
 };
 
 /// A builder for creating insertable models for a Diesel table and its

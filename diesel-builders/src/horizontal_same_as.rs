@@ -1,15 +1,14 @@
 //! Submodule defining an `HorizontalSameAs` trait for Diesel columns.
 
-use crate::{
-    Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
-    Projection, SingleColumnForeignKey, SingletonForeignKey, TypedColumn,
-    columns::NonEmptyProjection, table_addition::HasPrimaryKey,
-};
 use diesel::{Column, Table};
 use diesel_builders_macros::impl_horizontal_same_as_keys;
 use typed_tuple::prelude::{NthIndex, TupleIndex, TupleIndex0, TypedFirst};
 
-use crate::ancestors::DescendantWithSelf;
+use crate::{
+    Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
+    Projection, SingleColumnForeignKey, SingletonForeignKey, TypedColumn,
+    ancestors::DescendantWithSelf, columns::NonEmptyProjection, table_addition::HasPrimaryKey,
+};
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<

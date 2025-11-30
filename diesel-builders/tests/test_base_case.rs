@@ -5,10 +5,7 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders::{
-    GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
-};
+use diesel_builders::prelude::*;
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 diesel::table! {

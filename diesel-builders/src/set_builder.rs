@@ -1,13 +1,13 @@
 //! Submodule providing the `SetBuilder` trait.
 
-use crate::{DiscretionarySameAsIndex, HorizontalSameAsKey, MandatorySameAsIndex};
-use crate::{
-    GetColumnExt, GetColumns, HasPrimaryKey, HomogeneousColumns, Projection, SetColumn, SetColumns,
-    SingletonForeignKey, TableAddition, TrySetColumn, TrySetColumns, TypedColumn,
-};
 use diesel::{Table, associations::HasTable};
 
-use crate::{BuildableTable, BundlableTable, CompletedTableBuilderBundle, TableBuilder};
+use crate::{
+    BuildableTable, BundlableTable, CompletedTableBuilderBundle, DiscretionarySameAsIndex,
+    GetColumnExt, GetColumns, HasPrimaryKey, HomogeneousColumns, HorizontalSameAsKey,
+    MandatorySameAsIndex, Projection, SetColumn, SetColumns, SingletonForeignKey, TableAddition,
+    TableBuilder, TrySetColumn, TrySetColumns, TypedColumn,
+};
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait SetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>> {
@@ -194,7 +194,8 @@ pub trait TrySetMandatoryBuilderExt {
     ///
     /// # Errors
     ///
-    /// Returns an error if the builder cannot be set for the mandatory relationship.
+    /// Returns an error if the builder cannot be set for the mandatory
+    /// relationship.
     fn try_set_mandatory_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
@@ -207,7 +208,8 @@ pub trait TrySetMandatoryBuilderExt {
 impl<T> TrySetMandatoryBuilderExt for T {
     /// # Errors
     ///
-    /// Returns an error if the builder cannot be set for the mandatory relationship.
+    /// Returns an error if the builder cannot be set for the mandatory
+    /// relationship.
     #[inline]
     fn try_set_mandatory_builder<Column>(
         &mut self,
@@ -231,7 +233,8 @@ pub trait TrySetDiscretionaryBuilderExt {
     ///
     /// # Errors
     ///
-    /// Returns an error if the builder cannot be set for the discretionary relationship.
+    /// Returns an error if the builder cannot be set for the discretionary
+    /// relationship.
     fn try_set_discretionary_builder<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
@@ -244,7 +247,8 @@ pub trait TrySetDiscretionaryBuilderExt {
 impl<T> TrySetDiscretionaryBuilderExt for T {
     /// # Errors
     ///
-    /// Returns an error if the builder cannot be set for the discretionary relationship.
+    /// Returns an error if the builder cannot be set for the discretionary
+    /// relationship.
     #[inline]
     fn try_set_discretionary_builder<Column>(
         &mut self,
@@ -298,7 +302,8 @@ pub trait TrySetDiscretionaryModelExt {
     ///
     /// # Errors
     ///
-    /// Returns an error if the model cannot be set for the discretionary relationship.
+    /// Returns an error if the model cannot be set for the discretionary
+    /// relationship.
     fn try_set_discretionary_model<Column>(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
@@ -311,7 +316,8 @@ pub trait TrySetDiscretionaryModelExt {
 impl<T> TrySetDiscretionaryModelExt for T {
     /// # Errors
     ///
-    /// Returns an error if the model cannot be set for the discretionary relationship.
+    /// Returns an error if the model cannot be set for the discretionary
+    /// relationship.
     #[inline]
     fn try_set_discretionary_model<Column>(
         &mut self,
@@ -335,7 +341,8 @@ pub trait TrySetMandatorySameAsColumn<
     ///
     /// # Errors
     ///
-    /// Returns an error if the column value cannot be set in the mandatory same-as relationship.
+    /// Returns an error if the column value cannot be set in the mandatory
+    /// same-as relationship.
     fn try_set_mandatory_same_as_column(
         &mut self,
         value: &<Column as TypedColumn>::Type,
@@ -354,7 +361,8 @@ pub trait TrySetMandatorySameAsColumns<
     ///
     /// # Errors
     ///
-    /// Returns an error if the column values cannot be set in the mandatory same-as relationship.
+    /// Returns an error if the column values cannot be set in the mandatory
+    /// same-as relationship.
     fn try_set_mandatory_same_as_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self>;
 }
 
@@ -369,7 +377,8 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     ///
     /// # Errors
     ///
-    /// Returns an error if the column value cannot be set in the discretionary same-as relationship.
+    /// Returns an error if the column value cannot be set in the discretionary
+    /// same-as relationship.
     fn try_may_set_discretionary_same_as_column(
         &mut self,
         value: &<Column as TypedColumn>::Type,
@@ -389,7 +398,8 @@ pub trait TryMaySetDiscretionarySameAsColumns<
     ///
     /// # Errors
     ///
-    /// Returns an error if the column values cannot be set in the discretionary same-as relationship.
+    /// Returns an error if the column values cannot be set in the discretionary
+    /// same-as relationship.
     fn try_may_set_discretionary_same_as_columns(
         &mut self,
         value: &Type,

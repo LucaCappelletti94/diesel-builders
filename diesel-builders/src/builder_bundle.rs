@@ -2,21 +2,17 @@
 //! a table `InsertableModel` and its mandatory and discretionary associated
 //! builders.
 
-use crate::{
-    ClonableTuple, Columns, DebuggableTuple, DefaultTuple, FlatInsert, MayGetColumn, MaySetColumn,
-    NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition, Tables,
-    TransposeOptionTuple, TryMaySetColumns, TrySetColumn, TrySetColumns, TypedColumn,
-};
-use crate::{
-    DiscretionarySameAsIndex, HorizontalSameAsGroup, HorizontalSameAsKeys, MandatorySameAsIndex,
-};
 use diesel::{Column, associations::HasTable};
 use typed_tuple::prelude::TypedTuple;
 
 use crate::{
-    BuildableTable, BuildableTables, NestedInsert, TableBuilder,
-    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns,
-    TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns,
+    BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
+    DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
+    MandatorySameAsIndex, MayGetColumn, MaySetColumn, NestedInsert,
+    NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition,
+    TableBuilder, Tables, TransposeOptionTuple, TryMaySetColumns,
+    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns, TrySetColumn,
+    TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns, TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 

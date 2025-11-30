@@ -1,8 +1,9 @@
 //! Submodule defining the `Insert` trait, which executes the insertion of a
 //! builder into the database, following the dependencies between tables.
 
-use crate::{HasTableAddition, TableAddition, tables::TableModels};
 use diesel::{associations::HasTable, connection::LoadConnection};
+
+use crate::{HasTableAddition, TableAddition, tables::TableModels};
 
 /// Trait defining the insertion of a builder into the database.
 pub trait NestedInsert<Conn>: HasTableAddition {
@@ -15,7 +16,8 @@ pub trait NestedInsert<Conn>: HasTableAddition {
     ///
     /// # Errors
     ///
-    /// Returns an error if the insertion fails or if any database constraints are violated.
+    /// Returns an error if the insertion fails or if any database constraints
+    /// are violated.
     fn insert(&self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model>;
 }
 
@@ -33,7 +35,8 @@ pub trait NestedInsertTuple<Conn> {
     ///
     /// # Errors
     ///
-    /// Returns an error if any insertion fails or if any database constraints are violated.
+    /// Returns an error if any insertion fails or if any database constraints
+    /// are violated.
     fn nested_insert_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::ModelsTuple>;
 }
 
@@ -58,7 +61,8 @@ pub trait NestedInsertOptionTuple<Conn> {
     ///
     /// # Errors
     ///
-    /// Returns an error if any insertion fails or if any database constraints are violated.
+    /// Returns an error if any insertion fails or if any database constraints
+    /// are violated.
     fn nested_insert_option_tuple(self, conn: &mut Conn)
     -> anyhow::Result<Self::OptionModelsTuple>;
 }

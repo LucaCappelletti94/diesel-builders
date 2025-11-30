@@ -1,7 +1,8 @@
 //! Submodule defining the `Descendant` trait.
 
-use crate::{TableAddition, Tables};
 use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
+
+use crate::{TableAddition, Tables};
 
 /// Marker trait for root table models (tables with no ancestors).
 ///

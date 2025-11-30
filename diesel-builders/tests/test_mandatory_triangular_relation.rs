@@ -15,9 +15,7 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_builders::Descendant;
-use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
-use diesel_builders::{SetColumnExt, TableAddition};
+use diesel_builders::prelude::*;
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)

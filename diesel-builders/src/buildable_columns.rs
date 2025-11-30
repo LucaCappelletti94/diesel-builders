@@ -1,8 +1,6 @@
 //! Module for buildable columns in Diesel.
 
-use crate::{Columns, TypedColumn};
-
-use crate::{BuildableTable, buildable_tables::BuildableTables};
+use crate::{BuildableTable, Columns, TypedColumn, buildable_tables::BuildableTables};
 
 /// A trait for Diesel columns that can be built.
 pub trait BuildableColumn: TypedColumn<Table: BuildableTable> {}
