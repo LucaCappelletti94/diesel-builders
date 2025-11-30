@@ -14,7 +14,9 @@
 //! in the B builder, that column value needs to be set, and when it is not set
 //! by setting the associated C builder, it must be set manually in B.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{
     BuildableTable, BundlableTable, NestedInsert, SetDiscretionaryBuilderExt,
@@ -215,7 +217,7 @@ impl BundlableTable for table_b::table {
 
 #[test]
 fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     // Create table A
     diesel::sql_query(

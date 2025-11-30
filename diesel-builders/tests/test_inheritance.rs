@@ -2,7 +2,9 @@
 //! Users. The primary key of UserProfiles is a foreign key to the primary key
 //! of Users.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{GetColumnExt, SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{
@@ -136,7 +138,7 @@ impl BundlableTable for user_profiles::table {
 
 #[test]
 fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     // Create the users table
     diesel::sql_query(

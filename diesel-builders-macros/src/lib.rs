@@ -867,6 +867,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
 
     // Generate VerticalSameAsGroup implementations for all ancestors
     let vertical_same_as_impls: Vec<_> = if !ancestors.is_empty() {
+        let non_root_ancestors = &ancestors[1..];
         ancestors
             .iter()
             .enumerate()
@@ -877,7 +878,10 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                         impl diesel_relations::vertical_same_as_group::VerticalSameAsGroup<#table_type>
                             for <#ancestor as diesel::Table>::PrimaryKey
                         {
-                            type VerticalSameAsColumns = (<#table_type as diesel::Table>::PrimaryKey,);
+                            type VerticalSameAsColumns = (
+                                #(<#non_root_ancestors as diesel::Table>::PrimaryKey,)*
+                                <#table_type as diesel::Table>::PrimaryKey,
+                            );
                         }
                     }
                 } else {
@@ -1006,10 +1010,12 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
     let table_type = &item_impl.self_ty;
 
     let primary_key_group = if !mandatory_columns.is_empty() || !discretionary_columns.is_empty() {
-        Some(quote!{impl diesel_relations::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
-            type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
-            type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
-        }})
+        Some(
+            quote! {impl diesel_relations::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
+                type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
+                type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
+            }},
+        )
     } else {
         None
     };

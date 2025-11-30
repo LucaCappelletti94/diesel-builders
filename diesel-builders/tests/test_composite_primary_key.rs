@@ -1,7 +1,9 @@
 //! Submodule to test whether the diesel-builder can work in the case of
 //! a single table with a composite primary key.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
@@ -66,7 +68,7 @@ impl TableAddition for user_roles::table {
 
 #[test]
 fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     diesel::sql_query(
         "CREATE TABLE user_roles (

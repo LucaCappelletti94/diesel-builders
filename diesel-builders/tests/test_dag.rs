@@ -6,7 +6,9 @@
 //! via foreign keys. Each table as a simple column in addition to the primary
 //! key to avoid having an excessively trivial test case.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{
@@ -234,7 +236,7 @@ impl BundlableTable for table_d::table {
 
 #[test]
 fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     // Create table A
     diesel::sql_query(
@@ -277,7 +279,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     // Insert into table A
     let a: TableA = table_a::table::builder()
         .set_column::<table_a::column_a>(&"Value A".to_string())
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .expect("Failed to insert into table A");
 
     assert_eq!(a.column_a, "Value A");
 
@@ -285,7 +288,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     let b: TableB = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .expect("Failed to insert into table B");
 
     assert_eq!(b.column_b, "Value B");
 
@@ -293,7 +297,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     let c: TableC = table_c::table::builder()
         .set_column::<table_a::column_a>(&"Value A for C".to_string())
         .set_column::<table_c::column_c>(&"Value C".to_string())
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .expect("Failed to insert into table C");
 
     assert_eq!(c.column_c, "Value C");
 
@@ -303,7 +308,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .set_column::<table_b::column_b>(&"Value B for D".to_string())
         .set_column::<table_c::column_c>(&"Value C for D".to_string())
         .set_column::<table_d::column_d>(&"Value D".to_string())
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .expect("Failed to insert into table D");
 
     assert_eq!(d.column_d, "Value D");
 

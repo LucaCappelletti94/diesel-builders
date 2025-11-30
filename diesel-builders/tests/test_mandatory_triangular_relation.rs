@@ -12,7 +12,9 @@
 //! relationship to a column in C, value which needs to be set when setting the
 //! builder for the C record in the B builder.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
 use diesel_builders_macros::{
@@ -105,7 +107,16 @@ impl TableAddition for table_a::table {
 
 // Table C models
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel, NoHorizontalSameAsGroup
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    GetColumn,
+    Root,
+    TableModel,
+    NoHorizontalSameAsGroup,
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.
@@ -201,7 +212,7 @@ impl BundlableTable for table_b::table {
 
 #[test]
 fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     // Create table A
     diesel::sql_query(

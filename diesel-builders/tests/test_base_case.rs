@@ -2,7 +2,9 @@
 //! of a single table with no ancestors and no vertical/horizontal same-as
 //! relationships.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
@@ -64,7 +66,7 @@ impl TableAddition for users::table {
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     diesel::sql_query(
         "CREATE TABLE users (

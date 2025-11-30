@@ -1,7 +1,9 @@
 //! Test case for foreign key based inheritance where the dependencies
 //! form a chain, with A being the root, B extending A, and C extending B.
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
+mod common;
+
+use diesel::prelude::*;
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
 use diesel_builders_macros::{
@@ -183,7 +185,7 @@ impl BundlableTable for table_c::table {
 
 #[test]
 fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+    let mut conn = common::establish_test_connection()?;
 
     // Create table A
     diesel::sql_query(
