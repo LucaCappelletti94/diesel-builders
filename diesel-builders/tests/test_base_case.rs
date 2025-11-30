@@ -17,6 +17,8 @@ diesel::table! {
         name -> Text,
         /// The email of the user.
         email -> Text,
+        /// The bio of the user (nullable).
+        bio -> Nullable<Text>,
     }
 }
 
@@ -32,6 +34,8 @@ pub struct User {
     pub name: String,
     /// The email of the user.
     pub email: String,
+    /// The bio of the user.
+    pub bio: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -42,12 +46,14 @@ pub struct NewUser {
     pub name: Option<String>,
     /// The email of the user.
     pub email: Option<String>,
+    /// The bio of the user (nullable column uses Option<Option<T>>).
+    pub bio: Option<Option<String>>,
 }
 
 impl TableAddition for users::table {
     type InsertableModel = NewUser;
     type Model = User;
-    type InsertableColumns = (users::name, users::email);
+    type InsertableColumns = (users::name, users::email, users::bio);
 }
 
 #[test]
@@ -58,7 +64,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         "CREATE TABLE users (
 			id INTEGER PRIMARY KEY NOT NULL,
 			name TEXT NOT NULL,
-			email TEXT NOT NULL
+			email TEXT NOT NULL,
+			bio TEXT
 		)",
     )
     .execute(&mut conn)?;
@@ -91,12 +98,32 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(user.name, "Alice");
     assert_eq!(user.email, "alice@example.com");
+    assert_eq!(user.bio, None);
 
     assert_eq!(user.get_column::<users::name>(), &"Alice".to_string());
     assert_eq!(
         user.get_column::<users::email>(),
         &"alice@example.com".to_string()
     );
+    assert_eq!(user.get_column::<users::bio>(), &None);
+
+    // Test with bio set to Some value
+    let user_with_bio = users::table::builder()
+        .try_set_column::<users::name>(&"Bob".to_string())?
+        .try_set_column::<users::email>(&"bob@example.com".to_string())?
+        .try_set_column::<users::bio>(&Some("I love Rust!".to_string()))?
+        .insert(&mut conn)?;
+
+    assert_eq!(user_with_bio.bio, Some("I love Rust!".to_string()));
+
+    // Test with bio explicitly set to None (NULL in database)
+    let user_no_bio = users::table::builder()
+        .try_set_column::<users::name>(&"Charlie".to_string())?
+        .try_set_column::<users::email>(&"charlie@example.com".to_string())?
+        .try_set_column::<users::bio>(&None)?
+        .insert(&mut conn)?;
+
+    assert_eq!(user_no_bio.bio, None);
 
     // We attempt to query the inserted user to ensure everything worked correctly.
     let queried_user: User = users::table

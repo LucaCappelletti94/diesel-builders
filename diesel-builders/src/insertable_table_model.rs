@@ -1,12 +1,6 @@
 //! Submodule defining the `TableModel` trait.
 
-use diesel::Column;
-use typed_tuple::prelude::{TupleKey, TypedTuple};
-
-use crate::{
-    HasTableAddition, MayGetColumns, SetColumn, TableAddition, TrySetColumns,
-    tables::InsertableTableModels,
-};
+use crate::{HasTableAddition, MayGetColumns, TableAddition, TrySetColumns};
 
 /// Trait representing an Insertable Diesel table model.
 pub trait InsertableTableModel:
@@ -31,28 +25,4 @@ impl<T> InsertableTableModel for T where
         + MayGetColumns<<T::Table as TableAddition>::InsertableColumns>
         + TrySetColumns<<T::Table as TableAddition>::InsertableColumns>
 {
-}
-
-/// Set the value of a column in a tuple of insertable table models.
-pub trait SetInsertableTableModelColumn<C: crate::TypedColumn>: InsertableTableModels {
-    /// Set the value of the specified column.
-    fn set(&mut self, value: &<C as crate::TypedColumn>::Type);
-}
-
-impl<C, T> SetInsertableTableModelColumn<C> for T
-where
-    C: crate::TypedColumn + TupleKey<T>,
-    T: InsertableTableModels
-        + TypedTuple<
-            <C as TupleKey<T>>::Idx,
-            <<C as Column>::Table as TableAddition>::InsertableModel,
-        >,
-    <<C as Column>::Table as TableAddition>::InsertableModel: SetColumn<C>,
-{
-    #[inline]
-    fn set(&mut self, value: &<C as crate::TypedColumn>::Type) {
-        self.apply(|model| {
-            model.set_column(value);
-        });
-    }
 }

@@ -27,7 +27,7 @@ pub use set_column::{
     MaySetColumn, MaySetColumnExt, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt,
 };
 pub mod insertable_table_model;
-pub use insertable_table_model::{InsertableTableModel, SetInsertableTableModelColumn};
+pub use insertable_table_model::InsertableTableModel;
 pub mod foreign_key;
 pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
 pub mod flat_insert;
