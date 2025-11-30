@@ -289,8 +289,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 }
 
 #[test]
-fn test_mandatory_triangular_relation_missing_builder_error()
--> Result<(), Box<dyn std::error::Error>> {
+fn test_mandatory_triangular_relation_missing_builder_error() {
     use diesel_builders::{CompletedTableBuilderBundle, TableBuilderBundle};
     use std::convert::TryFrom;
 
@@ -309,6 +308,4 @@ fn test_mandatory_triangular_relation_missing_builder_error()
             "Not all mandatory associated builders have been set"
         );
     }
-
-    Ok(())
 }
