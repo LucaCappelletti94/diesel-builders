@@ -669,6 +669,40 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
         }
     };
 
+    // Extract struct fields to generate HorizontalSameAsGroup impls
+    let fields = match &input.data {
+        syn::Data::Struct(data_struct) => {
+            match &data_struct.fields {
+                syn::Fields::Named(fields) => &fields.named,
+                _ => {
+                    return syn::Error::new_spanned(
+                        &input,
+                        "Root can only be derived on structs with named fields",
+                    )
+                    .to_compile_error()
+                    .into();
+                }
+            }
+        }
+        _ => {
+            return syn::Error::new_spanned(&input, "Root can only be derived on structs")
+                .to_compile_error()
+                .into();
+        }
+    };
+
+    // Generate HorizontalSameAsGroup impl for each field
+    let horizontal_impls = fields.iter().map(|field| {
+        let field_name = field.ident.as_ref().unwrap();
+
+        quote::quote! {
+            impl diesel_relations::HorizontalSameAsGroup for #table_name::#field_name {
+                type MandatoryHorizontalSameAsKeys = ();
+                type DiscretionaryHorizontalSameAsKeys = ();
+            }
+        }
+    });
+
     quote::quote! {
         impl diesel_relations::Root for #table_name::table {}
 
@@ -683,6 +717,8 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
             type MandatoryTriangularSameAsColumns = ();
             type DiscretionaryTriangularSameAsColumns = ();
         }
+
+        #(#horizontal_impls)*
     }
     .into()
 }

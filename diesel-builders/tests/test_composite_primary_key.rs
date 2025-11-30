@@ -8,9 +8,7 @@ use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{
-    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
-};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 diesel::table! {
     /// Define a user_roles table with composite primary key for testing.
@@ -25,16 +23,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    Root,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
 )]
 #[diesel(table_name = user_roles)]
 #[diesel(primary_key(user_id, role_id))]

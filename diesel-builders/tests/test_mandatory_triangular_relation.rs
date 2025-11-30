@@ -17,9 +17,7 @@ mod common;
 use diesel::prelude::*;
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
-use diesel_builders_macros::{
-    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
-};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 use diesel_relations::Descendant;
 
 // Define table A (root table)
@@ -71,16 +69,7 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Table A models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    Root,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
 )]
 #[diesel(table_name = table_a)]
 /// Model for table A.
@@ -107,16 +96,7 @@ impl TableAddition for table_a::table {
 
 // Table C models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    Root,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.

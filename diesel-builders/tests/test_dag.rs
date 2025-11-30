@@ -71,16 +71,7 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d
 
 // Table A models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    Root,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
 )]
 #[diesel(table_name = table_a)]
 /// A model for table A.
