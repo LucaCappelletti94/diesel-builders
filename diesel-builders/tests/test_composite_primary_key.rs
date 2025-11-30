@@ -6,9 +6,9 @@ use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Define a user_roles table with composite primary key for testing.
     user_roles (user_id, role_id) {
         /// The ID of the user.
@@ -20,7 +20,9 @@ diesel_builders_macros::table_extension! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
+#[derive(
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+)]
 #[diesel(table_name = user_roles)]
 #[diesel(primary_key(user_id, role_id))]
 /// A user role assignment model.

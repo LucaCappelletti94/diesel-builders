@@ -4,11 +4,11 @@
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 use diesel_relations::Descendant;
 
 // Define table A (root table)
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Root table A.
     table_a (id) {
         /// Primary key of table A.
@@ -19,7 +19,7 @@ diesel_builders_macros::table_extension! {
 }
 
 // Define table B (extends A)
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Table B extends A via foreign key.
     table_b (id) {
         /// Primary key of table B, foreign key to table_a.id.
@@ -30,7 +30,7 @@ diesel_builders_macros::table_extension! {
 }
 
 // Define table C (extends B)
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Table C extends B via foreign key.
     table_c (id) {
         /// Primary key of table C, foreign key to table_b.id.
@@ -48,7 +48,9 @@ diesel::joinable!(table_c -> table_b (id));
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Table A models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
+#[derive(
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+)]
 #[diesel(table_name = table_a)]
 /// Model for table A.
 pub struct TableA {
@@ -73,7 +75,7 @@ impl TableAddition for table_a::table {
 }
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
 #[diesel(table_name = table_b)]
 /// Model for table B.
 pub struct TableB {
@@ -111,7 +113,7 @@ impl BundlableTable for table_b::table {
 }
 
 // Table C models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
 #[diesel(table_name = table_c)]
 /// Model for table C.
 pub struct TableC {

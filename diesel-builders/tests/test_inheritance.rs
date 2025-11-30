@@ -5,10 +5,10 @@
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_additions::{GetColumnExt, SetColumnExt, TableAddition};
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 use diesel_relations::Descendant;
 
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Define a users table as the base/ancestor table.
     users (id) {
         /// The ID of the user.
@@ -20,7 +20,7 @@ diesel_builders_macros::table_extension! {
     }
 }
 
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Define a user_profiles table that extends users via foreign key.
     user_profiles (id) {
         /// The ID of the user profile, which is also a foreign key to users.id.
@@ -40,7 +40,9 @@ diesel::allow_tables_to_appear_in_same_query!(users, user_profiles);
 
 // Users table models
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
+#[derive(
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+)]
 #[diesel(table_name = users)]
 /// A user model.
 pub struct User {
@@ -70,7 +72,7 @@ impl TableAddition for users::table {
 
 // UserProfiles table models
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
 #[diesel(table_name = user_profiles)]
 /// A user profile model.
 pub struct UserProfile {

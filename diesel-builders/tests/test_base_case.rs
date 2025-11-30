@@ -7,9 +7,9 @@ use diesel_additions::{
     GetColumnExt, MayGetColumnExt, SetColumnExt, TableAddition, TrySetColumnExt,
 };
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn};
+use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
-diesel_builders_macros::table_extension! {
+diesel::table! {
     /// Define a simple users table for testing.
     users (id) {
         /// The ID of the user.
@@ -21,7 +21,9 @@ diesel_builders_macros::table_extension! {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
+#[derive(
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+)]
 #[diesel(table_name = users)]
 /// A simple user model.
 pub struct User {
