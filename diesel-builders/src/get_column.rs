@@ -14,20 +14,6 @@ pub trait MayGetColumn<Column: TypedColumn> {
     fn may_get_column(&self) -> Option<&<Column as TypedColumn>::Type>;
 }
 
-impl<C, T> MayGetColumn<C> for Option<T>
-where
-    C: crate::TypedColumn,
-    T: MayGetColumn<C>,
-{
-    #[inline]
-    fn may_get_column(&self) -> Option<&<C as crate::TypedColumn>::Type> {
-        match self {
-            Some(inner) => inner.may_get_column(),
-            None => None,
-        }
-    }
-}
-
 /// Extension trait for `GetColumn` that allows specifying the column at the
 /// method level.
 ///
