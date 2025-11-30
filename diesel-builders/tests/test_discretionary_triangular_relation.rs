@@ -260,7 +260,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .try_set_discretionary_builder::<table_b::c_id>(c_builder)?;
 
     // Debug formatting test
-    let _formatted = format!("{:?}", triangular_b_builder);
+    let _formatted = format!("{triangular_b_builder:?}");
 
     let triangular_b = triangular_b_builder.insert(&mut conn)?;
 

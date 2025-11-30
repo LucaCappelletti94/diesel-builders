@@ -300,7 +300,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .set_column::<table_d::column_d>(&"Value D".to_string());
 
     // Test Debug formatting
-    let _formatted = format!("{:?}", d_builder);
+    let _formatted = format!("{d_builder:?}");
 
     let d: TableD = d_builder
         .insert(&mut conn)
