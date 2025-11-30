@@ -44,6 +44,7 @@ diesel::table! {
         id -> Integer,
         name -> Text,
         email -> Text,
+        bio -> Nullable<Text>,
     }
 }
 
@@ -53,6 +54,7 @@ pub struct User {
     pub id: i32,
     pub name: String,
     pub email: String,
+    pub bio: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -60,12 +62,13 @@ pub struct User {
 pub struct NewUser {
     pub name: Option<String>,
     pub email: Option<String>,
+    pub bio: Option<Option<String>>,
 }
 
 impl TableAddition for users::table {
     type InsertableModel = NewUser;
     type Model = User;
-    type InsertableColumns = (users::name, users::email);
+    type InsertableColumns = (users::name, users::email, users::bio);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -76,7 +79,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "CREATE TABLE users (
             id INTEGER PRIMARY KEY NOT NULL,
             name TEXT NOT NULL,
-            email TEXT NOT NULL
+            email TEXT NOT NULL,
+            bio TEXT
         )"
     ).execute(&mut conn)?;
     
@@ -88,6 +92,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     assert_eq!(user.name, "Alice");
     assert_eq!(user.email, "alice@example.com");
+    assert_eq!(user.bio, None); // bio not set, defaults to NULL
     Ok(())
 }
 ```
@@ -660,6 +665,7 @@ diesel::table! {
         id -> Integer,
         name -> Text,
         email -> Text,
+        bio -> Nullable<Text>,
     }
 }
 
@@ -670,6 +676,7 @@ pub struct User {
     pub id: i32,
     pub name: String,
     pub email: String,
+    pub bio: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -677,12 +684,13 @@ pub struct User {
 pub struct NewUser {
     pub name: Option<String>,
     pub email: Option<String>,
+    pub bio: Option<Option<String>>,
 }
 
 impl TableAddition for users::table {
     type InsertableModel = NewUser;
     type Model = User;
-    type InsertableColumns = (users::name, users::email);
+    type InsertableColumns = (users::name, users::email, users::bio);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -693,7 +701,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "CREATE TABLE users (
             id INTEGER PRIMARY KEY NOT NULL,
             name TEXT NOT NULL,
-            email TEXT NOT NULL
+            email TEXT NOT NULL,
+            bio TEXT
         )"
     ).execute(&mut conn)?;
     

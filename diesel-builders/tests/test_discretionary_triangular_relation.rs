@@ -257,7 +257,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let triangular_b = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
-        .set_discretionary_builder::<table_b::c_id>(c_builder)
+        .set_discretionary_builder::<table_b::c_id>(c_builder.clone())
+        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?
         .insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
@@ -278,6 +279,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .set_column::<table_a::column_a>(&"Independent A for B".to_string())
         .set_column::<table_b::column_b>(&"Independent B".to_string())
         .set_discretionary_model::<table_b::c_id>(&c)
+        .try_set_discretionary_model::<table_b::c_id>(&c)?
         .insert(&mut conn)?;
 
     assert_eq!(indipendent_b.column_b, "Independent B");

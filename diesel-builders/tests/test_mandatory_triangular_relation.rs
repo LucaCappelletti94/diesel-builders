@@ -257,7 +257,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let b: TableB = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
-        .set_mandatory_builder::<table_b::c_id>(c_builder)
+        .set_mandatory_builder::<table_b::c_id>(c_builder.clone())
+        .try_set_mandatory_builder::<table_b::c_id>(c_builder)?
         .insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table

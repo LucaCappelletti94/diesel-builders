@@ -162,7 +162,7 @@ where
 impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable,
-    C: TypedColumn<Table = T> + HorizontalSameAsGroup,
+    C: TypedColumn<Table = T>,
     T::InsertableModel: TrySetColumn<C>,
 {
     #[inline]
@@ -181,32 +181,6 @@ where
     #[inline]
     fn set_column(&mut self, value: &C::Type) -> &mut Self {
         self.insertable_model.set_column(value);
-        self
-    }
-}
-
-impl<T, C> SetColumn<C> for CompletedTableBuilderBundle<T>
-where
-    T: BundlableTable,
-    C: TypedColumn,
-    T::InsertableModel: SetColumn<C>,
-{
-    #[inline]
-    fn set_column(&mut self, value: &C::Type) -> &mut Self {
-        self.insertable_model.set_column(value);
-        self
-    }
-}
-
-impl<T, C> MaySetColumn<C> for CompletedTableBuilderBundle<T>
-where
-    T: BundlableTable,
-    C: TypedColumn,
-    T::InsertableModel: MaySetColumn<C>,
-{
-    #[inline]
-    fn may_set_column(&mut self, value: Option<&C::Type>) -> &mut Self {
-        self.insertable_model.may_set_column(value);
         self
     }
 }
@@ -265,13 +239,6 @@ where
     #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
         use typed_tuple::prelude::TypedTuple;
-        if self.mandatory_associated_builders.get().is_some() {
-            anyhow::bail!(
-                "Mandatory associated builder for column {} was already set in table {}.",
-                C::NAME,
-                core::any::type_name::<T>(),
-            );
-        }
         self.mandatory_associated_builders.apply(|opt| {
             *opt = Some(builder.clone());
         });
@@ -311,13 +278,6 @@ where
         builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
         use typed_tuple::prelude::TypedTuple;
-        if self.discretionary_associated_builders.get().is_some() {
-            anyhow::bail!(
-                "Discretionary associated builder for column {} was already set in table {}.",
-                C::NAME,
-                core::any::type_name::<T>(),
-            );
-        }
         self.discretionary_associated_builders.apply(|opt| {
             *opt = Some(builder.clone());
         });
