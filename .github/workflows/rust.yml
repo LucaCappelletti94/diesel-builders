@@ -78,6 +78,8 @@ jobs:
     - name: Install SQLite
       run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
     - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
   doc:
     name: Documentation
     runs-on: ubuntu-latest
@@ -88,10 +90,10 @@ jobs:
     - name: Install SQLite
       run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
     - name: Check documentation
-      uses: dtolnay/rust-toolchain@stable
-    - name: Check documentation
       run: cargo doc --no-deps --document-private-items
       env:
+        RUSTDOCFLAGS: -D warnings
+
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
@@ -101,8 +103,6 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
     - name: Install SQLite
       run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-    - name: Install tarpaulin
-      uses: dtolnay/rust-toolchain@stable
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
     - name: Generate coverage
