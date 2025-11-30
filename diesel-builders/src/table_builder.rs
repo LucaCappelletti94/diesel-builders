@@ -29,6 +29,7 @@ pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuilder<T> {
+    #[inline]
     fn clone(&self) -> Self {
         Self { bundles: self.bundles.clone_tuple() }
     }
@@ -41,6 +42,7 @@ impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuild
 }
 
 impl<T: BuildableTable> Default for TableBuilder<T> {
+    #[inline]
     fn default() -> Self {
         Self { bundles: DefaultTuple::default_tuple() }
     }
@@ -86,6 +88,7 @@ where
 {
     type Error = anyhow::Error;
 
+    #[inline]
     fn try_from(
         value: TableBuilder<T>,
     ) -> Result<
@@ -209,6 +212,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
@@ -230,6 +234,7 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    #[inline]
     fn set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
@@ -292,6 +297,7 @@ where
     CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
         NestedInsert<Conn, Table = T>,
 {
+    #[inline]
     fn insert(&self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
@@ -308,6 +314,7 @@ where
     T: BuildableTable,
     CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
 {
+    #[inline]
     fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         Ok(self.bundles.0.insert(conn)?)
     }

@@ -312,6 +312,7 @@ pub fn generate_get_columns() -> TokenStream {
             where
                 #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
+                #[inline]
                 fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<&mut Self> {
                     #(#try_set_individual_calls)*
                     Ok(self)
@@ -330,6 +331,7 @@ pub fn generate_get_columns() -> TokenStream {
             where
                 #(T: crate::set_column::TrySetColumn<#type_params>,)*
             {
+                #[inline]
                 fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<&mut Self> {
                     #(#try_may_set_individual_calls)*
                     Ok(self)
@@ -365,6 +367,7 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
             {
                 type ModelsTuple = (#(#model_types,)*);
 
+                #[inline]
                 fn nested_insert_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::ModelsTuple> {
                     Ok((#(self.#indices_tokens.insert(conn)?,)*))
                 }
@@ -559,6 +562,7 @@ pub fn generate_builder_bundles() -> TokenStream {
             {
                 type CompletedBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
 
+                #[inline]
                 fn try_complete(self) -> anyhow::Result<Self::CompletedBundles> {
                     Ok((#(#try_from_calls,)*))
                 }
@@ -660,6 +664,7 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                         <<#first_type as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
                     >,
             {
+                #[inline]
                 fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
                     let (first, bundles) = self.bundles.clone().pop();
                     let model: <#first_type as TableAddition>::Model = first.insert(conn)?;
