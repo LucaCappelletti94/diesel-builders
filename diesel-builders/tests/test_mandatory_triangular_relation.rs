@@ -18,7 +18,7 @@ use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatory
 use diesel_builders_macros::{
     GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
 };
-use diesel_relations::{Descendant, HorizontalSameAsGroup};
+use diesel_relations::Descendant;
 
 // Define table A (root table)
 diesel::table! {
@@ -105,16 +105,7 @@ impl TableAddition for table_a::table {
 
 // Table C models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    Root,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel, NoHorizontalSameAsGroup
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.
@@ -156,11 +147,6 @@ pub struct TableB {
     pub column_b: String,
     /// The remote column_c value from table C that B references via c_id.
     pub remote_column_c: String,
-}
-
-impl HorizontalSameAsGroup for table_b::id {
-    type MandatoryHorizontalSameAsKeys = (table_b::c_id,);
-    type DiscretionaryHorizontalSameAsKeys = ();
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -275,7 +261,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
-    let b = table_b::table::builder()
+    let b: TableB = table_b::table::builder()
         .set_column::<table_a::column_a>(&"Value A for B".to_string())
         .set_column::<table_b::column_b>(&"Value B".to_string())
         .set_mandatory_builder::<table_b::c_id>(c_builder)

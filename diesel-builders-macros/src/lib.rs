@@ -1003,8 +1003,21 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         })
         .collect();
 
+    let table_type = &item_impl.self_ty;
+
+    let primary_key_group = if !mandatory_columns.is_empty() || !discretionary_columns.is_empty() {
+        Some(quote!{impl diesel_relations::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
+            type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
+            type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
+        }})
+    } else {
+        None
+    };
+
     Ok(quote! {
         #item_impl
+
+        #primary_key_group
 
         #(#mandatory_impls)*
 

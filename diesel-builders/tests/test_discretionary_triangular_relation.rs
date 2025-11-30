@@ -23,7 +23,7 @@ use diesel_builders::{
 use diesel_builders_macros::{
     GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
 };
-use diesel_relations::{Descendant, HorizontalSameAsGroup};
+use diesel_relations::Descendant;
 
 // Define table A (root table)
 diesel::table! {
@@ -161,11 +161,6 @@ pub struct TableB {
     pub column_b: String,
     /// The remote column_c value from table C that B references via c_id.
     pub remote_column_c: String,
-}
-
-impl HorizontalSameAsGroup for table_b::id {
-    type MandatoryHorizontalSameAsKeys = ();
-    type DiscretionaryHorizontalSameAsKeys = (table_b::c_id,);
 }
 
 #[diesel_builders_macros::descendant_of]
