@@ -1,7 +1,0 @@
-error: Missing Ancestors associated type
-  --> tests/ui/fail/descendant_of_missing_ancestors.rs:13:1
-   |
-13 | / impl Descendant for TableA {
-14 | |     type Root = Self;
-15 | | }
-   | |_^
