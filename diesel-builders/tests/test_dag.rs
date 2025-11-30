@@ -314,6 +314,12 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(d.column_d, "Value D");
 
     // Query to verify relationships
+    let queried_a: TableA = table_a::table.filter(table_a::id.eq(d.id)).first(&mut conn)?;
+    assert_eq!(queried_a.column_a, "Value A for D");
+    let queried_b: TableB = table_b::table.filter(table_b::id.eq(d.id)).first(&mut conn)?;
+    assert_eq!(queried_b.column_b, "Value B for D");
+    let queried_c: TableC = table_c::table.filter(table_c::id.eq(d.id)).first(&mut conn)?;
+    assert_eq!(queried_c.column_c, "Value C for D");
     let queried_d: TableD = table_d::table.filter(table_d::id.eq(d.id)).first(&mut conn)?;
     assert_eq!(queried_d, d);
 
