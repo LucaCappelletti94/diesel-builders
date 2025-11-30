@@ -1,6 +1,6 @@
 //! Column which is associated to a group of horizontal same-as columns.
 
-use diesel_additions::{HomogeneousColumns, TypedColumn};
+use crate::{HomogeneousColumns, TypedColumn};
 
 use crate::HorizontalSameAsKeys;
 

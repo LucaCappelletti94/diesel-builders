@@ -1,13 +1,13 @@
 //! Submodule defining the `Descendant` trait.
 
-use diesel_additions::{TableAddition, Tables};
+use crate::{TableAddition, Tables};
 use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
 
 /// Marker trait for root table models (tables with no ancestors).
 ///
 /// This trait should be derived on Model structs to automatically generate
 /// the `Descendant` implementation for their associated table type.
-pub trait Root: diesel_additions::HasTableAddition {}
+pub trait Root: crate::HasTableAddition {}
 
 /// A trait marker for getting the ancestor index of a table.
 pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + DescendantOf<T::Root> {

@@ -3,15 +3,15 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
-use diesel::{Table, associations::HasTable};
-use diesel_additions::{
+use crate::{
+    AncestorOfIndex, DescendantOf, HorizontalSameAsKey, vertical_same_as_group::VerticalSameAsGroup,
+};
+use crate::{
     ClonableTuple, DebuggableTuple, DefaultTuple, GetColumn, MayGetColumn, MayGetColumns,
     MaySetColumn, MaySetColumns, SetColumn, SingletonForeignKey, TableAddition, TryMaySetColumns,
     TrySetColumn, TrySetHomogeneousColumn, TypedColumn, table_addition::HasPrimaryKey,
 };
-use diesel_relations::{
-    AncestorOfIndex, DescendantOf, HorizontalSameAsKey, vertical_same_as_group::VerticalSameAsGroup,
-};
+use diesel::{Table, associations::HasTable};
 use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedTuple};
 
@@ -263,7 +263,7 @@ where
 impl<C, T> TrySetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: diesel_relations::MandatorySameAsIndex,
+    C: crate::MandatorySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
@@ -292,7 +292,7 @@ where
 impl<C, T> crate::SetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: diesel_relations::MandatorySameAsIndex,
+    C: crate::MandatorySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
@@ -319,7 +319,7 @@ where
 impl<C, T> crate::TrySetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: diesel_relations::DiscretionarySameAsIndex,
+    C: crate::DiscretionarySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
@@ -332,7 +332,7 @@ where
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
@@ -348,7 +348,7 @@ where
 impl<C, T> crate::SetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: diesel_relations::DiscretionarySameAsIndex,
+    C: crate::DiscretionarySameAsIndex,
     C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
@@ -361,7 +361,7 @@ where
     #[inline]
     fn set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<C as diesel_additions::SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);

@@ -1,6 +1,6 @@
 //! Module for buildable columns in Diesel.
 
-use diesel_additions::{Columns, TypedColumn};
+use crate::{Columns, TypedColumn};
 
 use crate::{BuildableTable, buildable_tables::BuildableTables};
 

@@ -4,10 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-either.workspace = true
 diesel.workspace = true
-diesel-relations.workspace = true
-diesel-additions.workspace = true
 anyhow.workspace = true
 typed_tuple.workspace = true
 tuple_set.workspace = true
@@ -15,7 +12,6 @@ diesel-builders-macros.workspace = true
 
 [dev-dependencies]
 diesel = { workspace = true, features = ["sqlite", "returning_clauses_for_sqlite_3_35", "extras"] }
-chrono = "0.4"
 
 [lints]
 workspace = true

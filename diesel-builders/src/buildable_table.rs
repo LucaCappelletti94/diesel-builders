@@ -1,11 +1,11 @@
 //! Submodule providing the `BuildableTables` trait and its implementations.
 
-use diesel::Table;
-use diesel_additions::{GetColumn, table_addition::HasPrimaryKey};
-use diesel_relations::{
+use crate::{
     AncestorOfIndex, DescendantOf, ancestors::DescendantWithSelf,
     vertical_same_as_group::VerticalSameAsGroup,
 };
+use crate::{GetColumn, table_addition::HasPrimaryKey};
+use diesel::Table;
 
 use crate::{BundlableTable, BundlableTables, TableBuilder};
 

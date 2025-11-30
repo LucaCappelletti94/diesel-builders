@@ -15,10 +15,10 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_additions::{SetColumnExt, TableAddition};
+use diesel_builders::Descendant;
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert, SetMandatoryBuilderExt};
+use diesel_builders::{SetColumnExt, TableAddition};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
-use diesel_relations::Descendant;
 
 // Define table A (root table)
 diesel::table! {
@@ -173,14 +173,14 @@ impl TableAddition for table_b::table {
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references
 // table_c
-impl diesel_additions::SingletonForeignKey for table_b::c_id {
+impl diesel_builders::SingletonForeignKey for table_b::c_id {
     type ReferencedTable = table_c::table;
 }
 
 // This is the key part: B's c_id must match C's id, and C's a_id must match A's
 // id. We express that B's c_id is horizontally the same as C's a_id, which in
 // turn is the same as A's id.
-impl diesel_relations::HorizontalSameAsKey for table_b::c_id {
+impl diesel_builders::HorizontalSameAsKey for table_b::c_id {
     // HostColumns are columns in table_b (the same table) that relate to this key
     // In this case, there are no other columns in table_b that need to match
     // Actually, we need to think about this differently...

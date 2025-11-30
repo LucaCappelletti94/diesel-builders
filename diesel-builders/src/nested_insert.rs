@@ -1,8 +1,8 @@
 //! Submodule defining the `Insert` trait, which executes the insertion of a
 //! builder into the database, following the dependencies between tables.
 
+use crate::{HasTableAddition, TableAddition, tables::TableModels};
 use diesel::{associations::HasTable, connection::LoadConnection};
-use diesel_additions::{HasTableAddition, TableAddition, tables::TableModels};
 
 /// Trait defining the insertion of a builder into the database.
 pub trait NestedInsert<Conn>: HasTableAddition {

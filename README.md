@@ -1,4 +1,4 @@
-# diesel-builders
+# Diesel Builders
 
 [![Documentation](https://docs.rs/diesel-builders/badge.svg)](https://docs.rs/diesel-builders)
 [![CI](https://github.com/LucaCappelletti94/diesel-builders/workflows/Rust%20CI/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)

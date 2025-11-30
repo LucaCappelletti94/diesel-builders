@@ -9,12 +9,12 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_additions::{SetColumnExt, TableAddition};
+use diesel_builders::Descendant;
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
+use diesel_builders::{SetColumnExt, TableAddition};
 use diesel_builders_macros::{
     GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
 };
-use diesel_relations::Descendant;
 
 // Define table A (root table)
 diesel::table! {

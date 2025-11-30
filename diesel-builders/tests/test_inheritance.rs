@@ -5,12 +5,12 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_additions::{GetColumnExt, SetColumnExt, TableAddition};
+use diesel_builders::Descendant;
 use diesel_builders::{BuildableTable, BundlableTable, NestedInsert};
+use diesel_builders::{GetColumnExt, SetColumnExt, TableAddition};
 use diesel_builders_macros::{
     GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
 };
-use diesel_relations::Descendant;
 
 diesel::table! {
     /// Define a users table as the base/ancestor table.

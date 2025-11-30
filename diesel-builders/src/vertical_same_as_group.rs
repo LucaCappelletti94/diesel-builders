@@ -1,6 +1,6 @@
 //! Column which is associated to a group of vertical same-as columns.
 
-use diesel_additions::{HomogeneousColumns, TypedColumn, table_addition::HasPrimaryKey};
+use crate::{HomogeneousColumns, TypedColumn, table_addition::HasPrimaryKey};
 
 use crate::{AncestorOfIndex, DescendantOf};
 

@@ -1,6 +1,6 @@
 //! Module for buildable columns in Diesel.
 
-use diesel_additions::{ClonableTuple, DebuggableTuple, OptionTuple, Tables};
+use crate::{ClonableTuple, DebuggableTuple, OptionTuple, Tables};
 use tuple_set::TupleSet;
 
 use crate::{BuildableTable, TableBuilder};

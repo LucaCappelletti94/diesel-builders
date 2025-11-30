@@ -352,8 +352,8 @@ pub fn derive_get_column(input: TokenStream) -> TokenStream {
     let impls = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
-            impl diesel_additions::GetColumn<#table_name::#field_name> for #struct_name {
-                fn get_column(&self) -> &<#table_name::#field_name as diesel_additions::TypedColumn>::Type {
+            impl diesel_builders::GetColumn<#table_name::#field_name> for #struct_name {
+                fn get_column(&self) -> &<#table_name::#field_name as diesel_builders::TypedColumn>::Type {
                     &self.#field_name
                 }
             }
@@ -432,8 +432,8 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
     let impls = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
-            impl diesel_additions::MayGetColumn<#table_name::#field_name> for #struct_name {
-                fn may_get_column(&self) -> Option<&<#table_name::#field_name as diesel_additions::TypedColumn>::Type> {
+            impl diesel_builders::MayGetColumn<#table_name::#field_name> for #struct_name {
+                fn may_get_column(&self) -> Option<&<#table_name::#field_name as diesel_builders::TypedColumn>::Type> {
                     self.#field_name.as_ref()
                 }
             }
@@ -518,18 +518,18 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         vec![
             quote::quote! {
-                impl diesel_additions::SetColumn<#table_name::#field_name> for #struct_name {
+                impl diesel_builders::SetColumn<#table_name::#field_name> for #struct_name {
                     #[inline]
-                    fn set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> &mut Self {
+                    fn set_column(&mut self, value: &<#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> &mut Self {
                         self.#field_name = Some(value.clone());
                         self
                     }
                 }
             },
             quote::quote! {
-                impl diesel_additions::MaySetColumn<#table_name::#field_name> for #struct_name {
+                impl diesel_builders::MaySetColumn<#table_name::#field_name> for #struct_name {
                     #[inline]
-                    fn may_set_column(&mut self, value: Option<&<#table_name::#field_name as diesel_additions::TypedColumn>::Type>) -> &mut Self {
+                    fn may_set_column(&mut self, value: Option<&<#table_name::#field_name as diesel_builders::TypedColumn>::Type>) -> &mut Self {
                         if let Some(v) = value {
                             self.#field_name = Some(v.clone());
                         }
@@ -538,9 +538,9 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
                 }
             },
             quote::quote! {
-                impl diesel_additions::TrySetColumn<#table_name::#field_name> for #struct_name {
+                impl diesel_builders::TrySetColumn<#table_name::#field_name> for #struct_name {
                     #[inline]
-                    fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_additions::TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+                    fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> anyhow::Result<&mut Self> {
                         self.#field_name = Some(value.clone());
                         Ok(self)
                     }
@@ -673,7 +673,7 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
 
         quote::quote! {
-            impl diesel_relations::HorizontalSameAsGroup for #table_name::#field_name {
+            impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }
@@ -681,10 +681,10 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
     });
 
     quote::quote! {
-        impl diesel_relations::Root for #table_name::table {}
+        impl diesel_builders::Root for #table_name::table {}
 
         #[diesel_builders_macros::descendant_of]
-        impl diesel_relations::Descendant for #table_name::table {
+        impl diesel_builders::Descendant for #table_name::table {
             type Ancestors = ();
             type Root = Self;
         }
@@ -762,7 +762,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         let field_type = &field.ty;
 
         quote::quote! {
-            impl diesel_additions::TypedColumn for #table_name::#field_name {
+            impl diesel_builders::TypedColumn for #table_name::#field_name {
                 type Type = #field_type;
             }
         }
@@ -829,7 +829,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         .iter()
         .map(|ancestor| {
             quote! {
-                impl diesel_relations::DescendantOf<#ancestor> for #table_type {}
+                impl diesel_builders::DescendantOf<#ancestor> for #table_type {}
             }
         })
         .collect();
@@ -850,7 +850,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
             quote! {}
         } else {
             quote! {
-                impl diesel_relations::DescendantOf<#root_type> for #table_type {}
+                impl diesel_builders::DescendantOf<#root_type> for #table_type {}
             }
         }
     };
@@ -862,7 +862,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         .map(|(i, ancestor)| {
             let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
-                impl diesel_relations::AncestorOfIndex<#table_type> for #ancestor {
+                impl diesel_builders::AncestorOfIndex<#table_type> for #ancestor {
                     type Idx = typed_tuple::prelude::#idx;
                 }
             }
@@ -871,7 +871,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
 
     // Generate AncestorOfIndex for self
     let self_ancestor_of_index = quote! {
-        impl diesel_relations::AncestorOfIndex<#table_type> for #table_type {
+        impl diesel_builders::AncestorOfIndex<#table_type> for #table_type {
             type Idx = typed_tuple::prelude::#self_idx;
         }
     };
@@ -888,7 +888,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                 if i == 0 {
                     // For the root, use the descendant table's primary key
                     quote! {
-                        impl diesel_relations::vertical_same_as_group::VerticalSameAsGroup<#table_type>
+                        impl diesel_builders::vertical_same_as_group::VerticalSameAsGroup<#table_type>
                             for <#ancestor as diesel::Table>::PrimaryKey
                         {
                             type VerticalSameAsColumns = (
@@ -900,7 +900,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                 } else {
                     // For intermediate ancestors, use an empty tuple
                     quote! {
-                        impl diesel_relations::vertical_same_as_group::VerticalSameAsGroup<#table_type>
+                        impl diesel_builders::vertical_same_as_group::VerticalSameAsGroup<#table_type>
                             for <#ancestor as diesel::Table>::PrimaryKey
                         {
                             type VerticalSameAsColumns = ();
@@ -999,7 +999,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .map(|(i, column)| {
             let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
-                impl diesel_relations::MandatorySameAsIndex for #column {
+                impl diesel_builders::MandatorySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
                 }
             }
@@ -1014,7 +1014,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .map(|(i, column)| {
             let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
             quote! {
-                impl diesel_relations::DiscretionarySameAsIndex for #column {
+                impl diesel_builders::DiscretionarySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
                 }
             }
@@ -1025,7 +1025,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
 
     let primary_key_group = if !mandatory_columns.is_empty() || !discretionary_columns.is_empty() {
         Some(
-            quote! {impl diesel_relations::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
+            quote! {impl diesel_builders::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
                 type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
                 type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
             }},
@@ -1110,7 +1110,7 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
     let impls = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
-            impl diesel_relations::HorizontalSameAsGroup for #table_name::#field_name {
+            impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }

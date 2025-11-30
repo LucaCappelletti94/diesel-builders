@@ -1,11 +1,11 @@
 //! Submodule providing the `SetBuilder` trait.
 
-use diesel::{Table, associations::HasTable};
-use diesel_additions::{
+use crate::{DiscretionarySameAsIndex, HorizontalSameAsKey, MandatorySameAsIndex};
+use crate::{
     GetColumnExt, GetColumns, HasPrimaryKey, HomogeneousColumns, Projection, SetColumn, SetColumns,
     SingletonForeignKey, TableAddition, TrySetColumn, TrySetColumns, TypedColumn,
 };
-use diesel_relations::{DiscretionarySameAsIndex, HorizontalSameAsKey, MandatorySameAsIndex};
+use diesel::{Table, associations::HasTable};
 
 use crate::{BuildableTable, BundlableTable, CompletedTableBuilderBundle, TableBuilder};
 
@@ -21,7 +21,7 @@ pub trait SetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: Buil
 /// Trait attempting to set a specific Diesel discretionary triangular builder,
 /// which may fail.
 pub trait SetDiscretionaryBuilder<
-    Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+    Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
 >
 {
     /// Attempt to set the value of the specified column.
@@ -33,7 +33,7 @@ pub trait SetDiscretionaryBuilder<
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
 /// which may fail.
-pub trait SetDiscretionaryModel<Column: diesel_relations::DiscretionarySameAsIndex> {
+pub trait SetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
     /// Attempt to set the values associated to the provided model.
     fn set_discretionary_model(
         &mut self,
@@ -43,7 +43,7 @@ pub trait SetDiscretionaryModel<Column: diesel_relations::DiscretionarySameAsInd
 
 impl<C, T> SetDiscretionaryModel<C> for T
 where
-    C: diesel_relations::DiscretionarySameAsIndex,
+    C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: BuildableTable,
     Self: SetColumns<<C as HorizontalSameAsKey>::HostColumns> + SetColumn<C>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
@@ -76,7 +76,7 @@ pub trait TrySetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: B
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetDiscretionaryBuilder<
-    Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+    Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
 >
 {
     /// Attempt to set the value of the specified column.
@@ -92,7 +92,7 @@ pub trait TrySetDiscretionaryBuilder<
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
 /// which may fail.
-pub trait TrySetDiscretionaryModel<Column: diesel_relations::DiscretionarySameAsIndex> {
+pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
     /// Attempt to set the values associated to the provided model.
     ///
     /// # Errors
@@ -106,7 +106,7 @@ pub trait TrySetDiscretionaryModel<Column: diesel_relations::DiscretionarySameAs
 
 impl<C, T> TrySetDiscretionaryModel<C> for T
 where
-    C: diesel_relations::DiscretionarySameAsIndex,
+    C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: BuildableTable,
     Self: TrySetColumns<<C as HorizontalSameAsKey>::HostColumns> + TrySetColumn<C>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
@@ -166,7 +166,7 @@ pub trait SetDiscretionaryBuilderExt {
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self
     where
-        Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: SetDiscretionaryBuilder<Column>;
 }
 
@@ -177,7 +177,7 @@ impl<T> SetDiscretionaryBuilderExt for T {
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self
     where
-        Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: SetDiscretionaryBuilder<Column>,
     {
         <Self as SetDiscretionaryBuilder<Column>>::set_discretionary_builder(self, builder)
@@ -237,7 +237,7 @@ pub trait TrySetDiscretionaryBuilderExt {
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self>
     where
-        Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Column>;
 }
 
@@ -251,7 +251,7 @@ impl<T> TrySetDiscretionaryBuilderExt for T {
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self>
     where
-        Column: diesel_relations::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Column>,
     {
         <Self as TrySetDiscretionaryBuilder<Column>>::try_set_discretionary_builder(self, builder)
@@ -270,7 +270,7 @@ pub trait SetDiscretionaryModelExt {
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> &mut Self
     where
-        Column: diesel_relations::DiscretionarySameAsIndex,
+        Column: crate::DiscretionarySameAsIndex,
         Self: SetDiscretionaryModel<Column>;
 }
 
@@ -281,7 +281,7 @@ impl<T> SetDiscretionaryModelExt for T {
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> &mut Self
     where
-        Column: diesel_relations::DiscretionarySameAsIndex,
+        Column: crate::DiscretionarySameAsIndex,
         Self: SetDiscretionaryModel<Column>,
     {
         <Self as SetDiscretionaryModel<Column>>::set_discretionary_model(self, model)
@@ -304,7 +304,7 @@ pub trait TrySetDiscretionaryModelExt {
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> anyhow::Result<&mut Self>
     where
-        Column: diesel_relations::DiscretionarySameAsIndex,
+        Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>;
 }
 
@@ -318,7 +318,7 @@ impl<T> TrySetDiscretionaryModelExt for T {
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> anyhow::Result<&mut Self>
     where
-        Column: diesel_relations::DiscretionarySameAsIndex,
+        Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>,
     {
         <Self as TrySetDiscretionaryModel<Column>>::try_set_discretionary_model(self, model)
