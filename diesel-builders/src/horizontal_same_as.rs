@@ -2,7 +2,7 @@
 
 use diesel::{Column, Table};
 use diesel_builders_macros::impl_horizontal_same_as_keys;
-use typed_tuple::prelude::{NthIndex, TupleIndex, TupleIndex0, TypedFirst};
+use typed_tuple::prelude::{NthIndex, TypedFirst, U0, Unsigned};
 
 use crate::{
     Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
@@ -45,7 +45,7 @@ pub trait HorizontalSameAsKey:
             Table = Self::ReferencedTable,
             Types = <Self::HostColumns as Columns>::Types,
         > + NthIndex<
-            TupleIndex0,
+            U0,
             NthType: TypedColumn<
                 Type = <<<Self as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
                 Table = Self::ReferencedTable,
@@ -57,14 +57,14 @@ pub trait HorizontalSameAsKey:
 pub trait MandatorySameAsIndex: HorizontalSameAsKey {
     /// The index in the n-uple of host columns where the mandatory same-as
     /// relationship is defined.
-    type Idx: TupleIndex;
+    type Idx: Unsigned;
 }
 
 /// Index in a tuple for a discretionary same-as relationship.
 pub trait DiscretionarySameAsIndex: HorizontalSameAsKey {
     /// The index in the n-uple of host columns where the discretionary same-as
     /// relationship is defined.
-    type Idx: TupleIndex;
+    type Idx: Unsigned;
 }
 
 /// A trait for Diesel columns collections that define horizontal same-as

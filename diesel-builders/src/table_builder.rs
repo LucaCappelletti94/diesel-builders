@@ -5,7 +5,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use diesel::{Table, associations::HasTable};
 use tuple_set::TupleSet;
-use typed_tuple::prelude::{TypedFirst, TypedTuple};
+use typed_tuple::prelude::{TypedFirst, TypedIndex};
 
 use crate::{
     AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BundlableTable, BundlableTables,
@@ -115,10 +115,11 @@ where
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
         self.bundles.apply(|builder_bundle| {
             builder_bundle.set_column(value);
         });
@@ -134,10 +135,11 @@ where
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn may_get_column(&self) -> Option<&<C as TypedColumn>::Type> {
+        use typed_tuple::prelude::TypedTuple;
         self.bundles.get().may_get_column()
     }
 }
@@ -174,10 +176,11 @@ where
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MaySetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
         self.bundles.map_mut(|builder_bundle| {
             builder_bundle.may_set_column(value);
         });
@@ -193,10 +196,11 @@ where
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
         self.bundles
             .map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
         // TODO: set vertical same-as columns in associated builders here.
@@ -219,7 +223,8 @@ where
 {
     #[inline]
     fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
-        self.bundles.map(
+        <Bundles as TupleSet>::map(
+            &mut self.bundles,
             |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
                 builder_bundle.may_set_column(value);
             },
@@ -244,13 +249,13 @@ where
 {
     #[inline]
     fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
-        self.bundles
-            .map(
-                |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                    builder_bundle.try_set_column(value).map(|_| ())
-                },
-            )
-            .transpose()?;
+        <Bundles as TupleSet>::map(
+            &mut self.bundles,
+            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
+                builder_bundle.try_set_column(value).map(|_| ())
+            },
+        )
+        .transpose()?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }
@@ -267,13 +272,14 @@ where
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
@@ -296,13 +302,14 @@ where
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {
@@ -323,13 +330,14 @@ where
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
@@ -352,13 +360,14 @@ where
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedTuple<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
+        use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {

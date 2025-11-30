@@ -3,7 +3,7 @@
 //! builders.
 
 use diesel::{Column, associations::HasTable};
-use typed_tuple::prelude::TypedTuple;
+use typed_tuple::prelude::TypedIndex;
 
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
@@ -215,8 +215,8 @@ where
     T: BundlableTable,
     C: crate::MandatorySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
@@ -233,8 +233,8 @@ where
     T: BundlableTable,
     C: crate::MandatorySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> anyhow::Result<&mut Self> {
@@ -251,8 +251,8 @@ where
     T: BundlableTable,
     C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
@@ -269,8 +269,8 @@ where
     T: BundlableTable,
     C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedTuple<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedTuple<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn try_set_discretionary_builder(
@@ -289,7 +289,7 @@ impl<Key: MandatorySameAsIndex<Table: BundlableTable, ReferencedTable: Buildable
     for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table= Key::ReferencedTable>,
-    <<<<Key as Column>::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders: TypedTuple<<Key as MandatorySameAsIndex>::Idx, TableBuilder<<C as Column>::Table>>,
+    <<<<Key as Column>::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders: TypedIndex<<Key as MandatorySameAsIndex>::Idx, TableBuilder<<C as Column>::Table>>,
     TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
 {
     #[inline]
@@ -297,6 +297,7 @@ where
         &mut self,
         value: &<C as TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
         self.mandatory_associated_builders.map_mut(|builder: &mut TableBuilder<<C as Column>::Table>| {
             builder.try_set_column(value).map(|_| ())
         })?;
@@ -308,7 +309,7 @@ impl<Key: DiscretionarySameAsIndex<Table: BundlableTable, ReferencedTable: Build
     for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table= Key::ReferencedTable>,
-    <<<<<Key as Column>::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: TypedTuple<<Key as DiscretionarySameAsIndex>::Idx, Option<TableBuilder<<C as Column>::Table>>>,
+    <<<<<Key as Column>::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: TypedIndex<<Key as DiscretionarySameAsIndex>::Idx, Option<TableBuilder<<C as Column>::Table>>>,
     TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
 {
     #[inline]
@@ -316,6 +317,7 @@ where
         &mut self,
         value: &<C as TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self> {
+        use typed_tuple::prelude::TypedTuple;
         self.discretionary_associated_builders.map_mut(|opt_builder: &mut Option<TableBuilder<<C as Column>::Table>>| {
             if let Some(builder) = opt_builder {
                 builder.try_set_column(value).map(|_| ())

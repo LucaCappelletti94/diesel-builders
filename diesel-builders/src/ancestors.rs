@@ -1,6 +1,6 @@
 //! Submodule defining the `Descendant` trait.
 
-use typed_tuple::prelude::{ChainRight, TupleIndex, TypedFirst, TypedLast};
+use typed_tuple::prelude::{ChainRight, TypedFirst, TypedLast, Unsigned};
 
 use crate::{TableAddition, Tables};
 
@@ -14,7 +14,7 @@ pub trait Root: crate::HasTableAddition {}
 pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableAddition + DescendantOf<T::Root> {
     /// Tuple index marker of the ancestor table in the descendant's ancestor
     /// list.
-    type Idx: TupleIndex;
+    type Idx: Unsigned;
 }
 
 /// A trait for Diesel tables that have ancestor tables.

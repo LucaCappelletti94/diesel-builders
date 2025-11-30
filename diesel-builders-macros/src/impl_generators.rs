@@ -651,7 +651,7 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
                 #(#type_params: HorizontalSameAsKey<Table = T>,)*
             {
                 type ReferencedTables = (#(<#type_params as SingletonForeignKey>::ReferencedTable,)*);
-                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as NthIndex<TupleIndex0>>::NthType,)*);
+                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as NthIndex<U0>>::NthType,)*);
             }
         }
     });
@@ -702,6 +702,7 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
             {
                 #[inline]
                 fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+                    use typed_tuple::prelude::TypedTuple;
                     let (first, bundles) = self.bundles.clone().pop();
                     let model: <#first_type as TableAddition>::Model = first.insert(conn)?;
                     let mut next_builder: CompletedTableBuilder<T, _> =
@@ -746,7 +747,7 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
         let keys = type_params(size);
         let column_types = keys.iter().map(|key| {
             quote! {
-                <<#key as HorizontalSameAsKey>::ForeignColumns as typed_tuple::prelude::NthIndex<typed_tuple::prelude::TupleIndex0>>::NthType
+                <<#key as HorizontalSameAsKey>::ForeignColumns as typed_tuple::prelude::NthIndex<typed_tuple::prelude::U0>>::NthType
             }
         }).collect::<Vec<_>>();
 

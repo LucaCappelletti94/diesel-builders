@@ -7,7 +7,7 @@ members = ["diesel-builders", "diesel-builders-macros"]
 diesel = "2.3.4"
 anyhow = "1.0.71"
 tuple_set = "0.1.3"
-typed_tuple = { git = "https://github.com/LucaCappelletti94/typed_tuple", branch = "master" }
+typed_tuple = { git = "https://github.com/cedtwo/typed_tuple", branch = "faster-compile" }
 diesel-builders = { path = "diesel-builders" }
 diesel-builders-macros = { path = "diesel-builders-macros" }
 trybuild = "1.0"

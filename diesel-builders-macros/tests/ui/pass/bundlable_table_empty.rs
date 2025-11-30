@@ -2,18 +2,11 @@
 
 use diesel_builders_macros::bundlable_table;
 
-struct TableA;
-
-impl diesel::Table for TableA {
-    type PrimaryKey = Column1;
-    type AllColumns = Column1;
-
-    fn all_columns() -> Self::AllColumns {
-        Column1
+diesel::table! {
+    table_a (id) {
+        id -> Integer,
     }
 }
-
-struct Column1;
 
 trait BundlableTable {
     type MandatoryTriangularSameAsColumns;
@@ -21,7 +14,7 @@ trait BundlableTable {
 }
 
 #[bundlable_table]
-impl BundlableTable for TableA {
+impl BundlableTable for table_a::table {
     type MandatoryTriangularSameAsColumns = ();
     type DiscretionaryTriangularSameAsColumns = ();
 }

@@ -819,10 +819,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
     let num_ancestors = ancestors.len();
 
     // Generate TupleIndex for self (last position in ancestors + self)
-    let self_idx = syn::Ident::new(
-        &format!("TupleIndex{num_ancestors}"),
-        proc_macro2::Span::call_site(),
-    );
+    let self_idx = syn::Ident::new(&format!("U{num_ancestors}"), proc_macro2::Span::call_site());
 
     // Generate DescendantOf implementations for each direct ancestor
     let descendant_of_impls: Vec<_> = ancestors
@@ -860,7 +857,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         .iter()
         .enumerate()
         .map(|(i, ancestor)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::AncestorOfIndex<#table_type> for #ancestor {
                     type Idx = typed_tuple::prelude::#idx;
@@ -997,7 +994,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .iter()
         .enumerate()
         .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::MandatorySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
@@ -1012,7 +1009,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         .iter()
         .enumerate()
         .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("TupleIndex{i}"), proc_macro2::Span::call_site());
+            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::DiscretionarySameAsIndex for #column {
                     type Idx = typed_tuple::prelude::#idx;
