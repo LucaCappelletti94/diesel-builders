@@ -49,11 +49,6 @@ impl TableAddition for users::table {
     type InsertableColumns = (users::name, users::email);
 }
 
-impl BundlableTable for users::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = SqliteConnection::establish(":memory:")?;

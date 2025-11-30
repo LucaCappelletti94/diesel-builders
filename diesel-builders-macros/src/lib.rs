@@ -645,13 +645,16 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
     quote::quote! {
         impl diesel_relations::Root for #table_name::table {}
 
+        #[diesel_builders_macros::descendant_of]
         impl diesel_relations::Descendant for #table_name::table {
             type Ancestors = ();
             type Root = Self;
         }
 
-        impl diesel_relations::AncestorOfIndex<#table_name::table> for #table_name::table {
-            type Idx = typed_tuple::prelude::TupleIndex0;
+        #[diesel_builders_macros::bundlable_table]
+        impl BundlableTable for #table_name::table {
+            type MandatoryTriangularSameAsColumns = ();
+            type DiscretionaryTriangularSameAsColumns = ();
         }
     }
     .into()

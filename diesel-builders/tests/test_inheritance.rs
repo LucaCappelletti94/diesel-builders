@@ -68,11 +68,6 @@ impl TableAddition for users::table {
     type InsertableColumns = (users::name, users::email);
 }
 
-impl BundlableTable for users::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // UserProfiles table models
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]

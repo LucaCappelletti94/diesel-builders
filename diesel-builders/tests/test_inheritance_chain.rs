@@ -72,11 +72,6 @@ impl TableAddition for table_a::table {
     type InsertableColumns = (table_a::column_a,);
 }
 
-impl BundlableTable for table_a::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn)]
 #[diesel(table_name = table_b)]

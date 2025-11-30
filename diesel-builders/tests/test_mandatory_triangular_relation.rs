@@ -86,12 +86,6 @@ impl TableAddition for table_a::table {
     type InsertableColumns = (table_a::column_a,);
 }
 
-#[diesel_builders_macros::bundlable_table]
-impl BundlableTable for table_a::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // Table C models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root)]
 #[diesel(table_name = table_c)]
@@ -119,12 +113,6 @@ impl TableAddition for table_c::table {
     type InsertableModel = NewTableC;
     type Model = TableC;
     type InsertableColumns = (table_c::a_id, table_c::column_c);
-}
-
-#[diesel_builders_macros::bundlable_table]
-impl BundlableTable for table_c::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
 }
 
 // Table B models
