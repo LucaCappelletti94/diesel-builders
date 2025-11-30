@@ -52,7 +52,7 @@ impl<T: BuildableTable> Default for TableBuilder<T> {
 
 /// A completed builder for creating insertable models for a Diesel table and
 /// its ancestors.
-struct CompletedTableBuilder<T: Table, Bundles> {
+pub struct CompletedTableBuilder<T: Table, Bundles> {
     /// The insertable models for the table and its ancestors.
     bundles: Bundles,
     /// The table type.

@@ -26,9 +26,6 @@ jobs:
     - name: Install SQLite (Ubuntu)
       if: runner.os == 'Linux'
       run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-    - name: Install SQLite (macOS)
-      if: runner.os == 'macOS'
-      run: brew install sqlite
     - name: Install SQLite (Windows)
       if: runner.os == 'Windows'
       run: |

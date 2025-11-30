@@ -14,8 +14,12 @@
 
 mod common;
 
+use diesel::associations::HasTable;
 use diesel::prelude::*;
-use diesel_builders::prelude::*;
+use diesel_builders::{
+    CompletedTableBuilderBundle, TableBuilder, TableBuilderBundle, prelude::*,
+    table_builder::CompletedTableBuilder,
+};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)
@@ -275,6 +279,36 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(associated_c.column_c, Some("Value C".to_string()));
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
+
+    let _ = TableBuilderBundle::<table_b::table>::table();
+    let _ = CompletedTableBuilderBundle::<table_b::table>::table();
+    let _ = TableBuilder::<table_b::table>::table();
+    let _ = CompletedTableBuilder::<table_b::table, ()>::table();
+
+    Ok(())
+}
+
+#[test]
+fn test_mandatory_triangular_relation_missing_builder_error()
+-> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::{CompletedTableBuilderBundle, TableBuilderBundle};
+    use std::convert::TryFrom;
+
+    // Create a TableBuilderBundle without setting the mandatory associated builder
+    let b_bundle = TableBuilderBundle::<table_b::table>::default();
+
+    // Try to convert to CompletedTableBuilderBundle - this should fail because
+    // the mandatory associated builder for c_id has not been set
+    let result = CompletedTableBuilderBundle::try_from(b_bundle);
+
+    // Verify that the conversion fails with the expected error message
+    assert!(result.is_err());
+    if let Err(error) = result {
+        assert_eq!(
+            error.to_string(),
+            "Not all mandatory associated builders have been set"
+        );
+    }
 
     Ok(())
 }
