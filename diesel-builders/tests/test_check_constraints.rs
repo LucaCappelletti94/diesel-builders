@@ -257,7 +257,7 @@ fn test_validation_fails_early_in_chain() -> Result<(), Box<dyn std::error::Erro
     let mut builder = products::table::builder();
 
     // Set valid name
-    builder.try_set_column_ref::<products::name>(&"Mouse".to_string())?;
+    builder.try_set_column_ref::<products::name>(&"Mouse".to_owned())?;
 
     // Try to set invalid price - should fail
     let result = builder.try_set_column_ref::<products::price>(&-50);

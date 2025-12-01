@@ -560,8 +560,8 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
             quote::quote! {
                 impl diesel_builders::SetColumn<#table_name::#field_name> for #struct_name {
                     #[inline]
-                    fn set_column(&mut self, value: &<#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> &mut Self {
-                        self.#field_name = Some(value.clone());
+                    fn set_column(&mut self, value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>) -> &mut Self {
+                        self.#field_name = Some(value.into());
                         self
                     }
                 }

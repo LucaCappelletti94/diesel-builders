@@ -118,10 +118,11 @@ where
         TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
     #[inline]
-    fn set_column(&mut self, value: &<C as TypedColumn>::Type) -> &mut Self {
+    fn set_column(&mut self, value: impl Into<<C as TypedColumn>::Type>) -> &mut Self {
         use typed_tuple::prelude::TypedTuple;
+        let value = value.into();
         self.bundles.apply(|builder_bundle| {
-            builder_bundle.set_column(value);
+            builder_bundle.set_column(value.clone());
         });
         // TODO: set vertical same-as columns in associated builders here.
         self

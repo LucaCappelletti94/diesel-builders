@@ -242,29 +242,29 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     // Insert into table A
     let a = table_a::table::builder()
-        .set_column::<table_a::column_a>(&"Value A".to_string())
+        .set_column::<table_a::column_a>("Value A")
         .insert(&mut conn)?;
 
     assert_eq!(a.column_a, "Value A");
 
     // Insert into table C (references A)
     let c = table_c::table::builder()
-        .set_column::<table_c::a_id>(&a.id)
-        .set_column::<table_c::column_c>(&Some("Value C".to_string()))
+        .set_column::<table_c::a_id>(a.id)
+        .set_column::<table_c::column_c>(Some("Value C".to_owned()))
         .insert(&mut conn)?;
 
     assert_eq!(c.column_c, Some("Value C".to_string()));
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
-    c_builder.set_column_ref::<table_c::column_c>(&Some("Value C".to_string()));
+    c_builder.set_column_ref::<table_c::column_c>(Some("Value C".to_owned()));
 
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
     let b = table_b::table::builder()
-        .set_column::<table_a::column_a>(&"Value A for B".to_string())
-        .set_column::<table_b::column_b>(&"Value B".to_string())
+        .set_column::<table_a::column_a>("Value A for B")
+        .set_column::<table_b::column_b>("Value B")
         .set_mandatory_builder::<table_b::c_id>(c_builder.clone())
         .try_set_mandatory_builder::<table_b::c_id>(c_builder)?
         .insert(&mut conn)?;

@@ -114,9 +114,9 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     // We test the chained variant.
     let another_user_role = user_roles::table::builder()
-        .set_column::<user_roles::user_id>(&2)
-        .set_column::<user_roles::role_id>(&20)
-        .set_column::<user_roles::assigned_at>(&"2025-02-01".to_string())
+        .set_column::<user_roles::user_id>(2)
+        .set_column::<user_roles::role_id>(20)
+        .set_column::<user_roles::assigned_at>("2025-02-01")
         .insert(&mut conn)?;
 
     assert_eq!(another_user_role.get_column::<user_roles::user_id>(), &2);

@@ -55,7 +55,7 @@ where
         model: &<<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> &mut Self {
         let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as SetColumn<C>>::set_column(self, primary_key);
+        <Self as SetColumn<C>>::set_column(self, primary_key.clone());
         let columns = model.get_columns();
         self.set_columns(columns)
     }

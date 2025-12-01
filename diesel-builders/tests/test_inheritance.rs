@@ -139,8 +139,8 @@ fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     // We create a user without a profile
     let user = users::table::builder()
-        .set_column::<users::name>(&"Bob".to_string())
-        .set_column::<users::email>(&"bob@example.com".to_string())
+        .set_column::<users::name>("Bob")
+        .set_column::<users::email>("bob@example.com")
         .insert(&mut conn)?;
 
     let loaded_user: User = users::table
@@ -150,10 +150,10 @@ fn test_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     // Now create a user profile for this user
     let profile = user_profiles::table::builder()
-        .set_column::<users::name>(&"Alice".to_string())
-        .set_column::<users::email>(&"alice@example.com".to_string())
-        .set_column::<user_profiles::bio>(&"I love Rust!".to_string())
-        .set_column::<user_profiles::avatar_url>(&"https://example.com/alice.jpg".to_string())
+        .set_column::<users::name>("Alice")
+        .set_column::<users::email>("alice@example.com")
+        .set_column::<user_profiles::bio>("I love Rust!")
+        .set_column::<user_profiles::avatar_url>("https://example.com/alice.jpg")
         .insert(&mut conn)?;
 
     assert_eq!(profile.bio, "I love Rust!");

@@ -5,7 +5,7 @@ use crate::TypedColumn;
 /// Trait providing a setter for a specific Diesel column.
 pub trait SetColumn<Column: TypedColumn> {
     /// Set the value of the specified column.
-    fn set_column(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self;
+    fn set_column(&mut self, value: impl Into<<Column as TypedColumn>::Type>) -> &mut Self;
 }
 
 /// Trait providing a failable setter for a specific Diesel column.
@@ -33,16 +33,23 @@ pub trait TrySetColumn<Column: TypedColumn> {
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
 pub trait SetColumnExt: Sized {
+    #[inline]
     /// Set the value of the specified column.
-    fn set_column_ref<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
+    fn set_column_ref<Column>(
+        &mut self,
+        value: impl Into<<Column as TypedColumn>::Type>,
+    ) -> &mut Self
     where
         Column: TypedColumn,
-        Self: SetColumn<Column>;
+        Self: SetColumn<Column>,
+    {
+        <Self as SetColumn<Column>>::set_column(self, value)
+    }
 
     #[inline]
     #[must_use]
     /// Set the value of the specified column.
-    fn set_column<Column>(mut self, value: &<Column as TypedColumn>::Type) -> Self
+    fn set_column<Column>(mut self, value: impl Into<<Column as TypedColumn>::Type>) -> Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>,
@@ -52,16 +59,7 @@ pub trait SetColumnExt: Sized {
     }
 }
 
-impl<T> SetColumnExt for T {
-    #[inline]
-    fn set_column_ref<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
-    where
-        Column: TypedColumn,
-        Self: SetColumn<Column>,
-    {
-        <Self as SetColumn<Column>>::set_column(self, value)
-    }
-}
+impl<T> SetColumnExt for T {}
 
 /// Extension trait for `TrySetColumn` that allows specifying the column at the
 /// method level.
@@ -69,6 +67,7 @@ impl<T> SetColumnExt for T {
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
 pub trait TrySetColumnExt: Sized {
+    #[inline]
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -80,7 +79,10 @@ pub trait TrySetColumnExt: Sized {
     ) -> anyhow::Result<&mut Self>
     where
         Column: TypedColumn,
-        Self: TrySetColumn<Column>;
+        Self: TrySetColumn<Column>,
+    {
+        <Self as TrySetColumn<Column>>::try_set_column(self, value)
+    }
 
     #[inline]
     /// Attempt to set the value of the specified column.
@@ -101,16 +103,4 @@ pub trait TrySetColumnExt: Sized {
     }
 }
 
-impl<T> TrySetColumnExt for T {
-    #[inline]
-    fn try_set_column_ref<Column>(
-        &mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self>
-    where
-        Column: TypedColumn,
-        Self: TrySetColumn<Column>,
-    {
-        <Self as TrySetColumn<Column>>::try_set_column(self, value)
-    }
-}
+impl<T> TrySetColumnExt for T {}

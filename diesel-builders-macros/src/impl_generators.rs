@@ -243,7 +243,7 @@ pub fn generate_get_columns() -> TokenStream {
             .zip(&indices)
             .map(|(t, idx)| {
                 quote! {
-                    <T as crate::set_column::SetColumn<#t>>::set_column(self, &values.#idx);
+                    <T as crate::set_column::SetColumn<#t>>::set_column(self, values.#idx.clone());
                 }
             })
             .collect();

@@ -163,7 +163,7 @@ where
     T::InsertableModel: SetColumn<C>,
 {
     #[inline]
-    fn set_column(&mut self, value: &C::Type) -> &mut Self {
+    fn set_column(&mut self, value: impl Into<<C as TypedColumn>::Type>) -> &mut Self {
         self.insertable_model.set_column(value);
         self
     }
