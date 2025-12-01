@@ -18,6 +18,8 @@ Add this to your `Cargo.toml`:
 diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.git", branch = "main" }
 ```
 
+The crate is not yet on [crates.io](https://crates.io) because it depends on an unreleased version of [`typed_tuple`](https://github.com/cedtwo/typed_tuple/tree/faster-compile) which we are still refining.
+
 ## Supported Patterns
 
 ### 1. Simple Table (Base Case)
