@@ -29,5 +29,5 @@ pub trait SingletonForeignKey: TypedColumn {
     type ReferencedTable: HasPrimaryKey<
             PrimaryKey: TypedColumn<Type = <Self as TypedColumn>::Type>,
             Model: NonCompositePrimaryKeyTableModel,
-        >;
+        > + diesel::query_source::TableNotEqual<Self::Table>;
 }

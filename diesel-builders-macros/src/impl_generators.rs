@@ -617,12 +617,21 @@ pub fn generate_ancestors_of() -> TokenStream {
             })
             .collect();
 
+        // Generate TableNotEqual bounds: T: TableNotEqual<A1>, T: TableNotEqual<A2>, etc.
+        let table_not_equal_bounds: Vec<_> = type_params
+            .iter()
+            .map(|t| {
+                quote! { T: diesel::query_source::TableNotEqual<#t> }
+            })
+            .collect();
+
         quote! {
             impl<T, #(#type_params),*> AncestorsOf<T> for (#(#type_params,)*)
             where
                 T: Descendant<Ancestors = Self>,
                 #(#type_params: AncestorOfIndex<T>,)*
                 #(#descendant_of_bounds,)*
+                #(#table_not_equal_bounds,)*
             {
             }
         }

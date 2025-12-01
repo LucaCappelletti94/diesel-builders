@@ -30,13 +30,10 @@ pub mod foreign_key;
 pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
 pub mod flat_insert;
 pub use flat_insert::FlatInsert;
-pub mod table_inherits;
-pub use table_inherits::TableInherits;
 
 // Re-exported modules from diesel-relations
 pub mod ancestors;
 pub mod horizontal_same_as;
-pub mod vertical_same_as;
 pub mod vertical_same_as_group;
 pub use ancestors::{AncestorOfIndex, Descendant, DescendantOf, Root};
 pub use horizontal_same_as::{
