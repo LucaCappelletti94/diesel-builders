@@ -1,8 +1,0 @@
-error: NoHorizontalSameAsGroup derive requires a #[diesel(table_name = ...)] attribute
- --> tests/ui/fail/derive_no_horizontal_same_as_group_no_diesel_attr.rs:6:1
-  |
-6 | / struct User {
-7 | |     id: i32,
-8 | |     name: String,
-9 | | }
-  | |_^

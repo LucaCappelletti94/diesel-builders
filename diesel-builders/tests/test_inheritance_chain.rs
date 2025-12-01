@@ -6,7 +6,7 @@ mod common;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use diesel_builders_macros::{
-    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+    Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel,
 };
 
 // Define table A (root table)
@@ -74,15 +74,7 @@ impl TableAddition for table_a::table {
 
 // Table B models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = table_b)]
 /// Model for table B.
@@ -115,22 +107,9 @@ impl TableAddition for table_b::table {
     type InsertableColumns = (table_b::id, table_b::column_b);
 }
 
-impl BundlableTable for table_b::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // Table C models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = table_c)]
 /// Model for table C.
@@ -161,11 +140,6 @@ impl TableAddition for table_c::table {
     type InsertableModel = NewTableC;
     type Model = TableC;
     type InsertableColumns = (table_c::id, table_c::column_c);
-}
-
-impl BundlableTable for table_c::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
 }
 
 #[test]

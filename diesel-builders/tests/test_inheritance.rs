@@ -7,7 +7,7 @@ mod common;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use diesel_builders_macros::{
-    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+    Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel,
 };
 
 diesel::table! {
@@ -72,15 +72,7 @@ impl TableAddition for users::table {
 // UserProfiles table models
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = user_profiles)]
 /// A user profile model.
@@ -119,11 +111,6 @@ impl TableAddition for user_profiles::table {
         user_profiles::bio,
         user_profiles::avatar_url,
     );
-}
-
-impl BundlableTable for user_profiles::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
 }
 
 #[test]

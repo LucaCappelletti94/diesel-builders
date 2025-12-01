@@ -9,14 +9,18 @@ use proc_macro2::{Ident, Span, TokenStream};
 pub const MAX_TUPLE_SIZE: usize = 32;
 
 /// Generate a list of type parameter identifiers (T1, T2, ..., TN)
-pub fn type_params(count: usize) -> Vec<Ident> {
+///
+/// # Arguments
+///
+/// * `count` - The number of type parameters to generate.
+pub(crate) fn type_params(count: usize) -> Vec<Ident> {
     (1..=count)
         .map(|i| Ident::new(&format!("T{i}"), Span::call_site()))
         .collect()
 }
 
 /// Generate all tuple implementations from size 0 (unit) to MAX_TUPLE_SIZE
-pub fn generate_all_sizes<F>(impl_fn: F) -> TokenStream
+pub(crate) fn generate_all_sizes<F>(impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
 {

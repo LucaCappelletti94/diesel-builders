@@ -11,7 +11,7 @@ mod common;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use diesel_builders_macros::{
-    GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
+    Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel,
 };
 
 // Define table A (root table)
@@ -87,15 +87,7 @@ impl TableAddition for table_a::table {
 
 // Table B models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = table_b)]
 /// A model for table B.
@@ -124,22 +116,9 @@ impl TableAddition for table_b::table {
     type InsertableColumns = (table_b::id, table_b::column_b);
 }
 
-impl BundlableTable for table_b::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // Table C models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = table_c)]
 /// A model for table C.
@@ -168,22 +147,9 @@ impl TableAddition for table_c::table {
     type InsertableColumns = (table_c::id, table_c::column_c);
 }
 
-impl BundlableTable for table_c::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
-}
-
 // Table D models
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    GetColumn,
-    TableModel,
-    NoHorizontalSameAsGroup,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
 )]
 #[diesel(table_name = table_d)]
 /// A model for table D.
@@ -210,11 +176,6 @@ impl TableAddition for table_d::table {
     type InsertableModel = NewTableD;
     type Model = TableD;
     type InsertableColumns = (table_d::id, table_d::column_d);
-}
-
-impl BundlableTable for table_d::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = ();
 }
 
 #[test]

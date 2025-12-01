@@ -91,8 +91,7 @@ pub mod prelude {
 
     // Re-export commonly used macros from diesel_builders_macros
     pub use diesel_builders_macros::{
-        GetColumn, HasTable, MayGetColumn, NoHorizontalSameAsGroup, Root, SetColumn, TableModel,
-        descendant_of,
+        Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of,
     };
 
     // Table relationship traits

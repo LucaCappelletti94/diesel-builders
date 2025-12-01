@@ -1049,7 +1049,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
 /// This macro generates `HorizontalSameAsGroup` implementations for each column
 /// in the struct, setting both `MandatoryHorizontalSameAsKeys` and
 /// `DiscretionaryHorizontalSameAsKeys` to `()`.
-#[proc_macro_derive(NoHorizontalSameAsGroup)]
+#[proc_macro_derive(Decoupled)]
 pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
 
@@ -1115,6 +1115,11 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
     });
 
     quote::quote! {
+        impl BundlableTable for #table_name::table {
+            type MandatoryTriangularSameAsColumns = ();
+            type DiscretionaryTriangularSameAsColumns = ();
+        }
+
         #(#impls)*
     }
     .into()
