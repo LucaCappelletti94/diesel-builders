@@ -22,7 +22,7 @@ diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.g
 
 ### 1. Simple Table (Base Case)
 
-A single table with no relationships. This demonstrates the most basic usage of the builder pattern with type-safe column setters and optional validation through `TrySetColumn` trait implementations.
+[A single table with no relationships](examples/simple_table.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters and optional validation through `TrySetColumn` trait implementations.
 
 ```mermaid
 classDiagram
@@ -34,11 +34,9 @@ classDiagram
     }
 ```
 
-See the [simple_table.rs example](examples/simple_table.rs) for a complete working implementation including SQL CHECK constraints.
-
 ### 2. Table Inheritance
 
-Tables extending a parent table via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `#[descendant_of]` macro declares the inheritance relationship.
+[Tables extending a parent table](examples/table_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `#[descendant_of]` macro declares the inheritance relationship. Insertion order: Users → UserProfiles.
 
 ```mermaid
 classDiagram
@@ -56,11 +54,9 @@ classDiagram
     UserProfiles --|> Users : extends
 ```
 
-See the [table_inheritance.rs example](examples/table_inheritance.rs) for a complete working implementation.
-
 ### 3. Directed Acyclic Graph (DAG)
 
-Multiple inheritance where a child table extends multiple parent tables. Table D extends both B and C, which both extend A. The builder automatically resolves the dependency graph and inserts records in the correct order (A → B, C → D), ensuring all foreign key constraints are satisfied.
+[Multiple inheritance](examples/dag.rs) where a child table extends multiple parent tables. Table D extends both B and C, which both extend A. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: A → B → C → D.
 
 ```mermaid
 classDiagram
@@ -87,11 +83,9 @@ classDiagram
     TableD --|> TableC : extends
 ```
 
-See the [dag.rs example](examples/dag.rs) for a complete working implementation.
-
 ### 4. Inheritance Chain
 
-A linear inheritance chain where each table extends exactly one parent (A → B → C). The builder automatically determines and enforces the correct insertion order through the dependency graph.
+[A linear inheritance chain](examples/inheritance_chain.rs) where each table extends exactly one parent. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: A → B → C.
 
 ```mermaid
 classDiagram
@@ -112,11 +106,9 @@ classDiagram
     TableC --|> TableB : extends
 ```
 
-See the [inheritance_chain.rs example](examples/inheritance_chain.rs) for a complete working implementation.
-
 ### 5. Mandatory Triangular Relation
 
-A complex pattern where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency.
+[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency. Insertion order: A → C → B.
 
 ```mermaid
 classDiagram
@@ -142,11 +134,9 @@ classDiagram
     note for TableB "c_id must reference C where C.a_id = B.id"
 ```
 
-See the test suite (`tests/test_mandatory_triangular_relation.rs`) for a complete working implementation.
-
 ### 6. Discretionary Triangular Relation
 
-Similar to the mandatory triangular relation, but the constraint is relaxed—Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones.
+[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed—Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones. Insertion order: A → C (independent) → B (where B references the independent C).
 
 ```mermaid
 classDiagram
@@ -172,11 +162,9 @@ classDiagram
     note for TableB "c_id may reference any C (not required to match B.id)"
 ```
 
-See the test suite at [test_discretionary_triangular_relation.rs](diesel-builders/tests/test_discretionary_triangular_relation.rs) for complete working examples.
-
 ### 7. Composite Primary Keys
 
-Tables with multi-column primary keys are fully supported. The builder pattern works seamlessly with composite keys, allowing type-safe construction and insertion.
+[Tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with composite keys, allowing type-safe construction and insertion.
 
 ```mermaid
 classDiagram
@@ -186,10 +174,6 @@ classDiagram
         +Text assigned_at
     }
 ```
-
-See the [composite_primary_keys.rs example](examples/composite_primary_keys.rs) for a complete working example.
-
-## Macro Attributes
 
 - `#[derive(Root)]`: Marks a table as a root (no parent tables)
 - `#[derive(TableModel)]`: Generates model-to-table associations
