@@ -1,11 +1,9 @@
 # Diesel Builders
 
-[![Documentation](https://docs.rs/diesel-builders/badge.svg)](https://docs.rs/diesel-builders)
 [![CI](https://github.com/LucaCappelletti94/diesel-builders/workflows/Rust%20CI/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
 [![Security Audit](https://github.com/LucaCappelletti94/diesel-builders/workflows/Security%20Audit/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
 [![Codecov](https://codecov.io/gh/LucaCappelletti94/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/LucaCappelletti94)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://img.shields.io/crates/d/diesel-builders.svg)](https://crates.io/crates/diesel-builders)
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles complex table relationships including arbitrary inheritance (including DAG dependencies), foreign keys, and both mandatory and optional triangular dependencies. Diesel Builders provides compile-time guarantees for proper insertion order and referential integrity in databases with complex schemas.
 
@@ -17,7 +15,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-diesel-builders = "0.1"
+diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.git", branch = "main" }
 ```
 
 ## Supported Patterns
