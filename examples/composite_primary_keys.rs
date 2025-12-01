@@ -115,24 +115,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user_role.role_id, 10);
     assert_eq!(user_role.assigned_at, "admin role");
 
-    // Test validation - invalid user_id
+    // Test validation - negative user_id
     let mut builder = user_roles::table::builder();
-    let result = builder.try_set_column::<user_roles::user_id>(&-1);
+    let result = builder.try_set_column_ref::<user_roles::user_id>(&-1);
     assert!(result.is_err());
     println!("User ID validation works: {}", result.unwrap_err());
 
     // Test validation - role_id out of range
     let mut builder = user_roles::table::builder();
-    builder.try_set_column::<user_roles::user_id>(&1)?;
-    let result = builder.try_set_column::<user_roles::role_id>(&1001);
+    builder.try_set_column_ref::<user_roles::user_id>(&1)?;
+    let result = builder.try_set_column_ref::<user_roles::role_id>(&1001);
     assert!(result.is_err());
     println!("Role ID range validation works: {}", result.unwrap_err());
 
-    // Test validation - empty assignment note
+    // Test validation - empty assigned_at
     let mut builder = user_roles::table::builder();
-    builder.try_set_column::<user_roles::user_id>(&1)?;
-    builder.try_set_column::<user_roles::role_id>(&5)?;
-    let result = builder.try_set_column::<user_roles::assigned_at>(&"   ".to_string());
+    builder.try_set_column_ref::<user_roles::user_id>(&1)?;
+    builder.try_set_column_ref::<user_roles::role_id>(&5)?;
+    let result = builder.try_set_column_ref::<user_roles::assigned_at>(&"   ".to_string());
     assert!(result.is_err());
     println!("Assignment note validation works: {}", result.unwrap_err());
 

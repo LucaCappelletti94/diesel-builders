@@ -75,7 +75,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(builder.may_get_column::<users::name>(), None);
     assert_eq!(builder.may_get_column::<users::email>(), None);
 
-    builder.try_set_column::<users::name>(&"Alice".to_string())?;
+    builder.try_set_column_ref::<users::name>(&"Alice".to_string())?;
 
     assert_eq!(
         builder.may_get_column::<users::name>(),
@@ -83,8 +83,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(builder.may_get_column::<users::email>(), None);
 
-    builder.try_set_column::<users::email>(&"alice@example.com".to_string())?;
-
+    builder.try_set_column_ref::<users::email>(&"alice@example.com".to_string())?;
     assert_eq!(
         builder.may_get_column::<users::name>(),
         Some(&"Alice".to_string())

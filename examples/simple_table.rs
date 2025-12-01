@@ -119,23 +119,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test validation - empty name should fail
     let mut builder = users::table::builder();
-    let result = builder.try_set_column::<users::name>(&"   ".to_string());
+    let result = builder.try_set_column_ref::<users::name>(&"   ".to_string());
     assert!(result.is_err());
     println!("Empty name validation works: {}", result.unwrap_err());
 
     // Test validation - empty email should fail
     let mut builder = users::table::builder();
-    builder.try_set_column::<users::name>(&"Bob".to_string())?;
-    let result = builder.try_set_column::<users::email>(&"   ".to_string());
+    builder.try_set_column_ref::<users::name>(&"Bob".to_string())?;
+    let result = builder.try_set_column_ref::<users::email>(&"   ".to_string());
     assert!(result.is_err());
     println!("Email validation works: {}", result.unwrap_err());
 
     // Test validation - bio too long should fail
     let long_bio = "x".repeat(501);
     let mut builder = users::table::builder();
-    builder.try_set_column::<users::name>(&"Charlie".to_string())?;
-    builder.try_set_column::<users::email>(&"charlie@example.com".to_string())?;
-    let result = builder.try_set_column::<users::bio>(&Some(long_bio));
+    builder.try_set_column_ref::<users::name>(&"Charlie".to_string())?;
+    builder.try_set_column_ref::<users::email>(&"charlie@example.com".to_string())?;
+    let result = builder.try_set_column_ref::<users::bio>(&Some(long_bio));
     assert!(result.is_err());
     println!("Bio length validation works: {}", result.unwrap_err());
 

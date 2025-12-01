@@ -121,7 +121,7 @@ fn test_valid_product_insert() {
 
 #[test]
 fn test_empty_name_rejected() {
-    let mut builder = products::table::builder();
+    let builder = products::table::builder();
     let result = builder.try_set_column::<products::name>(&"   ".to_string());
 
     assert!(result.is_err());
@@ -132,7 +132,7 @@ fn test_empty_name_rejected() {
 #[test]
 fn test_name_too_long_rejected() {
     let long_name = "x".repeat(201);
-    let mut builder = products::table::builder();
+    let builder = products::table::builder();
     let result = builder.try_set_column::<products::name>(&long_name);
 
     assert!(result.is_err());
@@ -142,7 +142,7 @@ fn test_name_too_long_rejected() {
 
 #[test]
 fn test_negative_price_rejected() {
-    let mut builder = products::table::builder();
+    let builder = products::table::builder();
     let result = builder.try_set_column::<products::price>(&-100);
 
     assert!(result.is_err());
@@ -152,7 +152,7 @@ fn test_negative_price_rejected() {
 
 #[test]
 fn test_zero_price_rejected() {
-    let mut builder = products::table::builder();
+    let builder = products::table::builder();
     let result = builder.try_set_column::<products::price>(&0);
 
     assert!(result.is_err());
@@ -162,7 +162,7 @@ fn test_zero_price_rejected() {
 
 #[test]
 fn test_negative_stock_rejected() {
-    let mut builder = products::table::builder();
+    let builder = products::table::builder();
     let result = builder.try_set_column::<products::stock_quantity>(&-5);
 
     assert!(result.is_err());
@@ -239,34 +239,32 @@ fn test_builder_chain_with_validation() {
     .unwrap();
 
     // Test that we can chain multiple try_set_column calls
-    let result = products::table::builder()
+    let product = products::table::builder()
         .try_set_column::<products::name>(&"Keyboard".to_string())
         .and_then(|b| b.try_set_column::<products::price>(&50))
         .and_then(|b| b.try_set_column::<products::stock_quantity>(&100))
-        .and_then(|b| b.insert(&mut conn));
+        .and_then(|b| b.insert(&mut conn))
+        .unwrap();
 
-    assert!(result.is_ok());
-    let product = result.unwrap();
     assert_eq!(product.name, "Keyboard");
     assert_eq!(product.price, 50);
     assert_eq!(product.stock_quantity, 100);
 }
 
 #[test]
-fn test_validation_fails_early_in_chain() {
+fn test_validation_fails_early_in_chain() -> Result<(), Box<dyn std::error::Error>> {
     // Test that if validation fails, the error is returned immediately
     let mut builder = products::table::builder();
 
     // Set valid name
-    builder
-        .try_set_column::<products::name>(&"Mouse".to_string())
-        .unwrap();
+    builder.try_set_column_ref::<products::name>(&"Mouse".to_string())?;
 
     // Try to set invalid price - should fail
-    let result = builder.try_set_column::<products::price>(&-50);
+    let result = builder.try_set_column_ref::<products::price>(&-50);
     assert!(result.is_err());
 
     // The error message should indicate price validation failure
     let err_msg = result.unwrap_err().to_string();
     assert!(err_msg.contains("must be positive"));
+    Ok(())
 }

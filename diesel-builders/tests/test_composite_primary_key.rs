@@ -76,14 +76,14 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
     assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
 
-    builder.try_set_column::<user_roles::user_id>(&1)?;
+    builder.try_set_column_ref::<user_roles::user_id>(&1)?;
 
     assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
     assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
 
-    builder.try_set_column::<user_roles::role_id>(&10)?;
-    builder.try_set_column::<user_roles::assigned_at>(&"2025-01-01".to_string())?;
+    builder.try_set_column_ref::<user_roles::role_id>(&10)?;
+    builder.try_set_column_ref::<user_roles::assigned_at>(&"2025-01-01".to_string())?;
 
     assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), Some(&10));

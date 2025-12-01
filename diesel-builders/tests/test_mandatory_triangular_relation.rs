@@ -257,7 +257,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
-    c_builder.set_column::<table_c::column_c>(&Some("Value C".to_string()));
+    c_builder.set_column_ref::<table_c::column_c>(&Some("Value C".to_string()));
 
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's a_id should automatically
@@ -265,8 +265,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let mut b_builder = table_b::table::builder();
 
     b_builder
-        .set_column::<table_a::column_a>(&"Value A for B".to_string())
-        .set_column::<table_b::column_b>(&"Value B".to_string())
+        .set_column_ref::<table_a::column_a>(&"Value A for B".to_string())
+        .set_column_ref::<table_b::column_b>(&"Value B".to_string())
         .set_mandatory_builder::<table_b::c_id>(c_builder.clone())
         .try_set_mandatory_builder::<table_b::c_id>(c_builder)?;
 

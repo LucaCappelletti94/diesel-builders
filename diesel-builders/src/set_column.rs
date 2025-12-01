@@ -32,17 +32,29 @@ pub trait TrySetColumn<Column: TypedColumn> {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait SetColumnExt {
+pub trait SetColumnExt: Sized {
     /// Set the value of the specified column.
-    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
+    fn set_column_ref<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>;
+
+    #[inline]
+    #[must_use]
+    /// Set the value of the specified column.
+    fn set_column<Column>(mut self, value: &<Column as TypedColumn>::Type) -> Self
+    where
+        Column: TypedColumn,
+        Self: SetColumn<Column>,
+    {
+        <Self as SetColumn<Column>>::set_column(&mut self, value);
+        self
+    }
 }
 
 impl<T> SetColumnExt for T {
     #[inline]
-    fn set_column<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
+    fn set_column_ref<Column>(&mut self, value: &<Column as TypedColumn>::Type) -> &mut Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>,
@@ -56,24 +68,42 @@ impl<T> SetColumnExt for T {
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetColumnExt {
+pub trait TrySetColumnExt: Sized {
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the column cannot be set.
-    fn try_set_column<Column>(
+    fn try_set_column_ref<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>;
+
+    #[inline]
+    /// Attempt to set the value of the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the column cannot be set.
+    fn try_set_column<Column>(
+        mut self,
+        value: &<Column as TypedColumn>::Type,
+    ) -> anyhow::Result<Self>
+    where
+        Column: TypedColumn,
+        Self: TrySetColumn<Column>,
+    {
+        <Self as TrySetColumn<Column>>::try_set_column(&mut self, value)?;
+        Ok(self)
+    }
 }
 
 impl<T> TrySetColumnExt for T {
     #[inline]
-    fn try_set_column<Column>(
+    fn try_set_column_ref<Column>(
         &mut self,
         value: &<Column as TypedColumn>::Type,
     ) -> anyhow::Result<&mut Self>

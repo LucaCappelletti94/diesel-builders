@@ -200,18 +200,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test validation - empty email
     let mut builder = user_profiles::table::builder();
-    builder.try_set_column::<users::name>(&"Alice".to_string())?;
-    let result = builder.try_set_column::<users::email>(&"   ".to_string());
+    builder.try_set_column_ref::<users::name>(&"Alice".to_string())?;
+    let result = builder.try_set_column_ref::<users::email>(&"   ".to_string());
     assert!(result.is_err());
     println!("Email validation works: {}", result.unwrap_err());
 
     // Test validation - invalid URL
     let mut builder = user_profiles::table::builder();
-    builder.try_set_column::<users::name>(&"Charlie".to_string())?;
-    builder.try_set_column::<users::email>(&"charlie@example.com".to_string())?;
-    builder.try_set_column::<user_profiles::bio>(&"Developer".to_string())?;
-    let result = builder
-        .try_set_column::<user_profiles::avatar_url>(&"ftp://bad-url.com/avatar.jpg".to_string());
+    builder.try_set_column_ref::<users::name>(&"Charlie".to_string())?;
+    builder.try_set_column_ref::<users::email>(&"charlie@example.com".to_string())?;
+    builder.try_set_column_ref::<user_profiles::bio>(&"Developer".to_string())?;
+    let result = builder.try_set_column_ref::<user_profiles::avatar_url>(
+        &"ftp://bad-url.com/avatar.jpg".to_string(),
+    );
     assert!(result.is_err());
     println!("Avatar URL validation works: {}", result.unwrap_err());
 

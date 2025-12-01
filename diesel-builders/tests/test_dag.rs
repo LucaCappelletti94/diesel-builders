@@ -249,10 +249,10 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     // Insert into table D (extends both B and C)
     let mut d_builder = table_d::table::builder();
     d_builder
-        .set_column::<table_a::column_a>(&"Value A for D".to_string())
-        .set_column::<table_b::column_b>(&"Value B for D".to_string())
-        .set_column::<table_c::column_c>(&"Value C for D".to_string())
-        .set_column::<table_d::column_d>(&"Value D".to_string());
+        .set_column_ref::<table_a::column_a>(&"Value A for D".to_string())
+        .set_column_ref::<table_b::column_b>(&"Value B for D".to_string())
+        .set_column_ref::<table_c::column_c>(&"Value C for D".to_string())
+        .set_column_ref::<table_d::column_d>(&"Value D".to_string());
 
     // Test Debug formatting
     let _formatted = format!("{d_builder:?}");

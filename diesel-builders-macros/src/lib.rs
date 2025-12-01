@@ -1222,12 +1222,6 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
 /// This macro generates `HostColumn` implementations for each column in the foreign key.
 /// The `ForeignKey` trait implementation is automatically provided by the `#[impl_foreign_key]`
 /// procedural macro when all columns implement `HostColumn`.
-///
-/// # Syntax
-///
-/// ```ignore
-/// fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
-/// ```
 #[proc_macro]
 pub fn fk(input: TokenStream) -> TokenStream {
     use quote::quote;
