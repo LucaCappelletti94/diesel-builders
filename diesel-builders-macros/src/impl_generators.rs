@@ -730,9 +730,6 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
 
 /// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes
 /// (1-32).
-///
-/// This generates implementations where each tuple element at position i must implement
-/// HorizontalSameAsColumn<Key, HostColumns[i]>.
 pub fn generate_horizontal_same_as_columns() -> TokenStream {
     let impls = (1..=MAX_TUPLE_SIZE).map(|size| {
         let type_params = type_params(size);
