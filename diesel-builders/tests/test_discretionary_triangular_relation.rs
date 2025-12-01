@@ -260,8 +260,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     triangular_b_builder
         .set_column_ref::<table_a::column_a>(&"Value A for B".to_string())
         .set_column_ref::<table_b::column_b>(&"Value B".to_string())
-        .set_discretionary_builder::<table_b::c_id>(c_builder.clone())
-        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?;
+        .set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())
+        .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder)?;
 
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");

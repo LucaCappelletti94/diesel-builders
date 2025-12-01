@@ -129,20 +129,10 @@ where
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait SetMandatoryBuilderExt {
+pub trait SetMandatoryBuilderExt: Sized {
     /// Set the mandatory builder for the specified column.
-    fn set_mandatory_builder<Column>(
-        &mut self,
-        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> &mut Self
-    where
-        Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetMandatoryBuilder<Column>;
-}
-
-impl<T> SetMandatoryBuilderExt for T {
     #[inline]
-    fn set_mandatory_builder<Column>(
+    fn set_mandatory_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self
@@ -152,27 +142,34 @@ impl<T> SetMandatoryBuilderExt for T {
     {
         <Self as SetMandatoryBuilder<Column>>::set_mandatory_builder(self, builder)
     }
+
+    #[inline]
+    #[must_use]
+    /// Set the mandatory builder for the specified column.
+    fn set_mandatory_builder<Column>(
+        mut self,
+        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
+    ) -> Self
+    where
+        Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
+        Self: SetMandatoryBuilder<Column>,
+    {
+        self.set_mandatory_builder_ref::<Column>(builder);
+        self
+    }
 }
+
+impl<T> SetMandatoryBuilderExt for T {}
 
 /// Extension trait for `SetDiscretionaryBuilder` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait SetDiscretionaryBuilderExt {
+pub trait SetDiscretionaryBuilderExt: Sized {
     /// Set the discretionary builder for the specified column.
-    fn set_discretionary_builder<Column>(
-        &mut self,
-        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> &mut Self
-    where
-        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetDiscretionaryBuilder<Column>;
-}
-
-impl<T> SetDiscretionaryBuilderExt for T {
     #[inline]
-    fn set_discretionary_builder<Column>(
+    fn set_discretionary_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self
@@ -182,36 +179,39 @@ impl<T> SetDiscretionaryBuilderExt for T {
     {
         <Self as SetDiscretionaryBuilder<Column>>::set_discretionary_builder(self, builder)
     }
+
+    #[inline]
+    #[must_use]
+    /// Set the discretionary builder for the specified column.
+    fn set_discretionary_builder<Column>(
+        mut self,
+        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
+    ) -> Self
+    where
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Self: SetDiscretionaryBuilder<Column>,
+    {
+        self.set_discretionary_builder_ref::<Column>(builder);
+        self
+    }
 }
+
+impl<T> SetDiscretionaryBuilderExt for T {}
 
 /// Extension trait for `TrySetMandatoryBuilder` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetMandatoryBuilderExt {
+pub trait TrySetMandatoryBuilderExt: Sized {
     /// Attempt to set the mandatory builder for the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the builder cannot be set for the mandatory
     /// relationship.
-    fn try_set_mandatory_builder<Column>(
-        &mut self,
-        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>
-    where
-        Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetMandatoryBuilder<Column>;
-}
-
-impl<T> TrySetMandatoryBuilderExt for T {
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the mandatory
-    /// relationship.
     #[inline]
-    fn try_set_mandatory_builder<Column>(
+    fn try_set_mandatory_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self>
@@ -221,36 +221,43 @@ impl<T> TrySetMandatoryBuilderExt for T {
     {
         <Self as TrySetMandatoryBuilder<Column>>::try_set_mandatory_builder(self, builder)
     }
+
+    #[inline]
+    /// Attempt to set the mandatory builder for the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the builder cannot be set for the mandatory
+    /// relationship.
+    fn try_set_mandatory_builder<Column>(
+        mut self,
+        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
+    ) -> anyhow::Result<Self>
+    where
+        Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
+        Self: TrySetMandatoryBuilder<Column>,
+    {
+        self.try_set_mandatory_builder_ref::<Column>(builder)?;
+        Ok(self)
+    }
 }
+
+impl<T> TrySetMandatoryBuilderExt for T {}
 
 /// Extension trait for `TrySetDiscretionaryBuilder` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetDiscretionaryBuilderExt {
+pub trait TrySetDiscretionaryBuilderExt: Sized {
     /// Attempt to set the discretionary builder for the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the builder cannot be set for the discretionary
     /// relationship.
-    fn try_set_discretionary_builder<Column>(
-        &mut self,
-        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>
-    where
-        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetDiscretionaryBuilder<Column>;
-}
-
-impl<T> TrySetDiscretionaryBuilderExt for T {
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the discretionary
-    /// relationship.
     #[inline]
-    fn try_set_discretionary_builder<Column>(
+    fn try_set_discretionary_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
     ) -> anyhow::Result<&mut Self>
@@ -260,27 +267,38 @@ impl<T> TrySetDiscretionaryBuilderExt for T {
     {
         <Self as TrySetDiscretionaryBuilder<Column>>::try_set_discretionary_builder(self, builder)
     }
+
+    #[inline]
+    /// Attempt to set the discretionary builder for the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the builder cannot be set for the discretionary
+    /// relationship.
+    fn try_set_discretionary_builder<Column>(
+        mut self,
+        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
+    ) -> anyhow::Result<Self>
+    where
+        Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
+        Self: TrySetDiscretionaryBuilder<Column>,
+    {
+        self.try_set_discretionary_builder_ref::<Column>(builder)?;
+        Ok(self)
+    }
 }
+
+impl<T> TrySetDiscretionaryBuilderExt for T {}
 
 /// Extension trait for `SetDiscretionaryModel` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait SetDiscretionaryModelExt {
+pub trait SetDiscretionaryModelExt: Sized {
     /// Set the discretionary model for the specified column.
-    fn set_discretionary_model<Column>(
-        &mut self,
-        model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> &mut Self
-    where
-        Column: crate::DiscretionarySameAsIndex,
-        Self: SetDiscretionaryModel<Column>;
-}
-
-impl<T> SetDiscretionaryModelExt for T {
     #[inline]
-    fn set_discretionary_model<Column>(
+    fn set_discretionary_model_ref<Column>(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> &mut Self
@@ -290,36 +308,39 @@ impl<T> SetDiscretionaryModelExt for T {
     {
         <Self as SetDiscretionaryModel<Column>>::set_discretionary_model(self, model)
     }
+
+    #[inline]
+    #[must_use]
+    /// Set the discretionary model for the specified column.
+    fn set_discretionary_model<Column>(
+        mut self,
+        model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
+    ) -> Self
+    where
+        Column: crate::DiscretionarySameAsIndex,
+        Self: SetDiscretionaryModel<Column>,
+    {
+        self.set_discretionary_model_ref::<Column>(model);
+        self
+    }
 }
+
+impl<T> SetDiscretionaryModelExt for T {}
 
 /// Extension trait for `TrySetDiscretionaryModel` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetDiscretionaryModelExt {
+pub trait TrySetDiscretionaryModelExt: Sized {
     /// Attempt to set the discretionary model for the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the model cannot be set for the discretionary
     /// relationship.
-    fn try_set_discretionary_model<Column>(
-        &mut self,
-        model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> anyhow::Result<&mut Self>
-    where
-        Column: crate::DiscretionarySameAsIndex,
-        Self: TrySetDiscretionaryModel<Column>;
-}
-
-impl<T> TrySetDiscretionaryModelExt for T {
-    /// # Errors
-    ///
-    /// Returns an error if the model cannot be set for the discretionary
-    /// relationship.
     #[inline]
-    fn try_set_discretionary_model<Column>(
+    fn try_set_discretionary_model_ref<Column>(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> anyhow::Result<&mut Self>
@@ -329,7 +350,29 @@ impl<T> TrySetDiscretionaryModelExt for T {
     {
         <Self as TrySetDiscretionaryModel<Column>>::try_set_discretionary_model(self, model)
     }
+
+    #[inline]
+    /// Attempt to set the discretionary model for the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the model cannot be set for the discretionary
+    /// relationship.
+    fn try_set_discretionary_model<Column>(
+        mut self,
+        model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
+    ) -> anyhow::Result<Self>
+    where
+        Column: crate::DiscretionarySameAsIndex,
+        Self: TrySetDiscretionaryModel<Column>,
+    {
+        self.try_set_discretionary_model_ref::<Column>(model)?;
+        Ok(self)
+    }
 }
+
+impl<T> TrySetDiscretionaryModelExt for T {}
+
 /// Trait to try set a column in a mandatory same-as relationship.
 pub trait TrySetMandatorySameAsColumn<
     Key: MandatorySameAsIndex,

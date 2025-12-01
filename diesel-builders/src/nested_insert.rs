@@ -18,7 +18,7 @@ pub trait NestedInsert<Conn>: HasTableAddition {
     ///
     /// Returns an error if the insertion fails or if any database constraints
     /// are violated.
-    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model>;
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model>;
 }
 
 /// Trait defining the insertion of a tuple of builders into the database.

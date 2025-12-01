@@ -334,11 +334,11 @@ where
         NestedInsert<Conn, Table = T>,
 {
     #[inline]
-    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        > = self.clone().try_into()?;
+        > = self.try_into()?;
         completed_builder.insert(conn)
     }
 }
@@ -351,7 +351,7 @@ where
     CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
 {
     #[inline]
-    fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
         self.bundles.0.insert(conn)
     }
 }

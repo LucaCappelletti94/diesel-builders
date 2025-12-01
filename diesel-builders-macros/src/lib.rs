@@ -1292,12 +1292,6 @@ pub fn fk(input: TokenStream) -> TokenStream {
 /// This macro generates `IndexedColumn` implementations for each column in the index.
 /// The `TableIndex` trait implementation is automatically provided by the `#[impl_table_index]`
 /// procedural macro when all columns implement `IndexedColumn`.
-///
-/// # Syntax
-///
-/// ```ignore
-/// index!((table_a::id, table_a::name));
-/// ```
 #[proc_macro]
 pub fn index(input: TokenStream) -> TokenStream {
     use quote::quote;

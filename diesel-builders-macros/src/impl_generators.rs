@@ -710,9 +710,9 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                     >,
             {
                 #[inline]
-                fn insert(&self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+                fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
                     use typed_tuple::prelude::TypedTuple;
-                    let (first, bundles) = self.bundles.clone().pop();
+                    let (first, bundles) = self.bundles.pop();
                     let model: <#first_type as TableAddition>::Model = first.insert(conn)?;
                     let mut next_builder: CompletedTableBuilder<T, _> =
                         CompletedTableBuilder { bundles, table: PhantomData };
