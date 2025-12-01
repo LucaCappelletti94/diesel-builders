@@ -27,7 +27,7 @@ pub use set_column::{MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySet
 pub mod insertable_table_model;
 pub use insertable_table_model::InsertableTableModel;
 pub mod foreign_key;
-pub use foreign_key::{ForeignKey, SingleColumnForeignKey, SingletonForeignKey};
+pub use foreign_key::{ForeignKey, HostColumn, IndexedColumn, SingletonForeignKey, TableIndex};
 pub mod flat_insert;
 pub use flat_insert::FlatInsert;
 
@@ -92,6 +92,7 @@ pub mod prelude {
     // Re-export commonly used macros from diesel_builders_macros
     pub use diesel_builders_macros::{
         Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of,
+        fk, index,
     };
 
     // Table relationship traits

@@ -6,28 +6,51 @@ use typed_tuple::prelude::{NthIndex, TypedFirst, U0, Unsigned};
 
 use crate::{
     Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
-    Projection, SingleColumnForeignKey, SingletonForeignKey, TypedColumn,
-    ancestors::DescendantWithSelf, columns::NonEmptyProjection, table_addition::HasPrimaryKey,
+    Projection, SingletonForeignKey, TableIndex, TypedColumn, ancestors::DescendantWithSelf,
+    columns::NonEmptyProjection, table_addition::HasPrimaryKey,
 };
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<
-    KeyColumn: SingleColumnForeignKey<<<Self as Column>::Table as Table>::PrimaryKey>,
-    HostColumn: Column<Table = KeyColumn::Table>,
->: Column<Table: HasPrimaryKey>
+    KeyColumn: SingletonForeignKey<ReferencedTable = Self::Table>,
+    HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as TypedColumn>::Type>,
+>: TypedColumn<Table: HasPrimaryKey>
 {
 }
 
 impl<KeyColumn, HostColumn, ForeignColumn> HorizontalSameAsColumn<KeyColumn, HostColumn>
     for ForeignColumn
 where
-    KeyColumn: SingleColumnForeignKey<<<Self as Column>::Table as Table>::PrimaryKey>,
-    HostColumn: TypedColumn<Table = KeyColumn::Table>,
+    KeyColumn: SingletonForeignKey<ReferencedTable = ForeignColumn::Table>,
+    HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as TypedColumn>::Type>,
     ForeignColumn: TypedColumn<Table: HasPrimaryKey>,
+    (
+        <<ForeignColumn as Column>::Table as Table>::PrimaryKey,
+        ForeignColumn,
+    ): TableIndex,
     (KeyColumn, HostColumn): ForeignKey<(
         <<ForeignColumn as Column>::Table as Table>::PrimaryKey,
         ForeignColumn,
     )>,
+    (KeyColumn,): ForeignKey<(<<ForeignColumn as Column>::Table as Table>::PrimaryKey,)>,
+{
+}
+
+/// A trait for Diesel columns collections that define horizontal same-as
+/// relationships.
+#[diesel_builders_macros::impl_horizontal_same_as_columns]
+pub trait HorizontalSameAsColumns<
+    Key: HorizontalSameAsKey<HostColumns = HostColumns, ForeignColumns = Self>,
+    HostColumns: Columns,
+>:
+    NonEmptyProjection<Table = Key::ReferencedTable, Types = <HostColumns as Columns>::Types>
+    + NthIndex<
+        U0,
+        NthType: TypedColumn<
+            Type = <<<Key as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
+            Table = Key::ReferencedTable,
+        >,
+    >
 {
 }
 
@@ -41,16 +64,7 @@ pub trait HorizontalSameAsKey:
         + TypedFirst<<<Self as Column>::Table as Table>::PrimaryKey>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
-    type ForeignColumns: NonEmptyProjection<
-            Table = Self::ReferencedTable,
-            Types = <Self::HostColumns as Columns>::Types,
-        > + NthIndex<
-            U0,
-            NthType: TypedColumn<
-                Type = <<<Self as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
-                Table = Self::ReferencedTable,
-            >,
-        >;
+    type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns>;
 }
 
 /// Index in a tuple for a mandatory same-as relationship.

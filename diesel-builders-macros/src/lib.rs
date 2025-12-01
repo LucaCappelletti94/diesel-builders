@@ -272,6 +272,46 @@ pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> To
     .into()
 }
 
+/// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes
+/// (1-32).
+#[proc_macro_attribute]
+pub fn impl_horizontal_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_horizontal_same_as_columns();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `TableIndex` trait implementations for all tuple sizes (1-32).
+#[proc_macro_attribute]
+pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_table_index();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `ForeignKey` trait implementations for all tuple sizes (1-32).
+#[proc_macro_attribute]
+pub fn impl_foreign_key(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_foreign_key();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `TrySetMandatorySameAsColumns` and
 /// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
 /// (0-32).
@@ -757,7 +797,42 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         }
     };
 
-    let impls = fields.iter().map(|field| {
+    // Extract primary key columns from diesel(primary_key = ...) attribute
+    let primary_key_columns: Vec<syn::Ident> = input
+        .attrs
+        .iter()
+        .find_map(|attr| {
+            if !attr.path().is_ident("diesel") {
+                return None;
+            }
+
+            let mut pk_columns = Vec::new();
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("primary_key") {
+                    // Parse primary_key(col1, col2, ...)
+                    let content;
+                    syn::parenthesized!(content in meta.input);
+                    let punct: syn::punctuated::Punctuated<syn::Ident, syn::Token![,]> =
+                        syn::punctuated::Punctuated::parse_terminated(&content)?;
+                    pk_columns.extend(punct);
+                    Ok(())
+                } else {
+                    Ok(())
+                }
+            });
+
+            if pk_columns.is_empty() {
+                None
+            } else {
+                Some(pk_columns)
+            }
+        })
+        .unwrap_or_else(|| {
+            // Default: if no primary_key attribute, assume "id" is the primary key
+            vec![syn::Ident::new("id", proc_macro2::Span::call_site())]
+        });
+
+    let typed_column_impls = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         let field_type = &field.ty;
 
@@ -768,8 +843,25 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         }
     });
 
+    // Generate IndexedColumn implementations for primary key columns
+    let pk_column_types: Vec<_> = primary_key_columns
+        .iter()
+        .map(|col| quote::quote! { #table_name::#col })
+        .collect();
+
+    let indexed_column_impls = primary_key_columns.iter().enumerate().map(|(idx, col)| {
+        let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+        quote::quote! {
+            impl diesel_builders::IndexedColumn<
+                typed_tuple::prelude::#idx_type,
+                ( #(#pk_column_types,)* )
+            > for #table_name::#col {}
+        }
+    });
+
     quote::quote! {
-        #(#impls)*
+        #(#typed_column_impls)*
+        #(#indexed_column_impls)*
     }
     .into()
 }
@@ -1120,6 +1212,137 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
             type DiscretionaryTriangularSameAsColumns = ();
         }
 
+        #(#impls)*
+    }
+    .into()
+}
+
+/// Define a foreign key relationship using SQL-like syntax.
+///
+/// This macro generates `HostColumn` implementations for each column in the foreign key.
+/// The `ForeignKey` trait implementation is automatically provided by the `#[impl_foreign_key]`
+/// procedural macro when all columns implement `HostColumn`.
+///
+/// # Syntax
+///
+/// ```ignore
+/// fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
+/// ```
+#[proc_macro]
+pub fn fk(input: TokenStream) -> TokenStream {
+    use quote::quote;
+    use syn::{
+        parse::{Parse, ParseStream},
+        punctuated::Punctuated,
+        Token, Type,
+    };
+
+    struct ForeignKey {
+        host_columns: Punctuated<Type, Token![,]>,
+        ref_columns: Punctuated<Type, Token![,]>,
+    }
+
+    impl Parse for ForeignKey {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            // Parse: ( host_cols ) REFERENCES ( ref_cols )
+            let host_content;
+            syn::parenthesized!(host_content in input);
+            let host_columns = Punctuated::parse_terminated(&host_content)?;
+
+            input.parse::<syn::Ident>()?; // REFERENCES keyword
+
+            let ref_content;
+            syn::parenthesized!(ref_content in input);
+            let ref_columns = Punctuated::parse_terminated(&ref_content)?;
+
+            Ok(ForeignKey {
+                host_columns,
+                ref_columns,
+            })
+        }
+    }
+
+    let fk_def = syn::parse_macro_input!(input as ForeignKey);
+    let host_cols: Vec<_> = fk_def.host_columns.iter().collect();
+    let ref_cols: Vec<_> = fk_def.ref_columns.iter().collect();
+
+    if host_cols.len() != ref_cols.len() {
+        return syn::Error::new_spanned(
+            &fk_def.host_columns,
+            "Number of host columns must match number of referenced columns",
+        )
+        .to_compile_error()
+        .into();
+    }
+
+    // Generate HostColumn implementation for each column at its index
+    let impls = host_cols.iter().enumerate().map(|(idx, host_col)| {
+        let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+        quote! {
+            impl diesel_builders::HostColumn<
+                typed_tuple::prelude::#idx_type,
+                ( #(#host_cols,)* ),
+                ( #(#ref_cols,)* )
+            > for #host_col {}
+        }
+    });
+
+    quote! {
+        #(#impls)*
+    }
+    .into()
+}
+
+/// Define a table index using SQL-like syntax.
+///
+/// This macro generates `IndexedColumn` implementations for each column in the index.
+/// The `TableIndex` trait implementation is automatically provided by the `#[impl_table_index]`
+/// procedural macro when all columns implement `IndexedColumn`.
+///
+/// # Syntax
+///
+/// ```ignore
+/// index!((table_a::id, table_a::name));
+/// ```
+#[proc_macro]
+pub fn index(input: TokenStream) -> TokenStream {
+    use quote::quote;
+    use syn::{
+        parse::{Parse, ParseStream},
+        punctuated::Punctuated,
+        Token, Type,
+    };
+
+    struct TableIndex {
+        columns: Punctuated<Type, Token![,]>,
+    }
+
+    impl Parse for TableIndex {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            // Parse: ( cols )
+            let content;
+            syn::parenthesized!(content in input);
+            let columns = Punctuated::parse_terminated(&content)?;
+
+            Ok(TableIndex { columns })
+        }
+    }
+
+    let index_def = syn::parse_macro_input!(input as TableIndex);
+    let cols: Vec<_> = index_def.columns.iter().collect();
+
+    // Generate IndexedColumn implementation for each column at its index
+    let impls = cols.iter().enumerate().map(|(idx, col)| {
+        let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+        quote! {
+            impl diesel_builders::IndexedColumn<
+                typed_tuple::prelude::#idx_type,
+                ( #(#cols,)* )
+            > for #col {}
+        }
+    });
+
+    quote! {
         #(#impls)*
     }
     .into()

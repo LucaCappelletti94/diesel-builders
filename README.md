@@ -108,7 +108,7 @@ classDiagram
 
 ### 5. Mandatory Triangular Relation
 
-[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency. Insertion order: A → C → B.
+[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency. Foreign key relationships are declared using the `fk!` macro for type-safe multi-column constraints, with composite indices declared via `index!` macro (e.g., `index!((table_c::id, table_c::a_id));`). Insertion order: A → C → B.
 
 ```mermaid
 classDiagram
@@ -136,7 +136,7 @@ classDiagram
 
 ### 6. Discretionary Triangular Relation
 
-[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed—Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones. Insertion order: A → C (independent) → B (where B references the independent C).
+[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed—Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones. Foreign key relationships are declared using the `fk!` macro, with composite indices declared via `index!` macro where needed. Insertion order: A → C (independent) → B (where B references the independent C).
 
 ```mermaid
 classDiagram
@@ -176,10 +176,12 @@ classDiagram
 ```
 
 - `#[derive(Root)]`: Marks a table as a root (no parent tables)
-- `#[derive(TableModel)]`: Generates model-to-table associations
+- `#[derive(TableModel)]`: Generates model-to-table associations and automatically implements `IndexedColumn` for all primary key columns, making them available as foreign key targets
 - `#[derive(GetColumn, SetColumn)]`: Generates type-safe column accessors
 - `#[descendant_of]`: Declares parent table relationships
 - `#[bundlable_table]`: Configures triangular relationship columns
+- `fk!`: Declares foreign key relationships with SQL-like syntax (e.g., `fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id))`)
+- `index!`: Declares table indices (including composite indices) that can be used as foreign key targets (e.g., `index!((table_c::id, table_c::a_id));`). Primary keys (both single and composite) are automatically indexed by `TableModel` and don't need explicit `index!` declarations
 
 ## License
 

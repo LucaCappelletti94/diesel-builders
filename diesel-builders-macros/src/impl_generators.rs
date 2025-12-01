@@ -728,6 +728,53 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
     }
 }
 
+/// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes
+/// (1-32).
+///
+/// This generates implementations where each tuple element at position i must implement
+/// HorizontalSameAsColumn<Key, HostColumns[i]>.
+pub fn generate_horizontal_same_as_columns() -> TokenStream {
+    let impls = (1..=MAX_TUPLE_SIZE).map(|size| {
+        let type_params = type_params(size);
+        let host_column_params = type_params.iter().enumerate().map(|(i, _)| {
+            syn::Ident::new(&format!("HC{i}"), proc_macro2::Span::call_site())
+        }).collect::<Vec<_>>();
+        // Generate bounds: T0: HorizontalSameAsColumn<Key, HC0>, T1: HorizontalSameAsColumn<Key, HC1>, etc.
+        let column_impl_bounds = type_params.iter().zip(host_column_params.iter()).map(|(col, hc)| {
+            quote! {
+                #col: HorizontalSameAsColumn<Key, #hc, Table = <Key as SingletonForeignKey>::ReferencedTable>
+            }
+        });
+        // Generate bounds that each host column is on the Key's table
+        let host_column_table_bounds = host_column_params.iter().zip(type_params.iter()).map(|(hc, tp)| {
+            quote! {
+                #hc: TypedColumn<Table = <Key as Column>::Table, Type = <#tp as TypedColumn>::Type>
+            }
+        });
+        quote! {
+            impl<Key, #(#host_column_params,)* #(#type_params),*> HorizontalSameAsColumns<Key, (#(#host_column_params,)*)> for (#(#type_params,)*)
+            where
+                Key: HorizontalSameAsKey<HostColumns = (#(#host_column_params,)*), ForeignColumns = (#(#type_params,)*)>,
+                #(#host_column_table_bounds,)*
+                #(#column_impl_bounds,)*
+                (#(#type_params,)*): NonEmptyProjection<Table = <Key as SingletonForeignKey>::ReferencedTable, Types = <(#(#host_column_params,)*) as Columns>::Types>
+                    + NthIndex<
+                        U0,
+                        NthType: TypedColumn<
+                            Type = <<<Key as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
+                            Table = <Key as SingletonForeignKey>::ReferencedTable,
+                        >,
+                    >,
+            {
+            }
+        }
+    }).collect::<TokenStream>();
+
+    quote! {
+        #impls
+    }
+}
+
 /// Generate `TrySetMandatorySameAsColumns` and
 /// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
 /// (0-32).
@@ -843,5 +890,92 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
     quote! {
         #empty_impl
         #tuple_impls
+    }
+}
+
+/// Generate `TableIndex` trait marker implementations for all tuple sizes (1-32).
+pub fn generate_table_index() -> proc_macro2::TokenStream {
+    let impls: TokenStream = (1..=MAX_TUPLE_SIZE)
+        .map(|size| {
+            let type_params = type_params(size);
+
+            // Generate index constants (U0, U1, U2, ...)
+            let indices: Vec<_> = (0..size)
+                .map(|i| {
+                    let ident = quote::format_ident!("U{}", i);
+                    quote! { typed_tuple::prelude::#ident }
+                })
+                .collect();
+
+            // Generate IndexedColumn bounds for each column
+            let indexed_column_bounds =
+                type_params.iter().zip(indices.iter()).map(|(param, idx)| {
+                    quote! {
+                        #param: IndexedColumn<#idx, (#(#type_params,)*)>
+                    }
+                });
+
+            quote! {
+                impl<#(#type_params: TypedColumn,)*> TableIndex for (#(#type_params,)*)
+                where
+                    (#(#type_params,)*): NonEmptyProjection,
+                    #(#indexed_column_bounds,)*
+                {
+                }
+            }
+        })
+        .collect();
+
+    quote! {
+        #impls
+    }
+}
+
+/// Generate `ForeignKey` trait marker implementations for all tuple sizes (1-32).
+pub fn generate_foreign_key() -> proc_macro2::TokenStream {
+    let impls: TokenStream = (1..=MAX_TUPLE_SIZE)
+        .map(|size| {
+            let host_params = type_params(size);
+            let ref_params: Vec<_> = (1..=size)
+                .map(|i| {
+                    let ident = quote::format_ident!("R{}", i);
+                    quote! { #ident }
+                })
+                .collect();
+            // Generate index constants (U0, U1, U2, ...)
+            let indices: Vec<_> = (0..size)
+                .map(|i| {
+                    let ident = quote::format_ident!("U{}", i);
+                    quote! { typed_tuple::prelude::#ident }
+                })
+                .collect();
+            // Generate HostColumn bounds for each host parameter with type equality
+            let host_column_bounds = host_params.iter().zip(ref_params.iter()).zip(indices.iter()).map(|((host_param, ref_param), idx)| {
+                quote! {
+                    #host_param: HostColumn<#idx, (#(#host_params,)*), (#(#ref_params,)*)> + TypedColumn<Type = <#ref_param as TypedColumn>::Type>
+                }
+            });
+            // Generate IndexedColumn bounds for each referenced parameter
+            let indexed_column_bounds = ref_params.iter().zip(indices.iter()).map(|(ref_param, idx)| {
+                quote! {
+                    #ref_param: IndexedColumn<#idx, (#(#ref_params,)*)>
+                }
+            });
+
+            quote! {
+                impl<#(#host_params: TypedColumn,)* #(#ref_params: TypedColumn,)*> ForeignKey<(#(#ref_params,)*)> for (#(#host_params,)*)
+                where
+                    (#(#host_params,)*): NonEmptyProjection,
+                    (#(#ref_params,)*): NonEmptyProjection,
+                    #(#host_column_bounds,)*
+                    #(#indexed_column_bounds,)*
+                {
+                }
+            }
+        })
+        .collect();
+
+    quote! {
+        #impls
     }
 }

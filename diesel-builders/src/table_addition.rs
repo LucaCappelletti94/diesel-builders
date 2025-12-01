@@ -1,6 +1,8 @@
 //! Extended `Table` trait with additional functionality.
 
-use crate::{InsertableTableModel, Projection, TableModel, TypedColumn};
+use typed_tuple::prelude::U0;
+
+use crate::{IndexedColumn, InsertableTableModel, Projection, TableModel};
 
 /// Extended trait for Diesel tables.
 pub trait TableAddition: 'static + diesel::Table<AllColumns: Projection<Self>> + Default {
@@ -18,6 +20,12 @@ pub trait HasTableAddition: diesel::associations::HasTable<Table: TableAddition>
 impl<T> HasTableAddition for T where T: diesel::associations::HasTable<Table: TableAddition> {}
 
 /// Defines a table which has a non-composite primary key.
-pub trait HasPrimaryKey: TableAddition<PrimaryKey: TypedColumn<Table = Self>> {}
+pub trait HasPrimaryKey:
+    TableAddition<PrimaryKey: IndexedColumn<U0, (Self::PrimaryKey,), Table = Self>>
+{
+}
 
-impl<T> HasPrimaryKey for T where T: TableAddition<PrimaryKey: TypedColumn<Table = T>> {}
+impl<T> HasPrimaryKey for T where
+    T: TableAddition<PrimaryKey: IndexedColumn<U0, (Self::PrimaryKey,), Table = Self>>
+{
+}
