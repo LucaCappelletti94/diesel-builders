@@ -222,9 +222,7 @@ where
 {
     #[inline]
     fn set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
-        self.mandatory_associated_builders.apply(|opt| {
-            *opt = Some(builder);
-        });
+        self.mandatory_associated_builders.replace(Some(builder));
         self
     }
 }
@@ -250,9 +248,7 @@ where
 {
     #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
-        self.mandatory_associated_builders.apply(|opt| {
-            *opt = Some(builder);
-        });
+        self.mandatory_associated_builders.replace(Some(builder));
         Ok(self)
     }
 }
@@ -267,9 +263,7 @@ where
 {
     #[inline]
     fn set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
-        self.discretionary_associated_builders.apply(|opt| {
-            *opt = Some(builder);
-        });
+        self.discretionary_associated_builders.replace(Some(builder));
         self
     }
 }
@@ -287,9 +281,7 @@ where
         &mut self,
         builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
-        self.discretionary_associated_builders.apply(|opt| {
-            *opt = Some(builder);
-        });
+        self.discretionary_associated_builders.replace(Some(builder));
         Ok(self)
     }
 }
