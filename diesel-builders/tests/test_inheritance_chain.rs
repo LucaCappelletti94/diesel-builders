@@ -175,15 +175,15 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into table A
     let a = table_a::table::builder()
-        .set_column::<table_a::column_a>(&"Value A".to_string())
+        .set_column::<table_a::column_a>("Value A")
         .insert(&mut conn)?;
 
     assert_eq!(a.column_a, "Value A");
 
     // Insert into table B (extends A)
     let b = table_b::table::builder()
-        .set_column::<table_a::column_a>(&"Value A for B".to_string())
-        .set_column::<table_b::column_b>(&"Value B".to_string())
+        .set_column::<table_a::column_a>("Value A for B")
+        .set_column::<table_b::column_b>("Value B")
         .insert(&mut conn)?;
 
     assert_eq!(b.column_b, "Value B");
@@ -196,9 +196,9 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into table C (extends B, transitively extends A)
     let c = table_c::table::builder()
-        .set_column::<table_a::column_a>(&"Value A for C".to_string())
-        .set_column::<table_b::column_b>(&"Value B for C".to_string())
-        .set_column::<table_c::column_c>(&"Value C".to_string())
+        .set_column::<table_a::column_a>("Value A for C")
+        .set_column::<table_b::column_b>("Value B for C")
+        .set_column::<table_c::column_c>("Value C")
         .insert(&mut conn)?;
 
     assert_eq!(c.column_c, "Value C");

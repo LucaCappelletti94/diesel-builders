@@ -1,5 +1,10 @@
 #![doc = include_str!("../../README.md")]
 
+// Error handling helpers
+pub mod builder_error;
+pub use builder_error::IncompleteBuilderError;
+pub(crate) use builder_error::validation_error;
+
 // Re-exported modules from diesel-additions
 pub mod utils;
 pub use utils::*;

@@ -5,33 +5,12 @@ edition = "2024"
 
 [dependencies]
 diesel.workspace = true
-anyhow.workspace = true
 typed_tuple.workspace = true
 tuple_set.workspace = true
 diesel-builders-macros.workspace = true
 
 [dev-dependencies]
 diesel = { workspace = true, features = ["sqlite", "returning_clauses_for_sqlite_3_35", "extras"] }
-
-[[example]]
-name = "simple_table"
-path = "../examples/simple_table.rs"
-
-[[example]]
-name = "table_inheritance"
-path = "../examples/table_inheritance.rs"
-
-[[example]]
-name = "composite_primary_keys"
-path = "../examples/composite_primary_keys.rs"
-
-[[example]]
-name = "dag"
-path = "../examples/dag.rs"
-
-[[example]]
-name = "inheritance_chain"
-path = "../examples/inheritance_chain.rs"
 
 [lints]
 workspace = true

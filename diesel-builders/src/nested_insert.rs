@@ -18,7 +18,7 @@ pub trait NestedInsert<Conn>: HasTableAddition {
     ///
     /// Returns an error if the insertion fails or if any database constraints
     /// are violated.
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model>;
+    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model>;
 }
 
 /// Trait defining the insertion of a tuple of builders into the database.
@@ -37,7 +37,7 @@ pub trait NestedInsertTuple<Conn> {
     ///
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
-    fn nested_insert_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::ModelsTuple>;
+    fn nested_insert_tuple(self, conn: &mut Conn) -> diesel::QueryResult<Self::ModelsTuple>;
 }
 
 // Generate implementations for all tuple sizes (1-32)
@@ -63,8 +63,10 @@ pub trait NestedInsertOptionTuple<Conn> {
     ///
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
-    fn nested_insert_option_tuple(self, conn: &mut Conn)
-    -> anyhow::Result<Self::OptionModelsTuple>;
+    fn nested_insert_option_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Self::OptionModelsTuple>;
 }
 
 // Generate implementations for all tuple sizes (1-32)

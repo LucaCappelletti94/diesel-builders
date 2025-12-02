@@ -3,7 +3,9 @@
 use crate::TypedColumn;
 
 /// Trait providing a setter for a specific Diesel column.
-pub trait SetColumn<Column: TypedColumn> {
+pub trait SetColumn<Column: TypedColumn>:
+    TrySetColumn<Column, Error = core::convert::Infallible>
+{
     /// Set the value of the specified column.
     fn set_column(&mut self, value: impl Into<<Column as TypedColumn>::Type>) -> &mut Self;
 }
@@ -16,6 +18,9 @@ pub trait MaySetColumn<Column: TypedColumn> {
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetColumn<Column: TypedColumn> {
+    /// The associated error type for the operation.
+    type Error: core::error::Error + Send + Sync;
+
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -23,8 +28,8 @@ pub trait TrySetColumn<Column: TypedColumn> {
     /// Returns an error if the column cannot be set.
     fn try_set_column(
         &mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self>;
+        value: <Column as TypedColumn>::Type,
+    ) -> Result<&mut Self, Self::Error>;
 }
 
 /// Extension trait for `SetColumn` that allows specifying the column at the
@@ -75,13 +80,16 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column_ref<Column>(
         &mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self>
+        value: impl TryInto<
+            <Column as TypedColumn>::Type,
+            Error: Into<<Self as TrySetColumn<Column>>::Error>,
+        >,
+    ) -> Result<&mut Self, <Self as TrySetColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,
     {
-        <Self as TrySetColumn<Column>>::try_set_column(self, value)
+        <Self as TrySetColumn<Column>>::try_set_column(self, value.try_into().map_err(Into::into)?)
     }
 
     #[inline]
@@ -92,13 +100,19 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<Self>
+        value: impl TryInto<
+            <Column as TypedColumn>::Type,
+            Error: Into<<Self as TrySetColumn<Column>>::Error>,
+        >,
+    ) -> Result<Self, <Self as TrySetColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,
     {
-        <Self as TrySetColumn<Column>>::try_set_column(&mut self, value)?;
+        <Self as TrySetColumn<Column>>::try_set_column(
+            &mut self,
+            value.try_into().map_err(Into::into)?,
+        )?;
         Ok(self)
     }
 }

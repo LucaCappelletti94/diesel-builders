@@ -222,44 +222,38 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into table A
     let a: TableA = table_a::table::builder()
-        .set_column::<table_a::column_a>(&"Value A".to_string())
-        .insert(&mut conn)
-        .expect("Failed to insert into table A");
+        .set_column::<table_a::column_a>("Value A")
+        .insert(&mut conn)?;
 
     assert_eq!(a.column_a, "Value A");
 
     // Insert into table B (extends A)
     let b: TableB = table_b::table::builder()
-        .set_column::<table_a::column_a>(&"Value A for B".to_string())
-        .set_column::<table_b::column_b>(&"Value B".to_string())
-        .insert(&mut conn)
-        .expect("Failed to insert into table B");
+        .set_column::<table_a::column_a>("Value A for B")
+        .set_column::<table_b::column_b>("Value B")
+        .insert(&mut conn)?;
 
     assert_eq!(b.column_b, "Value B");
 
     // Insert into table C (extends A)
     let c: TableC = table_c::table::builder()
-        .set_column::<table_a::column_a>(&"Value A for C".to_string())
-        .set_column::<table_c::column_c>(&"Value C".to_string())
-        .insert(&mut conn)
-        .expect("Failed to insert into table C");
+        .set_column::<table_a::column_a>("Value A for C")
+        .set_column::<table_c::column_c>("Value C")
+        .insert(&mut conn)?;
 
     assert_eq!(c.column_c, "Value C");
 
     // Insert into table D (extends both B and C)
-    let mut d_builder = table_d::table::builder();
-    d_builder
-        .set_column_ref::<table_a::column_a>(&"Value A for D".to_string())
-        .set_column_ref::<table_b::column_b>(&"Value B for D".to_string())
-        .set_column_ref::<table_c::column_c>(&"Value C for D".to_string())
-        .set_column_ref::<table_d::column_d>(&"Value D".to_string());
+    let d_builder = table_d::table::builder()
+        .set_column::<table_a::column_a>("Value A for D")
+        .set_column::<table_b::column_b>("Value B for D")
+        .set_column::<table_c::column_c>("Value C for D")
+        .set_column::<table_d::column_d>("Value D");
 
     // Test Debug formatting
     let _formatted = format!("{d_builder:?}");
 
-    let d: TableD = d_builder
-        .insert(&mut conn)
-        .expect("Failed to insert into table D");
+    let d: TableD = d_builder.insert(&mut conn)?;
 
     assert_eq!(d.column_d, "Value D");
 

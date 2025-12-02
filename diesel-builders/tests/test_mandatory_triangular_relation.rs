@@ -253,7 +253,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .set_column::<table_c::column_c>(Some("Value C".to_owned()))
         .insert(&mut conn)?;
 
-    assert_eq!(c.column_c, Some("Value C".to_string()));
+    assert_eq!(c.column_c.as_deref(), Some("Value C"));
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
@@ -279,7 +279,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .filter(table_c::id.eq(b.c_id))
         .first(&mut conn)
         .unwrap();
-    assert_eq!(associated_c.column_c, Some("Value C".to_string()));
+    assert_eq!(associated_c.column_c.as_deref(), Some("Value C"));
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
 

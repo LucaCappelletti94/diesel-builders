@@ -247,7 +247,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .set_column::<table_c::column_c>(Some("Value C".to_owned()))
         .insert(&mut conn)?;
 
-    assert_eq!(c.column_c, Some("Value C".to_string()));
+    assert_eq!(c.column_c.as_deref(), Some("Value C"));
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
@@ -278,7 +278,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .filter(table_c::id.eq(triangular_b.c_id))
         .first(&mut conn)
         .unwrap();
-    assert_eq!(associated_c.column_c, Some("Value C for B".to_string()));
+    assert_eq!(associated_c.column_c.as_deref(), Some("Value C for B"));
     assert_eq!(associated_c.a_id, triangular_b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
 
@@ -290,7 +290,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .insert(&mut conn)?;
 
     assert_eq!(indipendent_b.column_b, "Independent B");
-    assert_eq!(indipendent_b.remote_column_c, Some("Value C".to_string()));
+    assert_eq!(indipendent_b.remote_column_c.as_deref(), Some("Value C"));
     assert_ne!(indipendent_b.id, triangular_b.id);
     assert_ne!(indipendent_b.id, c.a_id);
 

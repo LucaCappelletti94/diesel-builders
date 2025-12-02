@@ -17,7 +17,6 @@ trybuild.workspace = true
 diesel.workspace = true
 diesel-builders.workspace = true
 typed_tuple.workspace = true
-anyhow.workspace = true
 
 [lints]
 workspace = true

@@ -3,10 +3,10 @@
 use diesel::{Table, associations::HasTable};
 
 use crate::{
-    BuildableTable, BundlableTable, CompletedTableBuilderBundle, DiscretionarySameAsIndex,
+    BuildableTable, BundlableTable, Columns, CompletedTableBuilderBundle, DiscretionarySameAsIndex,
     GetColumnExt, GetColumns, HasPrimaryKey, HomogeneousColumns, HorizontalSameAsKey,
-    MandatorySameAsIndex, Projection, SetColumn, SetColumns, SingletonForeignKey, TableAddition,
-    TableBuilder, TrySetColumn, TrySetColumns, TypedColumn,
+    MandatorySameAsIndex, SetColumn, SetColumns, SingletonForeignKey, TableAddition, TableBuilder,
+    TrySetColumn, TrySetColumns, TypedColumn,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -63,6 +63,9 @@ where
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>> {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -71,7 +74,7 @@ pub trait TrySetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: B
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>;
+    ) -> Result<&mut Self, Self::Error>;
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -79,6 +82,9 @@ pub trait TrySetDiscretionaryBuilder<
     Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
 >
 {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -87,12 +93,15 @@ pub trait TrySetDiscretionaryBuilder<
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>;
+    ) -> Result<&mut Self, Self::Error>;
 }
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
 /// which may fail.
 pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the values associated to the provided model.
     ///
     /// # Errors
@@ -101,7 +110,7 @@ pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
     fn try_set_discretionary_model(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> anyhow::Result<&mut Self>;
+    ) -> Result<&mut Self, Self::Error>;
 }
 
 impl<C, T> TrySetDiscretionaryModel<C> for T
@@ -111,16 +120,20 @@ where
     Self: TrySetColumns<<C as HorizontalSameAsKey>::HostColumns> + TrySetColumn<C>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
         GetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
+    <Self as TrySetColumn<C>>::Error:
+        From<<Self as TrySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error>,
 {
+    type Error = <Self as TrySetColumn<C>>::Error;
+
     #[inline]
     fn try_set_discretionary_model(
         &mut self,
         model: &<<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> anyhow::Result<&mut Self> {
-        let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
+    ) -> Result<&mut Self, Self::Error> {
+        let primary_key: &C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
+        <Self as TrySetColumn<C>>::try_set_column(self, primary_key.clone())?;
         let columns = model.get_columns();
-        self.try_set_columns(columns)
+        self.try_set_columns(columns).map_err(Into::into)
     }
 }
 
@@ -214,7 +227,7 @@ pub trait TrySetMandatoryBuilderExt: Sized {
     fn try_set_mandatory_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>
+    ) -> Result<&mut Self, <Self as TrySetMandatoryBuilder<Column>>::Error>
     where
         Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetMandatoryBuilder<Column>,
@@ -232,7 +245,7 @@ pub trait TrySetMandatoryBuilderExt: Sized {
     fn try_set_mandatory_builder<Column>(
         mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<Self>
+    ) -> Result<Self, <Self as TrySetMandatoryBuilder<Column>>::Error>
     where
         Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetMandatoryBuilder<Column>,
@@ -260,7 +273,7 @@ pub trait TrySetDiscretionaryBuilderExt: Sized {
     fn try_set_discretionary_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self>
+    ) -> Result<&mut Self, <Self as TrySetDiscretionaryBuilder<Column>>::Error>
     where
         Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Column>,
@@ -278,7 +291,7 @@ pub trait TrySetDiscretionaryBuilderExt: Sized {
     fn try_set_discretionary_builder<Column>(
         mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<Self>
+    ) -> Result<Self, <Self as TrySetDiscretionaryBuilder<Column>>::Error>
     where
         Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Column>,
@@ -343,7 +356,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model_ref<Column>(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> anyhow::Result<&mut Self>
+    ) -> Result<&mut Self, <Self as TrySetDiscretionaryModel<Column>>::Error>
     where
         Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>,
@@ -361,7 +374,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model<Column>(
         mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> anyhow::Result<Self>
+    ) -> Result<Self, <Self as TrySetDiscretionaryModel<Column>>::Error>
     where
         Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>,
@@ -379,6 +392,9 @@ pub trait TrySetMandatorySameAsColumn<
     Column: TypedColumn<Table = Key::ReferencedTable>,
 >
 {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified column in the mandatory
     /// same-as relationship.
     ///
@@ -388,17 +404,17 @@ pub trait TrySetMandatorySameAsColumn<
     /// same-as relationship.
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self>;
+        value: <Column as TypedColumn>::Type,
+    ) -> Result<&mut Self, Self::Error>;
 }
 
 /// Trait to try set a column in a mandatory same-as relationship.
-pub trait TrySetMandatorySameAsColumns<
-    Type,
-    Keys: Projection<Self::Table>,
-    CS: HomogeneousColumns<Type>,
->: HasTable
+pub trait TrySetMandatorySameAsColumns<Type, Keys: Columns, CS: HomogeneousColumns<Type>>:
+    HasTable
 {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified columns in the mandatory
     /// same-as relationship.
     ///
@@ -406,7 +422,8 @@ pub trait TrySetMandatorySameAsColumns<
     ///
     /// Returns an error if the column values cannot be set in the mandatory
     /// same-as relationship.
-    fn try_set_mandatory_same_as_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self>;
+    fn try_set_mandatory_same_as_columns(&mut self, value: &Type)
+    -> Result<&mut Self, Self::Error>;
 }
 
 /// Trait to try set a column in a discretionary same-as relationship.
@@ -415,6 +432,9 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     Column: TypedColumn<Table = Key::ReferencedTable>,
 >
 {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified column in the discretionary
     /// same-as relationship.
     ///
@@ -424,18 +444,42 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     /// same-as relationship.
     fn try_may_set_discretionary_same_as_column(
         &mut self,
-        value: &<Column as TypedColumn>::Type,
-    ) -> anyhow::Result<&mut Self>;
+        value: <Column as TypedColumn>::Type,
+    ) -> Result<&mut Self, Self::Error>;
+}
+
+impl<Type, T: HasTable> TrySetMandatorySameAsColumns<Type, (), ()> for T {
+    type Error = core::convert::Infallible;
+
+    #[inline]
+    fn try_set_mandatory_same_as_columns(
+        &mut self,
+        _value: &Type,
+    ) -> Result<&mut Self, Self::Error> {
+        Ok(self)
+    }
+}
+
+impl<Type, T: HasTable> TryMaySetDiscretionarySameAsColumns<Type, (), ()> for T {
+    type Error = core::convert::Infallible;
+
+    #[inline]
+    fn try_may_set_discretionary_same_as_columns(
+        &mut self,
+        _value: &Type,
+    ) -> Result<&mut Self, Self::Error> {
+        Ok(self)
+    }
 }
 
 /// Trait to try set a column in a discretionary same-as relationship.
 #[diesel_builders_macros::impl_try_set_same_as_columns]
-pub trait TryMaySetDiscretionarySameAsColumns<
-    Type,
-    Keys: Projection<Self::Table>,
-    CS: HomogeneousColumns<Type>,
->: HasTable
+pub trait TryMaySetDiscretionarySameAsColumns<Type, Keys: Columns, CS: HomogeneousColumns<Type>>:
+    HasTable
 {
+    /// The associated error type for the operation.
+    type Error: core::error::Error;
+
     /// Attempt to set the value of the specified columns in the discretionary
     /// same-as relationship.
     ///
@@ -446,5 +490,5 @@ pub trait TryMaySetDiscretionarySameAsColumns<
     fn try_may_set_discretionary_same_as_columns(
         &mut self,
         value: &Type,
-    ) -> anyhow::Result<&mut Self>;
+    ) -> Result<&mut Self, Self::Error>;
 }

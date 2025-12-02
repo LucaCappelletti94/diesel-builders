@@ -579,9 +579,11 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
             },
             quote::quote! {
                 impl diesel_builders::TrySetColumn<#table_name::#field_name> for #struct_name {
+                    type Error = core::convert::Infallible;
+
                     #[inline]
-                    fn try_set_column(&mut self, value: &<#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> anyhow::Result<&mut Self> {
-                        self.#field_name = Some(value.clone());
+                    fn try_set_column(&mut self, value: <#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> Result<&mut Self, Self::Error> {
+                        <Self as diesel_builders::SetColumn<#table_name::#field_name>>::set_column(self, value);
                         Ok(self)
                     }
                 }

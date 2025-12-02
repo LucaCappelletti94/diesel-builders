@@ -75,22 +75,22 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(builder.may_get_column::<users::name>(), None);
     assert_eq!(builder.may_get_column::<users::email>(), None);
 
-    builder.try_set_column_ref::<users::name>(&"Alice".to_owned())?;
+    builder.try_set_column_ref::<users::name>("Alice")?;
 
     assert_eq!(
-        builder.may_get_column::<users::name>(),
-        Some(&"Alice".to_owned())
+        builder.may_get_column::<users::name>().map(String::as_str),
+        Some("Alice")
     );
     assert_eq!(builder.may_get_column::<users::email>(), None);
 
-    builder.try_set_column_ref::<users::email>(&"alice@example.com".to_owned())?;
+    builder.try_set_column_ref::<users::email>("alice@example.com")?;
     assert_eq!(
-        builder.may_get_column::<users::name>(),
-        Some(&"Alice".to_owned())
+        builder.may_get_column::<users::name>().map(String::as_str),
+        Some("Alice")
     );
     assert_eq!(
-        builder.may_get_column::<users::email>(),
-        Some(&"alice@example.com".to_owned())
+        builder.may_get_column::<users::email>().map(String::as_str),
+        Some("alice@example.com")
     );
 
     let user = builder.insert(&mut conn)?;
@@ -99,28 +99,28 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(user.email, "alice@example.com");
     assert_eq!(user.bio, None);
 
-    assert_eq!(user.get_column::<users::name>(), &"Alice".to_owned());
+    assert_eq!(user.get_column::<users::name>().as_str(), "Alice");
     assert_eq!(
-        user.get_column::<users::email>(),
-        &"alice@example.com".to_owned()
+        user.get_column::<users::email>().as_str(),
+        "alice@example.com"
     );
     assert_eq!(user.get_column::<users::bio>(), &None);
 
     // Test with bio set to Some value
     let user_with_bio = users::table::builder()
-        .try_set_column::<users::name>(&"Bob".to_owned())?
-        .try_set_column::<users::email>(&"bob@example.com".to_owned())?
-        .try_set_column::<users::bio>(&Some("I love Rust!".to_owned()))?
+        .try_set_column::<users::name>("Bob")?
+        .try_set_column::<users::email>("bob@example.com")?
+        .try_set_column::<users::bio>(Some("I love Rust!".to_owned()))?
         .set_column::<users::bio>("I love Rust!".to_owned())
         .insert(&mut conn)?;
 
-    assert_eq!(user_with_bio.bio, Some("I love Rust!".to_owned()));
+    assert_eq!(user_with_bio.bio.as_deref(), Some("I love Rust!"));
 
     // Test with bio explicitly set to None (NULL in database)
     let user_no_bio = users::table::builder()
-        .try_set_column::<users::name>(&"Charlie".to_owned())?
-        .try_set_column::<users::email>(&"charlie@example.com".to_owned())?
-        .try_set_column::<users::bio>(&None)?
+        .try_set_column::<users::name>("Charlie")?
+        .try_set_column::<users::email>("charlie@example.com")?
+        .try_set_column::<users::bio>(None)?
         .insert(&mut conn)?;
 
     assert_eq!(user_no_bio.bio, None);
@@ -133,14 +133,14 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // We test the chained variant.
     let another_user = users::table::builder()
-        .set_column::<users::name>(&"Bob".to_owned())
-        .set_column::<users::email>(&"bob@example.com".to_owned())
+        .set_column::<users::name>("Bob")
+        .set_column::<users::email>("bob@example.com")
         .insert(&mut conn)?;
 
-    assert_eq!(another_user.get_column::<users::name>(), &"Bob".to_owned());
+    assert_eq!(another_user.get_column::<users::name>().as_str(), "Bob");
     assert_eq!(
-        another_user.get_column::<users::email>(),
-        &"bob@example.com".to_owned()
+        another_user.get_column::<users::email>().as_str(),
+        "bob@example.com"
     );
 
     assert_ne!(

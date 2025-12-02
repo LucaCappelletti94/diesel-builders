@@ -235,6 +235,7 @@ pub fn generate_get_columns() -> TokenStream {
 
         let type_params = type_params(size);
         let first_type = &type_params[0];
+        let types_after_first = &type_params[1..];
 
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
 
@@ -253,7 +254,7 @@ pub fn generate_get_columns() -> TokenStream {
             .zip(&indices)
             .map(|(t, idx)| {
                 quote! {
-                    <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, &values.#idx)?;
+                    <T as TrySetColumn<#t>>::try_set_column(self, values.#idx.clone())?;
                 }
             })
             .collect();
@@ -274,7 +275,7 @@ pub fn generate_get_columns() -> TokenStream {
             .map(|(t, idx)| {
                 quote! {
                     if let Some(value) = values.#idx {
-                        <T as crate::set_column::TrySetColumn<#t>>::try_set_column(self, value)?;
+                        <T as TrySetColumn<#t>>::try_set_column(self, value.clone())?;
                     }
                 }
             })
@@ -285,10 +286,12 @@ pub fn generate_get_columns() -> TokenStream {
             .map(|_| quote! { value })
             .collect::<Vec<_>>();
 
+        let first_error = quote! { <T as TrySetColumn<#first_type>>::Error };
+
         quote! {
             impl<T, #(#type_params),*> GetColumns<(#(#type_params,)*)> for T
             where T: GetColumn<#first_type>, #(T: GetColumn<#type_params>),*,
-                    #first_type: TypedColumn, #(#type_params: TypedColumn),*
+                #(#type_params: TypedColumn,)*
             {
                 #[inline]
                 fn get_columns(&self) -> <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> {
@@ -298,7 +301,7 @@ pub fn generate_get_columns() -> TokenStream {
 
             impl<T, #(#type_params),*> MayGetColumns<(#(#type_params,)*)> for T
             where T: MayGetColumn<#first_type>, #(T: MayGetColumn<#type_params>),*,
-                    #first_type: TypedColumn, #(#type_params: TypedColumn),*
+                #(#type_params: TypedColumn,)*
             {
                 #[inline]
                 fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
@@ -339,10 +342,13 @@ pub fn generate_get_columns() -> TokenStream {
 
             impl<T, #(#type_params: TypedColumn,)*> TrySetColumns<(#(#type_params,)*)> for T
             where
-                #(T: crate::set_column::TrySetColumn<#type_params>,)*
+                T: TrySetColumn<#first_type>,
+                #(T: TrySetColumn<#types_after_first, Error=#first_error>,)*
             {
+                type Error = #first_error;
+
                 #[inline]
-                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> anyhow::Result<&mut Self> {
+                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> Result<&mut Self, Self::Error> {
                     #(#try_set_individual_calls)*
                     Ok(self)
                 }
@@ -351,17 +357,20 @@ pub fn generate_get_columns() -> TokenStream {
             impl<T: TrySetColumns<(#(#type_params,)*)>, Type: core::fmt::Debug + Clone, #(#type_params: TypedColumn<Type = Type>),*> TrySetHomogeneousColumn<Type, (#(#type_params,)*)> for T
             {
                 #[inline]
-                fn try_set_homogeneous_columns(&mut self, value: &Type) -> anyhow::Result<&mut Self> {
+                fn try_set_homogeneous_columns(&mut self, value: &Type) -> Result<&mut Self, Self::Error> {
                     <T as TrySetColumns<(#(#type_params,)*)>>::try_set_columns(self, (#(#value_replicates,)*))
                 }
             }
 
             impl<T, #(#type_params: TypedColumn),*> TryMaySetColumns<(#(#type_params,)*)> for T
             where
-                #(T: crate::set_column::TrySetColumn<#type_params>,)*
+                T: TrySetColumn<#first_type>,
+                #(T: TrySetColumn<#types_after_first, Error=#first_error>,)*
             {
+                type Error = #first_error;
+
                 #[inline]
-                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> anyhow::Result<&mut Self> {
+                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> Result<&mut Self, Self::Error> {
                     #(#try_may_set_individual_calls)*
                     Ok(self)
                 }
@@ -397,7 +406,7 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
                 type ModelsTuple = (#(#model_types,)*);
 
                 #[inline]
-                fn nested_insert_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::ModelsTuple> {
+                fn nested_insert_tuple(self, conn: &mut Conn) -> diesel::QueryResult<Self::ModelsTuple> {
                     Ok((#(self.#indices_tokens.insert(conn)?,)*))
                 }
             }
@@ -431,7 +440,7 @@ pub fn generate_nested_insert_option_tuple() -> TokenStream {
             {
                 type OptionModelsTuple = (#(#option_model_types,)*);
 
-                fn nested_insert_option_tuple(self, conn: &mut Conn) -> anyhow::Result<Self::OptionModelsTuple> {
+                fn nested_insert_option_tuple(self, conn: &mut Conn) -> diesel::QueryResult<Self::OptionModelsTuple> {
                     Ok((#(match self.#indices_tokens {
                         Some(builder) => Some(builder.insert(conn)?),
                         None => None,
@@ -592,7 +601,7 @@ pub fn generate_builder_bundles() -> TokenStream {
                 type CompletedBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
 
                 #[inline]
-                fn try_complete(self) -> anyhow::Result<Self::CompletedBundles> {
+                fn try_complete(self) -> Result<Self::CompletedBundles, diesel::result::Error> {
                     Ok((#(#try_from_calls,)*))
                 }
             }
@@ -710,13 +719,13 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                     >,
             {
                 #[inline]
-                fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+                fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<T as TableAddition>::Model> {
                     use typed_tuple::prelude::TypedTuple;
                     let (first, bundles) = self.bundles.pop();
                     let model: <#first_type as TableAddition>::Model = first.insert(conn)?;
                     let mut next_builder: CompletedTableBuilder<T, _> =
                         CompletedTableBuilder { bundles, table: PhantomData };
-                    next_builder.try_set_homogeneous_columns(model.get_column())?;
+                    next_builder.try_set_homogeneous_columns(model.get_column()).map_err(validation_error)?;
                     next_builder.insert(conn)
                 }
             }
@@ -776,25 +785,6 @@ pub fn generate_horizontal_same_as_columns() -> TokenStream {
 /// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
 /// (0-32).
 pub fn generate_try_set_same_as_columns() -> TokenStream {
-    // Generate empty tuple implementation
-    let empty_impl = quote! {
-        impl<Type, T: HasTable> TrySetMandatorySameAsColumns<Type, (), ()> for T
-        {
-            #[inline]
-            fn try_set_mandatory_same_as_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
-                Ok(self)
-            }
-        }
-
-        impl<Type, T: HasTable> TryMaySetDiscretionarySameAsColumns<Type, (), ()> for T
-        {
-            #[inline]
-            fn try_may_set_discretionary_same_as_columns(&mut self, _value: &Type) -> anyhow::Result<&mut Self> {
-                Ok(self)
-            }
-        }
-    };
-
     // Generate implementations for tuples of size 1-32
     let tuple_impls = (1..=MAX_TUPLE_SIZE).map(|size| {
         let keys = type_params(size);
@@ -804,38 +794,53 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
             }
         }).collect::<Vec<_>>();
 
+        let first_key = &keys[0];
+        let first_column_type = &column_types[0];
+
         // Generate the try_set_mandatory_same_as_column calls
         let mandatory_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
             quote! {
-                <
-                    Self as TrySetMandatorySameAsColumn<
-                        #key,
-                        #column_type
-                    >
-                >::try_set_mandatory_same_as_column(self, value)?;
+                <Self as TrySetMandatorySameAsColumn<#key, #column_type>>::try_set_mandatory_same_as_column(self, value.clone())?;
             }
         });
         // Generate the try_set_discretionary_same_as_column calls
         let discretionary_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
             quote! {
-                <
-                    Self as TryMaySetDiscretionarySameAsColumn<
-                        #key,
-                        #column_type
-                    >
-                >::try_may_set_discretionary_same_as_column(self, value)?;
+                <Self as TryMaySetDiscretionarySameAsColumn<#key, #column_type>>::try_may_set_discretionary_same_as_column(self, value.clone())?;
             }
         });
+
+        let mandatory_error_type = quote! {
+            <Self as TrySetMandatorySameAsColumn<#first_key, #first_column_type>>::Error
+        };
+
         // Generate where clauses for TrySetMandatorySameAsColumn
         let mandatory_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
-            quote! {
-                Self: TrySetMandatorySameAsColumn<#key, #column_type>
+            if key == first_key {
+                quote! {
+                    Self: TrySetMandatorySameAsColumn<#key, #column_type>
+                }
+            } else {
+                quote! {
+                    Self: TrySetMandatorySameAsColumn<#key, #column_type, Error = #mandatory_error_type>
+                }
             }
         });
+
+        let discretionary_error_type = quote! {
+            <Self as TryMaySetDiscretionarySameAsColumn<#first_key, #first_column_type>>::Error
+        };
+
         // Generate where clauses for TryMaySetDiscretionarySameAsColumn
         let discretionary_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
-            quote! {
-                Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type>
+            if key == first_key {
+                quote! {
+                    Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type>
+                }
+            } else {
+                quote! {
+                    Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type, Error = #discretionary_error_type>
+                }
             }
         });
 
@@ -851,11 +856,13 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
             where
                 #(#mandatory_trait_bounds,)*
             {
+                type Error = #mandatory_error_type;
+
                 #[inline]
                 fn try_set_mandatory_same_as_columns(
                     &mut self,
                     value: &<<T as diesel::Table>::PrimaryKey as TypedColumn>::Type
-                ) -> anyhow::Result<&mut Self> {
+                ) -> Result<&mut Self, Self::Error> {
                     #(#mandatory_calls)*
                     Ok(self)
                 }
@@ -872,11 +879,13 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
             where
                 #(#discretionary_trait_bounds,)*
             {
+                type Error = #discretionary_error_type;
+
                 #[inline]
                 fn try_may_set_discretionary_same_as_columns(
                     &mut self,
                     value: &<<Self::Table as diesel::Table>::PrimaryKey as TypedColumn>::Type
-                ) -> anyhow::Result<&mut Self> {
+                ) -> Result<&mut Self, Self::Error> {
                     #(#discretionary_calls)*
                     Ok(self)
                 }
@@ -885,7 +894,6 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
     }).collect::<TokenStream>();
 
     quote! {
-        #empty_impl
         #tuple_impls
     }
 }

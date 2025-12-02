@@ -13,7 +13,7 @@ use crate::{
     GetColumn, HorizontalSameAsKey, MayGetColumn, MayGetColumns, MaySetColumn, MaySetColumns,
     NestedInsert, SetColumn, SingletonForeignKey, TableAddition, TableBuilderBundle,
     TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
-    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
+    buildable_table::BuildableTable, table_addition::HasPrimaryKey, validation_error,
     vertical_same_as_group::VerticalSameAsGroup,
 };
 
@@ -88,7 +88,7 @@ impl<T> TryFrom<TableBuilder<T>>
 where
     T: BuildableTable,
 {
-    type Error = anyhow::Error;
+    type Error = diesel::result::Error;
 
     #[inline]
     fn try_from(
@@ -120,9 +120,8 @@ where
     #[inline]
     fn set_column(&mut self, value: impl Into<<C as TypedColumn>::Type>) -> &mut Self {
         use typed_tuple::prelude::TypedTuple;
-        let value = value.into();
         self.bundles.apply(|builder_bundle| {
-            builder_bundle.set_column(value.clone());
+            builder_bundle.set_column(value.into());
         });
         // TODO: set vertical same-as columns in associated builders here.
         self
@@ -174,8 +173,13 @@ where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    type Error = <TableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
+
     #[inline]
-    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+    fn try_set_column(
+        &mut self,
+        value: <C as TypedColumn>::Type,
+    ) -> Result<&mut Self, Self::Error> {
         use typed_tuple::prelude::TypedTuple;
         self.bundles
             .map_mut(|builder_bundle| builder_bundle.try_set_column(value).map(|_| ()))?;
@@ -197,8 +201,13 @@ where
     TableBuilder<T>: TrySetColumn<C>,
     Bundles: TupleSet,
 {
+    type Error = <CompletedTableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
+
     #[inline]
-    fn try_set_column(&mut self, value: &<C as TypedColumn>::Type) -> anyhow::Result<&mut Self> {
+    fn try_set_column(
+        &mut self,
+        value: <C as TypedColumn>::Type,
+    ) -> Result<&mut Self, Self::Error> {
         <Bundles as TupleSet>::map(
             &mut self.bundles,
             |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
@@ -220,21 +229,26 @@ where
     Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<C>,
+    TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<
+            C,
+            Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error,
+        >,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    type Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error;
+
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self> {
+    ) -> Result<&mut Self, Self::Error> {
         use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
             builder_bundle
-                .try_set_mandatory_builder(builder.clone())
+                .try_set_mandatory_builder(builder)
                 .map(|_| ())
         })?;
         Ok(self)
@@ -263,7 +277,7 @@ where
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {
-            builder_bundle.set_mandatory_builder(builder.clone());
+            builder_bundle.set_mandatory_builder(builder);
         });
         self
     }
@@ -278,21 +292,26 @@ where
     Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<C>,
+    TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<
+            C,
+            Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error,
+        >,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
 {
+    type Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error;
+
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
-    ) -> anyhow::Result<&mut Self> {
+    ) -> Result<&mut Self, Self::Error> {
         use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
         self.bundles.map_mut(|builder_bundle| {
             builder_bundle
-                .try_set_discretionary_builder(builder.clone())
+                .try_set_discretionary_builder(builder)
                 .map(|_| ())
         })?;
         Ok(self)
@@ -321,13 +340,13 @@ where
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
         self.bundles.apply(|builder_bundle| {
-            builder_bundle.set_discretionary_builder(builder.clone());
+            builder_bundle.set_discretionary_builder(builder);
         });
         self
     }
 }
 
-impl<Conn, T> NestedInsert<Conn> for TableBuilder<T>
+impl<T, Conn> NestedInsert<Conn> for TableBuilder<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
@@ -335,7 +354,7 @@ where
         NestedInsert<Conn, Table = T>,
 {
     #[inline]
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<Self::Table as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
         let completed_builder: CompletedTableBuilder<
             T,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
@@ -352,7 +371,7 @@ where
     CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
 {
     #[inline]
-    fn insert(self, conn: &mut Conn) -> anyhow::Result<<T as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<T as TableAddition>::Model> {
         self.bundles.0.insert(conn)
     }
 }
