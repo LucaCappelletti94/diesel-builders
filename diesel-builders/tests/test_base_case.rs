@@ -130,3 +130,21 @@ fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
     );
     Ok(())
 }
+
+#[test]
+fn test_insert_fails_when_table_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+
+    // Intentionally do NOT create the animals table
+
+    let result = animals::table::builder()
+        .try_set_column::<animals::name>("Max")?
+        .insert(&mut conn);
+
+    assert!(matches!(
+        result.unwrap_err(),
+        diesel_builders::BuilderError::Diesel(_)
+    ));
+
+    Ok(())
+}

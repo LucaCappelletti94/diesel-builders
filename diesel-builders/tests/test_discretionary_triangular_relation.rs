@@ -261,12 +261,14 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .set_column_ref::<table_a::column_a>("Value A for B")
         .set_column_ref::<table_b::column_b>("Value B")
         .set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())
-        .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder)?;
+        .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())?;
 
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");
 
-    let triangular_b = triangular_b_builder.insert(&mut conn)?;
+    let triangular_b = triangular_b_builder
+        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?
+        .insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(triangular_b.id))
@@ -293,6 +295,49 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     assert_eq!(indipendent_b.remote_column_c.as_deref(), Some("Value C"));
     assert_ne!(indipendent_b.id, triangular_b.id);
     assert_ne!(indipendent_b.id, c.a_id);
+
+    Ok(())
+}
+
+#[test]
+fn test_discretionary_triangular_insert_fails_when_c_table_missing()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+
+    // Create table A
+    diesel::sql_query(
+        "CREATE TABLE table_a (
+            id INTEGER PRIMARY KEY NOT NULL,
+            column_a TEXT NOT NULL
+        )",
+    )
+    .execute(&mut conn)?;
+
+    // Intentionally do NOT create table_c
+
+    // Create table B (which references C)
+    diesel::sql_query(
+        "CREATE TABLE table_b (
+            id INTEGER PRIMARY KEY NOT NULL,
+            c_id INTEGER NOT NULL,
+            column_b TEXT NOT NULL,
+            remote_column_c TEXT
+        )",
+    )
+    .execute(&mut conn)?;
+
+    // Try to insert into B with a discretionary C builder
+    let c_builder = table_c::table::builder().set_column::<table_c::column_c>(None);
+
+    let result = table_b::table::builder()
+        .set_column::<table_b::column_b>("B Value")
+        .set_discretionary_builder::<table_b::c_id>(c_builder)
+        .insert(&mut conn);
+
+    assert!(matches!(
+        result.unwrap_err(),
+        diesel_builders::BuilderError::Diesel(_)
+    ));
 
     Ok(())
 }

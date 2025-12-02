@@ -91,3 +91,43 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_dog_insert_fails_when_parent_table_missing() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+
+    // Create only the dogs table, but NOT the animals table (parent)
+    diesel::sql_query(CREATE_DOGS_TABLE).execute(&mut conn)?;
+
+    let result = dogs::table::builder()
+        .try_set_column::<animals::name>("Max")?
+        .set_column::<dogs::breed>("Golden Retriever")
+        .insert(&mut conn);
+
+    assert!(matches!(
+        result.unwrap_err(),
+        diesel_builders::BuilderError::Diesel(_)
+    ));
+
+    Ok(())
+}
+
+#[test]
+fn test_dog_insert_fails_when_child_table_missing() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+
+    // Create only the animals table, but NOT the dogs table (child)
+    diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
+
+    let result = dogs::table::builder()
+        .try_set_column::<animals::name>("Max")?
+        .set_column::<dogs::breed>("Golden Retriever")
+        .insert(&mut conn);
+
+    assert!(matches!(
+        result.unwrap_err(),
+        diesel_builders::BuilderError::Diesel(_)
+    ));
+
+    Ok(())
+}

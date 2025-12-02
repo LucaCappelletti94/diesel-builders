@@ -312,3 +312,46 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
         );
     }
 }
+
+#[test]
+fn test_mandatory_triangular_insert_fails_when_c_table_missing()
+-> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+
+    // Create table A
+    diesel::sql_query(
+        "CREATE TABLE table_a (
+            id INTEGER PRIMARY KEY NOT NULL,
+            column_a TEXT NOT NULL
+        )",
+    )
+    .execute(&mut conn)?;
+
+    // Intentionally do NOT create table_c
+
+    // Create table B (which references C)
+    diesel::sql_query(
+        "CREATE TABLE table_b (
+            id INTEGER PRIMARY KEY NOT NULL,
+            c_id INTEGER NOT NULL,
+            column_b TEXT NOT NULL,
+            remote_column_c TEXT
+        )",
+    )
+    .execute(&mut conn)?;
+
+    // Try to insert into B with a mandatory C builder
+    let c_builder = table_c::table::builder().set_column::<table_c::column_c>(None);
+
+    let result = table_b::table::builder()
+        .set_column::<table_b::column_b>("B Value")
+        .set_mandatory_builder::<table_b::c_id>(c_builder)
+        .insert(&mut conn);
+
+    assert!(matches!(
+        result.unwrap_err(),
+        diesel_builders::BuilderError::Diesel(_)
+    ));
+
+    Ok(())
+}
