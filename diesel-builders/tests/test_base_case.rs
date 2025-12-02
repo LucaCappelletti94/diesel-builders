@@ -82,7 +82,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_empty_name_rejected() {
-    let result = animals::table::builder().try_set_column::<animals::name>("".to_string());
+    let result = animals::table::builder().try_set_column::<animals::name>(String::new());
     assert_eq!(result.unwrap_err(), NewAnimalError::NameEmpty);
 }
 
@@ -102,7 +102,7 @@ fn test_name_too_long_rejected() {
 #[test]
 fn test_empty_description_rejected() {
     let result =
-        animals::table::builder().try_set_column::<animals::description>(Some("".to_string()));
+        animals::table::builder().try_set_column::<animals::description>(Some(String::new()));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 

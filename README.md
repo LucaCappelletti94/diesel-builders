@@ -24,88 +24,88 @@ The crate is not yet on [crates.io](https://crates.io) because it depends on an 
 
 ### 1. Simple Table (Base Case)
 
-[A single table with no relationships](examples/simple_table.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters and optional validation through `TrySetColumn` trait implementations.
+[A single table with no relationships](diesel-builders/tests/test_base_case.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters. Optional validation through `TrySetColumn` trait implementations enables Rust-side [check constraints](diesel-builders/tests/test_check_constraints.rs) that mirror SQL CHECK constraints, providing fail-fast validation before database insertion.
 
 ```mermaid
 classDiagram
-    class Users {
+    class Animals {
         +Integer id PK
         +Text name
-        +Text email
-        +Text bio
+        +Text description
     }
 ```
 
 ### 2. Table Inheritance
 
-[Tables extending a parent table](examples/table_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `#[descendant_of]` macro declares the inheritance relationship. Insertion order: Users → UserProfiles.
+[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `#[descendant_of]` macro declares the inheritance relationship. Insertion order: Animals → Dogs.
 
 ```mermaid
 classDiagram
     direction BT
-    class Users {
+    class Animals {
         +Integer id PK
         +Text name
-        +Text email
+        +Text description
     }
-    class UserProfiles {
+    class Dogs {
         +Integer id PK,FK
-        +Text bio
-        +Text avatar_url
+        +Text breed
     }
-    UserProfiles --|> Users : extends
+    Dogs --|> Animals : extends
 ```
 
 ### 3. Directed Acyclic Graph (DAG)
 
-[Multiple inheritance](examples/dag.rs) where a child table extends multiple parent tables. Table D extends both B and C, which both extend A. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: A → B → C → D.
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
 
 ```mermaid
 classDiagram
     direction BT
-    class TableA {
+    class Animals {
         +Integer id PK
-        +Text column_a
+        +Text name
+        +Text description
     }
-    class TableB {
+    class Dogs {
         +Integer id PK,FK
-        +Text column_b
+        +Text breed
     }
-    class TableC {
+    class Cats {
         +Integer id PK,FK
-        +Text column_c
+        +Text color
     }
-    class TableD {
+    class Pets {
         +Integer id PK,FK
-        +Text column_d
+        +Text owner_name
     }
-    TableB --|> TableA : extends
-    TableC --|> TableA : extends
-    TableD --|> TableB : extends
-    TableD --|> TableC : extends
+    Dogs --|> Animals : extends
+    Cats --|> Animals : extends
+    Pets --|> Dogs : extends
+    Pets --|> Cats : extends
 ```
 
 ### 4. Inheritance Chain
 
-[A linear inheritance chain](examples/inheritance_chain.rs) where each table extends exactly one parent. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: A → B → C.
+[A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
 
 ```mermaid
 classDiagram
     direction BT
-    class TableA {
+    class Animals {
         +Integer id PK
-        +Text column_a
+        +Text name
+        +Text description
     }
-    class TableB {
+    class Dogs {
         +Integer id PK,FK
-        +Text column_b
+        +Text breed
     }
-    class TableC {
+    class Puppies {
         +Integer id PK,FK
-        +Text column_c
+        +Integer age_months
     }
-    TableB --|> TableA : extends
-    TableC --|> TableB : extends
+    Dogs --|> Animals : extends
+    Puppies --|> Dogs : extends
 ```
 
 ### 5. Mandatory Triangular Relation

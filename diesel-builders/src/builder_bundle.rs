@@ -13,11 +13,11 @@ use crate::InsertableTableModel;
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
-    MandatorySameAsIndex, MayGetColumn, MaySetColumn, RecursiveInsert,
-    NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition,
-    TableBuilder, Tables, TransposeOptionTuple, TryMaySetColumns,
-    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns, TrySetColumn,
-    TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns, TypedColumn,
+    MandatorySameAsIndex, MayGetColumn, MaySetColumn, NonCompositePrimaryKeyTableModels,
+    OptionTuple, RecursiveInsert, RefTuple, SetColumn, TableAddition, TableBuilder, Tables,
+    TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
+    TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
+    TrySetMandatorySameAsColumns, TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
@@ -379,10 +379,10 @@ where
     fn recursive_insert(mut self, conn: &mut Conn) -> BuilderResult<<T as TableAddition>::Model, Error> {
         let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
         let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
-        self.insertable_model.try_set_columns(mandatory_primary_keys).map_err(BuilderError::Validation).map_err(|err| err.change::<Error>())?;
+        self.insertable_model.try_set_columns(mandatory_primary_keys).map_err(BuilderError::Validation).map_err(super::builder_error::BuilderError::change::<Error>)?;
         let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
         let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
-        self.insertable_model.try_may_set_columns(discretionary_primary_keys).map_err(BuilderError::Validation).map_err(|err| err.change::<Error>())?;
+        self.insertable_model.try_may_set_columns(discretionary_primary_keys).map_err(BuilderError::Validation).map_err(super::builder_error::BuilderError::change::<Error>)?;
         Ok(self.insertable_model.flat_insert(conn)?)
     }
 }
