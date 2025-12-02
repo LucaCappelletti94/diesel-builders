@@ -241,38 +241,6 @@ pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStrea
     .into()
 }
 
-/// Generate `TableBuilders` trait implementations for all tuple sizes.
-///
-/// This generates implementations for converting tuples of `TableBuilder`s
-/// to tuples of `CompletedTableBuilder`s.
-#[proc_macro_attribute]
-pub fn impl_builders(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_builders();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `OptionTableBuilders` trait implementations for all tuple sizes.
-///
-/// This generates implementations for converting tuples of `Option<TableBuilder>`s
-/// to tuples of `Option<CompletedTableBuilder>`s.
-#[proc_macro_attribute]
-pub fn impl_option_builders(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_option_builders();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
 /// Generate `AncestorsOf` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {

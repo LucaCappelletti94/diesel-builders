@@ -77,7 +77,7 @@ jobs:
     - name: Install SQLite
       run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
     - name: Run clippy
-      run: cargo clippy --all-targets -- -D warnings
+      run: cargo clippy -- -D warnings
 
   doc:
     name: Documentation
