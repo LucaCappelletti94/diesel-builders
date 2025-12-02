@@ -9,7 +9,7 @@ mod tuple_generator;
 
 use proc_macro::TokenStream;
 
-/// Generate `DefaultTuple` trait implementations for all tuple sizes (1-32).
+/// Generate `DefaultTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_default_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_default_tuple();
@@ -23,7 +23,7 @@ pub fn impl_default_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream 
 }
 
 /// Generate `OptionTuple` and `TransposeOptionTuple` trait implementations
-/// for all tuple sizes (1-32).
+/// for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_option_tuple();
@@ -36,7 +36,7 @@ pub fn impl_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `RefTuple` trait implementations for all tuple sizes (1-32).
+/// Generate `RefTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_ref_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_ref_tuple();
@@ -49,7 +49,7 @@ pub fn impl_ref_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `ClonableTuple` trait implementations for all tuple sizes (0-32).
+/// Generate `ClonableTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_clonable_tuple();
@@ -62,7 +62,7 @@ pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream
     .into()
 }
 
-/// Generate `DebuggableTuple` trait implementations for all tuple sizes (0-32).
+/// Generate `DebuggableTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_debuggable_tuple();
@@ -76,7 +76,7 @@ pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStre
 }
 
 /// Generate `Columns`, `Projection`, and `HomogeneousColumns` trait
-/// implementations for all tuple sizes (1-32).
+/// implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_columns();
@@ -90,7 +90,7 @@ pub fn impl_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate `Tables`, `TableModels`, and `InsertableTableModels` trait
-/// implementations for all tuple sizes (1-32).
+/// implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_tables();
@@ -104,7 +104,6 @@ pub fn impl_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate column getter/setter trait implementations for all tuple sizes
-/// (1-32).
 ///
 /// Generates implementations for:
 /// - `GetColumns`
@@ -126,7 +125,6 @@ pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate `NestedInsertTuple` trait implementations for all tuple sizes
-/// (1-32).
 #[proc_macro_attribute]
 pub fn impl_nested_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_nested_insert_tuple();
@@ -140,7 +138,6 @@ pub fn impl_nested_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenS
 }
 
 /// Generate `NestedInsertOptionTuple` trait implementations for all tuple sizes
-/// (1-32).
 #[proc_macro_attribute]
 pub fn impl_nested_insert_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_nested_insert_option_tuple();
@@ -154,7 +151,7 @@ pub fn impl_nested_insert_option_tuple(_attr: TokenStream, item: TokenStream) ->
 }
 
 /// Generate `CompletedTableBuilder` `NestedInsert` trait implementations for
-/// all tuple sizes (2-32).
+/// all tuple sizes
 ///
 /// This generates the recursive nested insert implementations for
 /// `CompletedTableBuilder` with varying tuple sizes. The size 1 case is handled
@@ -174,7 +171,7 @@ pub fn impl_completed_table_builder_nested_insert(
     .into()
 }
 
-/// Generate `BuildableTables` trait implementations for all tuple sizes (1-32).
+/// Generate `BuildableTables` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_buildable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_buildable_tables();
@@ -187,7 +184,7 @@ pub fn impl_buildable_tables(_attr: TokenStream, item: TokenStream) -> TokenStre
     .into()
 }
 
-/// Generate `BundlableTables` trait implementations for all tuple sizes (1-32).
+/// Generate `BundlableTables` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_bundlable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_bundlable_tables();
@@ -201,7 +198,6 @@ pub fn impl_bundlable_tables(_attr: TokenStream, item: TokenStream) -> TokenStre
 }
 
 /// Generate `BuildableColumns` trait implementations for all tuple sizes
-/// (1-32).
 #[proc_macro_attribute]
 pub fn impl_buildable_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_buildable_columns();
@@ -215,7 +211,7 @@ pub fn impl_buildable_columns(_attr: TokenStream, item: TokenStream) -> TokenStr
 }
 
 /// Generate `NonCompositePrimaryKeyTableModels` and `MayGetPrimaryKeys` trait
-/// implementations for all tuple sizes (1-32).
+/// implementations for all tuple sizes.
 ///
 /// Generates implementations for:
 /// - `NonCompositePrimaryKeyTableModels` for tuples of models
@@ -232,7 +228,7 @@ pub fn impl_table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `BuilderBundles` trait implementations for all tuple sizes (1-32).
+/// Generate `BuilderBundles` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_builder_bundles();
@@ -245,7 +241,39 @@ pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStrea
     .into()
 }
 
-/// Generate `AncestorsOf` trait implementations for all tuple sizes (0-32).
+/// Generate `TableBuilders` trait implementations for all tuple sizes.
+///
+/// This generates implementations for converting tuples of `TableBuilder`s
+/// to tuples of `CompletedTableBuilder`s.
+#[proc_macro_attribute]
+pub fn impl_builders(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_builders();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `OptionTableBuilders` trait implementations for all tuple sizes.
+///
+/// This generates implementations for converting tuples of `Option<TableBuilder>`s
+/// to tuples of `Option<CompletedTableBuilder>`s.
+#[proc_macro_attribute]
+pub fn impl_option_builders(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_option_builders();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `AncestorsOf` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_ancestors_of();
@@ -259,7 +287,7 @@ pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate `HorizontalSameAsKeys` trait implementations for all tuple sizes
-/// (0-32).
+///.
 #[proc_macro_attribute]
 pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_horizontal_same_as_keys();
@@ -273,7 +301,7 @@ pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> To
 }
 
 /// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes
-/// (1-32).
+///.
 #[proc_macro_attribute]
 pub fn impl_horizontal_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_horizontal_same_as_columns();
@@ -286,7 +314,7 @@ pub fn impl_horizontal_same_as_columns(_attr: TokenStream, item: TokenStream) ->
     .into()
 }
 
-/// Generate `TableIndex` trait implementations for all tuple sizes (1-32).
+/// Generate `TableIndex` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_table_index();
@@ -299,7 +327,7 @@ pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `ForeignKey` trait implementations for all tuple sizes (1-32).
+/// Generate `ForeignKey` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_foreign_key(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_foreign_key();
@@ -314,7 +342,7 @@ pub fn impl_foreign_key(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 /// Generate `TrySetMandatorySameAsColumns` and
 /// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
-/// (0-32).
+///.
 #[proc_macro_attribute]
 pub fn impl_try_set_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_try_set_same_as_columns();
@@ -587,12 +615,27 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
                         Ok(self)
                     }
                 }
-            }
+            },
         ]
     });
 
     quote::quote! {
         #(#impls)*
+
+
+    impl diesel_builders::InsertableTableModel for #struct_name
+    where
+        Self: 'static
+            + diesel_builders::HasTableAddition<Table: diesel_builders::TableAddition<InsertableModel = Self>>
+            + Default
+            + Clone
+            + core::fmt::Debug
+            + diesel::Insertable<<Self as diesel::associations::HasTable>::Table>
+            + diesel_builders::MayGetColumns<<Self::Table as diesel_builders::TableAddition>::InsertableColumns>
+            + diesel_builders::TrySetColumns<core::convert::Infallible, <Self::Table as diesel_builders::TableAddition>::InsertableColumns>,
+    {
+        type Error = core::convert::Infallible;
+    }
     }
     .into()
 }

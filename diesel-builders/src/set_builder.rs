@@ -4,9 +4,9 @@ use diesel::{Table, associations::HasTable};
 
 use crate::{
     BuildableTable, BundlableTable, Columns, CompletedTableBuilderBundle, DiscretionarySameAsIndex,
-    GetColumnExt, GetColumns, HasPrimaryKey, HomogeneousColumns, HorizontalSameAsKey,
-    MandatorySameAsIndex, SetColumn, SetColumns, SingletonForeignKey, TableAddition, TableBuilder,
-    TrySetColumn, TrySetColumns, TypedColumn,
+    GetColumnExt, GetColumns, HasPrimaryKey, HasTableAddition, HomogeneousColumns,
+    HorizontalSameAsKey, InsertableTableModel, MandatorySameAsIndex, SetColumn, SetColumns,
+    SingletonForeignKey, TableAddition, TableBuilder, TrySetColumn, TrySetColumns, TypedColumn,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -62,10 +62,9 @@ where
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
-pub trait TrySetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>> {
-    /// The associated error type for the operation.
-    type Error: core::error::Error;
-
+pub trait TrySetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>>:
+    HasTableAddition
+{
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -73,18 +72,15 @@ pub trait TrySetMandatoryBuilder<Column: MandatorySameAsIndex<ReferencedTable: B
     /// Returns an error if the column cannot be set.
     fn try_set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, Self::Error>;
+        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>;
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetDiscretionaryBuilder<
     Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
->
+>: HasTableAddition
 {
-    /// The associated error type for the operation.
-    type Error: core::error::Error;
-
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
@@ -93,15 +89,14 @@ pub trait TrySetDiscretionaryBuilder<
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, Self::Error>;
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>;
 }
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
 /// which may fail.
-pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
-    /// The associated error type for the operation.
-    type Error: core::error::Error;
-
+pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex>:
+    HasTableAddition
+{
     /// Attempt to set the values associated to the provided model.
     ///
     /// # Errors
@@ -110,30 +105,28 @@ pub trait TrySetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
     fn try_set_discretionary_model(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> Result<&mut Self, Self::Error>;
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>;
 }
 
 impl<C, T> TrySetDiscretionaryModel<C> for T
 where
+    T: HasTableAddition,
     C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: BuildableTable,
-    Self: TrySetColumns<<C as HorizontalSameAsKey>::HostColumns> + TrySetColumn<C>,
+    Self: TrySetColumns<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, <C as HorizontalSameAsKey>::HostColumns> + TrySetColumn<C>,
+    <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<Self as TrySetColumn<C>>::Error>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
         GetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    <Self as TrySetColumn<C>>::Error:
-        From<<Self as TrySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error>,
 {
-    type Error = <Self as TrySetColumn<C>>::Error;
-
     #[inline]
     fn try_set_discretionary_model(
         &mut self,
         model: &<<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> Result<&mut Self, Self::Error> {
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
         let primary_key: &C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         <Self as TrySetColumn<C>>::try_set_column(self, primary_key.clone())?;
         let columns = model.get_columns();
-        self.try_set_columns(columns).map_err(Into::into)
+        self.try_set_columns(columns)
     }
 }
 
@@ -216,7 +209,7 @@ impl<T> SetDiscretionaryBuilderExt for T {}
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetMandatoryBuilderExt: Sized {
+pub trait TrySetMandatoryBuilderExt: HasTableAddition {
     /// Attempt to set the mandatory builder for the specified column.
     ///
     /// # Errors
@@ -227,7 +220,7 @@ pub trait TrySetMandatoryBuilderExt: Sized {
     fn try_set_mandatory_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, <Self as TrySetMandatoryBuilder<Column>>::Error>
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetMandatoryBuilder<Column>,
@@ -245,24 +238,24 @@ pub trait TrySetMandatoryBuilderExt: Sized {
     fn try_set_mandatory_builder<Column>(
         mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<Self, <Self as TrySetMandatoryBuilder<Column>>::Error>
+    ) -> Result<Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetMandatoryBuilder<Column>,
+        Self: TrySetMandatoryBuilder<Column> + Sized,
     {
         self.try_set_mandatory_builder_ref::<Column>(builder)?;
         Ok(self)
     }
 }
 
-impl<T> TrySetMandatoryBuilderExt for T {}
+impl<T: HasTableAddition + Sized> TrySetMandatoryBuilderExt for T {}
 
 /// Extension trait for `TrySetDiscretionaryBuilder` that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
-pub trait TrySetDiscretionaryBuilderExt: Sized {
+pub trait TrySetDiscretionaryBuilderExt: HasTableAddition {
     /// Attempt to set the discretionary builder for the specified column.
     ///
     /// # Errors
@@ -273,7 +266,7 @@ pub trait TrySetDiscretionaryBuilderExt: Sized {
     fn try_set_discretionary_builder_ref<Column>(
         &mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, <Self as TrySetDiscretionaryBuilder<Column>>::Error>
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Column>,
@@ -291,17 +284,17 @@ pub trait TrySetDiscretionaryBuilderExt: Sized {
     fn try_set_discretionary_builder<Column>(
         mut self,
         builder: TableBuilder<<Column as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<Self, <Self as TrySetDiscretionaryBuilder<Column>>::Error>
+    ) -> Result<Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: crate::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetDiscretionaryBuilder<Column>,
+        Self: TrySetDiscretionaryBuilder<Column> + Sized,
     {
         self.try_set_discretionary_builder_ref::<Column>(builder)?;
         Ok(self)
     }
 }
 
-impl<T> TrySetDiscretionaryBuilderExt for T {}
+impl<T: HasTableAddition> TrySetDiscretionaryBuilderExt for T {}
 
 /// Extension trait for `SetDiscretionaryModel` that allows specifying the
 /// column at the method level.
@@ -356,7 +349,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model_ref<Column>(
         &mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> Result<&mut Self, <Self as TrySetDiscretionaryModel<Column>>::Error>
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>,
@@ -374,7 +367,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model<Column>(
         mut self,
         model: &<<Column as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
-    ) -> Result<Self, <Self as TrySetDiscretionaryModel<Column>>::Error>
+    ) -> Result<Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>
     where
         Column: crate::DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Column>,

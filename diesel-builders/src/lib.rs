@@ -2,8 +2,7 @@
 
 // Error handling helpers
 pub mod builder_error;
-pub use builder_error::IncompleteBuilderError;
-pub(crate) use builder_error::validation_error;
+pub use builder_error::{BuilderError, BuilderResult, IncompleteBuilderError};
 
 // Re-exported modules from diesel-additions
 pub mod utils;
@@ -69,7 +68,7 @@ pub use set_builder::{
 pub mod get_builder;
 pub use get_builder::{GetBuilder, MayGetBuilder};
 pub mod nested_insert;
-pub use nested_insert::NestedInsert;
+pub use nested_insert::{Insert, RecursiveInsert};
 pub mod builder_bundle;
 pub use builder_bundle::{
     BuilderBundles, BundlableTable, CompletedTableBuilderBundle, TableBuilderBundle,
@@ -100,6 +99,8 @@ pub mod prelude {
         fk, index,
     };
 
+    pub use crate::insertable_table_model::InsertableTableModel;
+
     // Table relationship traits
     pub use crate::ancestors::{Descendant, DescendantOf};
     // Core table building traits
@@ -116,7 +117,7 @@ pub mod prelude {
     };
     pub use crate::{
         builder_bundle::BundlableTable,
-        nested_insert::NestedInsert,
+        nested_insert::{Insert, RecursiveInsert},
         set_column::{SetColumnExt, TrySetColumnExt},
         table_addition::TableAddition,
     };

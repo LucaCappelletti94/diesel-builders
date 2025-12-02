@@ -3,17 +3,18 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
-use diesel::{Table, associations::HasTable};
+use diesel::{Column, Table, associations::HasTable};
 use tuple_set::TupleSet;
 use typed_tuple::prelude::{TypedFirst, TypedIndex};
 
 use crate::{
-    AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BundlableTable, BundlableTables,
-    ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple, DefaultTuple, DescendantOf,
-    GetColumn, HorizontalSameAsKey, MayGetColumn, MayGetColumns, MaySetColumn, MaySetColumns,
-    NestedInsert, SetColumn, SingletonForeignKey, TableAddition, TableBuilderBundle,
+    AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
+    BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
+    DefaultTuple, DescendantOf, GetColumn, HorizontalSameAsKey, IncompleteBuilderError, Insert,
+    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumn, MaySetColumns,
+    RecursiveInsert, SetColumn, SingletonForeignKey, TableAddition, TableBuilderBundle,
     TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
-    buildable_table::BuildableTable, table_addition::HasPrimaryKey, validation_error,
+    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
     vertical_same_as_group::VerticalSameAsGroup,
 };
 
@@ -59,6 +60,24 @@ pub struct CompletedTableBuilder<T: Table, Bundles> {
     table: PhantomData<T>,
 }
 
+impl<T: Table, Bundles: DebuggableTuple> Debug for CompletedTableBuilder<T, Bundles> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("CompletedTableBuilder")
+            .field("bundles", &self.bundles.debug_tuple())
+            .finish()
+    }
+}
+
+impl<T: Table, Bundles: ClonableTuple> Clone for CompletedTableBuilder<T, Bundles> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            bundles: self.bundles.clone_tuple(),
+            table: PhantomData,
+        }
+    }
+}
+
 impl<T> HasTable for TableBuilder<T>
 where
     T: BuildableTable,
@@ -88,7 +107,7 @@ impl<T> TryFrom<TableBuilder<T>>
 where
     T: BuildableTable,
 {
-    type Error = diesel::result::Error;
+    type Error = IncompleteBuilderError;
 
     #[inline]
     fn try_from(
@@ -220,33 +239,32 @@ where
     }
 }
 
-impl<C, T> TrySetMandatoryBuilder<C> for TableBuilder<T>
+impl<Key, T> TrySetMandatoryBuilder<Key> for TableBuilder<T>
 where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: crate::MandatorySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
-    C::ReferencedTable: BuildableTable,
-    Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
-    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<C::Table>: TrySetMandatoryBuilder<
-            C,
-            Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error,
+    T: BuildableTable + DescendantOf<Key::Table>,
+    Key: crate::MandatorySameAsIndex,
+    Key::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    Key::ReferencedTable: BuildableTable,
+    Self: TryMaySetColumns<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, <Key as HorizontalSameAsKey>::HostColumns>,
+    TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<Key as HorizontalSameAsKey>::ForeignColumns>,
+    TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<
+            Key,
+            Table = Key::Table,
         >,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<Key::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<Key::Table>>,
+    <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
 {
-    type Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error;
-
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, Self::Error> {
+        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
         use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
-        self.bundles.map_mut(|builder_bundle| {
+        self.bundles.map_mut(|builder_bundle: &mut TableBuilderBundle<<Key as Column>::Table>| {
             builder_bundle
                 .try_set_mandatory_builder(builder)
                 .map(|_| ())
@@ -283,29 +301,27 @@ where
     }
 }
 
-impl<C, T> crate::TrySetDiscretionaryBuilder<C> for TableBuilder<T>
+impl<Key, T> crate::TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
 where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: crate::DiscretionarySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
-    C::ReferencedTable: BuildableTable,
-    Self: TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
-    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<C::Table>: crate::TrySetDiscretionaryBuilder<
-            C,
-            Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error,
-        >,
+    T: BuildableTable + DescendantOf<Key::Table>,
+    Key: crate::DiscretionarySameAsIndex,
+    Key::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    Key::ReferencedTable: BuildableTable,
+    Self: TryMaySetColumns<
+        <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error,
+    <Key as HorizontalSameAsKey>::HostColumns>,
+    TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>:
+        MayGetColumns<<Key as HorizontalSameAsKey>::ForeignColumns>,
+    TableBuilderBundle<Key::Table>: crate::TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
+        TypedIndex<<Key::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<Key::Table>>,
+    <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
 {
-    type Error = <Self as TryMaySetColumns<<C as HorizontalSameAsKey>::HostColumns>>::Error;
-
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, Self::Error> {
+        builder: TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
         use typed_tuple::prelude::TypedTuple;
         let columns = builder.may_get_columns();
         self.try_may_set_columns(columns)?;
@@ -346,33 +362,57 @@ where
     }
 }
 
-impl<T, Conn> NestedInsert<Conn> for TableBuilder<T>
+impl<T, Conn> Insert<Conn> for TableBuilder<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
     CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        NestedInsert<Conn, Table = T>,
+        RecursiveInsert<
+                <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error,
+                Conn,
+                Table = T,
+            >,
 {
     #[inline]
-    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model> {
+    fn insert(self, conn: &mut Conn) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
+        self.recursive_insert(conn)
+    }
+}
+
+impl<T, Error, Conn> RecursiveInsert<Error, Conn> for TableBuilder<T>
+where
+    Conn: diesel::connection::LoadConnection,
+    T: BuildableTable,
+    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
+        RecursiveInsert<Error, Conn, Table = T>,
+{
+    #[inline]
+    fn recursive_insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
         let completed_builder: CompletedTableBuilder<
             T,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
         > = self.try_into()?;
-        completed_builder.insert(conn)
+        completed_builder.recursive_insert(conn)
     }
 }
 
 // Base case: single bundle (leaf node)
-impl<Conn, T> NestedInsert<Conn> for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>
+impl<Error, Conn, T> RecursiveInsert<Error, Conn>
+    for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>
 where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
-    CompletedTableBuilderBundle<T>: NestedInsert<Conn, Table = T>,
+    CompletedTableBuilderBundle<T>: RecursiveInsert<Error, Conn, Table = T>,
 {
     #[inline]
-    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<T as TableAddition>::Model> {
-        self.bundles.0.insert(conn)
+    fn recursive_insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
+        self.bundles.0.recursive_insert(conn)
     }
 }
 

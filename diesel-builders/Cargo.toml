@@ -10,7 +10,18 @@ tuple_set.workspace = true
 diesel-builders-macros.workspace = true
 
 [dev-dependencies]
-diesel = { workspace = true, features = ["sqlite", "returning_clauses_for_sqlite_3_35", "extras"] }
+diesel = { workspace = true, features = [
+	"sqlite",
+	"returning_clauses_for_sqlite_3_35",
+	"extras",
+] }
 
 [lints]
 workspace = true
+
+[features]
+default = ["size-32"]
+size-16 = ["diesel-builders-macros/size-16"]
+size-32 = ["diesel-builders-macros/size-32"]
+size-64 = ["diesel-builders-macros/size-64"]
+size-128 = ["diesel-builders-macros/size-128"]

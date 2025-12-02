@@ -4,149 +4,129 @@
 
 mod common;
 
+use common::{Animal, CREATE_ANIMALS_TABLE, NewAnimalError, animals};
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
-
-diesel::table! {
-    /// Define a simple users table for testing.
-    users (id) {
-        /// The ID of the user.
-        id -> Integer,
-        /// The name of the user.
-        name -> Text,
-        /// The email of the user.
-        email -> Text,
-        /// The bio of the user (nullable).
-        bio -> Nullable<Text>,
-    }
-}
-
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
-#[diesel(table_name = users)]
-/// A simple user model.
-pub struct User {
-    /// The ID of the user.
-    pub id: i32,
-    /// The name of the user.
-    pub name: String,
-    /// The email of the user.
-    pub email: String,
-    /// The bio of the user.
-    pub bio: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = users)]
-/// A new user model for insertions.
-pub struct NewUser {
-    /// The name of the user.
-    pub name: Option<String>,
-    /// The email of the user.
-    pub email: Option<String>,
-    /// The bio of the user (nullable column uses Option<Option<T>>).
-    pub bio: Option<Option<String>>,
-}
-
-impl TableAddition for users::table {
-    type InsertableModel = NewUser;
-    type Model = User;
-    type InsertableColumns = (users::name, users::email, users::bio);
-}
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = common::establish_test_connection()?;
 
-    diesel::sql_query(
-        "CREATE TABLE users (
-			id INTEGER PRIMARY KEY NOT NULL,
-			name TEXT NOT NULL,
-			email TEXT NOT NULL,
-			bio TEXT
-		)",
-    )
-    .execute(&mut conn)?;
+    diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
 
-    let mut builder = users::table::builder();
+    let mut builder = animals::table::builder();
 
-    assert_eq!(builder.may_get_column::<users::name>(), None);
-    assert_eq!(builder.may_get_column::<users::email>(), None);
+    assert_eq!(builder.may_get_column::<animals::name>(), None);
+    assert_eq!(builder.may_get_column::<animals::description>(), None);
 
-    builder.try_set_column_ref::<users::name>("Alice")?;
+    builder.try_set_column_ref::<animals::name>("Max")?;
 
     assert_eq!(
-        builder.may_get_column::<users::name>().map(String::as_str),
-        Some("Alice")
+        builder
+            .may_get_column::<animals::name>()
+            .map(String::as_str),
+        Some("Max")
     );
-    assert_eq!(builder.may_get_column::<users::email>(), None);
+    assert_eq!(builder.may_get_column::<animals::description>(), None);
 
-    builder.try_set_column_ref::<users::email>("alice@example.com")?;
-    assert_eq!(
-        builder.may_get_column::<users::name>().map(String::as_str),
-        Some("Alice")
-    );
-    assert_eq!(
-        builder.may_get_column::<users::email>().map(String::as_str),
-        Some("alice@example.com")
-    );
+    let animal = builder.insert(&mut conn)?;
 
-    let user = builder.insert(&mut conn)?;
+    assert_eq!(animal.name, "Max");
+    assert_eq!(animal.description, None);
 
-    assert_eq!(user.name, "Alice");
-    assert_eq!(user.email, "alice@example.com");
-    assert_eq!(user.bio, None);
+    assert_eq!(animal.get_column::<animals::name>().as_str(), "Max");
+    assert_eq!(animal.get_column::<animals::description>(), &None);
 
-    assert_eq!(user.get_column::<users::name>().as_str(), "Alice");
-    assert_eq!(
-        user.get_column::<users::email>().as_str(),
-        "alice@example.com"
-    );
-    assert_eq!(user.get_column::<users::bio>(), &None);
-
-    // Test with bio set to Some value
-    let user_with_bio = users::table::builder()
-        .try_set_column::<users::name>("Bob")?
-        .try_set_column::<users::email>("bob@example.com")?
-        .try_set_column::<users::bio>(Some("I love Rust!".to_owned()))?
-        .set_column::<users::bio>("I love Rust!".to_owned())
+    // Test with description set to Some value
+    let animal_with_desc = animals::table::builder()
+        .try_set_column::<animals::name>("Buddy")?
+        .try_set_column::<animals::description>(Some("A friendly dog".to_owned()))?
         .insert(&mut conn)?;
 
-    assert_eq!(user_with_bio.bio.as_deref(), Some("I love Rust!"));
+    assert_eq!(
+        animal_with_desc.description.as_deref(),
+        Some("A friendly dog")
+    );
 
-    // Test with bio explicitly set to None (NULL in database)
-    let user_no_bio = users::table::builder()
-        .try_set_column::<users::name>("Charlie")?
-        .try_set_column::<users::email>("charlie@example.com")?
-        .try_set_column::<users::bio>(None)?
+    // Test with description explicitly set to None (NULL in database)
+    let animal_no_desc = animals::table::builder()
+        .try_set_column::<animals::name>("Whiskers")?
+        .try_set_column::<animals::description>(None)?
         .insert(&mut conn)?;
 
-    assert_eq!(user_no_bio.bio, None);
+    assert_eq!(animal_no_desc.description, None);
 
-    // We attempt to query the inserted user to ensure everything worked correctly.
-    let queried_user: User = users::table
-        .filter(users::id.eq(user.id))
+    // We attempt to query the inserted animal to ensure everything worked correctly.
+    let queried_animal: Animal = animals::table
+        .filter(animals::id.eq(animal.id))
         .first(&mut conn)?;
-    assert_eq!(user, queried_user);
+    assert_eq!(animal, queried_animal);
 
     // We test the chained variant.
-    let another_user = users::table::builder()
-        .set_column::<users::name>("Bob")
-        .set_column::<users::email>("bob@example.com")
+    let another_animal = animals::table::builder()
+        .try_set_column::<animals::name>("Charlie")?
         .insert(&mut conn)?;
 
-    assert_eq!(another_user.get_column::<users::name>().as_str(), "Bob");
     assert_eq!(
-        another_user.get_column::<users::email>().as_str(),
-        "bob@example.com"
+        another_animal.get_column::<animals::name>().as_str(),
+        "Charlie"
     );
 
     assert_ne!(
-        user.get_column::<users::id>(),
-        another_user.get_column::<users::id>()
+        animal.get_column::<animals::id>(),
+        another_animal.get_column::<animals::id>()
     );
 
+    Ok(())
+}
+
+#[test]
+fn test_empty_name_rejected() {
+    let result = animals::table::builder().try_set_column::<animals::name>("".to_string());
+    assert_eq!(result.unwrap_err(), NewAnimalError::NameEmpty);
+}
+
+#[test]
+fn test_whitespace_only_name_rejected() {
+    let result = animals::table::builder().try_set_column::<animals::name>("   ".to_string());
+    assert_eq!(result.unwrap_err(), NewAnimalError::NameEmpty);
+}
+
+#[test]
+fn test_name_too_long_rejected() {
+    let long_name = "a".repeat(101);
+    let result = animals::table::builder().try_set_column::<animals::name>(long_name);
+    assert_eq!(result.unwrap_err(), NewAnimalError::NameTooLong);
+}
+
+#[test]
+fn test_empty_description_rejected() {
+    let result =
+        animals::table::builder().try_set_column::<animals::description>(Some("".to_string()));
+    assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
+}
+
+#[test]
+fn test_whitespace_only_description_rejected() {
+    let result =
+        animals::table::builder().try_set_column::<animals::description>(Some("   ".to_string()));
+    assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
+}
+
+#[test]
+fn test_description_too_long_rejected() {
+    let long_desc = "a".repeat(501);
+    let result = animals::table::builder().try_set_column::<animals::description>(Some(long_desc));
+    assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionTooLong);
+}
+
+#[test]
+fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
+    let mut builder = animals::table::builder();
+    builder.try_set_column_ref::<animals::description>(None)?;
+    assert_eq!(
+        builder.may_get_column::<animals::description>(),
+        Some(&None)
+    );
     Ok(())
 }

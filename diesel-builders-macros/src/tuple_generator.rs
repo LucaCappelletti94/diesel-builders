@@ -5,8 +5,18 @@
 
 use proc_macro2::{Ident, Span, TokenStream};
 
+#[cfg(all(feature = "size-16", not(any(feature = "size-32", feature = "size-64", feature = "size-128"))))]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 16;
+#[cfg(all(feature = "size-32", not(any(feature = "size-64", feature = "size-128"))))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 32;
+#[cfg(all(feature = "size-64", not(feature = "size-128")))]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 64;
+#[cfg(feature = "size-128")]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 128;
 
 /// Generate a list of type parameter identifiers (T1, T2, ..., TN)
 ///

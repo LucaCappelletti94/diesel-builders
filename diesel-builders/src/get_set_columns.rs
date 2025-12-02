@@ -1,8 +1,10 @@
 //! Submodule providing the `GetColumns` trait.
 
+use diesel::associations::HasTable;
+
 use crate::{
-    Columns, GetColumn, HomogeneousColumns, MayGetColumn, OptionTuple, RefTuple, TrySetColumn,
-    TypedColumn,
+    Columns, GetColumn, HasTableAddition, HomogeneousColumns, InsertableTableModel, MayGetColumn,
+    OptionTuple, RefTuple, TableAddition, TrySetColumn, TypedColumn,
 };
 
 /// Marker trait indicating a builder can get multiple columns.
@@ -141,10 +143,7 @@ impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
 }
 
 /// Marker trait indicating a builder can fallibly set multiple columns.
-pub trait TrySetColumns<CS: Columns> {
-    /// The associated error type for the operation.
-    type Error: core::error::Error + Send + Sync;
-
+pub trait TrySetColumns<Error, CS: Columns> {
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors
@@ -153,36 +152,18 @@ pub trait TrySetColumns<CS: Columns> {
     fn try_set_columns(
         &mut self,
         values: <<CS as Columns>::Types as RefTuple>::Output<'_>,
-    ) -> Result<&mut Self, Self::Error>;
+    ) -> Result<&mut Self, Error>;
 }
 
-/// Doc test for empty tuple implementation.
-///
-/// # Examples
-///
-/// ```
-/// use diesel_builders::TrySetColumns;
-///
-/// struct MyBuilder;
-///
-/// let mut builder = MyBuilder;
-/// // Empty tuple columns can be fallibly set
-/// builder.try_set_columns(()).unwrap();
-/// ```
-impl<T> TrySetColumns<()> for T {
-    type Error = core::convert::Infallible;
-
+impl<Error, T> TrySetColumns<Error, ()> for T {
     #[inline]
-    fn try_set_columns(&mut self, _values: ()) -> Result<&mut Self, Self::Error> {
+    fn try_set_columns(&mut self, _values: ()) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }
 
 /// Marker trait indicating a builder which may try to set multiple columns.
-pub trait TryMaySetColumns<CS: Columns> {
-    /// The associated error type for the operation.
-    type Error: core::error::Error + Send + Sync;
-
+pub trait TryMaySetColumns<Error, CS: Columns> {
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors
@@ -191,62 +172,32 @@ pub trait TryMaySetColumns<CS: Columns> {
     fn try_may_set_columns(
         &mut self,
         values: <<<CS as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output,
-    ) -> Result<&mut Self, Self::Error>;
+    ) -> Result<&mut Self, Error>;
 }
 
-/// Doc test for empty tuple implementation.
-///
-/// # Examples
-///
-/// ```
-/// use diesel_builders::TryMaySetColumns;
-///
-/// struct MyBuilder;
-///
-/// let mut builder = MyBuilder;
-/// // Empty tuple columns can be optionally fallibly set
-/// builder.try_may_set_columns(()).unwrap();
-/// ```
-impl<T> TryMaySetColumns<()> for T {
-    type Error = core::convert::Infallible;
-
+impl<Error, T> TryMaySetColumns<Error, ()> for T {
     #[inline]
-    fn try_may_set_columns(&mut self, _values: ()) -> Result<&mut Self, Self::Error> {
+    fn try_may_set_columns(&mut self, _values: ()) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }
 
 /// Marker trait indicating a builder can try to set multiple homogeneous
 /// columns.
-pub trait TrySetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: TrySetColumns<CS> {
+pub trait TrySetHomogeneousColumn<Error, Type, CS: HomogeneousColumns<Type>>:
+    TrySetColumns<Error, CS> + HasTableAddition
+{
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors
     ///
     /// Returns an error if any column cannot be set.
-    fn try_set_homogeneous_columns(&mut self, value: &Type) -> Result<&mut Self, Self::Error>;
+    fn try_set_homogeneous_columns(&mut self, value: &Type) -> Result<&mut Self, Error>;
 }
 
-/// Doc test for empty tuple implementation.
-///
-/// # Examples
-///
-/// ```
-/// use diesel_builders::TrySetHomogeneousColumn;
-///
-/// struct MyBuilder;
-///
-/// let mut builder = MyBuilder;
-/// let value = 42i32;
-/// // Empty tuple homogeneous columns can be fallibly set
-/// builder.try_set_homogeneous_columns(&value).unwrap();
-/// ```
-impl<T, Type> TrySetHomogeneousColumn<Type, ()> for T {
+impl<T: HasTableAddition, Error, Type> TrySetHomogeneousColumn<Error, Type, ()> for T {
     #[inline]
-    fn try_set_homogeneous_columns(
-        &mut self,
-        _value: &Type,
-    ) -> Result<&mut Self, <Self as TrySetColumns<()>>::Error> {
+    fn try_set_homogeneous_columns(&mut self, _value: &Type) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }

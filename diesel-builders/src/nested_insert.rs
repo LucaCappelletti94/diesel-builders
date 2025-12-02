@@ -3,10 +3,12 @@
 
 use diesel::{associations::HasTable, connection::LoadConnection};
 
-use crate::{HasTableAddition, TableAddition, tables::TableModels};
+use crate::{
+    BuilderResult, HasTableAddition, InsertableTableModel, TableAddition, tables::TableModels,
+};
 
 /// Trait defining the insertion of a builder into the database.
-pub trait NestedInsert<Conn>: HasTableAddition {
+pub trait Insert<Conn>: HasTableAddition {
     /// Insert the builder's data into the database using the provided
     /// connection.
     ///
@@ -18,11 +20,33 @@ pub trait NestedInsert<Conn>: HasTableAddition {
     ///
     /// Returns an error if the insertion fails or if any database constraints
     /// are violated.
-    fn insert(self, conn: &mut Conn) -> diesel::QueryResult<<Self::Table as TableAddition>::Model>;
+    fn insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>;
+}
+
+/// Trait defining the insertion of a builder into the database.
+pub trait RecursiveInsert<Error, Conn>: HasTableAddition {
+    /// Insert the builder's data into the database using the provided
+    /// connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the database connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the insertion fails or if any database constraints
+    /// are violated.
+    fn recursive_insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error>;
 }
 
 /// Trait defining the insertion of a tuple of builders into the database.
-pub trait NestedInsertTuple<Conn> {
+pub trait NestedInsertTuple<Error, Conn> {
     /// The type of the models associated with the builders in the tuple.
     type ModelsTuple: TableModels;
 
@@ -37,7 +61,7 @@ pub trait NestedInsertTuple<Conn> {
     ///
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
-    fn nested_insert_tuple(self, conn: &mut Conn) -> diesel::QueryResult<Self::ModelsTuple>;
+    fn nested_insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error>;
 }
 
 // Generate implementations for all tuple sizes (1-32)
@@ -46,7 +70,7 @@ mod impls {}
 
 /// Trait defining the insertion of a tuple of optional builders into the
 /// database.
-pub trait NestedInsertOptionTuple<Conn> {
+pub trait NestedInsertOptionTuple<Error, Conn> {
     /// The type of the optional models associated with the builders in the
     /// tuple.
     type OptionModelsTuple;
@@ -66,7 +90,7 @@ pub trait NestedInsertOptionTuple<Conn> {
     fn nested_insert_option_tuple(
         self,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<Self::OptionModelsTuple>;
+    ) -> BuilderResult<Self::OptionModelsTuple, Error>;
 }
 
 // Generate implementations for all tuple sizes (1-32)

@@ -6,16 +6,19 @@ use diesel::{Column, associations::HasTable};
 use typed_tuple::prelude::TypedIndex;
 use typed_tuple::prelude::TypedTuple;
 
+use crate::BuilderError;
+use crate::BuilderResult;
+use crate::IncompleteBuilderError;
+use crate::InsertableTableModel;
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
-    IncompleteBuilderError, MandatorySameAsIndex, MayGetColumn, MaySetColumn, NestedInsert,
+    MandatorySameAsIndex, MayGetColumn, MaySetColumn, RecursiveInsert,
     NonCompositePrimaryKeyTableModels, OptionTuple, RefTuple, SetColumn, TableAddition,
     TableBuilder, Tables, TransposeOptionTuple, TryMaySetColumns,
     TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns, TrySetColumn,
     TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns, TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
-    validation_error,
 };
 
 /// Trait representing a Diesel table with associated mandatory and
@@ -226,18 +229,27 @@ where
     }
 }
 
-impl<C, T> crate::TrySetMandatoryBuilder<C> for TableBuilderBundle<T>
+impl<Key> crate::TrySetMandatoryBuilder<Key> for TableBuilderBundle<Key::Table>
 where
-    T: BundlableTable,
-    C: crate::MandatorySameAsIndex,
-    C::ReferencedTable: crate::BuildableTable,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    Key::Table: BundlableTable,
+    Key: crate::MandatorySameAsIndex,
+    Key::ReferencedTable: crate::BuildableTable,
+    <<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
+        Key::Table,
+    >>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<
+            <Key as crate::MandatorySameAsIndex>::Idx,
+            crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
+        >,
+    <<<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
+        Key::Table,
+    >>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output:
+        typed_tuple::prelude::TypedIndex<
+                <Key as crate::MandatorySameAsIndex>::Idx,
+                Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>,
+            >,
 {
-    type Error = core::convert::Infallible;
-
     #[inline]
-    fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> Result<&mut Self, Self::Error> {
+    fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
         self.mandatory_associated_builders.apply(|opt| {
             *opt = Some(builder);
         });
@@ -262,21 +274,19 @@ where
     }
 }
 
-impl<C, T> crate::TrySetDiscretionaryBuilder<C> for TableBuilderBundle<T>
+impl<Key> crate::TrySetDiscretionaryBuilder<Key> for TableBuilderBundle<Key::Table>
 where
-    T: BundlableTable,
-    C: crate::DiscretionarySameAsIndex,
-    C::ReferencedTable: crate::BuildableTable,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    Key::Table: BundlableTable,
+    Key: crate::DiscretionarySameAsIndex,
+    Key::ReferencedTable: crate::BuildableTable,
+    <<<Key::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<Key as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>,
+    <<<<Key::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<Key as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
-    type Error = core::convert::Infallible;
-
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
-        builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, Self::Error> {
+        builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
+    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
         self.discretionary_associated_builders.apply(|opt| {
             *opt = Some(builder);
         });
@@ -334,7 +344,7 @@ impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,
 {
-    type Error = diesel::result::Error;
+    type Error = IncompleteBuilderError;
 
     fn try_from(
         value: TableBuilderBundle<T>,
@@ -342,7 +352,7 @@ where
         let Some(mandatory_associated_builders) =
             value.mandatory_associated_builders.transpose_option()
         else {
-            return Err(IncompleteBuilderError::MissingMandatoryTriangularFields.into());
+            return Err(IncompleteBuilderError::MissingMandatoryTriangularFields);
         };
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
@@ -352,22 +362,28 @@ where
     }
 }
 
-impl<T, Conn> NestedInsert<Conn> for CompletedTableBuilderBundle<T>
+impl<T, Error, Conn> RecursiveInsert<Error, Conn> for CompletedTableBuilderBundle<T>
 where
     Conn: diesel::connection::LoadConnection,
     T: BundlableTable,
-    T::InsertableModel: FlatInsert<Conn> + TrySetColumns<T::MandatoryTriangularSameAsColumns> + TryMaySetColumns<T::DiscretionaryTriangularSameAsColumns>,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: NestedInsertOptionTuple<Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
+    T::InsertableModel: FlatInsert<Conn>,
+    T::InsertableModel: TrySetColumns<Error, T::MandatoryTriangularSameAsColumns>,
+    T::InsertableModel: TryMaySetColumns<Error, T::DiscretionaryTriangularSameAsColumns>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<
+        Error,
+    Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: NestedInsertOptionTuple<
+        Error,
+        Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
 {
-    fn insert(mut self, conn: &mut Conn) -> diesel::QueryResult<<T as TableAddition>::Model> {
+    fn recursive_insert(mut self, conn: &mut Conn) -> BuilderResult<<T as TableAddition>::Model, Error> {
         let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
         let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
-        self.insertable_model.try_set_columns(mandatory_primary_keys).map_err(validation_error)?;
+        self.insertable_model.try_set_columns(mandatory_primary_keys).map_err(BuilderError::Validation).map_err(|err| err.change::<Error>())?;
         let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
         let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
-        self.insertable_model.try_may_set_columns(discretionary_primary_keys).map_err(validation_error)?;
-        self.insertable_model.flat_insert(conn)
+        self.insertable_model.try_may_set_columns(discretionary_primary_keys).map_err(BuilderError::Validation).map_err(|err| err.change::<Error>())?;
+        Ok(self.insertable_model.flat_insert(conn)?)
     }
 }
 
@@ -382,7 +398,7 @@ pub trait BuilderBundles: DefaultTuple + ClonableTuple + DebuggableTuple {
     /// # Errors
     ///
     /// Returns an error if any builder bundle cannot be completed.
-    fn try_complete(self) -> Result<Self::CompletedBundles, diesel::result::Error>;
+    fn try_complete(self) -> Result<Self::CompletedBundles, IncompleteBuilderError>;
 }
 
 // Generate implementations for all tuple sizes (1-32)

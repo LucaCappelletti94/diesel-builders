@@ -2,7 +2,7 @@
 
 use tuple_set::TupleSet;
 
-use crate::{BuildableTable, ClonableTuple, DebuggableTuple, OptionTuple, TableBuilder, Tables};
+use crate::{BuildableTable, ClonableTuple, DebuggableTuple, OptionTuple, Tables};
 
 /// A trait for collections of Diesel tables that can be built.
 pub trait BuildableTables: Tables {

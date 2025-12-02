@@ -20,3 +20,10 @@ typed_tuple.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+default = ["size-32"]
+size-16 = []
+size-32 = []
+size-64 = []
+size-128 = []

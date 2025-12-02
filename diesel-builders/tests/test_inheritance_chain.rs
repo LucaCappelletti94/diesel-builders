@@ -1,250 +1,93 @@
 //! Test case for foreign key based inheritance where the dependencies
-//! form a chain, with A being the root, B extending A, and C extending B.
+//! form a chain, with Animals being the root, Dogs extending Animals,
+//! and Puppies extending Dogs.
 
 mod common;
 
+use common::{
+    Animal, CREATE_ANIMALS_TABLE, CREATE_DOGS_TABLE, CREATE_PUPPIES_TABLE, Dog, Puppy, animals,
+    dogs, puppies,
+};
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{
-    Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel,
-};
-
-// Define table A (root table)
-diesel::table! {
-    /// Root table A.
-    table_a (id) {
-        /// Primary key of table A.
-        id -> Integer,
-        /// A simple column for table A.
-        column_a -> Text,
-    }
-}
-
-// Define table B (extends A)
-diesel::table! {
-    /// Table B extends A via foreign key.
-    table_b (id) {
-        /// Primary key of table B, foreign key to table_a.id.
-        id -> Integer,
-        /// A simple column for table B.
-        column_b -> Text,
-    }
-}
-
-// Define table C (extends B)
-diesel::table! {
-    /// Table C extends B via foreign key.
-    table_c (id) {
-        /// Primary key of table C, foreign key to table_b.id.
-        id -> Integer,
-        /// A simple column for table C.
-        column_c -> Text,
-    }
-}
-
-// Allow tables to appear together in queries
-diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
-
-// Table A models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
-#[diesel(table_name = table_a)]
-/// Model for table A.
-pub struct TableA {
-    /// Primary key.
-    pub id: i32,
-    /// Column A value.
-    pub column_a: String,
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_a)]
-/// Insertable model for table A.
-pub struct NewTableA {
-    /// Column A value.
-    pub column_a: Option<String>,
-}
-
-impl TableAddition for table_a::table {
-    type InsertableModel = NewTableA;
-    type Model = TableA;
-    type InsertableColumns = (table_a::column_a,);
-}
-
-// Table B models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
-)]
-#[diesel(table_name = table_b)]
-/// Model for table B.
-pub struct TableB {
-    /// Primary key.
-    pub id: i32,
-    /// Column B value.
-    pub column_b: String,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for table_b::table {
-    type Ancestors = (table_a::table,);
-    type Root = table_a::table;
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_b)]
-/// Insertable model for table B.
-pub struct NewTableB {
-    /// Primary key.
-    pub id: Option<i32>,
-    /// Column B value.
-    pub column_b: Option<String>,
-}
-
-impl TableAddition for table_b::table {
-    type InsertableModel = NewTableB;
-    type Model = TableB;
-    type InsertableColumns = (table_b::id, table_b::column_b);
-}
-
-// Table C models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
-)]
-#[diesel(table_name = table_c)]
-/// Model for table C.
-pub struct TableC {
-    /// Primary key.
-    pub id: i32,
-    /// Column C value.
-    pub column_c: String,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for table_c::table {
-    type Ancestors = (table_a::table, table_b::table);
-    type Root = table_a::table;
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_c)]
-/// Insertable model for table C.
-pub struct NewTableC {
-    /// Primary key.
-    pub id: Option<i32>,
-    /// Column C value.
-    pub column_c: Option<String>,
-}
-
-impl TableAddition for table_c::table {
-    type InsertableModel = NewTableC;
-    type Model = TableC;
-    type InsertableColumns = (table_c::id, table_c::column_c);
-}
 
 #[test]
 fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = common::establish_test_connection()?;
 
-    // Create table A
-    diesel::sql_query(
-        "CREATE TABLE table_a (
-            id INTEGER PRIMARY KEY NOT NULL,
-            column_a TEXT NOT NULL
-        )",
-    )
-    .execute(&mut conn)?;
+    // Create animals table
+    diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
 
-    // Create table B (extends A)
-    diesel::sql_query(
-        "CREATE TABLE table_b (
-            id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id),
-            column_b TEXT NOT NULL
-        )",
-    )
-    .execute(&mut conn)?;
+    // Create dogs table (extends animals)
+    diesel::sql_query(CREATE_DOGS_TABLE).execute(&mut conn)?;
 
-    // Create table C (extends B)
-    diesel::sql_query(
-        "CREATE TABLE table_c (
-            id INTEGER PRIMARY KEY NOT NULL REFERENCES table_b(id),
-            column_c TEXT NOT NULL
-        )",
-    )
-    .execute(&mut conn)?;
+    // Create puppies table (extends dogs)
+    diesel::sql_query(CREATE_PUPPIES_TABLE).execute(&mut conn)?;
 
-    // Insert into table A
-    let a = table_a::table::builder()
-        .set_column::<table_a::column_a>("Value A")
+    // Insert into animals table
+    let animal = animals::table::builder()
+        .try_set_column::<animals::name>("Generic Animal")?
         .insert(&mut conn)?;
 
-    assert_eq!(a.column_a, "Value A");
+    assert_eq!(animal.name, "Generic Animal");
 
-    // Insert into table B (extends A)
-    let b = table_b::table::builder()
-        .set_column::<table_a::column_a>("Value A for B")
-        .set_column::<table_b::column_b>("Value B")
+    // Insert into dogs table (extends animals)
+    let dog = dogs::table::builder()
+        .try_set_column::<animals::name>("Max")?
+        .set_column::<dogs::breed>("Golden Retriever")
         .insert(&mut conn)?;
 
-    assert_eq!(b.column_b, "Value B");
+    assert_eq!(dog.breed, "Golden Retriever");
 
-    // Verify B can be queried
-    let queried_b: TableB = table_b::table
-        .filter(table_b::id.eq(b.id))
-        .first(&mut conn)?;
-    assert_eq!(queried_b, b);
+    // Verify dog can be queried
+    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
+    assert_eq!(queried_dog, dog);
 
-    // Insert into table C (extends B, transitively extends A)
-    let c = table_c::table::builder()
-        .set_column::<table_a::column_a>("Value A for C")
-        .set_column::<table_b::column_b>("Value B for C")
-        .set_column::<table_c::column_c>("Value C")
+    // Insert into puppies table (extends dogs, transitively extends animals)
+    let puppy = puppies::table::builder()
+        .try_set_column::<animals::name>("Buddy")?
+        .set_column::<dogs::breed>("Labrador")
+        .set_column::<puppies::age_months>(3)
         .insert(&mut conn)?;
 
-    assert_eq!(c.column_c, "Value C");
+    assert_eq!(puppy.age_months, 3);
 
-    // Verify C can be queried
-    let queried_c: TableC = table_c::table
-        .filter(table_c::id.eq(c.id))
+    // Verify puppy can be queried
+    let queried_puppy: Puppy = puppies::table
+        .filter(puppies::id.eq(puppy.id))
         .first(&mut conn)?;
-    assert_eq!(queried_c, c);
+    assert_eq!(queried_puppy, puppy);
 
-    // Verify we can join through the chain: A -> B
-    let loaded_a: TableA = table_a::table
-        .filter(table_a::id.eq(b.id))
+    // Verify we can join through the chain: animals -> dogs
+    let loaded_animal: Animal = animals::table
+        .filter(animals::id.eq(dog.id))
         .first(&mut conn)?;
-    let loaded_b: TableB = table_b::table
-        .filter(table_b::id.eq(b.id))
-        .first(&mut conn)?;
+    let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
 
-    assert_eq!(loaded_a.id, loaded_b.id);
-    assert_eq!(loaded_b, b);
+    assert_eq!(loaded_animal.id, loaded_dog.id);
+    assert_eq!(loaded_dog, dog);
 
-    // Verify we can join through the chain: B -> C
-    let loaded_b2: TableB = table_b::table
-        .filter(table_b::id.eq(c.id))
-        .first(&mut conn)?;
-    let loaded_c: TableC = table_c::table
-        .filter(table_c::id.eq(c.id))
+    // Verify we can join through the chain: dogs -> puppies
+    let loaded_dog2: Dog = dogs::table.filter(dogs::id.eq(puppy.id)).first(&mut conn)?;
+    let loaded_puppy: Puppy = puppies::table
+        .filter(puppies::id.eq(puppy.id))
         .first(&mut conn)?;
 
-    assert_eq!(loaded_b2.id, loaded_c.id);
-    assert_eq!(loaded_c, c);
+    assert_eq!(loaded_dog2.id, loaded_puppy.id);
+    assert_eq!(loaded_puppy, puppy);
 
-    // Verify we can join through the full chain: A -> B -> C
-    let full_chain_a: TableA = table_a::table
-        .filter(table_a::id.eq(c.id))
+    // Verify we can join through the full chain: animals -> dogs -> puppies
+    let full_chain_animal: Animal = animals::table
+        .filter(animals::id.eq(puppy.id))
         .first(&mut conn)?;
-    let full_chain_b: TableB = table_b::table
-        .filter(table_b::id.eq(c.id))
-        .first(&mut conn)?;
-    let full_chain_c: TableC = table_c::table
-        .filter(table_c::id.eq(c.id))
+    let full_chain_dog: Dog = dogs::table.filter(dogs::id.eq(puppy.id)).first(&mut conn)?;
+    let full_chain_puppy: Puppy = puppies::table
+        .filter(puppies::id.eq(puppy.id))
         .first(&mut conn)?;
 
-    assert_eq!(full_chain_a.id, full_chain_b.id);
-    assert_eq!(full_chain_b.id, full_chain_c.id);
-    assert_eq!(full_chain_c, c);
+    assert_eq!(full_chain_animal.id, full_chain_dog.id);
+    assert_eq!(full_chain_dog.id, full_chain_puppy.id);
+    assert_eq!(full_chain_puppy, puppy);
 
     Ok(())
 }
