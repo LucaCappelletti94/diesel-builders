@@ -22,18 +22,6 @@ pub enum IncompleteBuilderError {
 /// A specialized `Result` type for builder operations.
 pub type BuilderResult<T, E> = Result<T, BuilderError<E>>;
 
-impl<E> BuilderError<E> {
-    /// Change the error type of the `BuilderError` by mapping the underlying
-    /// validation error.
-    pub fn change<T: From<E>>(self) -> BuilderError<T> {
-        match self {
-            BuilderError::Diesel(e) => BuilderError::Diesel(e),
-            BuilderError::Incomplete(e) => BuilderError::Incomplete(e),
-            BuilderError::Validation(e) => BuilderError::Validation(T::from(e)),
-        }
-    }
-}
-
 impl std::fmt::Display for IncompleteBuilderError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
