@@ -18,7 +18,7 @@ fn new_cat_try_set_column_empty_color() {
 
     let res = <NewCat as diesel_builders::TrySetColumn<cats::color>>::try_set_column(
         &mut nc,
-        "".to_string(),
+        String::new(),
     );
 
     assert_eq!(res.unwrap_err(), NewCatError::ColorEmpty);

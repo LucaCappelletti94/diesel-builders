@@ -11,7 +11,7 @@ fn test_builder_error_diesel_display() {
     let diesel_error = diesel::result::Error::NotFound;
     let builder_error: BuilderError<NewAnimalError> = BuilderError::Diesel(diesel_error);
 
-    let display_string = format!("{}", builder_error);
+    let display_string = format!("{builder_error}");
     assert_eq!(display_string, "Diesel error: Record not found");
 }
 
@@ -20,7 +20,7 @@ fn test_builder_error_incomplete_display() {
     let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularFields;
     let builder_error: BuilderError<NewAnimalError> = BuilderError::Incomplete(incomplete_error);
 
-    let display_string = format!("{}", builder_error);
+    let display_string = format!("{builder_error}");
     assert_eq!(
         display_string,
         "Incomplete builder error: Not all mandatory associated builders have been set"
@@ -32,7 +32,7 @@ fn test_builder_error_validation_display() {
     let validation_error = NewAnimalError::NameEmpty;
     let builder_error = BuilderError::Validation(validation_error);
 
-    let display_string = format!("{}", builder_error);
+    let display_string = format!("{builder_error}");
     assert_eq!(
         display_string,
         "Validation error: Animal name cannot be empty"
@@ -78,7 +78,7 @@ fn test_builder_error_validation_source() {
 #[test]
 fn test_incomplete_builder_error_display() {
     let error = IncompleteBuilderError::MissingMandatoryTriangularFields;
-    let display_string = format!("{}", error);
+    let display_string = format!("{error}");
     assert_eq!(
         display_string,
         "Not all mandatory associated builders have been set"
