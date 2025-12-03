@@ -39,12 +39,9 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test with description set to Some value
     let animal_with_desc = animals::table::builder()
-        .try_set_column::<animals::name>("Buddy")
-        .unwrap()
-        .try_set_column::<animals::description>(Some("A friendly dog".to_owned()))
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_set_column::<animals::name>("Buddy")?
+        .try_set_column::<animals::description>(Some("A friendly dog".to_owned()))?
+        .insert(&mut conn)?;
 
     assert_eq!(
         animal_with_desc.description.as_deref(),
@@ -53,12 +50,9 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test with description explicitly set to None (NULL in database)
     let animal_no_desc = animals::table::builder()
-        .try_set_column::<animals::name>("Whiskers")
-        .unwrap()
-        .try_set_column::<animals::description>(None)
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_set_column::<animals::name>("Whiskers")?
+        .try_set_column::<animals::description>(None)?
+        .insert(&mut conn)?;
 
     assert_eq!(animal_no_desc.description, None);
 
@@ -70,10 +64,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // We test the chained variant.
     let another_animal = animals::table::builder()
-        .try_set_column::<animals::name>("Charlie")
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_set_column::<animals::name>("Charlie")?
+        .insert(&mut conn)?;
 
     assert_eq!(
         another_animal.get_column::<animals::name>().as_str(),

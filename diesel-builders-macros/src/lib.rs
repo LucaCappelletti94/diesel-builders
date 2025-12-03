@@ -110,11 +110,88 @@ pub fn impl_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// - `MayGetColumns`
 /// - `SetColumns`
 /// - `SetInsertableTableModelHomogeneousColumn`
-/// - `TrySetColumns`
-/// - `TrySetInsertableTableModelHomogeneousColumn`
+/// Generates tuple trait implementations for `GetColumns`.
 #[proc_macro_attribute]
 pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_get_columns();
+    let impls = impl_generators::generate_get_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `MayGetColumns`.
+#[proc_macro_attribute]
+pub fn impl_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_may_get_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `SetColumns`.
+#[proc_macro_attribute]
+pub fn impl_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_set_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `MaySetColumns`.
+#[proc_macro_attribute]
+pub fn impl_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_may_set_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `TrySetColumns`.
+#[proc_macro_attribute]
+pub fn impl_try_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_try_set_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `TrySetHomogeneousColumn`.
+#[proc_macro_attribute]
+pub fn impl_try_set_homogeneous_column(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_try_set_homogeneous_column_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generates tuple trait implementations for `TryMaySetColumns`.
+#[proc_macro_attribute]
+pub fn impl_try_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_try_may_set_columns_trait();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {

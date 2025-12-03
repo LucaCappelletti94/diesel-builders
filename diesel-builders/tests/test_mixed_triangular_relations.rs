@@ -341,6 +341,15 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let mut conn = common::establish_test_connection()?;
     create_tables(&mut conn)?;
 
+    let table_a = table_a::table::builder()
+        .set_column::<table_a::column_a>("Value A")
+        .insert(&mut conn)?;
+
+    let table_d = table_d::table::builder()
+        .set_column::<table_d::a_id>(table_a.id)
+        .set_column::<table_d::column_d>(Some("Value D".to_owned()))
+        .insert(&mut conn)?;
+
     // Try to create without mandatory C builder
     let result = table_b::table::builder()
         .set_column::<table_a::column_a>("Value A")
@@ -348,6 +357,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
         .set_discretionary_builder::<table_b::d_id>(
             table_d::table::builder().set_column::<table_d::column_d>(Some("Value D".to_owned())),
         )
+        .set_discretionary_model::<table_b::d_id>(&table_d)
         .insert(&mut conn);
 
     assert!(matches!(
