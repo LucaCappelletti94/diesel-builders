@@ -6,20 +6,44 @@ use crate::TypedColumn;
 pub trait SetColumn<Column: TypedColumn>:
     TrySetColumn<Column, Error = core::convert::Infallible>
 {
+    #[inline]
     /// Set the value of the specified column.
-    fn set_column(&mut self, value: impl Into<<Column as TypedColumn>::Type>) -> &mut Self;
+    fn set_column(&mut self, value: impl Into<<Column as TypedColumn>::Type>) -> &mut Self {
+        // Safe to unwrap because the Error type is Infallible
+        <Self as TrySetColumn<Column>>::try_set_column(self, value.into()).unwrap()
+    }
+}
+
+impl<T, Column> SetColumn<Column> for T
+where
+    T: TrySetColumn<Column, Error = core::convert::Infallible>,
+    Column: TypedColumn,
+{
 }
 
 /// Trait providing a failable setter for a specific Diesel column.
-pub trait MaySetColumn<Column: TypedColumn> {
+pub trait MaySetColumn<Column: TypedColumn>: SetColumn<Column> {
+    #[inline]
     /// Set the value of the specified column if the value is present.
-    fn may_set_column(&mut self, value: Option<&<Column as TypedColumn>::Type>) -> &mut Self;
+    fn may_set_column(&mut self, value: Option<&<Column as TypedColumn>::Type>) -> &mut Self {
+        if let Some(v) = value {
+            <Self as SetColumn<Column>>::set_column(self, v.clone());
+        }
+        self
+    }
+}
+
+impl<T, Column> MaySetColumn<Column> for T
+where
+    T: SetColumn<Column>,
+    Column: TypedColumn,
+{
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetColumn<Column: TypedColumn> {
     /// The associated error type for the operation.
-    type Error: core::error::Error + Send + Sync;
+    type Error;
 
     /// Attempt to set the value of the specified column.
     ///

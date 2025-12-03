@@ -386,7 +386,7 @@ pub trait TrySetMandatorySameAsColumn<
 >
 {
     /// The associated error type for the operation.
-    type Error: core::error::Error;
+    type Error;
 
     /// Attempt to set the value of the specified column in the mandatory
     /// same-as relationship.
@@ -406,7 +406,7 @@ pub trait TrySetMandatorySameAsColumns<Type, Keys: Columns, CS: HomogeneousColum
     HasTable
 {
     /// The associated error type for the operation.
-    type Error: core::error::Error;
+    type Error;
 
     /// Attempt to set the value of the specified columns in the mandatory
     /// same-as relationship.
@@ -426,7 +426,7 @@ pub trait TryMaySetDiscretionarySameAsColumn<
 >
 {
     /// The associated error type for the operation.
-    type Error: core::error::Error;
+    type Error;
 
     /// Attempt to set the value of the specified column in the discretionary
     /// same-as relationship.
@@ -471,7 +471,7 @@ pub trait TryMaySetDiscretionarySameAsColumns<Type, Keys: Columns, CS: Homogeneo
     HasTable
 {
     /// The associated error type for the operation.
-    type Error: core::error::Error;
+    type Error;
 
     /// Attempt to set the value of the specified columns in the discretionary
     /// same-as relationship.

@@ -14,5 +14,5 @@ pub trait InsertableTableModel:
     + TrySetColumns<Self::Error, <Self::Table as TableAddition>::InsertableColumns>
 {
     /// The higher-level validation error type for this insertable table model.
-    type Error: std::error::Error + Send + Sync;
+    type Error;
 }

@@ -19,7 +19,7 @@ mod common;
 use std::convert::Infallible;
 
 use diesel::prelude::*;
-use diesel_builders::{SetColumn, TrySetColumn, prelude::*};
+use diesel_builders::{TrySetColumn, prelude::*};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)
@@ -150,21 +150,11 @@ pub enum ErrorB {
     EmptyRemoteColumnC,
 }
 
-impl std::fmt::Display for ErrorB {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ErrorB::EmptyRemoteColumnC => write!(f, "remote_column_c cannot be empty"),
-        }
-    }
-}
-
 impl From<Infallible> for ErrorB {
     fn from(_: Infallible) -> Self {
         unreachable!()
     }
 }
-
-impl core::error::Error for ErrorB {}
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
 #[diesel(table_name = table_b)]
@@ -180,13 +170,6 @@ pub struct NewTableB {
     pub remote_column_c: Option<Option<String>>,
 }
 
-impl SetColumn<table_b::id> for NewTableB {
-    fn set_column(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.id = Some(value.into());
-        self
-    }
-}
-
 impl TrySetColumn<table_b::id> for NewTableB {
     type Error = std::convert::Infallible;
 
@@ -196,26 +179,12 @@ impl TrySetColumn<table_b::id> for NewTableB {
     }
 }
 
-impl SetColumn<table_b::c_id> for NewTableB {
-    fn set_column(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.c_id = Some(value.into());
-        self
-    }
-}
-
 impl TrySetColumn<table_b::c_id> for NewTableB {
     type Error = std::convert::Infallible;
 
     fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
         self.c_id = Some(value);
         Ok(self)
-    }
-}
-
-impl SetColumn<table_b::column_b> for NewTableB {
-    fn set_column(&mut self, value: impl Into<String>) -> &mut Self {
-        self.column_b = Some(value.into());
-        self
     }
 }
 
@@ -359,14 +328,17 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     triangular_b_builder
         .set_column_ref::<table_a::column_a>("Value A for B")
         .set_column_ref::<table_b::column_b>("Value B")
-        .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())?;
+        .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())
+        .unwrap();
 
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");
 
     let triangular_b = triangular_b_builder
-        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?
-        .insert(&mut conn)?;
+        .try_set_discretionary_builder::<table_b::c_id>(c_builder)
+        .unwrap()
+        .insert(&mut conn)
+        .unwrap();
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(triangular_b.id))
@@ -385,8 +357,10 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let indipendent_b = table_b::table::builder()
         .set_column::<table_a::column_a>("Independent A for B")
         .set_column::<table_b::column_b>("Independent B")
-        .try_set_discretionary_model::<table_b::c_id>(&c)?
-        .insert(&mut conn)?;
+        .try_set_discretionary_model::<table_b::c_id>(&c)
+        .unwrap()
+        .insert(&mut conn)
+        .unwrap();
 
     assert_eq!(indipendent_b.column_b, "Independent B");
     assert_eq!(indipendent_b.remote_column_c.as_deref(), Some("Value C"));
@@ -428,7 +402,8 @@ fn test_discretionary_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .set_column::<table_b::column_b>("B Value")
-        .try_set_discretionary_builder::<table_b::c_id>(c_builder)?
+        .try_set_discretionary_builder::<table_b::c_id>(c_builder)
+        .unwrap()
         .insert(&mut conn);
 
     assert!(matches!(

@@ -482,10 +482,9 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Derive macro to automatically implement `SetColumn`, `MaySetColumn`, and
-/// `TrySetColumn` for all fields of a struct.
+/// Derive macro to automatically implement `TrySetColumn` for all fields of a struct.
 ///
-/// This macro generates `SetColumn`, `MaySetColumn`, and `TrySetColumn`
+/// This macro generates `TrySetColumn`
 /// implementations for each field in the struct, assuming:
 /// - The struct has a `#[diesel(table_name = ...)]` attribute
 /// - Each field name matches a column name in the table
@@ -554,32 +553,12 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         vec![
             quote::quote! {
-                impl diesel_builders::SetColumn<#table_name::#field_name> for #struct_name {
-                    #[inline]
-                    fn set_column(&mut self, value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>) -> &mut Self {
-                        self.#field_name = Some(value.into());
-                        self
-                    }
-                }
-            },
-            quote::quote! {
-                impl diesel_builders::MaySetColumn<#table_name::#field_name> for #struct_name {
-                    #[inline]
-                    fn may_set_column(&mut self, value: Option<&<#table_name::#field_name as diesel_builders::TypedColumn>::Type>) -> &mut Self {
-                        if let Some(v) = value {
-                            self.#field_name = Some(v.clone());
-                        }
-                        self
-                    }
-                }
-            },
-            quote::quote! {
                 impl diesel_builders::TrySetColumn<#table_name::#field_name> for #struct_name {
                     type Error = core::convert::Infallible;
 
                     #[inline]
                     fn try_set_column(&mut self, value: <#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> Result<&mut Self, Self::Error> {
-                        <Self as diesel_builders::SetColumn<#table_name::#field_name>>::set_column(self, value);
+                        self.#field_name = Some(value);
                         Ok(self)
                     }
                 }

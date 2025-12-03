@@ -280,18 +280,11 @@ impl Display for NewCatError {
 
 impl core::error::Error for NewCatError {}
 
-impl diesel_builders::SetColumn<cats::id> for NewCat {
-    fn set_column(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.id = Some(value.into());
-        self
-    }
-}
-
 impl diesel_builders::TrySetColumn<cats::id> for NewCat {
     type Error = Infallible;
 
     fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
-        <Self as diesel_builders::SetColumn<cats::id>>::set_column(self, value);
+        self.id = Some(value);
         Ok(self)
     }
 }

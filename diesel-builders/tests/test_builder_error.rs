@@ -9,7 +9,7 @@ use std::error::Error;
 #[test]
 fn test_builder_error_diesel_display() {
     let diesel_error = diesel::result::Error::NotFound;
-    let builder_error: BuilderError<NewAnimalError> = BuilderError::Diesel(diesel_error);
+    let builder_error: BuilderError<diesel::result::Error> = BuilderError::Diesel(diesel_error);
 
     let display_string = format!("{builder_error}");
     assert_eq!(display_string, "Diesel error: Record not found");
@@ -18,7 +18,8 @@ fn test_builder_error_diesel_display() {
 #[test]
 fn test_builder_error_incomplete_display() {
     let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularFields;
-    let builder_error: BuilderError<NewAnimalError> = BuilderError::Incomplete(incomplete_error);
+    let builder_error: BuilderError<IncompleteBuilderError> =
+        BuilderError::Incomplete(incomplete_error);
 
     let display_string = format!("{builder_error}");
     assert_eq!(

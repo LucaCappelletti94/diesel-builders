@@ -13,11 +13,11 @@ use crate::InsertableTableModel;
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
-    MandatorySameAsIndex, MayGetColumn, MaySetColumn, NonCompositePrimaryKeyTableModels,
-    OptionTuple, RecursiveInsert, RefTuple, SetColumn, TableAddition, TableBuilder, Tables,
-    TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
-    TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
-    TrySetMandatorySameAsColumns, TypedColumn,
+    MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple,
+    RecursiveInsert, RefTuple, TableAddition, TableBuilder, Tables, TransposeOptionTuple,
+    TryMaySetColumns, TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns,
+    TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns,
+    TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
@@ -135,19 +135,6 @@ where
     }
 }
 
-impl<T, C> MaySetColumn<C> for TableBuilderBundle<T>
-where
-    T: BundlableTable,
-    C: TypedColumn,
-    T::InsertableModel: MaySetColumn<C>,
-{
-    #[inline]
-    fn may_set_column(&mut self, value: Option<&C::Type>) -> &mut Self {
-        self.insertable_model.may_set_column(value);
-        self
-    }
-}
-
 impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable,
@@ -163,19 +150,6 @@ where
     ) -> Result<&mut Self, Self::Error> {
         self.insertable_model.try_set_column(value)?;
         Ok(self)
-    }
-}
-
-impl<T, C> SetColumn<C> for TableBuilderBundle<T>
-where
-    T: BundlableTable,
-    C: TypedColumn<Table = T>,
-    T::InsertableModel: SetColumn<C>,
-{
-    #[inline]
-    fn set_column(&mut self, value: impl Into<<C as TypedColumn>::Type>) -> &mut Self {
-        self.insertable_model.set_column(value);
-        self
     }
 }
 

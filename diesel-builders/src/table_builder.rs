@@ -11,11 +11,10 @@ use crate::{
     AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
     BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
     DefaultTuple, DescendantOf, GetColumn, HorizontalSameAsKey, IncompleteBuilderError, Insert,
-    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumn, MaySetColumns,
-    RecursiveInsert, SetColumn, SingletonForeignKey, TableAddition, TableBuilderBundle,
-    TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
-    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
-    vertical_same_as_group::VerticalSameAsGroup,
+    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, RecursiveInsert,
+    SingletonForeignKey, TableAddition, TableBuilderBundle, TryMaySetColumns, TrySetColumn,
+    TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn, buildable_table::BuildableTable,
+    table_addition::HasPrimaryKey, vertical_same_as_group::VerticalSameAsGroup,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -127,26 +126,6 @@ where
     }
 }
 
-impl<C, T> SetColumn<C> for TableBuilder<T>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
-    TableBuilderBundle<C::Table>: SetColumn<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
-{
-    #[inline]
-    fn set_column(&mut self, value: impl Into<<C as TypedColumn>::Type>) -> &mut Self {
-        use typed_tuple::prelude::TypedTuple;
-        self.bundles.apply(|builder_bundle| {
-            builder_bundle.set_column(value.into());
-        });
-        // TODO: set vertical same-as columns in associated builders here.
-        self
-    }
-}
-
 impl<C, T> MayGetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
@@ -160,26 +139,6 @@ where
     fn may_get_column(&self) -> Option<&<C as TypedColumn>::Type> {
         use typed_tuple::prelude::TypedTuple;
         self.bundles.get().may_get_column()
-    }
-}
-
-impl<C, T> MaySetColumn<C> for TableBuilder<T>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
-    TableBuilderBundle<C::Table>: MaySetColumn<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TypedIndex<<C::Table as AncestorOfIndex<T>>::Idx, TableBuilderBundle<C::Table>>,
-{
-    #[inline]
-    fn may_set_column(&mut self, value: Option<&<C as TypedColumn>::Type>) -> &mut Self {
-        use typed_tuple::prelude::TypedTuple;
-        self.bundles.map_mut(|builder_bundle| {
-            builder_bundle.may_set_column(value);
-        });
-        // TODO: set vertical same-as columns in associated builders here.
-        self
     }
 }
 

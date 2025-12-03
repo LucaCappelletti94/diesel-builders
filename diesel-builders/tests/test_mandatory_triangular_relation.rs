@@ -19,8 +19,8 @@ use std::convert::Infallible;
 use diesel::associations::HasTable;
 use diesel::prelude::*;
 use diesel_builders::{
-    CompletedTableBuilderBundle, SetColumn, TableBuilder, TableBuilderBundle, TrySetColumn,
-    prelude::*, table_builder::CompletedTableBuilder,
+    CompletedTableBuilderBundle, TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*,
+    table_builder::CompletedTableBuilder,
 };
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
@@ -152,21 +152,11 @@ pub enum ErrorB {
     EmptyRemoteColumnC,
 }
 
-impl std::fmt::Display for ErrorB {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ErrorB::EmptyRemoteColumnC => write!(f, "remote_column_c cannot be empty"),
-        }
-    }
-}
-
 impl From<Infallible> for ErrorB {
     fn from(_: Infallible) -> Self {
         unreachable!()
     }
 }
-
-impl core::error::Error for ErrorB {}
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
 #[diesel(table_name = table_b)]
@@ -182,44 +172,12 @@ pub struct NewTableB {
     pub remote_column_c: Option<Option<String>>,
 }
 
-impl diesel_builders::MaySetColumn<table_b::id> for NewTableB {
-    fn may_set_column(&mut self, value: Option<&i32>) -> &mut Self {
-        if let Some(v) = value {
-            self.id = Some(*v);
-        }
-        self
-    }
-}
-
-impl SetColumn<table_b::id> for NewTableB {
-    fn set_column(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.id = Some(value.into());
-        self
-    }
-}
-
 impl TrySetColumn<table_b::id> for NewTableB {
     type Error = std::convert::Infallible;
 
     fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
         self.id = Some(value);
         Ok(self)
-    }
-}
-
-impl diesel_builders::MaySetColumn<table_b::c_id> for NewTableB {
-    fn may_set_column(&mut self, value: Option<&i32>) -> &mut Self {
-        if let Some(v) = value {
-            self.c_id = Some(*v);
-        }
-        self
-    }
-}
-
-impl SetColumn<table_b::c_id> for NewTableB {
-    fn set_column(&mut self, value: impl Into<i32>) -> &mut Self {
-        self.c_id = Some(value.into());
-        self
     }
 }
 
@@ -232,37 +190,12 @@ impl TrySetColumn<table_b::c_id> for NewTableB {
     }
 }
 
-impl diesel_builders::MaySetColumn<table_b::column_b> for NewTableB {
-    fn may_set_column(&mut self, value: Option<&String>) -> &mut Self {
-        if let Some(v) = value {
-            self.column_b = Some(v.clone());
-        }
-        self
-    }
-}
-
-impl SetColumn<table_b::column_b> for NewTableB {
-    fn set_column(&mut self, value: impl Into<String>) -> &mut Self {
-        self.column_b = Some(value.into());
-        self
-    }
-}
-
 impl TrySetColumn<table_b::column_b> for NewTableB {
     type Error = std::convert::Infallible;
 
     fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
         self.column_b = Some(value);
         Ok(self)
-    }
-}
-
-impl diesel_builders::MaySetColumn<table_b::remote_column_c> for NewTableB {
-    fn may_set_column(&mut self, value: Option<&Option<String>>) -> &mut Self {
-        if let Some(v) = value {
-            self.remote_column_c = Some(v.clone());
-        }
-        self
     }
 }
 
@@ -401,11 +334,14 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     b_builder
         .set_column_ref::<table_a::column_a>("Value A for B")
         .set_column_ref::<table_b::column_b>("Value B")
-        .try_set_mandatory_builder_ref::<table_b::c_id>(c_builder.clone())?;
+        .try_set_mandatory_builder_ref::<table_b::c_id>(c_builder.clone())
+        .unwrap();
 
     let b = b_builder
-        .try_set_mandatory_builder::<table_b::c_id>(c_builder)?
-        .insert(&mut conn)?;
+        .try_set_mandatory_builder::<table_b::c_id>(c_builder)
+        .unwrap()
+        .insert(&mut conn)
+        .unwrap();
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(b.id))
@@ -483,7 +419,8 @@ fn test_mandatory_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .set_column::<table_b::column_b>("B Value")
-        .set_mandatory_builder::<table_b::c_id>(c_builder)
+        .try_set_mandatory_builder::<table_b::c_id>(c_builder)
+        .unwrap()
         .insert(&mut conn);
 
     assert!(matches!(
