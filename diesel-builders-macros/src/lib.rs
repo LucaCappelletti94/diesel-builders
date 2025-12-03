@@ -104,13 +104,6 @@ pub fn impl_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// Generate column getter/setter trait implementations for all tuple sizes
-///
-/// Generates implementations for:
-/// - `GetColumns`
-/// - `MayGetColumns`
-/// - `SetColumns`
-/// - `SetInsertableTableModelHomogeneousColumn`
-/// Generates tuple trait implementations for `GetColumns`.
 #[proc_macro_attribute]
 pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_get_columns_trait();
