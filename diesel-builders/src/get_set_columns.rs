@@ -115,33 +115,6 @@ impl<T> MaySetColumns<()> for T {
     }
 }
 
-/// Marker trait indicating a builder can set multiple homogeneous columns.
-pub trait SetHomogeneousColumn<Type, CS: HomogeneousColumns<Type>>: SetColumns<CS> {
-    /// Set the values of the specified columns.
-    fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self;
-}
-
-/// Doc test for empty tuple implementation.
-///
-/// # Examples
-///
-/// ```
-/// use diesel_builders::SetHomogeneousColumn;
-///
-/// struct MyBuilder;
-///
-/// let mut builder = MyBuilder;
-/// let value = 42i32;
-/// // Empty tuple homogeneous columns can be set
-/// builder.set_homogeneous_columns(&value);
-/// ```
-impl<T, Type> SetHomogeneousColumn<Type, ()> for T {
-    #[inline]
-    fn set_homogeneous_columns(&mut self, _value: &Type) -> &mut Self {
-        self
-    }
-}
-
 /// Marker trait indicating a builder can fallibly set multiple columns.
 pub trait TrySetColumns<Error, CS: Columns> {
     /// Attempt to set the values of the specified columns.

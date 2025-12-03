@@ -326,14 +326,6 @@ pub fn generate_get_columns() -> TokenStream {
                 }
             }
 
-            impl<T: SetColumns<(#(#type_params,)*)>, Type: core::fmt::Debug + Clone, #(#type_params: TypedColumn<Type = Type>),*> SetHomogeneousColumn<Type, (#(#type_params,)*)> for T
-            {
-                #[inline]
-                fn set_homogeneous_columns(&mut self, value: &Type) -> &mut Self {
-                    <T as SetColumns<(#(#type_params,)*)>>::set_columns(self, (#(#value_replicates,)*))
-                }
-            }
-
             impl<Error, T: HasTableAddition, #(#type_params: TypedColumn,)*> TrySetColumns<Error, (#(#type_params,)*)> for T
             where
                 #(T: TrySetColumn<#type_params>,)*

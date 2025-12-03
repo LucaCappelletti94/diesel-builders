@@ -19,8 +19,8 @@ pub mod get_column;
 pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
 pub mod get_set_columns;
 pub use get_set_columns::{
-    GetColumns, MayGetColumns, MaySetColumns, SetColumns, SetHomogeneousColumn, TryMaySetColumns,
-    TrySetColumns, TrySetHomogeneousColumn,
+    GetColumns, MayGetColumns, MaySetColumns, SetColumns, TryMaySetColumns, TrySetColumns,
+    TrySetHomogeneousColumn,
 };
 pub mod columns;
 pub use columns::{Columns, HomogeneousColumns, Projection};
