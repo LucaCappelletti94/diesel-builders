@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{Animal, CREATE_ANIMALS_TABLE, NewAnimalError, animals};
+use common::*;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
@@ -14,13 +14,17 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
 
+    // Test Root derive - animals table is a root with no ancestors
     let mut builder = animals::table::builder();
 
+    // Test MayGetColumn derive - optional fields start as None
     assert_eq!(builder.may_get_column::<animals::name>(), None);
     assert_eq!(builder.may_get_column::<animals::description>(), None);
 
-    builder.try_set_column_ref::<animals::name>("Max").unwrap();
+    // Test generated TrySetAnimalsName helper trait - fallible setter by reference
+    builder.try_name_ref("Max").unwrap();
 
+    // Test MayGetColumn derive - verifying field is set after mutation
     assert_eq!(
         builder
             .may_get_column::<animals::name>()
@@ -34,13 +38,17 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(animal.name, "Max");
     assert_eq!(animal.description, None);
 
+    // Test GetColumn derive - type-safe column access on models
     assert_eq!(animal.get_column::<animals::name>().as_str(), "Max");
     assert_eq!(animal.get_column::<animals::description>(), &None);
 
-    // Test with description set to Some value
+    // Test TableModel derive - primary key access
+    assert!(animal.get_column::<animals::id>() > &0);
+
+    // Test with description set to Some value - using generated helper traits
     let animal_with_desc = animals::table::builder()
-        .try_set_column::<animals::name>("Buddy")?
-        .try_set_column::<animals::description>(Some("A friendly dog".to_owned()))?
+        .try_name("Buddy")?
+        .try_description("A friendly dog".to_owned())?
         .insert(&mut conn)?;
 
     assert_eq!(
@@ -50,8 +58,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test with description explicitly set to None (NULL in database)
     let animal_no_desc = animals::table::builder()
-        .try_set_column::<animals::name>("Whiskers")?
-        .try_set_column::<animals::description>(None)?
+        .try_name("Whiskers")?
+        .try_description(None)?
         .insert(&mut conn)?;
 
     assert_eq!(animal_no_desc.description, None);
@@ -62,16 +70,18 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .first(&mut conn)?;
     assert_eq!(animal, queried_animal);
 
-    // We test the chained variant.
+    // Test chained builder pattern with GetColumn derive
     let another_animal = animals::table::builder()
-        .try_set_column::<animals::name>("Charlie")?
+        .try_name("Charlie")?
         .insert(&mut conn)?;
 
+    // Test GetColumn derive on multiple fields
     assert_eq!(
         another_animal.get_column::<animals::name>().as_str(),
         "Charlie"
     );
 
+    // Test TableModel derive - verifying unique primary keys
     assert_ne!(
         animal.get_column::<animals::id>(),
         another_animal.get_column::<animals::id>()

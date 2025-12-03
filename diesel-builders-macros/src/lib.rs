@@ -6,7 +6,7 @@
 
 mod impl_generators;
 mod tuple_generator;
-
+mod utils;
 use proc_macro::TokenStream;
 
 /// Generate `DefaultTuple` trait implementations for all tuple sizes.
@@ -808,8 +808,10 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 /// `TypedColumn` implementations for each column based on the struct's field
 /// types.
 #[proc_macro_derive(TableModel)]
+#[allow(clippy::too_many_lines)]
 pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    let struct_ident = &input.ident;
 
     // Find the diesel(table_name = ...) attribute
     let table_name = input.attrs.iter().find_map(|attr| {
@@ -897,8 +899,97 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let typed_column_impls = fields.iter().map(|field| {
         let field_name = field.ident.as_ref().unwrap();
         let field_type = &field.ty;
+        let camel_cased_field_name = utils::snake_to_camel_case(&field_name.to_string());
+        let set_field_name =
+            syn::Ident::new(&format!("Set{struct_ident}{camel_cased_field_name}"), proc_macro2::Span::call_site());
+        let field_name_ref = syn::Ident::new(&format!("{field_name}_ref"), proc_macro2::Span::call_site());
+        let try_field_name = syn::Ident::new(&format!("try_{field_name}"), proc_macro2::Span::call_site());
+        let try_field_name_ref = syn::Ident::new(&format!("try_{field_name}_ref"), proc_macro2::Span::call_site());
+        let try_set_field_name =
+            syn::Ident::new(&format!("TrySet{struct_ident}{camel_cased_field_name}"), proc_macro2::Span::call_site());
+
+        let set_trait_doc_comment = format!(
+            "Trait to set the `{field_name}` column on a `{table_name}` table builder."
+        );
+
+        let field_name_ref_method_doc_comment = format!(
+            "Sets the `{field_name}` column on a `{table_name}` table builder by reference."
+        );
+
+        let field_name_method_doc_comment = format!(
+            "Sets the `{field_name}` column on a `{table_name}` table builder."
+        );
+
+        let try_set_trait_doc_comment = format!(
+            "Trait to try to set the `{field_name}` column on a `{table_name}` table builder."
+        );
+
+        let try_field_name_ref_method_doc_comment = format!(
+            "Tries to set the `{field_name}` column on a `{table_name}` table builder by reference."
+        );
+
+        let try_field_name_method_doc_comment = format!(
+            "Tries to set the `{field_name}` column on a `{table_name}` table builder."
+        );
 
         quote::quote! {
+            #[doc = #set_trait_doc_comment]
+            pub trait #set_field_name: diesel_builders::SetColumn<#table_name::#field_name> + Sized {
+                #[inline]
+                #[doc = #field_name_ref_method_doc_comment]
+                fn #field_name_ref(
+                    &mut self,
+                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                ) -> &mut Self {
+                    use diesel_builders::SetColumnExt;
+                    self.set_column_ref::<#table_name::#field_name>(value)
+                }
+                #[inline]
+                #[must_use]
+                #[doc = #field_name_method_doc_comment]
+                fn #field_name(
+                    self,
+                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                ) -> Self {
+                    use diesel_builders::SetColumnExt;
+                    self.set_column::<#table_name::#field_name>(value)
+                }
+            }
+
+            impl<T> #set_field_name for T where T: diesel_builders::SetColumn<#table_name::#field_name> + Sized {}
+
+            #[doc = #try_set_trait_doc_comment]
+            pub trait #try_set_field_name: diesel_builders::TrySetColumn<#table_name::#field_name> + Sized {
+                #[inline]
+                #[doc = #try_field_name_ref_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the column check constraints are not respected."]
+                fn #try_field_name_ref(
+                    &mut self,
+                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                ) -> Result<&mut Self, Self::Error> {
+                    use diesel_builders::TrySetColumnExt;
+                    self.try_set_column_ref::<#table_name::#field_name>(value)
+                }
+                #[inline]
+                #[doc = #try_field_name_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the value cannot be converted to the column type."]
+                fn #try_field_name(
+                    self,
+                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                ) -> Result<Self, Self::Error> {
+                    use diesel_builders::TrySetColumnExt;
+                    self.try_set_column::<#table_name::#field_name>(value)
+                }
+            }
+
+            impl<T> #try_set_field_name for T where T: diesel_builders::TrySetColumn<#table_name::#field_name> + Sized {}
+
             impl diesel_builders::TypedColumn for #table_name::#field_name {
                 type Type = #field_type;
             }

@@ -1,5 +1,7 @@
 //! Submodule providing the `SetColumn` trait.
 
+use std::convert::Infallible;
+
 use crate::TypedColumn;
 
 /// Trait providing a setter for a specific Diesel column.
@@ -43,7 +45,7 @@ where
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait TrySetColumn<Column: TypedColumn> {
     /// The associated error type for the operation.
-    type Error;
+    type Error: From<Infallible>;
 
     /// Attempt to set the value of the specified column.
     ///

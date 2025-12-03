@@ -18,9 +18,9 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     // Create the dogs table with foreign key to animals
     diesel::sql_query(CREATE_DOGS_TABLE).execute(&mut conn)?;
 
-    // We create an animal without a dog entry
+    // We create an animal without a dog entry - demonstrating Root derive
     let animal = animals::table::builder()
-        .try_set_column::<animals::name>("Generic Animal")?
+        .try_name("Generic Animal")?
         .insert(&mut conn)?;
 
     let loaded_animal: Animal = animals::table
@@ -28,11 +28,20 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .first(&mut conn)?;
     assert_eq!(loaded_animal, animal);
 
-    // Now create a dog (which also creates an animal entry)
-    let dog = dogs::table::builder()
-        .try_set_column::<animals::name>("Max")?
-        .set_column::<dogs::breed>("Golden Retriever")
-        .insert(&mut conn)?;
+    // Test TableModel derive - accessing primary key via GetColumn
+    assert_eq!(loaded_animal.get_column::<animals::id>(), &animal.id);
+
+    // Now create a dog (which also creates an animal entry via inheritance)
+    let dog_builder = dogs::table::builder().try_name("Max")?;
+
+    // Test generated helper traits - fluent API for setting columns
+    let dog_builder = dog_builder.breed("Golden Retriever");
+
+    // Test MayGetColumn derive - verifying builder state before insertion
+    let breed_value = dog_builder.may_get_column::<dogs::breed>();
+    assert_eq!(breed_value, Some(&"Golden Retriever".to_string()));
+
+    let dog = dog_builder.insert(&mut conn)?;
 
     assert_eq!(dog.breed, "Golden Retriever");
 
@@ -46,8 +55,10 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
 
+    // Test GetColumn derive on both parent and child models
     assert_eq!(loaded_animal.get_column::<animals::id>(), &dog.id);
     assert_eq!(loaded_animal.get_column::<animals::name>(), "Max");
+    assert_eq!(loaded_dog.get_column::<dogs::breed>(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
 
     Ok(())
@@ -63,11 +74,16 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     // Create the cats table with foreign key to animals
     diesel::sql_query(common::CREATE_CATS_TABLE).execute(&mut conn)?;
 
-    // Now create a cat (which also creates an animal entry)
-    let cat = common::cats::table::builder()
-        .try_set_column::<common::animals::name>("Whiskers")?
-        .try_set_column::<common::cats::color>("Orange")?
-        .insert(&mut conn)?;
+    // Now create a cat (which also creates an animal entry via inheritance)
+    let cat_builder = common::cats::table::builder()
+        .try_name("Whiskers")?
+        .try_color("Orange")?;
+
+    // Test MayGetColumn derive on builder to verify state
+    let color_value = cat_builder.may_get_column::<common::cats::color>();
+    assert_eq!(color_value, Some(&"Orange".to_string()));
+
+    let cat = cat_builder.insert(&mut conn)?;
 
     assert_eq!(cat.color, "Orange");
 
@@ -85,8 +101,10 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .filter(common::cats::id.eq(cat.id))
         .first(&mut conn)?;
 
+    // Test GetColumn derive - type-safe column access on both models
     assert_eq!(loaded_animal.get_column::<animals::id>(), &cat.id);
     assert_eq!(loaded_animal.get_column::<animals::name>(), "Whiskers");
+    assert_eq!(loaded_cat.get_column::<common::cats::color>(), "Orange");
     assert_eq!(loaded_cat, cat);
 
     Ok(())

@@ -177,13 +177,19 @@ classDiagram
     }
 ```
 
-- `#[derive(Root)]`: Marks a table as a root (no parent tables)
-- `#[derive(TableModel)]`: Generates model-to-table associations and automatically implements `IndexedColumn` for all primary key columns, making them available as foreign key targets
-- `#[derive(GetColumn, SetColumn)]`: Generates type-safe column accessors
-- `#[descendant_of]`: Declares parent table relationships
-- `#[bundlable_table]`: Configures triangular relationship columns
-- `fk!`: Declares foreign key relationships with SQL-like syntax (e.g., `fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id))`)
-- `index!`: Declares table indices (including composite indices) that can be used as foreign key targets (e.g., `index!((table_c::id, table_c::a_id));`). Primary keys (both single and composite) are automatically indexed by `TableModel` and don't need explicit `index!` declarations
+## Helper Method Traits
+
+The `TableModel` derive automatically generates helper traits for each column, providing a fluent API for builders. For a column like `animals::name`, it generates:
+
+- **`SetAnimalsName`** trait with methods:
+  - `name(self, value)` - consumes and returns self
+  - `name_ref(&mut self, value)` - mutates self by reference
+
+- **`TrySetAnimalsName`** trait with fallible methods:
+  - `try_name(self, value) -> Result<Self, Error>` - consumes and returns Result
+  - `try_name_ref(&mut self, value) -> Result<&mut Self, Error>` - mutates by reference
+
+These traits are automatically implemented for any type that implements `SetColumn<column>` or `TrySetColumn<column>`.
 
 ## License
 

@@ -7,10 +7,7 @@
 
 mod common;
 
-use common::{
-    Animal, CREATE_ANIMALS_TABLE, CREATE_CATS_TABLE, CREATE_DOGS_TABLE, CREATE_PETS_TABLE, Cat,
-    Dog, Pet, animals, cats, dogs, pets,
-};
+use common::*;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
@@ -32,40 +29,65 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into animals table
     let animal: Animal = animals::table::builder()
-        .try_set_column::<animals::name>("Generic Animal")?
+        .try_name("Generic Animal")?
         .insert(&mut conn)?;
 
     assert_eq!(animal.name, "Generic Animal");
 
+    // Test GetColumn derive - accessing animal properties type-safely
+    assert_eq!(animal.get_column::<animals::id>(), &animal.id);
+    assert_eq!(animal.get_column::<animals::name>(), &animal.name);
+
     // Insert into dogs table (extends animals)
+    // Using helper trait methods for fluent API
     let dog: Dog = dogs::table::builder()
-        .try_set_column::<animals::name>("Max the Dog")?
-        .set_column::<dogs::breed>("Golden Retriever")
+        .try_name("Max the Dog")?
+        .breed("Golden Retriever")
         .insert(&mut conn)?;
 
     assert_eq!(dog.breed, "Golden Retriever");
 
+    // Test GetColumn derive on descendant table
+    assert_eq!(dog.get_column::<dogs::id>(), &dog.id);
+    assert_eq!(dog.get_column::<dogs::breed>(), "Golden Retriever");
+
     // Insert into cats table (extends animals)
-    let cat: Cat = cats::table::builder()
-        .try_set_column::<animals::name>("Whiskers the Cat")?
-        .try_set_column::<cats::color>("Orange")?
-        .insert(&mut conn)?;
+    let cat_builder = cats::table::builder()
+        .try_name("Whiskers the Cat")?
+        .try_color("Orange")?;
+
+    // Test MayGetColumn derive - checking if optional fields are set
+    let color_value = cat_builder.may_get_column::<cats::color>();
+    assert!(color_value.is_some());
+    assert_eq!(color_value, Some(&"Orange".to_string()));
+
+    let cat: Cat = cat_builder.insert(&mut conn)?;
 
     assert_eq!(cat.color, "Orange");
 
     // Insert into pets table (extends both dogs and cats)
     let pet_builder = pets::table::builder()
-        .try_set_column::<animals::name>("Buddy the Pet")?
-        .set_column::<dogs::breed>("Labrador")
-        .try_set_column::<cats::color>("Black")?
-        .set_column::<pets::owner_name>("Alice");
+        .try_name("Buddy the Pet")?
+        .breed("Labrador")
+        .try_color("Black")?
+        .owner_name("Alice");
+
+    // Test generated helper traits - using fluent API (consumes and returns self)
+    let pet_builder = pet_builder.owner_name("Alice Smith"); // Helper method from SetPetOwnerName
+
+    // Test MayGetColumn on builder to verify values before insertion
+    let owner_name = pet_builder.may_get_column::<pets::owner_name>();
+    assert_eq!(owner_name, Some(&"Alice Smith".to_string()));
 
     // Test Debug formatting
     let _formatted = format!("{pet_builder:?}");
 
     let pet: Pet = pet_builder.insert(&mut conn)?;
 
-    assert_eq!(pet.owner_name, "Alice");
+    assert_eq!(pet.owner_name, "Alice Smith");
+
+    // Test TableModel derive - using IndexedColumn implementations
+    assert_eq!(pet.get_column::<pets::id>(), &pet.id);
 
     // Query to verify relationships
     let queried_animal: Animal = animals::table
