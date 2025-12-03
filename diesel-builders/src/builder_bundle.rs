@@ -101,16 +101,6 @@ pub struct CompletedTableBuilderBundle<T: BundlableTable> {
 	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
 }
 
-impl<T: BundlableTable> Clone for CompletedTableBuilderBundle<T> {
-    fn clone(&self) -> Self {
-        Self {
-            insertable_model: self.insertable_model.clone(),
-            mandatory_associated_builders: self.mandatory_associated_builders.clone_tuple(),
-            discretionary_associated_builders: self.discretionary_associated_builders.clone_tuple(),
-        }
-    }
-}
-
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
     T: BundlableTable,

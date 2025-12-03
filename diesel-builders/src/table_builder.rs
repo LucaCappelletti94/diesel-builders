@@ -59,24 +59,6 @@ pub struct CompletedTableBuilder<T: Table, Bundles> {
     table: PhantomData<T>,
 }
 
-impl<T: Table, Bundles: DebuggableTuple> Debug for CompletedTableBuilder<T, Bundles> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("CompletedTableBuilder")
-            .field("bundles", &self.bundles.debug_tuple())
-            .finish()
-    }
-}
-
-impl<T: Table, Bundles: ClonableTuple> Clone for CompletedTableBuilder<T, Bundles> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            bundles: self.bundles.clone_tuple(),
-            table: PhantomData,
-        }
-    }
-}
-
 impl<T> HasTable for TableBuilder<T>
 where
     T: BuildableTable,
