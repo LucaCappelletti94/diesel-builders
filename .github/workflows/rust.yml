@@ -105,7 +105,10 @@ jobs:
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
     - name: Generate coverage
-      run: cargo tarpaulin --verbose --engine=llvm --timeout 120 --out xml -p diesel-builders
+      run: |
+        RUSTFLAGS="-C instrument-coverage" \
+        RUSTDOCFLAGS="-C instrument-coverage -Z unstable-options --persist-doctests target/debug/doctestbins" \
+        cargo tarpaulin --verbose --engine=llvm --timeout 120 --out xml -p diesel-builders
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
