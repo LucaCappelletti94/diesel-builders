@@ -85,11 +85,13 @@ where
             discretionary_associated_builders: C,
         }
 
-        let helper: TableBuilderBundleHelper<
+        type HelperConcrete<T> = TableBuilderBundleHelper<
             <T as TableAddition>::InsertableModel,
-            <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
-            <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
-        > = TableBuilderBundleHelper::deserialize(deserializer)?;
+            <<<<T as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
+            <<<<T as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
+        >;
+
+        let helper:HelperConcrete<T>  = TableBuilderBundleHelper::deserialize(deserializer)?;
         Ok(TableBuilderBundle {
             insertable_model: helper.insertable_model,
             mandatory_associated_builders: helper.mandatory_associated_builders,
