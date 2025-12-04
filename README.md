@@ -179,7 +179,10 @@ classDiagram
 
 ## Helper Method Traits
 
-The `TableModel` derive automatically generates helper traits for each column, providing a fluent API for builders. For a column like `animals::name`, it generates:
+The `TableModel` derive automatically generates helper traits for each column, providing a fluent API for models and builders. For a column like `animals::name`, it generates:
+
+- **`GetAnimalsName`** trait with methods:
+  - `name(&self)` - returns `&Type` for the column value
 
 - **`SetAnimalsName`** trait with methods:
   - `name(self, value)` - consumes and returns self
@@ -189,7 +192,19 @@ The `TableModel` derive automatically generates helper traits for each column, p
   - `try_name(self, value) -> Result<Self, Error>` - consumes and returns Result
   - `try_name_ref(&mut self, value) -> Result<&mut Self, Error>` - mutates by reference
 
-These traits are automatically implemented for any type that implements `SetColumn<column>` or `TrySetColumn<column>`.
+These traits are automatically implemented for any type that implements `GetColumn<column>`, `SetColumn<column>`, or `TrySetColumn<column>`.
+
+Usage example:
+
+```rust,ignore
+let animal: Animal = animals::table::builder()
+    // It is fallible because of TrySetColumn implementations
+    // which checks `name <> ''` constraint.
+    .try_name("Buddy")?
+    .insert(conn)?;
+
+assert_eq!(animal.name(), "Buddy");
+```
 
 ## License
 

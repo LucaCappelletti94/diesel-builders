@@ -4,10 +4,7 @@
 
 mod common;
 
-use common::{
-    Animal, CREATE_ANIMALS_TABLE, CREATE_DOGS_TABLE, CREATE_PUPPIES_TABLE, Dog, Puppy, animals,
-    dogs, puppies,
-};
+use common::*;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
@@ -26,7 +23,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into animals table
     let animal = animals::table::builder()
-        .try_set_column::<animals::name>("Generic Animal")
+        .try_name("Generic Animal")
         .unwrap()
         .insert(&mut conn)
         .unwrap();
@@ -35,9 +32,9 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into dogs table (extends animals)
     let dog = dogs::table::builder()
-        .try_set_column::<animals::name>("Max")
+        .try_name("Max")
         .unwrap()
-        .set_column::<dogs::breed>("Golden Retriever")
+        .breed("Golden Retriever")
         .insert(&mut conn)?;
 
     assert_eq!(dog.breed, "Golden Retriever");
@@ -48,10 +45,10 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into puppies table (extends dogs, transitively extends animals)
     let puppy = puppies::table::builder()
-        .try_set_column::<animals::name>("Buddy")
+        .try_name("Buddy")
         .unwrap()
-        .set_column::<dogs::breed>("Labrador")
-        .set_column::<puppies::age_months>(3)
+        .breed("Labrador")
+        .age_months(3)
         .insert(&mut conn)?;
 
     assert_eq!(puppy.age_months, 3);

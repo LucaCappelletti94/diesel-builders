@@ -35,8 +35,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(animal.name, "Generic Animal");
 
     // Test GetColumn derive - accessing animal properties type-safely
-    assert_eq!(animal.get_column::<animals::id>(), &animal.id);
-    assert_eq!(animal.get_column::<animals::name>(), &animal.name);
+    assert_eq!(animal.id(), &animal.id);
+    assert_eq!(animal.name(), &animal.name);
 
     // Insert into dogs table (extends animals)
     // Using helper trait methods for fluent API
@@ -48,8 +48,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(dog.breed, "Golden Retriever");
 
     // Test GetColumn derive on descendant table
-    assert_eq!(dog.get_column::<dogs::id>(), &dog.id);
-    assert_eq!(dog.get_column::<dogs::breed>(), "Golden Retriever");
+    assert_eq!(dog.id(), &dog.id);
+    assert_eq!(dog.breed(), "Golden Retriever");
 
     // Insert into cats table (extends animals)
     let cat_builder = cats::table::builder()
@@ -87,7 +87,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(pet.owner_name, "Alice Smith");
 
     // Test TableModel derive - using IndexedColumn implementations
-    assert_eq!(pet.get_column::<pets::id>(), &pet.id);
+    assert_eq!(pet.id(), &pet.id);
 
     // Query to verify relationships
     let queried_animal: Animal = animals::table

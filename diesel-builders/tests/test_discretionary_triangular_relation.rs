@@ -296,22 +296,22 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     // Insert into table A
     let a = table_a::table::builder()
-        .set_column::<table_a::column_a>("Value A")
+        .column_a("Value A")
         .insert(&mut conn)?;
 
     assert_eq!(a.column_a, "Value A");
 
     // Insert into table C (references A)
     let c = table_c::table::builder()
-        .set_column::<table_c::a_id>(a.id)
-        .set_column::<table_c::column_c>(Some("Value C".to_owned()))
+        .a_id(a.id)
+        .column_c(Some("Value C".to_owned()))
         .insert(&mut conn)?;
 
     assert_eq!(c.column_c.as_deref(), Some("Value C"));
     assert_eq!(c.a_id, a.id);
 
     let mut c_builder = table_c::table::builder();
-    c_builder.set_column_ref::<table_c::column_c>(Some("Value C for B".to_owned()));
+    c_builder.column_c_ref(Some("Value C for B".to_owned()));
 
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means B's a_id should automatically
@@ -320,14 +320,14 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     assert!(matches!(
         triangular_b_builder.try_set_discretionary_builder_ref::<table_b::c_id>(
-            table_c::table::builder().set_column::<table_c::column_c>(String::new())
+            table_c::table::builder().column_c(String::new())
         ),
         Err(ErrorB::EmptyRemoteColumnC)
     ));
 
     triangular_b_builder
-        .set_column_ref::<table_a::column_a>("Value A for B")
-        .set_column_ref::<table_b::column_b>("Value B")
+        .column_a_ref("Value A for B")
+        .column_b_ref("Value B")
         .try_set_discretionary_builder_ref::<table_b::c_id>(c_builder.clone())
         .unwrap();
 
@@ -355,8 +355,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     assert_eq!(associated_c.a_id, associated_a.id);
 
     let indipendent_b = table_b::table::builder()
-        .set_column::<table_a::column_a>("Independent A for B")
-        .set_column::<table_b::column_b>("Independent B")
+        .column_a("Independent A for B")
+        .column_b("Independent B")
         .try_set_discretionary_model::<table_b::c_id>(&c)
         .unwrap()
         .insert(&mut conn)
@@ -398,10 +398,10 @@ fn test_discretionary_triangular_insert_fails_when_c_table_missing()
     .execute(&mut conn)?;
 
     // Try to insert into B with a discretionary C builder
-    let c_builder = table_c::table::builder().set_column::<table_c::column_c>(None);
+    let c_builder = table_c::table::builder().column_c(None);
 
     let result = table_b::table::builder()
-        .set_column::<table_b::column_b>("B Value")
+        .column_b("B Value")
         .try_set_discretionary_builder::<table_b::c_id>(c_builder)
         .unwrap()
         .insert(&mut conn);

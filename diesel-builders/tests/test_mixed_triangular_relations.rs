@@ -305,13 +305,13 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert B with both mandatory C and discretionary D
     let b = table_b::table::builder()
-        .set_column::<table_a::column_a>("Value A for B")
-        .set_column::<table_b::column_b>("Value B")
+        .column_a("Value A for B")
+        .column_b("Value B")
         .set_mandatory_builder::<table_b::c_id>(
-            table_c::table::builder().set_column::<table_c::column_c>("Value C".to_owned()),
+            table_c::table::builder().column_c("Value C".to_owned()),
         )
         .set_discretionary_builder::<table_b::d_id>(
-            table_d::table::builder().set_column::<table_d::column_d>(Some("Value D".to_owned())),
+            table_d::table::builder().column_d(Some("Value D".to_owned())),
         )
         .insert(&mut conn)?;
 
@@ -342,20 +342,20 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     create_tables(&mut conn)?;
 
     let table_a = table_a::table::builder()
-        .set_column::<table_a::column_a>("Value A")
+        .column_a("Value A")
         .insert(&mut conn)?;
 
     let table_d = table_d::table::builder()
-        .set_column::<table_d::a_id>(table_a.id)
-        .set_column::<table_d::column_d>(Some("Value D".to_owned()))
+        .a_id(table_a.id)
+        .column_d(Some("Value D".to_owned()))
         .insert(&mut conn)?;
 
     // Try to create without mandatory C builder
     let result = table_b::table::builder()
-        .set_column::<table_a::column_a>("Value A")
-        .set_column::<table_b::column_b>("Value B")
+        .column_a("Value A")
+        .column_b("Value B")
         .set_discretionary_builder::<table_b::d_id>(
-            table_d::table::builder().set_column::<table_d::column_d>(Some("Value D".to_owned())),
+            table_d::table::builder().column_d(Some("Value D".to_owned())),
         )
         .set_discretionary_model::<table_b::d_id>(&table_d)
         .insert(&mut conn);

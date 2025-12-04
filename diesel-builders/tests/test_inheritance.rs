@@ -29,7 +29,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_animal, animal);
 
     // Test TableModel derive - accessing primary key via GetColumn
-    assert_eq!(loaded_animal.get_column::<animals::id>(), &animal.id);
+    assert_eq!(loaded_animal.id(), &animal.id);
 
     // Now create a dog (which also creates an animal entry via inheritance)
     let dog_builder = dogs::table::builder().try_name("Max")?;
@@ -56,9 +56,9 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
 
     // Test GetColumn derive on both parent and child models
-    assert_eq!(loaded_animal.get_column::<animals::id>(), &dog.id);
-    assert_eq!(loaded_animal.get_column::<animals::name>(), "Max");
-    assert_eq!(loaded_dog.get_column::<dogs::breed>(), "Golden Retriever");
+    assert_eq!(loaded_animal.id(), &dog.id);
+    assert_eq!(loaded_animal.name(), "Max");
+    assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
 
     Ok(())
@@ -102,9 +102,9 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .first(&mut conn)?;
 
     // Test GetColumn derive - type-safe column access on both models
-    assert_eq!(loaded_animal.get_column::<animals::id>(), &cat.id);
-    assert_eq!(loaded_animal.get_column::<animals::name>(), "Whiskers");
-    assert_eq!(loaded_cat.get_column::<common::cats::color>(), "Orange");
+    assert_eq!(loaded_animal.id(), &cat.id);
+    assert_eq!(loaded_animal.name(), "Whiskers");
+    assert_eq!(loaded_cat.color(), "Orange");
     assert_eq!(loaded_cat, cat);
 
     Ok(())
@@ -118,8 +118,8 @@ fn test_dog_insert_fails_when_parent_table_missing() -> Result<(), Box<dyn std::
     diesel::sql_query(CREATE_DOGS_TABLE).execute(&mut conn)?;
 
     let result = dogs::table::builder()
-        .try_set_column::<animals::name>("Max")?
-        .set_column::<dogs::breed>("Golden Retriever")
+        .try_name("Max")?
+        .breed("Golden Retriever")
         .insert(&mut conn);
 
     assert!(matches!(
@@ -138,8 +138,8 @@ fn test_dog_insert_fails_when_child_table_missing() -> Result<(), Box<dyn std::e
     diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
 
     let result = dogs::table::builder()
-        .try_set_column::<animals::name>("Max")?
-        .set_column::<dogs::breed>("Golden Retriever")
+        .try_name("Max")?
+        .breed("Golden Retriever")
         .insert(&mut conn);
 
     assert!(matches!(

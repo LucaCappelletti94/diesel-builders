@@ -76,14 +76,14 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
     assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
 
-    builder.try_set_column_ref::<user_roles::user_id>(1)?;
+    builder.try_user_id_ref(1)?;
 
     assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
     assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
 
-    builder.try_set_column_ref::<user_roles::role_id>(10)?;
-    builder.try_set_column_ref::<user_roles::assigned_at>("2025-01-01")?;
+    builder.try_role_id_ref(10)?;
+    builder.try_assigned_at_ref("2025-01-01")?;
 
     assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
     assert_eq!(builder.may_get_column::<user_roles::role_id>(), Some(&10));
@@ -98,10 +98,10 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(user_role.role_id, 10);
     assert_eq!(user_role.assigned_at, "2025-01-01");
 
-    assert_eq!(user_role.get_column::<user_roles::user_id>(), &1);
-    assert_eq!(user_role.get_column::<user_roles::role_id>(), &10);
+    assert_eq!(user_role.user_id(), &1);
+    assert_eq!(user_role.role_id(), &10);
     assert_eq!(
-        user_role.get_column::<user_roles::assigned_at>(),
+        user_role.assigned_at(),
         &"2025-01-01".to_string()
     );
 
@@ -114,15 +114,15 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     // We test the chained variant.
     let another_user_role = user_roles::table::builder()
-        .set_column::<user_roles::user_id>(2)
-        .set_column::<user_roles::role_id>(20)
-        .set_column::<user_roles::assigned_at>("2025-02-01")
+        .user_id(2)
+        .role_id(20)
+        .assigned_at("2025-02-01")
         .insert(&mut conn)?;
 
-    assert_eq!(another_user_role.get_column::<user_roles::user_id>(), &2);
-    assert_eq!(another_user_role.get_column::<user_roles::role_id>(), &20);
+    assert_eq!(another_user_role.user_id(), &2);
+    assert_eq!(another_user_role.role_id(), &20);
     assert_eq!(
-        another_user_role.get_column::<user_roles::assigned_at>(),
+        another_user_role.assigned_at(),
         &"2025-02-01".to_string()
     );
 
@@ -130,12 +130,12 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     // so we expect different combinations to be distinct
     assert_ne!(
         (
-            user_role.get_column::<user_roles::user_id>(),
-            user_role.get_column::<user_roles::role_id>()
+            user_role.user_id(),
+            user_role.role_id()
         ),
         (
-            another_user_role.get_column::<user_roles::user_id>(),
-            another_user_role.get_column::<user_roles::role_id>()
+            another_user_role.user_id(),
+            another_user_role.role_id()
         )
     );
 

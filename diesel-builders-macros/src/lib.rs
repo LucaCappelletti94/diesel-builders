@@ -907,6 +907,8 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         let try_field_name_ref = syn::Ident::new(&format!("try_{field_name}_ref"), proc_macro2::Span::call_site());
         let try_set_field_name =
             syn::Ident::new(&format!("TrySet{struct_ident}{camel_cased_field_name}"), proc_macro2::Span::call_site());
+        let get_field_name =
+            syn::Ident::new(&format!("Get{struct_ident}{camel_cased_field_name}"), proc_macro2::Span::call_site());
 
         let set_trait_doc_comment = format!(
             "Trait to set the `{field_name}` column on a `{table_name}` table builder."
@@ -931,8 +933,30 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         let try_field_name_method_doc_comment = format!(
             "Tries to set the `{field_name}` column on a `{table_name}` table builder."
         );
+        let get_trait_doc_comment = format!(
+            "Trait to get the `{field_name}` column from a `{table_name}` table model."
+        );
+        let get_field_name_method_doc_comment = format!(
+            "Gets the value of the `{field_name}` column from a `{table_name}` table model."
+        );
+
+        let maybe_getter_impl = (field_name != "id").then(|| {
+            quote::quote! {
+                #[doc = #get_trait_doc_comment]
+                pub trait #get_field_name: diesel_builders::GetColumn<#table_name::#field_name> {
+                    #[inline]
+                    #[doc = #get_field_name_method_doc_comment]
+                    fn #field_name(&self) -> &<#table_name::#field_name as diesel_builders::TypedColumn>::Type {
+                        self.get_column()
+                    }
+                }
+                impl<T> #get_field_name for T where T: diesel_builders::GetColumn<#table_name::#field_name> {}
+            }
+        });
 
         quote::quote! {
+            #maybe_getter_impl
+
             #[doc = #set_trait_doc_comment]
             pub trait #set_field_name: diesel_builders::SetColumn<#table_name::#field_name> + Sized {
                 #[inline]

@@ -22,7 +22,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(builder.may_get_column::<animals::description>(), None);
 
     // Test generated TrySetAnimalsName helper trait - fallible setter by reference
-    builder.try_name_ref("Max").unwrap();
+    builder.try_name_ref("Max")?;
 
     // Test MayGetColumn derive - verifying field is set after mutation
     assert_eq!(
@@ -33,17 +33,17 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     );
     assert_eq!(builder.may_get_column::<animals::description>(), None);
 
-    let animal = builder.insert(&mut conn).unwrap();
+    let animal = builder.insert(&mut conn)?;
 
     assert_eq!(animal.name, "Max");
     assert_eq!(animal.description, None);
 
     // Test GetColumn derive - type-safe column access on models
-    assert_eq!(animal.get_column::<animals::name>().as_str(), "Max");
-    assert_eq!(animal.get_column::<animals::description>(), &None);
+    assert_eq!(animal.name(), "Max");
+    assert!(animal.description().is_none());
 
     // Test TableModel derive - primary key access
-    assert!(animal.get_column::<animals::id>() > &0);
+    assert!(animal.id() > &0);
 
     // Test with description set to Some value - using generated helper traits
     let animal_with_desc = animals::table::builder()
@@ -77,14 +77,14 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test GetColumn derive on multiple fields
     assert_eq!(
-        another_animal.get_column::<animals::name>().as_str(),
+        another_animal.name(),
         "Charlie"
     );
 
     // Test TableModel derive - verifying unique primary keys
     assert_ne!(
-        animal.get_column::<animals::id>(),
-        another_animal.get_column::<animals::id>()
+        animal.id(),
+        another_animal.id()
     );
 
     Ok(())
@@ -92,54 +92,53 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_empty_name_rejected() {
-    let result = animals::table::builder().try_set_column::<animals::name>(String::new());
+    let result = animals::table::builder().try_name(String::new());
     assert_eq!(result.unwrap_err(), NewAnimalError::NameEmpty);
 }
 
 #[test]
 fn test_whitespace_only_name_rejected() {
-    let result = animals::table::builder().try_set_column::<animals::name>("   ".to_string());
+    let result = animals::table::builder().try_name("   ".to_string());
     assert_eq!(result.unwrap_err(), NewAnimalError::NameEmpty);
 }
 
 #[test]
 fn test_name_too_long_rejected() {
     let long_name = "a".repeat(101);
-    let result = animals::table::builder().try_set_column::<animals::name>(long_name);
+    let result = animals::table::builder().try_name(long_name);
     assert_eq!(result.unwrap_err(), NewAnimalError::NameTooLong);
 }
 
 #[test]
 fn test_empty_description_rejected() {
     let result =
-        animals::table::builder().try_set_column::<animals::description>(Some(String::new()));
+        animals::table::builder().try_description(Some(String::new()));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 
 #[test]
 fn test_whitespace_only_description_rejected() {
     let result =
-        animals::table::builder().try_set_column::<animals::description>(Some("   ".to_string()));
+        animals::table::builder().try_description(Some("   ".to_string()));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 
 #[test]
 fn test_description_too_long_rejected() {
     let long_desc = "a".repeat(501);
-    let result = animals::table::builder().try_set_column::<animals::description>(Some(long_desc));
+    let result = animals::table::builder().try_description(Some(long_desc));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionTooLong);
 }
 
 #[test]
-fn test_none_description_allowed() {
+fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = animals::table::builder();
-    builder
-        .try_set_column_ref::<animals::description>(None)
-        .unwrap();
+    builder.try_description_ref(None)?;
     assert_eq!(
         builder.may_get_column::<animals::description>(),
         Some(&None)
     );
+    Ok(())
 }
 
 #[test]
@@ -148,10 +147,7 @@ fn test_insert_fails_when_table_does_not_exist() -> Result<(), Box<dyn std::erro
 
     // Intentionally do NOT create the animals table
 
-    let result = animals::table::builder()
-        .try_set_column::<animals::name>("Max")
-        .unwrap()
-        .insert(&mut conn);
+    let result = animals::table::builder().try_name("Max")?.insert(&mut conn);
 
     assert!(matches!(
         result.unwrap_err(),
