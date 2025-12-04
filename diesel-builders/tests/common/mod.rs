@@ -12,6 +12,7 @@ use diesel_builders::prelude::*;
 /// - `foreign_keys = ON`: Enforces foreign key constraints
 /// - `recursive_triggers = ON`: Allows triggers to be recursive
 /// - `journal_mode = WAL`: Uses Write-Ahead Logging for better concurrency
+#[allow(dead_code)]
 pub fn establish_test_connection() -> Result<SqliteConnection, diesel::ConnectionError> {
     let mut conn = SqliteConnection::establish(":memory:")?;
 
@@ -65,6 +66,7 @@ pub struct Animal {
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
 #[diesel(table_name = animals)]
+#[allow(clippy::option_option)]
 /// Insertable model for the animals table.
 pub struct NewAnimal {
     /// The name of the animal.
@@ -156,6 +158,7 @@ impl TableAddition for animals::table {
 }
 
 /// SQL to create the animals table.
+#[allow(dead_code)]
 pub const CREATE_ANIMALS_TABLE: &str = "CREATE TABLE animals (
     id INTEGER PRIMARY KEY NOT NULL,
     name TEXT NOT NULL CHECK (name <> '' AND length(name) <= 100),
@@ -211,6 +214,7 @@ impl TableAddition for dogs::table {
 }
 
 /// SQL to create the dogs table.
+#[allow(dead_code)]
 pub const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
     id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
     breed TEXT NOT NULL
@@ -312,6 +316,7 @@ impl InsertableTableModel for NewCat {
 }
 
 /// SQL to create the cats table.
+#[allow(dead_code)]
 pub const CREATE_CATS_TABLE: &str = "CREATE TABLE cats (
     id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
     color TEXT NOT NULL CHECK (color <> '')
@@ -366,6 +371,7 @@ impl TableAddition for puppies::table {
 }
 
 /// SQL to create the puppies table.
+#[allow(dead_code)]
 pub const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
     id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id),
     age_months INTEGER NOT NULL
@@ -420,6 +426,7 @@ impl TableAddition for pets::table {
 }
 
 /// SQL to create the pets table (for DAG tests).
+#[allow(dead_code)]
 pub const CREATE_PETS_TABLE: &str = "CREATE TABLE pets (
     id INTEGER PRIMARY KEY NOT NULL,
     owner_name TEXT NOT NULL,

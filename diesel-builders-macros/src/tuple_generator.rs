@@ -42,3 +42,25 @@ where
 {
     (0..=MAX_TUPLE_SIZE).map(impl_fn).collect()
 }
+
+mod tests {
+    #[test]
+    fn test_type_params() {
+        let params = super::type_params(3);
+        assert_eq!(params.len(), 3);
+        assert_eq!(params[0].to_string(), "T1");
+        assert_eq!(params[1].to_string(), "T2");
+        assert_eq!(params[2].to_string(), "T3");
+    }
+
+    #[test]
+    fn test_generate_all_sizes() {
+        let _generated = super::generate_all_sizes(|size| {
+            let struct_ident =
+                syn::Ident::new(&format!("TupleSize{size}"), proc_macro2::Span::call_site());
+            quote::quote! {
+                struct #struct_ident;
+            }
+        });
+    }
+}

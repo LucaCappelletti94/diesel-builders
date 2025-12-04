@@ -305,14 +305,15 @@ where
     fn try_from(
         value: TableBuilderBundle<T>,
     ) -> Result<CompletedTableBuilderBundle<T>, Self::Error> {
-        let Some(mandatory_associated_builders) =
-            value.mandatory_associated_builders.transpose_option()
-        else {
-            return Err(IncompleteBuilderError::MissingMandatoryTriangularFields);
-        };
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
-            mandatory_associated_builders,
+            mandatory_associated_builders: if let Some(mandatory_associated_builders) =
+                value.mandatory_associated_builders.transpose_option()
+            {
+                mandatory_associated_builders
+            } else {
+                return Err(IncompleteBuilderError::MissingMandatoryTriangularFields);
+            },
             discretionary_associated_builders: value.discretionary_associated_builders,
         })
     }
