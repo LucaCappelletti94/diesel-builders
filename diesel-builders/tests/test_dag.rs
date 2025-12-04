@@ -105,6 +105,157 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn test_dag_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialEq for DAG builders
+    let pet_builder1 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder2 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder3 = pets::table::builder()
+        .try_name("Max")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder4 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Poodle")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder5 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Black")?
+        .owner_name("Alice");
+
+    let pet_builder6 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Bob");
+
+    // Identical builders should be equal
+    assert_eq!(pet_builder1, pet_builder2);
+
+    // Different builders should not be equal
+    assert_ne!(pet_builder1, pet_builder3);
+    assert_ne!(pet_builder1, pet_builder4);
+    assert_ne!(pet_builder1, pet_builder5);
+    assert_ne!(pet_builder1, pet_builder6);
+
+    // The builders should also be equal to themselves
+    assert_eq!(pet_builder1, pet_builder1);
+    assert_eq!(pet_builder2, pet_builder2);
+    assert_eq!(pet_builder3, pet_builder3);
+    assert_eq!(pet_builder4, pet_builder4);
+    assert_eq!(pet_builder5, pet_builder5);
+    assert_eq!(pet_builder6, pet_builder6);
+
+    Ok(())
+}
+
+#[test]
+fn test_dag_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Test Hash for DAG builders
+    let pet_builder1 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder2 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder3 = pets::table::builder()
+        .try_name("Max")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder4 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Poodle")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder5 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Black")?
+        .owner_name("Alice");
+
+    let pet_builder6 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Bob");
+
+    // Calculate hashes
+    let mut hasher1 = DefaultHasher::new();
+    pet_builder1.hash(&mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    pet_builder2.hash(&mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    pet_builder3.hash(&mut hasher3);
+    let hash3 = hasher3.finish();
+
+    let mut hasher4 = DefaultHasher::new();
+    pet_builder4.hash(&mut hasher4);
+    let hash4 = hasher4.finish();
+
+    let mut hasher5 = DefaultHasher::new();
+    pet_builder5.hash(&mut hasher5);
+    let hash5 = hasher5.finish();
+
+    let mut hasher6 = DefaultHasher::new();
+    pet_builder6.hash(&mut hasher6);
+    let hash6 = hasher6.finish();
+
+    // Identical builders should have the same hash
+    assert_eq!(hash1, hash2);
+
+    // Different builders should have different hashes
+    assert_ne!(hash1, hash3);
+    assert_ne!(hash1, hash4);
+    assert_ne!(hash1, hash5);
+    assert_ne!(hash1, hash6);
+
+    // Test that builders can be used as HashMap keys
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    map.insert(pet_builder1.clone(), "alice_buddy");
+    map.insert(pet_builder3.clone(), "alice_max");
+    map.insert(pet_builder4.clone(), "alice_buddy_poodle");
+
+    assert_eq!(map.get(&pet_builder2), Some(&"alice_buddy"));
+    assert_eq!(map.get(&pet_builder5), None);
+    assert_eq!(map.get(&pet_builder6), None);
+    assert_eq!(map.get(&pet_builder3), Some(&"alice_max"));
+    assert_eq!(map.get(&pet_builder4), Some(&"alice_buddy_poodle"));
+
+    Ok(())
+}
+
+#[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder for a Pet that extends both Dogs and Cats (DAG structure)

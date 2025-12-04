@@ -79,7 +79,9 @@ pub struct TableA {
     pub column_a: String,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
 /// Insertable model for table A.
@@ -109,7 +111,9 @@ pub struct TableC {
     pub column_c: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
@@ -147,7 +151,7 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 /// Errors for NewTableB validation.
 pub enum ErrorB {
     /// remote_column_c cannot be empty.
@@ -160,7 +164,7 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
@@ -406,6 +410,92 @@ fn test_triangular_builder_equality() {
     // The builders should also be equal to themselves
     assert_eq!(b_builder1, b_builder1);
     assert_eq!(b_builder2, b_builder2);
+}
+
+#[test]
+fn test_triangular_builder_hash() {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Test Hash for triangular relation builders
+    let a_builder1 = table_a::table::builder().column_a("Test A");
+    let a_builder2 = table_a::table::builder().column_a("Test A");
+    let a_builder3 = table_a::table::builder().column_a("Different A");
+
+    // Calculate hashes for A builders
+    let mut hasher1 = DefaultHasher::new();
+    a_builder1.hash(&mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    a_builder2.hash(&mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    a_builder3.hash(&mut hasher3);
+    let hash3 = hasher3.finish();
+
+    // Identical builders should have the same hash
+    assert_eq!(hash1, hash2);
+    // Different builders should have different hashes
+    assert_ne!(hash1, hash3);
+
+    // Test with C builders
+    let c_builder1 = table_c::table::builder()
+        .a_id(1)
+        .column_c(Some("Test C".to_owned()));
+    let c_builder2 = table_c::table::builder()
+        .a_id(1)
+        .column_c(Some("Test C".to_owned()));
+    let c_builder3 = table_c::table::builder()
+        .a_id(2)
+        .column_c(Some("Test C".to_owned()));
+
+    let mut hasher4 = DefaultHasher::new();
+    c_builder1.hash(&mut hasher4);
+    let hash4 = hasher4.finish();
+
+    let mut hasher5 = DefaultHasher::new();
+    c_builder2.hash(&mut hasher5);
+    let hash5 = hasher5.finish();
+
+    let mut hasher6 = DefaultHasher::new();
+    c_builder3.hash(&mut hasher6);
+    let hash6 = hasher6.finish();
+
+    assert_eq!(hash4, hash5);
+    assert_ne!(hash4, hash6);
+
+    // Test with simple B builders (without complex setup)
+    let b_builder1 = table_b::table::builder();
+    let b_builder2 = table_b::table::builder();
+
+    let mut hasher7 = DefaultHasher::new();
+    b_builder1.hash(&mut hasher7);
+    let hash7 = hasher7.finish();
+
+    let mut hasher8 = DefaultHasher::new();
+    b_builder2.hash(&mut hasher8);
+    let hash8 = hasher8.finish();
+
+    // Default builders should have the same hash
+    assert_eq!(hash7, hash8);
+
+    // Test that builders can be used as HashMap keys
+    use std::collections::HashMap;
+    let mut a_map = HashMap::new();
+    let mut c_map = HashMap::new();
+    let mut b_map = HashMap::new();
+
+    a_map.insert(a_builder1.clone(), "a1");
+    c_map.insert(c_builder1.clone(), "c1");
+    b_map.insert(b_builder1.clone(), "b1");
+
+    assert_eq!(a_map.get(&a_builder2), Some(&"a1"));
+    assert_eq!(c_map.get(&c_builder2), Some(&"c1"));
+    assert_eq!(b_map.get(&b_builder2), Some(&"b1"));
+    assert_eq!(a_map.get(&a_builder3), None);
+    assert_eq!(c_map.get(&c_builder3), None);
 }
 
 #[test]

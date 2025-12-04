@@ -143,6 +143,25 @@ pub fn generate_eq_tuple() -> TokenStream {
     })
 }
 
+/// Generate HashTuple trait implementations for all tuple sizes
+pub fn generate_hash_tuple() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+        let hash_calls = indices.iter().map(|idx| quote! { self.#idx.hash(state); });
+
+        quote! {
+            impl<#(#type_params: std::hash::Hash),*> HashTuple for (#(#type_params,)*)
+            {
+                #[inline]
+                fn hash_tuple<H: std::hash::Hasher>(&self, state: &mut H) {
+                    #(#hash_calls)*
+                }
+            }
+        }
+    })
+}
+
 /// Generate DebuggableTuple trait implementations for all tuple sizes
 pub fn generate_debuggable_tuple() -> TokenStream {
     generate_all_sizes(|size| {

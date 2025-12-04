@@ -203,3 +203,55 @@ fn test_inheritance_builder_equality() -> Result<(), Box<dyn std::error::Error>>
 
     Ok(())
 }
+
+#[test]
+fn test_inheritance_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Test Hash for inheritance builders
+    let dog_builder1 = dogs::table::builder().try_name("Buddy")?.breed("Labrador");
+
+    let dog_builder2 = dogs::table::builder().try_name("Buddy")?.breed("Labrador");
+
+    let dog_builder3 = dogs::table::builder().try_name("Max")?.breed("Labrador");
+
+    let dog_builder4 = dogs::table::builder().try_name("Buddy")?.breed("Poodle");
+
+    // Calculate hashes
+    let mut hasher1 = DefaultHasher::new();
+    dog_builder1.hash(&mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    dog_builder2.hash(&mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    dog_builder3.hash(&mut hasher3);
+    let hash3 = hasher3.finish();
+
+    let mut hasher4 = DefaultHasher::new();
+    dog_builder4.hash(&mut hasher4);
+    let hash4 = hasher4.finish();
+
+    // Identical builders should have the same hash
+    assert_eq!(hash1, hash2);
+
+    // Different builders should have different hashes
+    assert_ne!(hash1, hash3);
+    assert_ne!(hash1, hash4);
+    assert_ne!(hash3, hash4);
+
+    // Test that builders can be used as HashMap keys
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    map.insert(dog_builder1.clone(), "buddy");
+    map.insert(dog_builder3.clone(), "max");
+
+    assert_eq!(map.get(&dog_builder2), Some(&"buddy"));
+    assert_eq!(map.get(&dog_builder4), None);
+    assert_eq!(map.get(&dog_builder3), Some(&"max"));
+
+    Ok(())
+}

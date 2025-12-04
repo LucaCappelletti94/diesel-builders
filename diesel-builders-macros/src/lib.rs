@@ -101,6 +101,19 @@ pub fn impl_eq_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Generate `HashTuple` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_hash_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_hash_tuple();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `DebuggableTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {

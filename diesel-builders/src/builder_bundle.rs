@@ -12,7 +12,7 @@ use crate::IncompleteBuilderError;
 use crate::InsertableTableModel;
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
-    DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
+    DiscretionarySameAsIndex, FlatInsert, HashTuple, HorizontalSameAsGroup, HorizontalSameAsKeys,
     MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple,
     PartialEqTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder, Tables,
     TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
@@ -137,6 +137,19 @@ where
     <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
 {
+}
+
+impl<T: BundlableTable> std::hash::Hash for TableBuilderBundle<T>
+where
+    T::InsertableModel: std::hash::Hash,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::HashTuple,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::HashTuple,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.insertable_model.hash(state);
+        self.mandatory_associated_builders.hash_tuple(state);
+        self.discretionary_associated_builders.hash_tuple(state);
+    }
 }
 
 impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {

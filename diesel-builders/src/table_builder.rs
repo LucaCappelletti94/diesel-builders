@@ -10,8 +10,8 @@ use typed_tuple::prelude::{TypedFirst, TypedIndex};
 use crate::{
     AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
     BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
-    DefaultTuple, DescendantOf, GetColumn, HorizontalSameAsKey, IncompleteBuilderError, Insert,
-    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, PartialEqTuple,
+    DefaultTuple, DescendantOf, GetColumn, HashTuple, HorizontalSameAsKey, IncompleteBuilderError,
+    Insert, InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, PartialEqTuple,
     RecursiveInsert, SingletonForeignKey, TableAddition, TableBuilderBundle, TryMaySetColumns,
     TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
     buildable_table::BuildableTable, table_addition::HasPrimaryKey,
@@ -86,6 +86,15 @@ impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Eq for TableBuilder<
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
         crate::PartialEqTuple + crate::EqTuple
 {
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> std::hash::Hash for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: crate::HashTuple,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.bundles.hash_tuple(state);
+    }
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {

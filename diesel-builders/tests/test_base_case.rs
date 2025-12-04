@@ -214,3 +214,63 @@ fn test_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Test Hash implementation for TableBuilder
+    let builder1 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder2 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder3 = animals::table::builder()
+        .try_name("Different Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder4 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("Different description".to_owned())?;
+
+    // Calculate hashes
+    let mut hasher1 = DefaultHasher::new();
+    builder1.hash(&mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    builder2.hash(&mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    builder3.hash(&mut hasher3);
+    let hash3 = hasher3.finish();
+
+    let mut hasher4 = DefaultHasher::new();
+    builder4.hash(&mut hasher4);
+    let hash4 = hasher4.finish();
+
+    // Identical builders should have the same hash
+    assert_eq!(hash1, hash2);
+
+    // Different builders should have different hashes
+    assert_ne!(hash1, hash3);
+    assert_ne!(hash1, hash4);
+    assert_ne!(hash3, hash4);
+
+    // Test that builders can be used as HashMap keys
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    map.insert(builder1.clone(), "value1");
+    map.insert(builder3.clone(), "value3");
+
+    assert_eq!(map.get(&builder2), Some(&"value1"));
+    assert_eq!(map.get(&builder4), None);
+    assert_eq!(map.get(&builder3), Some(&"value3"));
+
+    Ok(())
+}

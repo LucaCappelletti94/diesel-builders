@@ -64,7 +64,7 @@ pub struct Animal {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = animals)]
 #[allow(clippy::option_option)]
@@ -198,7 +198,9 @@ impl Descendant for dogs::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = dogs)]
 /// Insertable model for the dogs table.
@@ -254,7 +256,7 @@ impl Descendant for cats::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = cats)]
 /// Insertable model for the cats table.
@@ -265,7 +267,7 @@ pub struct NewCat {
     pub color: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub enum NewCatError {
     /// Color cannot be empty.
     ColorEmpty,
@@ -357,7 +359,9 @@ impl Descendant for puppies::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = puppies)]
 /// Insertable model for the puppies table.
@@ -413,7 +417,9 @@ impl Descendant for pets::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = pets)]
 /// Insertable model for the pets table.

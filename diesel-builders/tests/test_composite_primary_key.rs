@@ -34,7 +34,9 @@ pub struct UserRole {
     pub assigned_at: String,
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = user_roles)]
 /// A new user role model for insertions.
@@ -127,6 +129,133 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
         (user_role.user_id(), user_role.role_id()),
         (another_user_role.user_id(), another_user_role.role_id())
     );
+
+    Ok(())
+}
+
+#[test]
+fn test_composite_primary_key_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialEq for composite primary key builders
+    let builder1 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder2 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder3 = user_roles::table::builder()
+        .user_id(2)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder4 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(20)
+        .assigned_at("2025-01-01");
+
+    let builder5 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-02-01");
+
+    // Identical builders should be equal
+    assert_eq!(builder1, builder2);
+
+    // Different builders should not be equal
+    assert_ne!(builder1, builder3);
+    assert_ne!(builder1, builder4);
+    assert_ne!(builder1, builder5);
+    assert_ne!(builder3, builder4);
+    assert_ne!(builder3, builder5);
+    assert_ne!(builder4, builder5);
+
+    // The builders should also be equal to themselves
+    assert_eq!(builder1, builder1);
+    assert_eq!(builder2, builder2);
+    assert_eq!(builder3, builder3);
+    assert_eq!(builder4, builder4);
+    assert_eq!(builder5, builder5);
+
+    Ok(())
+}
+
+#[test]
+fn test_composite_primary_key_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    // Test Hash for composite primary key builders
+    let builder1 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder2 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder3 = user_roles::table::builder()
+        .user_id(2)
+        .role_id(10)
+        .assigned_at("2025-01-01");
+
+    let builder4 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(20)
+        .assigned_at("2025-01-01");
+
+    let builder5 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-02-01");
+
+    // Calculate hashes
+    let mut hasher1 = DefaultHasher::new();
+    builder1.hash(&mut hasher1);
+    let hash1 = hasher1.finish();
+
+    let mut hasher2 = DefaultHasher::new();
+    builder2.hash(&mut hasher2);
+    let hash2 = hasher2.finish();
+
+    let mut hasher3 = DefaultHasher::new();
+    builder3.hash(&mut hasher3);
+    let hash3 = hasher3.finish();
+
+    let mut hasher4 = DefaultHasher::new();
+    builder4.hash(&mut hasher4);
+    let hash4 = hasher4.finish();
+
+    let mut hasher5 = DefaultHasher::new();
+    builder5.hash(&mut hasher5);
+    let hash5 = hasher5.finish();
+
+    // Identical builders should have the same hash
+    assert_eq!(hash1, hash2);
+
+    // Different builders should have different hashes
+    assert_ne!(hash1, hash3);
+    assert_ne!(hash1, hash4);
+    assert_ne!(hash1, hash5);
+    assert_ne!(hash3, hash4);
+    assert_ne!(hash3, hash5);
+    assert_ne!(hash4, hash5);
+
+    // Test that builders can be used as HashMap keys
+    use std::collections::HashMap;
+    let mut map = HashMap::new();
+    map.insert(builder1.clone(), "user1_admin");
+    map.insert(builder3.clone(), "user2_admin");
+    map.insert(builder4.clone(), "user1_moderator");
+
+    assert_eq!(map.get(&builder2), Some(&"user1_admin"));
+    assert_eq!(map.get(&builder5), None);
+    assert_eq!(map.get(&builder3), Some(&"user2_admin"));
+    assert_eq!(map.get(&builder4), Some(&"user1_moderator"));
 
     Ok(())
 }
