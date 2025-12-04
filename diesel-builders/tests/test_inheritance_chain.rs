@@ -2,6 +2,7 @@
 //! form a chain, with Animals being the root, Dogs extending Animals,
 //! and Puppies extending Dogs.
 
+use std::collections::HashMap;
 mod common;
 
 use common::*;
@@ -202,7 +203,6 @@ fn test_inheritance_chain_builder_hash() -> Result<(), Box<dyn std::error::Error
     assert_ne!(hash4, hash5);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut map = HashMap::new();
     map.insert(puppy_builder1.clone(), "buddy");
     map.insert(puppy_builder3.clone(), "max");
@@ -212,6 +212,69 @@ fn test_inheritance_chain_builder_hash() -> Result<(), Box<dyn std::error::Error
     assert_eq!(map.get(&puppy_builder5), None);
     assert_eq!(map.get(&puppy_builder3), Some(&"max"));
     assert_eq!(map.get(&puppy_builder4), Some(&"poodle"));
+
+    Ok(())
+}
+
+#[test]
+fn test_inheritance_chain_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialOrd implementation for TableBuilder
+    let puppy_builder1 = puppies::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .age_months(12);
+
+    let puppy_builder2 = puppies::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .age_months(12);
+
+    let puppy_builder3 = puppies::table::builder()
+        .try_name("Max")?
+        .breed("Labrador")
+        .age_months(12);
+
+    let puppy_builder4 = puppies::table::builder()
+        .try_name("Buddy")?
+        .breed("Poodle")
+        .age_months(12);
+
+    let puppy_builder5 = puppies::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .age_months(6);
+
+    // Identical builders should be equal
+    assert_eq!(
+        puppy_builder1.partial_cmp(&puppy_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        puppy_builder1.partial_cmp(&puppy_builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        puppy_builder3.partial_cmp(&puppy_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        puppy_builder1.partial_cmp(&puppy_builder4),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        puppy_builder4.partial_cmp(&puppy_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        puppy_builder1.partial_cmp(&puppy_builder5),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        puppy_builder5.partial_cmp(&puppy_builder1),
+        Some(std::cmp::Ordering::Less)
+    );
 
     Ok(())
 }

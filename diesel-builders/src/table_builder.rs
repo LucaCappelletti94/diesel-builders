@@ -12,8 +12,8 @@ use crate::{
     BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
     DefaultTuple, DescendantOf, GetColumn, HashTuple, HorizontalSameAsKey, IncompleteBuilderError,
     Insert, InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, PartialEqTuple,
-    RecursiveInsert, SingletonForeignKey, TableAddition, TableBuilderBundle, TryMaySetColumns,
-    TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
+    PartialOrdTuple, RecursiveInsert, SingletonForeignKey, TableAddition, TableBuilderBundle,
+    TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
     buildable_table::BuildableTable, table_addition::HasPrimaryKey,
     vertical_same_as_group::VerticalSameAsGroup,
 };
@@ -94,6 +94,16 @@ where
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.bundles.hash_tuple(state);
+    }
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> PartialOrd for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        crate::PartialOrdTuple + crate::PartialEqTuple,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.bundles.partial_cmp_tuple(&other.bundles)
     }
 }
 

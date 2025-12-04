@@ -14,6 +14,7 @@
 
 mod common;
 
+use std::collections::HashMap;
 use std::convert::Infallible;
 
 use diesel::associations::HasTable;
@@ -80,7 +81,17 @@ pub struct TableA {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
@@ -112,7 +123,17 @@ pub struct TableC {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
@@ -151,7 +172,7 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
 /// Errors for NewTableB validation.
 pub enum ErrorB {
     /// remote_column_c cannot be empty.
@@ -164,7 +185,9 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, Eq, PartialOrd, Hash, Insertable, MayGetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
@@ -482,7 +505,6 @@ fn test_triangular_builder_hash() {
     assert_eq!(hash7, hash8);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut a_map = HashMap::new();
     let mut c_map = HashMap::new();
     let mut b_map = HashMap::new();
@@ -496,6 +518,53 @@ fn test_triangular_builder_hash() {
     assert_eq!(b_map.get(&b_builder2), Some(&"b1"));
     assert_eq!(a_map.get(&a_builder3), None);
     assert_eq!(c_map.get(&c_builder3), None);
+}
+
+#[test]
+fn test_triangular_builder_partial_ord() {
+    // Test PartialOrd implementation for TableBuilder
+    let a_builder1 = table_a::table::builder().column_a("A1");
+    let a_builder2 = table_a::table::builder().column_a("A1");
+    let a_builder3 = table_a::table::builder().column_a("A2");
+
+    let c_builder1 = table_c::table::builder().column_c("C1".to_owned()).a_id(1);
+    let c_builder2 = table_c::table::builder().column_c("C1".to_owned()).a_id(1);
+    let c_builder3 = table_c::table::builder().column_c("C2".to_owned()).a_id(1);
+
+    let b_builder1 = table_b::table::builder().column_b("B1").c_id(1);
+    let b_builder2 = table_b::table::builder().column_b("B1").c_id(1);
+
+    // Identical builders should be equal
+    assert_eq!(
+        a_builder1.partial_cmp(&a_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+    assert_eq!(
+        c_builder1.partial_cmp(&c_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+    assert_eq!(
+        b_builder1.partial_cmp(&b_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        a_builder1.partial_cmp(&a_builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        a_builder3.partial_cmp(&a_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        c_builder1.partial_cmp(&c_builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        c_builder3.partial_cmp(&c_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
 }
 
 #[test]

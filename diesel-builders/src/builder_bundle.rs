@@ -14,8 +14,8 @@ use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HashTuple, HorizontalSameAsGroup, HorizontalSameAsKeys,
     MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple,
-    PartialEqTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder, Tables,
-    TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
+    PartialEqTuple, PartialOrdTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder,
+    Tables, TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
     TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsColumns, TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
@@ -149,6 +149,25 @@ where
         self.insertable_model.hash(state);
         self.mandatory_associated_builders.hash_tuple(state);
         self.discretionary_associated_builders.hash_tuple(state);
+    }
+}
+
+impl<T: BundlableTable> PartialOrd for TableBuilderBundle<T>
+where
+    T::InsertableModel: PartialOrd + PartialEq,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialOrdTuple + crate::PartialEqTuple,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialOrdTuple + crate::PartialEqTuple,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.insertable_model.partial_cmp(&other.insertable_model) {
+            Some(std::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        match self.mandatory_associated_builders.partial_cmp_tuple(&other.mandatory_associated_builders) {
+            Some(std::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.discretionary_associated_builders.partial_cmp_tuple(&other.discretionary_associated_builders)
     }
 }
 

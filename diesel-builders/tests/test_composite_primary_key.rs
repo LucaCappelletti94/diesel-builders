@@ -2,10 +2,13 @@
 //! a single table with a composite primary key.
 
 mod common;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use std::collections::HashMap;
 
 diesel::table! {
     /// Define a user_roles table with composite primary key for testing.
@@ -35,7 +38,17 @@ pub struct UserRole {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = user_roles)]
@@ -134,7 +147,7 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 }
 
 #[test]
-fn test_composite_primary_key_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
+fn test_composite_primary_key_builder_equality() {
     // Test PartialEq for composite primary key builders
     let builder1 = user_roles::table::builder()
         .user_id(1)
@@ -178,15 +191,10 @@ fn test_composite_primary_key_builder_equality() -> Result<(), Box<dyn std::erro
     assert_eq!(builder3, builder3);
     assert_eq!(builder4, builder4);
     assert_eq!(builder5, builder5);
-
-    Ok(())
 }
 
 #[test]
-fn test_composite_primary_key_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
+fn test_composite_primary_key_builder_hash() {
     // Test Hash for composite primary key builders
     let builder1 = user_roles::table::builder()
         .user_id(1)
@@ -246,7 +254,6 @@ fn test_composite_primary_key_builder_hash() -> Result<(), Box<dyn std::error::E
     assert_ne!(hash4, hash5);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut map = HashMap::new();
     map.insert(builder1.clone(), "user1_admin");
     map.insert(builder3.clone(), "user2_admin");
@@ -256,8 +263,67 @@ fn test_composite_primary_key_builder_hash() -> Result<(), Box<dyn std::error::E
     assert_eq!(map.get(&builder5), None);
     assert_eq!(map.get(&builder3), Some(&"user2_admin"));
     assert_eq!(map.get(&builder4), Some(&"user1_moderator"));
+}
 
-    Ok(())
+#[test]
+fn test_composite_primary_key_builder_partial_ord() {
+    // Test PartialOrd implementation for TableBuilder
+    let builder1 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(1)
+        .assigned_at("2025-01-01");
+
+    let builder2 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(1)
+        .assigned_at("2025-01-01");
+
+    let builder3 = user_roles::table::builder()
+        .user_id(2)
+        .role_id(1)
+        .assigned_at("2025-01-01");
+
+    let builder4 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(2)
+        .assigned_at("2025-01-01");
+
+    let builder5 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(1)
+        .assigned_at("2025-01-02");
+
+    // Identical builders should be equal
+    assert_eq!(
+        builder1.partial_cmp(&builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        builder1.partial_cmp(&builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        builder3.partial_cmp(&builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        builder1.partial_cmp(&builder4),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        builder4.partial_cmp(&builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        builder1.partial_cmp(&builder5),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        builder5.partial_cmp(&builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
 }
 
 #[test]

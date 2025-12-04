@@ -51,7 +51,16 @@ diesel::table! {
 }
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    PartialOrd,
+    GetColumn,
+    Root,
+    TableModel,
 )]
 #[diesel(table_name = animals)]
 /// Model for the animals table.
@@ -64,7 +73,9 @@ pub struct Animal {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Hash, Insertable, MayGetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = animals)]
 #[allow(clippy::option_option)]
@@ -77,7 +88,7 @@ pub struct NewAnimal {
 }
 
 /// Error variants for `NewAnimal` validation.
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Clone)]
 pub enum NewAnimalError {
     /// Name cannot be empty.
     NameEmpty,
@@ -181,7 +192,16 @@ diesel::table! {
 }
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    PartialOrd,
+    GetColumn,
+    TableModel,
+    Decoupled,
 )]
 #[diesel(table_name = dogs)]
 /// Model for the dogs table.
@@ -199,7 +219,17 @@ impl Descendant for dogs::table {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = dogs)]
@@ -239,7 +269,16 @@ diesel::table! {
 }
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    PartialOrd,
+    GetColumn,
+    TableModel,
+    Decoupled,
 )]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
@@ -256,7 +295,9 @@ impl Descendant for cats::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, HasTable)]
+#[derive(
+    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Hash, Insertable, MayGetColumn, HasTable,
+)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = cats)]
 /// Insertable model for the cats table.
@@ -267,7 +308,7 @@ pub struct NewCat {
     pub color: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Hash)]
 pub enum NewCatError {
     /// Color cannot be empty.
     ColorEmpty,
@@ -342,7 +383,16 @@ diesel::table! {
 }
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    PartialOrd,
+    GetColumn,
+    TableModel,
+    Decoupled,
 )]
 #[diesel(table_name = puppies)]
 /// Model for the puppies table.
@@ -360,7 +410,17 @@ impl Descendant for puppies::table {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = puppies)]
@@ -400,7 +460,16 @@ diesel::table! {
 }
 
 #[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel, Decoupled,
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    PartialEq,
+    PartialOrd,
+    GetColumn,
+    TableModel,
+    Decoupled,
 )]
 #[diesel(table_name = pets)]
 /// Model for the pets table.
@@ -418,7 +487,17 @@ impl Descendant for pets::table {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, Hash, Insertable, MayGetColumn, SetColumn, HasTable,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Hash,
+    Insertable,
+    MayGetColumn,
+    SetColumn,
+    HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = pets)]

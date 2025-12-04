@@ -162,6 +162,29 @@ pub fn generate_hash_tuple() -> TokenStream {
     })
 }
 
+/// Generate PartialOrdTuple trait implementations for all tuple sizes
+pub fn generate_partial_ord_tuple() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices = (0..size).map(syn::Index::from);
+        quote! {
+            impl<#(#type_params: PartialOrd),*> PartialOrdTuple for (#(#type_params,)*)
+            {
+                #[inline]
+                fn partial_cmp_tuple(&self, other: &Self) -> Option<std::cmp::Ordering> {
+                    #(
+                        match self.#indices.partial_cmp(&other.#indices) {
+                            Some(std::cmp::Ordering::Equal) => {},
+                            non_eq => return non_eq,
+                        }
+                    )*
+                    Some(std::cmp::Ordering::Equal)
+                }
+            }
+        }
+    })
+}
+
 /// Generate DebuggableTuple trait implementations for all tuple sizes
 pub fn generate_debuggable_tuple() -> TokenStream {
     generate_all_sizes(|size| {

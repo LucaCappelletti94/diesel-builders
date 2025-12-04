@@ -18,3 +18,5 @@ pub mod hash_tuple;
 pub use hash_tuple::HashTuple;
 pub mod debuggable_tuple;
 pub use debuggable_tuple::DebuggableTuple;
+pub mod partial_ord_tuple;
+pub use partial_ord_tuple::PartialOrdTuple;

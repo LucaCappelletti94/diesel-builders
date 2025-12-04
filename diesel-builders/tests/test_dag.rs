@@ -6,6 +6,7 @@
 //! Pets that extends both Dogs and Cats via foreign keys (diamond pattern).
 
 mod common;
+use std::collections::HashMap;
 
 use common::*;
 use diesel::prelude::*;
@@ -240,7 +241,6 @@ fn test_dag_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(hash1, hash6);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut map = HashMap::new();
     map.insert(pet_builder1.clone(), "alice_buddy");
     map.insert(pet_builder3.clone(), "alice_max");
@@ -251,6 +251,88 @@ fn test_dag_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(map.get(&pet_builder6), None);
     assert_eq!(map.get(&pet_builder3), Some(&"alice_max"));
     assert_eq!(map.get(&pet_builder4), Some(&"alice_buddy_poodle"));
+
+    Ok(())
+}
+
+#[test]
+fn test_dag_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialOrd implementation for TableBuilder
+    let pet_builder1 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder2 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder3 = pets::table::builder()
+        .try_name("Max")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder4 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Poodle")
+        .try_color("Brown")?
+        .owner_name("Alice");
+
+    let pet_builder5 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Black")?
+        .owner_name("Alice");
+
+    let pet_builder6 = pets::table::builder()
+        .try_name("Buddy")?
+        .breed("Labrador")
+        .try_color("Brown")?
+        .owner_name("Bob");
+
+    // Identical builders should be equal
+    assert_eq!(
+        pet_builder1.partial_cmp(&pet_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        pet_builder1.partial_cmp(&pet_builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        pet_builder3.partial_cmp(&pet_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        pet_builder1.partial_cmp(&pet_builder4),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        pet_builder4.partial_cmp(&pet_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        pet_builder1.partial_cmp(&pet_builder5),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        pet_builder5.partial_cmp(&pet_builder1),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        pet_builder1.partial_cmp(&pet_builder6),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        pet_builder6.partial_cmp(&pet_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
 
     Ok(())
 }

@@ -3,6 +3,7 @@
 //! of Animals.
 
 mod common;
+use std::collections::HashMap;
 
 use common::*;
 use diesel::prelude::*;
@@ -244,7 +245,6 @@ fn test_inheritance_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(hash3, hash4);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut map = HashMap::new();
     map.insert(dog_builder1.clone(), "buddy");
     map.insert(dog_builder3.clone(), "max");
@@ -252,6 +252,52 @@ fn test_inheritance_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(map.get(&dog_builder2), Some(&"buddy"));
     assert_eq!(map.get(&dog_builder4), None);
     assert_eq!(map.get(&dog_builder3), Some(&"max"));
+
+    Ok(())
+}
+
+#[test]
+fn test_inheritance_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialOrd implementation for TableBuilder
+    let dog_builder1 = dogs::table::builder()
+        .try_name("Buddy")?
+        .try_breed("Labrador")?;
+
+    let dog_builder2 = dogs::table::builder()
+        .try_name("Buddy")?
+        .try_breed("Labrador")?;
+
+    let dog_builder3 = dogs::table::builder()
+        .try_name("Max")?
+        .try_breed("Labrador")?;
+
+    let dog_builder4 = dogs::table::builder()
+        .try_name("Buddy")?
+        .try_breed("Poodle")?;
+
+    // Identical builders should be equal
+    assert_eq!(
+        dog_builder1.partial_cmp(&dog_builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        dog_builder1.partial_cmp(&dog_builder3),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        dog_builder3.partial_cmp(&dog_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        dog_builder1.partial_cmp(&dog_builder4),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        dog_builder4.partial_cmp(&dog_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
 
     Ok(())
 }

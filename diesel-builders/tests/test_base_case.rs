@@ -3,6 +3,7 @@
 //! relationships.
 
 mod common;
+use std::collections::HashMap;
 
 use common::*;
 use diesel::prelude::*;
@@ -263,7 +264,6 @@ fn test_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(hash3, hash4);
 
     // Test that builders can be used as HashMap keys
-    use std::collections::HashMap;
     let mut map = HashMap::new();
     map.insert(builder1.clone(), "value1");
     map.insert(builder3.clone(), "value3");
@@ -271,6 +271,52 @@ fn test_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(map.get(&builder2), Some(&"value1"));
     assert_eq!(map.get(&builder4), None);
     assert_eq!(map.get(&builder3), Some(&"value3"));
+
+    Ok(())
+}
+
+#[test]
+fn test_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialOrd implementation for TableBuilder
+    let builder1 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder2 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder3 = animals::table::builder()
+        .try_name("Different Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder4 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("Different description".to_owned())?;
+
+    // Identical builders should be equal
+    assert_eq!(
+        builder1.partial_cmp(&builder2),
+        Some(std::cmp::Ordering::Equal)
+    );
+
+    // Different builders should have proper ordering
+    assert_eq!(
+        builder1.partial_cmp(&builder3),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        builder3.partial_cmp(&builder1),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        builder1.partial_cmp(&builder4),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        builder4.partial_cmp(&builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
 
     Ok(())
 }
