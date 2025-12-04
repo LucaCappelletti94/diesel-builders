@@ -148,3 +148,33 @@ fn test_insert_fails_when_table_does_not_exist() -> Result<(), Box<dyn std::erro
 
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder with some values set
+    let builder = animals::table::builder()
+        .try_name("Serialized Animal")?
+        .try_description("Testing serde serialization".to_owned())?;
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<animals::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match
+    assert_eq!(
+        deserialized
+            .may_get_column::<animals::name>()
+            .map(String::as_str),
+        Some("Serialized Animal")
+    );
+    assert_eq!(
+        deserialized.may_get_column::<animals::description>(),
+        Some(&Some("Testing serde serialization".to_owned()))
+    );
+
+    Ok(())
+}

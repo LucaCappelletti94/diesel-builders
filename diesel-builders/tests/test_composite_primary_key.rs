@@ -35,6 +35,7 @@ pub struct UserRole {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = user_roles)]
 /// A new user role model for insertions.
 pub struct NewUserRole {
@@ -125,6 +126,41 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_ne!(
         (user_role.user_id(), user_role.role_id()),
         (another_user_role.user_id(), another_user_role.role_id())
+    );
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder with composite primary key values
+    let builder = user_roles::table::builder()
+        .user_id(42)
+        .role_id(100)
+        .assigned_at("2025-12-04");
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<user_roles::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match
+    assert_eq!(
+        deserialized.may_get_column::<user_roles::user_id>(),
+        Some(&42)
+    );
+    assert_eq!(
+        deserialized.may_get_column::<user_roles::role_id>(),
+        Some(&100)
+    );
+    assert_eq!(
+        deserialized
+            .may_get_column::<user_roles::assigned_at>()
+            .map(String::as_str),
+        Some("2025-12-04")
     );
 
     Ok(())

@@ -79,6 +79,7 @@ pub struct TableA {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
 /// Insertable model for table A.
 pub struct NewTableA {
@@ -108,6 +109,7 @@ pub struct TableC {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
 pub struct NewTableC {
@@ -139,6 +141,7 @@ pub struct TableD {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_d)]
 /// Insertable model for table D.
 pub struct NewTableD {
@@ -180,6 +183,7 @@ impl Descendant for table_b::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
 pub struct NewTableB {
@@ -360,6 +364,41 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
         result.unwrap_err(),
         diesel_builders::BuilderError::Incomplete(_)
     ));
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder with mixed mandatory and discretionary triangular relations
+    let builder = table_b::table::builder()
+        .column_b("Serialized B")
+        .try_remote_column_c(Some("Serialized C".to_string()))?
+        .try_remote_column_d(Some("Serialized D".to_string()))?;
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<table_b::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match
+    assert_eq!(
+        deserialized
+            .may_get_column::<table_b::column_b>()
+            .map(String::as_str),
+        Some("Serialized B")
+    );
+    assert_eq!(
+        deserialized.may_get_column::<table_b::remote_column_c>(),
+        Some(&Some("Serialized C".to_string()))
+    );
+    assert_eq!(
+        deserialized.may_get_column::<table_b::remote_column_d>(),
+        Some(&Some("Serialized D".to_string()))
+    );
 
     Ok(())
 }

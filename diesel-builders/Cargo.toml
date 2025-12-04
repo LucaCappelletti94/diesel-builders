@@ -8,6 +8,7 @@ diesel.workspace = true
 typed_tuple.workspace = true
 tuple_set.workspace = true
 diesel-builders-macros.workspace = true
+serde = { workspace = true, optional = true }
 
 [dev-dependencies]
 diesel = { workspace = true, features = [
@@ -15,13 +16,15 @@ diesel = { workspace = true, features = [
 	"returning_clauses_for_sqlite_3_35",
 	"extras",
 ] }
+serde_json.workspace = true
 
 [lints]
 workspace = true
 
 [features]
-default = ["size-32"]
+default = ["size-32", "serde"]
 size-16 = ["diesel-builders-macros/size-16"]
 size-32 = ["diesel-builders-macros/size-32"]
 size-64 = ["diesel-builders-macros/size-64"]
-size-128 = ["diesel-builders-macros/size-128"]
+size-128 = ["diesel-builders-macros/size-128", "typed_tuple/len_128"]
+serde = ["dep:serde"]

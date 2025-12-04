@@ -103,3 +103,31 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder for a Pet that extends both Dogs and Cats (DAG structure)
+    let builder = pets::table::builder()
+        .try_name("Serialized Pet")?
+        .breed("Mixed Breed")
+        .try_color("Brown")?
+        .owner_name("Test Owner");
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<pets::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match - owner_name is the only field directly in NewPet
+    assert_eq!(
+        deserialized
+            .may_get_column::<pets::owner_name>()
+            .map(String::as_str),
+        Some("Test Owner")
+    );
+
+    Ok(())
+}

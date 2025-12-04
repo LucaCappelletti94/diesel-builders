@@ -88,3 +88,28 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder for a Puppy that extends Dogs which extends Animals (chain inheritance)
+    let builder = puppies::table::builder()
+        .try_name("Serialized Puppy")?
+        .breed("Beagle")
+        .age_months(6);
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<puppies::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match - age_months is the only field directly in NewPuppy
+    assert_eq!(
+        deserialized.may_get_column::<puppies::age_months>(),
+        Some(&6)
+    );
+
+    Ok(())
+}

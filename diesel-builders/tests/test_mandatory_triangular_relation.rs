@@ -80,6 +80,7 @@ pub struct TableA {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
 /// Insertable model for table A.
 pub struct NewTableA {
@@ -109,6 +110,7 @@ pub struct TableC {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
 pub struct NewTableC {
@@ -159,6 +161,7 @@ impl From<Infallible> for ErrorB {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
 pub struct NewTableB {
@@ -429,6 +432,37 @@ fn test_mandatory_triangular_insert_fails_when_c_table_missing()
         result.unwrap_err(),
         diesel_builders::BuilderError::Diesel(_)
     ));
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder with mandatory triangular relation
+    let builder = table_b::table::builder()
+        .column_b("Serialized B")
+        .try_remote_column_c(Some("Serialized C".to_string()))
+        .unwrap();
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<table_b::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match
+    assert_eq!(
+        deserialized
+            .may_get_column::<table_b::column_b>()
+            .map(String::as_str),
+        Some("Serialized B")
+    );
+    assert_eq!(
+        deserialized.may_get_column::<table_b::remote_column_c>(),
+        Some(&Some("Serialized C".to_string()))
+    );
 
     Ok(())
 }

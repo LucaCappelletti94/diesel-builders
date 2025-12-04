@@ -149,3 +149,29 @@ fn test_dog_insert_fails_when_child_table_missing() -> Result<(), Box<dyn std::e
 
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a builder for a Dog that extends Animals
+    let builder = dogs::table::builder()
+        .try_name("Serialized Dog")?
+        .breed("German Shepherd");
+
+    // Serialize to JSON
+    let serialized = serde_json::to_string(&builder)?;
+
+    // Deserialize back from JSON
+    let deserialized: diesel_builders::TableBuilder<dogs::table> =
+        serde_json::from_str(&serialized)?;
+
+    // Verify the values match - breed is the only field directly in NewDog
+    assert_eq!(
+        deserialized
+            .may_get_column::<dogs::breed>()
+            .map(String::as_str),
+        Some("German Shepherd")
+    );
+
+    Ok(())
+}

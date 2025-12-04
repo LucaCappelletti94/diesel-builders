@@ -24,6 +24,40 @@ pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
     bundles: <T::AncestorsWithSelf as BundlableTables>::BuilderBundles,
 }
 
+#[cfg(feature = "serde")]
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> serde::Serialize for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: serde::Serialize,
+{
+    #[inline]
+    fn serialize<S>(
+        &self,
+        serializer: S,
+    ) -> Result<<S as serde::ser::Serializer>::Ok, <S as serde::ser::Serializer>::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        self.bundles.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, T: BuildableTable<AncestorsWithSelf: BundlableTables>> serde::Deserialize<'de>
+    for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: serde::Deserialize<'de>,
+{
+    #[inline]
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        let bundles =
+            <T::AncestorsWithSelf as BundlableTables>::BuilderBundles::deserialize(deserializer)?;
+        Ok(Self { bundles })
+    }
+}
+
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuilder<T> {
     #[inline]
     fn clone(&self) -> Self {

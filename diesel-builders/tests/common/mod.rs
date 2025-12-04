@@ -65,6 +65,7 @@ pub struct Animal {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = animals)]
 #[allow(clippy::option_option)]
 /// Insertable model for the animals table.
@@ -198,6 +199,7 @@ impl Descendant for dogs::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = dogs)]
 /// Insertable model for the dogs table.
 pub struct NewDog {
@@ -253,6 +255,7 @@ impl Descendant for cats::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = cats)]
 /// Insertable model for the cats table.
 pub struct NewCat {
@@ -355,6 +358,7 @@ impl Descendant for puppies::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = puppies)]
 /// Insertable model for the puppies table.
 pub struct NewPuppy {
@@ -410,6 +414,7 @@ impl Descendant for pets::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = pets)]
 /// Insertable model for the pets table.
 pub struct NewPet {
