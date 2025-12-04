@@ -1458,6 +1458,29 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         })
         .collect();
 
+    // Generate `GetColumn` implementation for each ancestor's primary key
+    // for the descendant table model
+    let descendant_table_model = quote! {
+        <#table_type as diesel_builders::TableAddition>::Model
+    };
+    let get_column_impls : Vec<_> = ancestors
+        .iter()
+        .map(|ancestor| {
+            quote! {
+                impl diesel_builders::GetColumn<<#ancestor as diesel::Table>::PrimaryKey>
+                    for #descendant_table_model
+                {
+                    fn get_column(
+                        &self,
+                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::TypedColumn>::Type {
+                        use diesel::Identifiable;
+                        self.id()
+                    }
+                }
+            }
+        })
+        .collect();
+
     // Generate DescendantOf implementation for the root (if it's not already in
     // ancestors) We need to check if root_type is different from all ancestors
     let root_descendant_of_impl = if ancestors.is_empty() {
@@ -1543,6 +1566,8 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         #root_descendant_of_impl
 
         #self_ancestor_of_index
+
+        #(#get_column_impls)*
 
         #(#ancestor_of_index_impls)*
 
