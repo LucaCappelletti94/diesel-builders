@@ -110,6 +110,14 @@ impl<T: BundlableTable> Clone for TableBuilderBundle<T> {
     }
 }
 
+impl<T: BundlableTable> Copy for TableBuilderBundle<T>
+where
+    T::InsertableModel: Copy,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
+{
+}
+
 impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TableBuilderBundle")

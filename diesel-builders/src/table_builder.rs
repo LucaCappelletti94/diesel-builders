@@ -67,6 +67,11 @@ impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuild
     }
 }
 
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Copy for TableBuilder<T> where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: Copy
+{
+}
+
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TableBuilder")

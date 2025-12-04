@@ -86,6 +86,25 @@ pub fn generate_clonable_tuple() -> TokenStream {
     })
 }
 
+/// Generate CopiableTuple trait implementations for all tuple sizes
+pub fn generate_copiable_tuple() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+        let copies = indices.iter().map(|idx| quote! { self.#idx });
+
+        quote! {
+            impl<#(#type_params: Copy),*> CopiableTuple for (#(#type_params,)*)
+            {
+                #[inline]
+                fn copy_tuple(&self) -> Self {
+                    (#(#copies,)*)
+                }
+            }
+        }
+    })
+}
+
 /// Generate DebuggableTuple trait implementations for all tuple sizes
 pub fn generate_debuggable_tuple() -> TokenStream {
     generate_all_sizes(|size| {

@@ -62,6 +62,19 @@ pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream
     .into()
 }
 
+/// Generate `CopiableTuple` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_copiable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_copiable_tuple();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `DebuggableTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
