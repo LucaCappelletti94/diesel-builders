@@ -14,10 +14,10 @@ use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HorizontalSameAsGroup, HorizontalSameAsKeys,
     MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple,
-    RecursiveInsert, RefTuple, TableAddition, TableBuilder, Tables, TransposeOptionTuple,
-    TryMaySetColumns, TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns,
-    TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns,
-    TypedColumn,
+    PartialEqTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder, Tables,
+    TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
+    TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
+    TrySetMandatorySameAsColumns, TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
 
@@ -116,6 +116,19 @@ where
     <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
     <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
 {
+}
+
+impl<T: BundlableTable> PartialEq for TableBuilderBundle<T>
+where
+    T::InsertableModel: PartialEq,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.insertable_model == other.insertable_model
+            && self.mandatory_associated_builders.partial_eq_tuple(&other.mandatory_associated_builders)
+            && self.discretionary_associated_builders.partial_eq_tuple(&other.discretionary_associated_builders)
+    }
 }
 
 impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {

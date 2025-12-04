@@ -175,3 +175,31 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     Ok(())
 }
+
+#[test]
+fn test_inheritance_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialEq for inheritance builders
+    let dog_builder1 = dogs::table::builder().try_name("Buddy")?.breed("Labrador");
+
+    let dog_builder2 = dogs::table::builder().try_name("Buddy")?.breed("Labrador");
+
+    let dog_builder3 = dogs::table::builder().try_name("Max")?.breed("Labrador");
+
+    let dog_builder4 = dogs::table::builder().try_name("Buddy")?.breed("Poodle");
+
+    // Identical builders should be equal
+    assert_eq!(dog_builder1, dog_builder2);
+
+    // Different builders should not be equal
+    assert_ne!(dog_builder1, dog_builder3);
+    assert_ne!(dog_builder1, dog_builder4);
+    assert_ne!(dog_builder3, dog_builder4);
+
+    // The builders should also be equal to themselves
+    assert_eq!(dog_builder1, dog_builder1);
+    assert_eq!(dog_builder2, dog_builder2);
+    assert_eq!(dog_builder3, dog_builder3);
+    assert_eq!(dog_builder4, dog_builder4);
+
+    Ok(())
+}

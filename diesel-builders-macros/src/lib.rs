@@ -75,6 +75,19 @@ pub fn impl_copiable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream
     .into()
 }
 
+/// Generate `PartialEqTuple` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_partial_eq_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_partial_e_tuple();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generate `DebuggableTuple` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {

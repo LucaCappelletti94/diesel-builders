@@ -79,7 +79,7 @@ pub struct TableA {
     pub column_a: String,
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
 /// Insertable model for table A.
@@ -109,7 +109,7 @@ pub struct TableC {
     pub column_c: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
@@ -160,7 +160,7 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
@@ -368,6 +368,44 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let _ = CompletedTableBuilder::<table_b::table, ()>::table();
 
     Ok(())
+}
+
+#[test]
+fn test_triangular_builder_equality() {
+    // Test PartialEq for triangular relation builders
+    let a_builder1 = table_a::table::builder().column_a("Test A");
+    let a_builder2 = table_a::table::builder().column_a("Test A");
+    let a_builder3 = table_a::table::builder().column_a("Different A");
+
+    // Identical builders should be equal
+    assert_eq!(a_builder1, a_builder2);
+    // Different builders should not be equal
+    assert_ne!(a_builder1, a_builder3);
+
+    // Test with C builders
+    let c_builder1 = table_c::table::builder()
+        .a_id(1)
+        .column_c(Some("Test C".to_owned()));
+    let c_builder2 = table_c::table::builder()
+        .a_id(1)
+        .column_c(Some("Test C".to_owned()));
+    let c_builder3 = table_c::table::builder()
+        .a_id(2)
+        .column_c(Some("Test C".to_owned()));
+
+    assert_eq!(c_builder1, c_builder2);
+    assert_ne!(c_builder1, c_builder3);
+
+    // Test with simple B builders (without complex setup)
+    let b_builder1 = table_b::table::builder();
+    let b_builder2 = table_b::table::builder();
+
+    // Default builders should be equal
+    assert_eq!(b_builder1, b_builder2);
+
+    // The builders should also be equal to themselves
+    assert_eq!(b_builder1, b_builder1);
+    assert_eq!(b_builder2, b_builder2);
 }
 
 #[test]

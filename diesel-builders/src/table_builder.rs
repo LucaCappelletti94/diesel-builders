@@ -11,10 +11,11 @@ use crate::{
     AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
     BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
     DefaultTuple, DescendantOf, GetColumn, HorizontalSameAsKey, IncompleteBuilderError, Insert,
-    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, RecursiveInsert,
-    SingletonForeignKey, TableAddition, TableBuilderBundle, TryMaySetColumns, TrySetColumn,
-    TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn, buildable_table::BuildableTable,
-    table_addition::HasPrimaryKey, vertical_same_as_group::VerticalSameAsGroup,
+    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, PartialEqTuple,
+    RecursiveInsert, SingletonForeignKey, TableAddition, TableBuilderBundle, TryMaySetColumns,
+    TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
+    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
+    vertical_same_as_group::VerticalSameAsGroup,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -70,6 +71,15 @@ impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuild
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Copy for TableBuilder<T> where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: Copy
 {
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> PartialEq for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: crate::PartialEqTuple,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.bundles.partial_eq_tuple(&other.bundles)
+    }
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {

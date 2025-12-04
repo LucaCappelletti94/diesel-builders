@@ -178,3 +178,39 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     Ok(())
 }
+
+#[test]
+fn test_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
+    // Test PartialEq implementation for TableBuilder
+    let builder1 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder2 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder3 = animals::table::builder()
+        .try_name("Different Animal")?
+        .try_description("A test description".to_owned())?;
+
+    let builder4 = animals::table::builder()
+        .try_name("Test Animal")?
+        .try_description("Different description".to_owned())?;
+
+    // Identical builders should be equal
+    assert_eq!(builder1, builder2);
+
+    // Different builders should not be equal
+    assert_ne!(builder1, builder3);
+    assert_ne!(builder1, builder4);
+    assert_ne!(builder3, builder4);
+
+    // The builders should also be equal to themselves
+    assert_eq!(builder1, builder1);
+    assert_eq!(builder2, builder2);
+    assert_eq!(builder3, builder3);
+    assert_eq!(builder4, builder4);
+
+    Ok(())
+}
