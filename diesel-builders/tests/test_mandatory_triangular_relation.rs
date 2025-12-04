@@ -533,8 +533,16 @@ fn test_triangular_builder_partial_ord() {
     let c_builder2 = table_c::table::builder().column_c("C1".to_owned()).a_id(1);
     let c_builder3 = table_c::table::builder().column_c("C2".to_owned()).a_id(1);
 
-    let b_builder1 = table_b::table::builder().column_b("B1").c_id(1);
-    let b_builder2 = table_b::table::builder().column_b("B1").c_id(1);
+    let b_builder1 = table_b::table::builder()
+        .column_b("B1")
+        .try_c_id_builder(c_builder1.clone())
+        .unwrap();
+    let b_builder2 = table_b::table::builder()
+        .column_b("B1")
+        .try_c_id_builder(c_builder3.clone())
+        .unwrap();
+    let b_builder3 = table_b::table::builder().column_b("B1");
+    let b_builder4 = table_b::table::builder().column_b("B1");
 
     // Identical builders should be equal
     assert_eq!(
@@ -547,6 +555,14 @@ fn test_triangular_builder_partial_ord() {
     );
     assert_eq!(
         b_builder1.partial_cmp(&b_builder2),
+        Some(std::cmp::Ordering::Less)
+    );
+    assert_eq!(
+        b_builder2.partial_cmp(&b_builder1),
+        Some(std::cmp::Ordering::Greater)
+    );
+    assert_eq!(
+        b_builder3.partial_cmp(&b_builder4),
         Some(std::cmp::Ordering::Equal)
     );
 
@@ -575,7 +591,9 @@ fn test_triangular_builder_partial_ord() {
     assert_eq!(c_builder1.cmp(&c_builder2), std::cmp::Ordering::Equal);
     assert_eq!(c_builder1.cmp(&c_builder3), std::cmp::Ordering::Less);
     assert_eq!(c_builder3.cmp(&c_builder1), std::cmp::Ordering::Greater);
-    assert_eq!(b_builder1.cmp(&b_builder2), std::cmp::Ordering::Equal);
+    assert_eq!(b_builder1.cmp(&b_builder2), std::cmp::Ordering::Less);
+    assert_eq!(b_builder2.cmp(&b_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(b_builder3.cmp(&b_builder4), std::cmp::Ordering::Equal);
 }
 
 #[test]
