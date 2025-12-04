@@ -87,6 +87,7 @@ pub struct TableA {
     PartialEq,
     Eq,
     PartialOrd,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,
@@ -129,6 +130,7 @@ pub struct TableC {
     PartialEq,
     Eq,
     PartialOrd,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,
@@ -186,7 +188,7 @@ impl From<Infallible> for ErrorB {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, Eq, PartialOrd, Hash, Insertable, MayGetColumn, HasTable,
+    Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Insertable, MayGetColumn, HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
@@ -565,6 +567,15 @@ fn test_triangular_builder_partial_ord() {
         c_builder3.partial_cmp(&c_builder1),
         Some(std::cmp::Ordering::Greater)
     );
+
+    // Test Ord implementation
+    assert_eq!(a_builder1.cmp(&a_builder2), std::cmp::Ordering::Equal);
+    assert_eq!(a_builder1.cmp(&a_builder3), std::cmp::Ordering::Less);
+    assert_eq!(a_builder3.cmp(&a_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(c_builder1.cmp(&c_builder2), std::cmp::Ordering::Equal);
+    assert_eq!(c_builder1.cmp(&c_builder3), std::cmp::Ordering::Less);
+    assert_eq!(c_builder3.cmp(&c_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(b_builder1.cmp(&b_builder2), std::cmp::Ordering::Equal);
 }
 
 #[test]

@@ -74,7 +74,7 @@ pub struct Animal {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Hash, Insertable, MayGetColumn, HasTable,
+    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Insertable, MayGetColumn, HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = animals)]
@@ -225,6 +225,7 @@ impl Descendant for dogs::table {
     PartialEq,
     PartialOrd,
     Eq,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,
@@ -296,7 +297,7 @@ impl Descendant for cats::table {
 }
 
 #[derive(
-    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Hash, Insertable, MayGetColumn, HasTable,
+    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Insertable, MayGetColumn, HasTable,
 )]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = cats)]
@@ -416,6 +417,7 @@ impl Descendant for puppies::table {
     PartialEq,
     PartialOrd,
     Eq,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,
@@ -493,6 +495,7 @@ impl Descendant for pets::table {
     PartialEq,
     PartialOrd,
     Eq,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,

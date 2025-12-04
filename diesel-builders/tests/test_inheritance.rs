@@ -299,5 +299,12 @@ fn test_inheritance_builder_partial_ord() -> Result<(), Box<dyn std::error::Erro
         Some(std::cmp::Ordering::Greater)
     );
 
+    // Test Ord implementation
+    assert_eq!(dog_builder1.cmp(&dog_builder2), std::cmp::Ordering::Equal);
+    assert_eq!(dog_builder1.cmp(&dog_builder3), std::cmp::Ordering::Less);
+    assert_eq!(dog_builder3.cmp(&dog_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(dog_builder1.cmp(&dog_builder4), std::cmp::Ordering::Less);
+    assert_eq!(dog_builder4.cmp(&dog_builder1), std::cmp::Ordering::Greater);
+
     Ok(())
 }

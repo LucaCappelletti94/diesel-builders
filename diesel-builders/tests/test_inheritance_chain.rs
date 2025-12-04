@@ -276,6 +276,36 @@ fn test_inheritance_chain_builder_partial_ord() -> Result<(), Box<dyn std::error
         Some(std::cmp::Ordering::Less)
     );
 
+    // Test Ord implementation
+    assert_eq!(
+        puppy_builder1.cmp(&puppy_builder2),
+        std::cmp::Ordering::Equal
+    );
+    assert_eq!(
+        puppy_builder1.cmp(&puppy_builder3),
+        std::cmp::Ordering::Less
+    );
+    assert_eq!(
+        puppy_builder3.cmp(&puppy_builder1),
+        std::cmp::Ordering::Greater
+    );
+    assert_eq!(
+        puppy_builder1.cmp(&puppy_builder4),
+        std::cmp::Ordering::Less
+    );
+    assert_eq!(
+        puppy_builder4.cmp(&puppy_builder1),
+        std::cmp::Ordering::Greater
+    );
+    assert_eq!(
+        puppy_builder1.cmp(&puppy_builder5),
+        std::cmp::Ordering::Greater
+    );
+    assert_eq!(
+        puppy_builder5.cmp(&puppy_builder1),
+        std::cmp::Ordering::Less
+    );
+
     Ok(())
 }
 

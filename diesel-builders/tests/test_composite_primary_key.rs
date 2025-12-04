@@ -44,6 +44,7 @@ pub struct UserRole {
     PartialEq,
     Eq,
     PartialOrd,
+    Ord,
     Hash,
     Insertable,
     MayGetColumn,
@@ -324,6 +325,15 @@ fn test_composite_primary_key_builder_partial_ord() {
         builder5.partial_cmp(&builder1),
         Some(std::cmp::Ordering::Greater)
     );
+
+    // Test Ord implementation
+    assert_eq!(builder1.cmp(&builder2), std::cmp::Ordering::Equal);
+    assert_eq!(builder1.cmp(&builder3), std::cmp::Ordering::Less);
+    assert_eq!(builder3.cmp(&builder1), std::cmp::Ordering::Greater);
+    assert_eq!(builder1.cmp(&builder4), std::cmp::Ordering::Less);
+    assert_eq!(builder4.cmp(&builder1), std::cmp::Ordering::Greater);
+    assert_eq!(builder1.cmp(&builder5), std::cmp::Ordering::Less);
+    assert_eq!(builder5.cmp(&builder1), std::cmp::Ordering::Greater);
 }
 
 #[test]

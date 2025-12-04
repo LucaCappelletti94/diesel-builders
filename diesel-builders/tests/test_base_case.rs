@@ -318,5 +318,12 @@ fn test_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
         Some(std::cmp::Ordering::Greater)
     );
 
+    // Test Ord implementation
+    assert_eq!(builder1.cmp(&builder2), std::cmp::Ordering::Equal);
+    assert_eq!(builder1.cmp(&builder3), std::cmp::Ordering::Greater);
+    assert_eq!(builder3.cmp(&builder1), std::cmp::Ordering::Less);
+    assert_eq!(builder1.cmp(&builder4), std::cmp::Ordering::Less);
+    assert_eq!(builder4.cmp(&builder1), std::cmp::Ordering::Greater);
+
     Ok(())
 }

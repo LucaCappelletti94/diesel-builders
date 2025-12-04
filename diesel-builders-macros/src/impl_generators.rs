@@ -185,6 +185,29 @@ pub fn generate_partial_ord_tuple() -> TokenStream {
     })
 }
 
+/// Generate OrdTuple trait implementations for all tuple sizes
+pub fn generate_ord_tuple() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices = (0..size).map(syn::Index::from);
+        quote! {
+            impl<#(#type_params: Ord),*> OrdTuple for (#(#type_params,)*)
+            {
+                #[inline]
+                fn cmp_tuple(&self, other: &Self) -> std::cmp::Ordering {
+                    #(
+                        match self.#indices.cmp(&other.#indices) {
+                            std::cmp::Ordering::Equal => {},
+                            non_eq => return non_eq,
+                        }
+                    )*
+                    std::cmp::Ordering::Equal
+                }
+            }
+        }
+    })
+}
+
 /// Generate DebuggableTuple trait implementations for all tuple sizes
 pub fn generate_debuggable_tuple() -> TokenStream {
     generate_all_sizes(|size| {

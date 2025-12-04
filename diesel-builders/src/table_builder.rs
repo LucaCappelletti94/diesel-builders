@@ -11,11 +11,11 @@ use crate::{
     AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
     BundlableTable, BundlableTables, ClonableTuple, CompletedTableBuilderBundle, DebuggableTuple,
     DefaultTuple, DescendantOf, GetColumn, HashTuple, HorizontalSameAsKey, IncompleteBuilderError,
-    Insert, InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, PartialEqTuple,
-    PartialOrdTuple, RecursiveInsert, SingletonForeignKey, TableAddition, TableBuilderBundle,
-    TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn, TrySetMandatoryBuilder, TypedColumn,
-    buildable_table::BuildableTable, table_addition::HasPrimaryKey,
-    vertical_same_as_group::VerticalSameAsGroup,
+    Insert, InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, OrdTuple,
+    PartialEqTuple, PartialOrdTuple, RecursiveInsert, SingletonForeignKey, TableAddition,
+    TableBuilderBundle, TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn,
+    TrySetMandatoryBuilder, TypedColumn, buildable_table::BuildableTable,
+    table_addition::HasPrimaryKey, vertical_same_as_group::VerticalSameAsGroup,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -104,6 +104,16 @@ where
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.bundles.partial_cmp_tuple(&other.bundles)
+    }
+}
+
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Ord for TableBuilder<T>
+where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        crate::OrdTuple + crate::PartialOrdTuple + crate::EqTuple + crate::PartialEqTuple,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.bundles.cmp_tuple(&other.bundles)
     }
 }
 

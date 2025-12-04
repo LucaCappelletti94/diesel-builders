@@ -20,3 +20,5 @@ pub mod debuggable_tuple;
 pub use debuggable_tuple::DebuggableTuple;
 pub mod partial_ord_tuple;
 pub use partial_ord_tuple::PartialOrdTuple;
+pub mod ord_tuple;
+pub use ord_tuple::OrdTuple;

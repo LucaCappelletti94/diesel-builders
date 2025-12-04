@@ -13,7 +13,7 @@ use crate::InsertableTableModel;
 use crate::{
     BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
     DiscretionarySameAsIndex, FlatInsert, HashTuple, HorizontalSameAsGroup, HorizontalSameAsKeys,
-    MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple,
+    MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple, OrdTuple,
     PartialEqTuple, PartialOrdTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder,
     Tables, TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
     TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
@@ -85,13 +85,7 @@ where
             discretionary_associated_builders: C,
         }
 
-        type HelperConcrete<T> = TableBuilderBundleHelper<
-            <T as TableAddition>::InsertableModel,
-            <<<<T as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
-            <<<<T as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
-        >;
-
-        let helper:HelperConcrete<T>  = TableBuilderBundleHelper::deserialize(deserializer)?;
+        let helper   = TableBuilderBundleHelper::deserialize(deserializer)?;
         Ok(TableBuilderBundle {
             insertable_model: helper.insertable_model,
             mandatory_associated_builders: helper.mandatory_associated_builders,
@@ -168,6 +162,24 @@ where
             ord => return ord,
         }
         self.discretionary_associated_builders.partial_cmp_tuple(&other.discretionary_associated_builders)
+    }
+}
+impl<T: BundlableTable> Ord for TableBuilderBundle<T>
+where
+    T::InsertableModel: Ord + PartialOrd + Eq + PartialEq,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::OrdTuple + crate::PartialOrdTuple + crate::EqTuple + crate::PartialEqTuple,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::OrdTuple + crate::PartialOrdTuple + crate::EqTuple + crate::PartialEqTuple,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match self.insertable_model.cmp(&other.insertable_model) {
+            std::cmp::Ordering::Equal => {}
+            ord => return ord,
+        }
+        match self.mandatory_associated_builders.cmp_tuple(&other.mandatory_associated_builders) {
+            std::cmp::Ordering::Equal => {}
+            ord => return ord,
+        }
+        self.discretionary_associated_builders.cmp_tuple(&other.discretionary_associated_builders)
     }
 }
 

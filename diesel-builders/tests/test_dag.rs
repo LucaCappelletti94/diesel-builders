@@ -334,6 +334,17 @@ fn test_dag_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
         Some(std::cmp::Ordering::Greater)
     );
 
+    // Test Ord implementation
+    assert_eq!(pet_builder1.cmp(&pet_builder2), std::cmp::Ordering::Equal);
+    assert_eq!(pet_builder1.cmp(&pet_builder3), std::cmp::Ordering::Less);
+    assert_eq!(pet_builder3.cmp(&pet_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(pet_builder1.cmp(&pet_builder4), std::cmp::Ordering::Less);
+    assert_eq!(pet_builder4.cmp(&pet_builder1), std::cmp::Ordering::Greater);
+    assert_eq!(pet_builder1.cmp(&pet_builder5), std::cmp::Ordering::Greater);
+    assert_eq!(pet_builder5.cmp(&pet_builder1), std::cmp::Ordering::Less);
+    assert_eq!(pet_builder1.cmp(&pet_builder6), std::cmp::Ordering::Less);
+    assert_eq!(pet_builder6.cmp(&pet_builder1), std::cmp::Ordering::Greater);
+
     Ok(())
 }
 
