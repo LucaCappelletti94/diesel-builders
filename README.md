@@ -24,15 +24,22 @@ The crate is not yet on [crates.io](https://crates.io) because it depends on an 
 
 ### 1. Simple Table (Base Case)
 
-[A single table with no relationships](diesel-builders/tests/test_base_case.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters. Optional validation through `TrySetColumn` trait implementations enables Rust-side [check constraints](diesel-builders/tests/test_check_constraints.rs) that mirror SQL CHECK constraints, providing fail-fast validation before database insertion.
+[A single table with no relationships](diesel-builders/tests/test_base_case.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters. Optional validation through `TrySetColumn` trait implementations enables Rust-side check constraints that mirror [SQL CHECK CONSTRAINT](https://www.postgresql.org/docs/current/ddl-constraints.html), providing fail-fast validation before database insertion.
 
 ```mermaid
 classDiagram
     class Animals {
         +Integer id PK
-        +Text name
-        +Text description
+        +Text name «CHECK: not empty, max 100»
+        +Text description? «CHECK: not empty, max 500»
     }
+```
+
+```rust,ignore
+let animal = animals::table::builder()
+    .try_name("Buddy")?
+    .try_description("A friendly dog".to_owned())?
+    .insert(&mut conn)?;
 ```
 
 ### 2. Table Inheritance
@@ -44,14 +51,21 @@ classDiagram
     direction BT
     class Animals {
         +Integer id PK
-        +Text name
-        +Text description
+        +Text name «CHECK: not empty, max 100»
+        +Text description? «CHECK: not empty, max 500»
     }
     class Dogs {
         +Integer id PK,FK
         +Text breed
     }
     Dogs --|> Animals : extends
+```
+
+```rust,ignore
+let dog = dogs::table::builder()
+    .try_name("Max")?
+    .breed("Golden Retriever")
+    .insert(&mut conn)?;
 ```
 
 ### 3. Directed Acyclic Graph (DAG)
@@ -63,8 +77,8 @@ classDiagram
     direction BT
     class Animals {
         +Integer id PK
-        +Text name
-        +Text description
+        +Text name «CHECK: not empty, max 100»
+        +Text description? «CHECK: not empty, max 500»
     }
     class Dogs {
         +Integer id PK,FK
@@ -72,7 +86,7 @@ classDiagram
     }
     class Cats {
         +Integer id PK,FK
-        +Text color
+        +Text color «CHECK: not empty»
     }
     class Pets {
         +Integer id PK,FK
@@ -84,6 +98,15 @@ classDiagram
     Pets --|> Cats : extends
 ```
 
+```rust,ignore
+let pet = pets::table::builder()
+    .try_name("Buddy")?  
+    .breed("Labrador")
+    .try_color("Black")?
+    .owner_name("Alice Smith")
+    .insert(&mut conn)?;
+```
+
 ### 4. Inheritance Chain
 
 [A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
@@ -93,8 +116,8 @@ classDiagram
     direction BT
     class Animals {
         +Integer id PK
-        +Text name
-        +Text description
+        +Text name «CHECK: not empty, max 100»
+        +Text description? «CHECK: not empty, max 500»
     }
     class Dogs {
         +Integer id PK,FK
@@ -106,6 +129,14 @@ classDiagram
     }
     Dogs --|> Animals : extends
     Puppies --|> Dogs : extends
+```
+
+```rust,ignore
+let puppy = puppies::table::builder()
+    .try_name("Buddy")?
+    .breed("Labrador")
+    .age_months(3)
+    .insert(&mut conn)?;
 ```
 
 ### 5. Mandatory Triangular Relation
@@ -122,18 +153,26 @@ classDiagram
     class TableC {
         +Integer id PK
         +Integer a_id FK
-        +Text column_c
+        +Text column_c?
     }
     class TableB {
         +Integer id PK,FK
         +Integer c_id FK
         +Text column_b
-        +Text remote_column_c
+        +Text remote_column_c? «CHECK: not empty»
     }
     TableC --> TableA : references
     TableB --|> TableA : extends
     TableB --> TableC : c_id→id
     note for TableB "c_id must reference C where C.a_id = B.id"
+```
+
+```rust,ignore
+let b = table_b::table::builder()
+    .column_a("Value A for B")
+    .column_b("Value B")
+    .c_id_builder(table_c::table::builder().column_c("Value C".to_owned()))
+    .insert(&mut conn)?;
 ```
 
 ### 6. Discretionary Triangular Relation
@@ -150,18 +189,39 @@ classDiagram
     class TableC {
         +Integer id PK
         +Integer a_id FK
-        +Text column_c
+        +Text column_c?
     }
     class TableB {
         +Integer id PK,FK
         +Integer c_id FK
         +Text column_b
-        +Text remote_column_c
+        +Text remote_column_c? «CHECK: not empty»
     }
     TableC --> TableA : references
     TableB --|> TableA : extends
     TableB --> TableC : c_id→id
     note for TableB "c_id may reference any C (not required to match B.id)"
+```
+
+```rust,ignore
+let b = table_b::table::builder()
+    .column_a("Value A for B")
+    .column_b("Value B")
+    .c_id_builder(table_c::table::builder().column_c("Value C".to_owned()))
+    .insert(&mut conn)?;
+```
+
+```rust,ignore
+let c = table_c::table::builder()
+    .a_id(a.id)
+    .column_c("Value C".to_owned())
+    .insert(&mut conn)?;
+
+let b = table_b::table::builder()
+    .column_a("Value A for B")
+    .column_b("Value B")
+    .c_id_model(&c)
+    .insert(&mut conn)?;
 ```
 
 ### 7. Composite Primary Keys
@@ -194,16 +254,51 @@ The `TableModel` derive automatically generates helper traits for each column, p
 
 These traits are automatically implemented for any type that implements `GetColumn<column>`, `SetColumn<column>`, or `TrySetColumn<column>`.
 
-Usage example:
+### Triangular Relation Traits
+
+For columns involved in triangular relations (both mandatory and discretionary), additional builder and model setter traits are generated:
+
+- **Mandatory Builders**: `Set{Table}{Column}MandatoryBuilder` and `TrySet{Table}{Column}MandatoryBuilder`
+  - `{column}_builder(self, builder) -> Self` - sets associated builder (consumes)
+  - `{column}_builder_ref(&mut self, builder) -> &mut Self` - sets associated builder (by reference)
+  - `try_{column}_builder(self, builder) -> Result<Self, Error>` - fallible variant
+
+- **Discretionary Builders**: `Set{Table}{Column}DiscretionaryBuilder` and `TrySet{Table}{Column}DiscretionaryBuilder`
+  - `{column}_builder(self, builder) -> Self` - sets associated builder (consumes)
+  - `{column}_builder_ref(&mut self, builder) -> &mut Self` - sets associated builder (by reference)
+  - `try_{column}_builder(self, builder) -> Result<Self, Error>` - fallible variant
+
+- **Discretionary Models**: `Set{Table}{Column}DiscretionaryModel` and `TrySet{Table}{Column}DiscretionaryModel`
+  - `{column}_model(self, &model) -> Self` - references existing model (consumes)
+  - `{column}_model_ref(&mut self, &model) -> &mut Self` - references existing model (by reference)
+  - `try_{column}_model(self, &model) -> Result<Self, Error>` - fallible variant
+
+Usage examples:
 
 ```rust,ignore
+// Basic column setter
 let animal: Animal = animals::table::builder()
-    // It is fallible because of TrySetColumn implementations
-    // which checks `name <> ''` constraint.
     .try_name("Buddy")?
     .insert(conn)?;
 
 assert_eq!(animal.name(), "Buddy");
+
+// Mandatory triangular relation with builder
+let b = table_b::table::builder()
+    .column_b("B Value")
+    .try_c_id_builder(table_c::table::builder().column_c("C Value".to_owned()))?
+    .insert(conn)?;
+
+// Discretionary triangular relation with existing model
+let c = table_c::table::builder()
+    .a_id(a.id)
+    .column_c("C Value".to_owned())
+    .insert(conn)?;
+
+let b = table_b::table::builder()
+    .column_b("B Value")
+    .c_id_model(&c)  // Reference existing model
+    .insert(conn)?;
 ```
 
 ## License

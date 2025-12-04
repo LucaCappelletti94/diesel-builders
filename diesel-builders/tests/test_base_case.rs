@@ -76,16 +76,10 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     // Test GetColumn derive on multiple fields
-    assert_eq!(
-        another_animal.name(),
-        "Charlie"
-    );
+    assert_eq!(another_animal.name(), "Charlie");
 
     // Test TableModel derive - verifying unique primary keys
-    assert_ne!(
-        animal.id(),
-        another_animal.id()
-    );
+    assert_ne!(animal.id(), another_animal.id());
 
     Ok(())
 }
@@ -111,15 +105,13 @@ fn test_name_too_long_rejected() {
 
 #[test]
 fn test_empty_description_rejected() {
-    let result =
-        animals::table::builder().try_description(Some(String::new()));
+    let result = animals::table::builder().try_description(Some(String::new()));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 
 #[test]
 fn test_whitespace_only_description_rejected() {
-    let result =
-        animals::table::builder().try_description(Some("   ".to_string()));
+    let result = animals::table::builder().try_description(Some("   ".to_string()));
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 

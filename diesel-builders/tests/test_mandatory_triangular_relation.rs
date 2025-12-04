@@ -322,6 +322,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
+    // Using generated trait methods like try_c_id_builder_ref for type-safe builders
     let mut b_builder = table_b::table::builder();
 
     assert!(matches!(
@@ -332,13 +333,14 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     ));
 
     b_builder
+        .try_c_id_builder_ref(c_builder.clone())
+        .unwrap()
         .column_a_ref("Value A for B")
-        .column_b_ref("Value B")
-        .try_set_mandatory_builder_ref::<table_b::c_id>(c_builder.clone())
-        .unwrap();
+        .column_b_ref("Value B");
 
+    // Using the generated trait method for more ergonomic code
     let b = b_builder
-        .try_set_mandatory_builder::<table_b::c_id>(c_builder)
+        .try_c_id_builder(c_builder)
         .unwrap()
         .insert(&mut conn)
         .unwrap();
@@ -419,7 +421,7 @@ fn test_mandatory_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .column_b("B Value")
-        .try_set_mandatory_builder::<table_b::c_id>(c_builder)
+        .try_c_id_builder(c_builder)
         .unwrap()
         .insert(&mut conn);
 

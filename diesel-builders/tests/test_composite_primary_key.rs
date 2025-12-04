@@ -100,10 +100,7 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     assert_eq!(user_role.user_id(), &1);
     assert_eq!(user_role.role_id(), &10);
-    assert_eq!(
-        user_role.assigned_at(),
-        &"2025-01-01".to_string()
-    );
+    assert_eq!(user_role.assigned_at(), "2025-01-01");
 
     // We attempt to query the inserted user role to ensure everything worked
     let queried_user_role: UserRole = user_roles::table
@@ -121,22 +118,13 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     assert_eq!(another_user_role.user_id(), &2);
     assert_eq!(another_user_role.role_id(), &20);
-    assert_eq!(
-        another_user_role.assigned_at(),
-        &"2025-02-01".to_string()
-    );
+    assert_eq!(another_user_role.assigned_at(), "2025-02-01");
 
     // With composite keys, both user_id and role_id form the primary key,
     // so we expect different combinations to be distinct
     assert_ne!(
-        (
-            user_role.user_id(),
-            user_role.role_id()
-        ),
-        (
-            another_user_role.user_id(),
-            another_user_role.role_id()
-        )
+        (user_role.user_id(), user_role.role_id()),
+        (another_user_role.user_id(), another_user_role.role_id())
     );
 
     Ok(())
