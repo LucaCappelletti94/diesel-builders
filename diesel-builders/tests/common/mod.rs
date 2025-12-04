@@ -64,7 +64,7 @@ pub struct Animal {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = animals)]
 #[allow(clippy::option_option)]
@@ -198,7 +198,7 @@ impl Descendant for dogs::table {
     type Root = animals::table;
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = dogs)]
 /// Insertable model for the dogs table.
@@ -265,7 +265,7 @@ pub struct NewCat {
     pub color: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum NewCatError {
     /// Color cannot be empty.
     ColorEmpty,

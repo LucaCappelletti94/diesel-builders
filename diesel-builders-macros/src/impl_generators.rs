@@ -124,6 +124,25 @@ pub fn generate_partial_e_tuple() -> TokenStream {
     })
 }
 
+/// Generate EqTuple trait implementations for all tuple sizes
+pub fn generate_eq_tuple() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
+        let eq_checks = indices.iter().map(|idx| quote! { self.#idx == other.#idx });
+
+        quote! {
+            impl<#(#type_params: Eq),*> EqTuple for (#(#type_params,)*)
+            {
+                #[inline]
+                fn eq_tuple(&self, other: &Self) -> bool {
+                    #(#eq_checks && )* true
+                }
+            }
+        }
+    })
+}
+
 /// Generate DebuggableTuple trait implementations for all tuple sizes
 pub fn generate_debuggable_tuple() -> TokenStream {
     generate_all_sizes(|size| {

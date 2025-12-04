@@ -79,7 +79,7 @@ pub struct TableA {
     pub column_a: String,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_a)]
 /// Insertable model for table A.
@@ -109,7 +109,7 @@ pub struct TableC {
     pub column_c: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, SetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, SetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
@@ -147,7 +147,7 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Errors for NewTableB validation.
 pub enum ErrorB {
     /// remote_column_c cannot be empty.
@@ -160,7 +160,7 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Insertable, MayGetColumn, HasTable)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Insertable, MayGetColumn, HasTable)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.

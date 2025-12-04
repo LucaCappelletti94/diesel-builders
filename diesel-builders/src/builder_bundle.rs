@@ -131,6 +131,14 @@ where
     }
 }
 
+impl<T: BundlableTable> Eq for TableBuilderBundle<T>
+where
+    T::InsertableModel: PartialEq + Eq,
+    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
+    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
+{
+}
+
 impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TableBuilderBundle")

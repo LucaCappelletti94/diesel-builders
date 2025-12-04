@@ -145,7 +145,7 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Errors for NewTableB validation.
 pub enum ErrorB {
     /// remote_column_c cannot be empty.

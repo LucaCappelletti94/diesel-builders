@@ -82,6 +82,12 @@ where
     }
 }
 
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Eq for TableBuilder<T> where
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
+        crate::PartialEqTuple + crate::EqTuple
+{
+}
+
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TableBuilder")
