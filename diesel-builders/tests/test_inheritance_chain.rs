@@ -23,17 +23,14 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into animals table
     let animal = animals::table::builder()
-        .try_name("Generic Animal")
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_name("Generic Animal")?
+        .insert(&mut conn)?;
 
     assert_eq!(animal.name, "Generic Animal");
 
     // Insert into dogs table (extends animals)
     let dog = dogs::table::builder()
-        .try_name("Max")
-        .unwrap()
+        .try_name("Max")?
         .breed("Golden Retriever")
         .insert(&mut conn)?;
 
@@ -45,8 +42,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into puppies table (extends dogs, transitively extends animals)
     let puppy = puppies::table::builder()
-        .try_name("Buddy")
-        .unwrap()
+        .try_name("Buddy")?
         .breed("Labrador")
         .age_months(3)
         .insert(&mut conn)?;

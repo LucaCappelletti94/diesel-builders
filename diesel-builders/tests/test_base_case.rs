@@ -105,20 +105,20 @@ fn test_name_too_long_rejected() {
 
 #[test]
 fn test_empty_description_rejected() {
-    let result = animals::table::builder().try_description(Some(String::new()));
+    let result = animals::table::builder().try_description(String::new());
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 
 #[test]
 fn test_whitespace_only_description_rejected() {
-    let result = animals::table::builder().try_description(Some("   ".to_string()));
+    let result = animals::table::builder().try_description("   ".to_string());
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionEmpty);
 }
 
 #[test]
 fn test_description_too_long_rejected() {
     let long_desc = "a".repeat(501);
-    let result = animals::table::builder().try_description(Some(long_desc));
+    let result = animals::table::builder().try_description(long_desc);
     assert_eq!(result.unwrap_err(), NewAnimalError::DescriptionTooLong);
 }
 
