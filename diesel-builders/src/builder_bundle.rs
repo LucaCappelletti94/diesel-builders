@@ -339,7 +339,14 @@ where
     Key::Table: BundlableTable,
     Key: crate::MandatorySameAsIndex,
     Key::ReferencedTable: crate::BuildableTable,
-    <<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<Key as crate::MandatorySameAsIndex>::Idx, Type=Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
+        Key::Table,
+    >>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<
+            <Key as crate::MandatorySameAsIndex>::Idx,
+            Type = Option<
+                crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
+            >,
+        >,
 {
     #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{

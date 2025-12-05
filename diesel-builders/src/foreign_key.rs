@@ -15,7 +15,7 @@ use crate::{
 pub trait TableIndex: NonEmptyProjection {}
 
 /// A trait for Diesel columns which are part of a `TableIndex`.
-pub trait IndexedColumn<Idx: Unsigned, IndexedColumns: TableIndex + TupleIndex<Idx, Type=Self>>:
+pub trait IndexedColumn<Idx: Unsigned, IndexedColumns: TableIndex + TupleIndex<Idx, Type = Self>>:
     TypedColumn
 {
 }
@@ -30,7 +30,7 @@ pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
 /// Use the `fk!` macro to implement this trait.
 pub trait HostColumn<
     Idx: Unsigned,
-    HostColumns: ForeignKey<ReferencedColumns> + TupleIndex<Idx, Type=Self>,
+    HostColumns: ForeignKey<ReferencedColumns> + TupleIndex<Idx, Type = Self>,
     ReferencedColumns: TableIndex + TupleIndex<Idx, Type: TypedColumn<Type = <Self as TypedColumn>::Type>>,
 >: TypedColumn
 {

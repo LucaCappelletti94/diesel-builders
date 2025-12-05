@@ -3,7 +3,10 @@
 use diesel::{Table, associations::HasTable};
 
 use crate::{
-    BuildableTable, BundlableTable, Columns, CompletedTableBuilderBundle, DiscretionarySameAsIndex, GetColumnExt, GetColumns, HasPrimaryKey, HasTableAddition, HomogeneousColumns, HorizontalSameAsKey, InsertableTableModel, MandatorySameAsIndex, SetColumn, SetColumns, SingletonForeignKey, TableAddition, TableBuilder, TrySetColumn, TrySetColumns, TypedColumn
+    BuildableTable, BundlableTable, Columns, CompletedTableBuilderBundle, DiscretionarySameAsIndex,
+    GetColumnExt, GetColumns, HasPrimaryKey, HasTableAddition, HomogeneousColumns,
+    HorizontalSameAsKey, InsertableTableModel, MandatorySameAsIndex, SetColumn, SetColumns,
+    SingletonForeignKey, TableAddition, TableBuilder, TrySetColumn, TrySetColumns, TypedColumn,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.

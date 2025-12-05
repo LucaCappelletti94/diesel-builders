@@ -305,7 +305,7 @@ where
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type= TableBuilderBundle<C::Table>>,
+        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_mandatory_builder(
@@ -315,7 +315,9 @@ where
         use tuplities::prelude::*;
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
-        self.bundles.tuple_index_mut().set_mandatory_builder(builder);
+        self.bundles
+            .tuple_index_mut()
+            .set_mandatory_builder(builder);
         self
     }
 }
@@ -360,7 +362,7 @@ where
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type =  TableBuilderBundle<C::Table>>,
+        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_discretionary_builder(
@@ -370,7 +372,9 @@ where
         use tuplities::prelude::*;
         let columns = builder.may_get_columns();
         self.may_set_columns(columns);
-        self.bundles.tuple_index_mut().set_discretionary_builder(builder);
+        self.bundles
+            .tuple_index_mut()
+            .set_discretionary_builder(builder);
         self
     }
 }

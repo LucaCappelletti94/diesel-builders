@@ -62,7 +62,7 @@ pub trait HorizontalSameAsKey:
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
     type HostColumns: NonEmptyProjection<Table = Self::Table>
-        + TuplePopFront<Front=<<Self as Column>::Table as Table>::PrimaryKey>;
+        + TuplePopFront<Front = <<Self as Column>::Table as Table>::PrimaryKey>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
     type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns>;

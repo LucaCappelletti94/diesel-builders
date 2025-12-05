@@ -4,8 +4,8 @@ use diesel::{Table, associations::HasTable};
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, GetColumn, GetColumns, HasTableAddition, NonCompositePrimaryKeyTables,
-    TableAddition, table_addition::HasPrimaryKey, tables::TableModels,
+    Columns, GetColumn, GetColumns, HasTableAddition, NonCompositePrimaryKeyTables, TableAddition,
+    table_addition::HasPrimaryKey, tables::TableModels,
 };
 
 /// Trait representing a Diesel table model.

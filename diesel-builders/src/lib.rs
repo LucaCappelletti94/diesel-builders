@@ -81,7 +81,6 @@ pub mod typenum {
     pub use typenum::*;
 }
 
-
 pub mod prelude {
     //! Prelude module containing the most commonly used items from
     //! diesel-builders.
