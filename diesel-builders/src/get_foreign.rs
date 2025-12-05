@@ -24,6 +24,15 @@ pub trait GetForeign<
 {
     /// Retrieve the foreign table model corresponding to the specified
     /// foreign columns from the host table model.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails or if no matching record is found.
     fn get_foreign(
         &self,
         conn: &mut Conn,
