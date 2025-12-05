@@ -5,6 +5,14 @@
 
 use proc_macro2::{Ident, Span, TokenStream};
 
+#[cfg(not(any(
+    feature = "size-16",
+    feature = "size-32",
+    feature = "size-64",
+    feature = "size-128"
+)))]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 8;
 #[cfg(all(
     feature = "size-16",
     not(any(feature = "size-32", feature = "size-64", feature = "size-128"))

@@ -9,155 +9,36 @@ mod tuple_generator;
 mod utils;
 use proc_macro::TokenStream;
 
-/// Generate `DefaultTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_default_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_default_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `OptionTuple` and `TransposeOptionTuple` trait implementations
-/// for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_option_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `RefTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_ref_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_ref_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `ClonableTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_clonable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_clonable_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `CopiableTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_copiable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_copiable_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `PartialEqTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_partial_eq_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_partial_e_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `EqTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_eq_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_eq_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `HashTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_hash_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_hash_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `PartialOrdTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_partial_ord_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_partial_ord_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `OrdTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_ord_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_ord_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `DebuggableTuple` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_debuggable_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_debuggable_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `Columns`, `Projection`, and `HomogeneousColumns` trait
-/// implementations for all tuple sizes.
+/// Generate `Columns` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_columns();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `Projection` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_projection(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_projection();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `HomogeneousColumns` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_homogeneous_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_homogeneous_columns();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -1388,7 +1269,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
         quote::quote! {
             impl diesel_builders::IndexedColumn<
-                typed_tuple::prelude::#idx_type,
+                diesel_builders::typenum::#idx_type,
                 ( #(#pk_column_types,)* )
             > for #table_name::#col {}
         }
@@ -1510,7 +1391,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
             let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::AncestorOfIndex<#table_type> for #ancestor {
-                    type Idx = typed_tuple::prelude::#idx;
+                    type Idx = diesel_builders::typenum::#idx;
                 }
             }
         })
@@ -1519,7 +1400,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
     // Generate AncestorOfIndex for self
     let self_ancestor_of_index = quote! {
         impl diesel_builders::AncestorOfIndex<#table_type> for #table_type {
-            type Idx = typed_tuple::prelude::#self_idx;
+            type Idx = diesel_builders::typenum::#self_idx;
         }
     };
 
@@ -1649,7 +1530,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
             let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::MandatorySameAsIndex for #column {
-                    type Idx = typed_tuple::prelude::#idx;
+                    type Idx = diesel_builders::typenum::#idx;
                 }
             }
         })
@@ -1664,7 +1545,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
             let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
                 impl diesel_builders::DiscretionarySameAsIndex for #column {
-                    type Idx = typed_tuple::prelude::#idx;
+                    type Idx = diesel_builders::typenum::#idx;
                 }
             }
         })
@@ -1834,7 +1715,7 @@ pub fn fk(input: TokenStream) -> TokenStream {
         let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
         quote! {
             impl diesel_builders::HostColumn<
-                typed_tuple::prelude::#idx_type,
+                diesel_builders::typenum::#idx_type,
                 ( #(#host_cols,)* ),
                 ( #(#ref_cols,)* )
             > for #host_col {}
@@ -1884,7 +1765,7 @@ pub fn index(input: TokenStream) -> TokenStream {
         let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
         quote! {
             impl diesel_builders::IndexedColumn<
-                typed_tuple::prelude::#idx_type,
+                diesel_builders::typenum::#idx_type,
                 ( #(#cols,)* )
             > for #col {}
         }

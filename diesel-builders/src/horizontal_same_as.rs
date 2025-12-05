@@ -2,7 +2,9 @@
 
 use diesel::{Column, Table};
 use diesel_builders_macros::impl_horizontal_same_as_keys;
-use typed_tuple::prelude::{NthIndex, TypedFirst, U0, Unsigned};
+use typenum::Unsigned;
+
+use tuplities::prelude::*;
 
 use crate::{
     Columns, ForeignKey, NonCompositePrimaryKeyTableModels, NonCompositePrimaryKeyTables,
@@ -44,9 +46,8 @@ pub trait HorizontalSameAsColumns<
     HostColumns: Columns,
 >:
     NonEmptyProjection<Table = Key::ReferencedTable, Types = <HostColumns as Columns>::Types>
-    + NthIndex<
-        U0,
-        NthType: TypedColumn<
+    + TuplePopFront<
+        Front: TypedColumn<
             Type = <<<Key as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
             Table = Key::ReferencedTable,
         >,
@@ -61,7 +62,7 @@ pub trait HorizontalSameAsKey:
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
     type HostColumns: NonEmptyProjection<Table = Self::Table>
-        + TypedFirst<<<Self as Column>::Table as Table>::PrimaryKey>;
+        + TuplePopFront<Front=<<Self as Column>::Table as Table>::PrimaryKey>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
     type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns>;
@@ -84,7 +85,7 @@ pub trait DiscretionarySameAsIndex: HorizontalSameAsKey {
 /// A trait for Diesel columns collections that define horizontal same-as
 /// relationships.
 #[impl_horizontal_same_as_keys]
-pub trait HorizontalSameAsKeys<T: diesel::Table>: Projection<T> {
+pub trait HorizontalSameAsKeys<T: crate::TableAddition>: Projection<T> {
     /// The set of referenced tables.
     type ReferencedTables: NonCompositePrimaryKeyTables<
             PrimaryKeys: Columns<Types = <Self as Columns>::Types>,

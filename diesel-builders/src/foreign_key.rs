@@ -1,6 +1,8 @@
 //! Submodule defining a `ForeignKey` trait for Diesel tables.
 
-use typed_tuple::prelude::{NthIndex, TypedIndex, U0, Unsigned};
+use typenum::{U0, Unsigned};
+
+use tuplities::prelude::*;
 
 use crate::{
     NonCompositePrimaryKeyTableModel, TypedColumn, columns::NonEmptyProjection,
@@ -13,7 +15,7 @@ use crate::{
 pub trait TableIndex: NonEmptyProjection {}
 
 /// A trait for Diesel columns which are part of a `TableIndex`.
-pub trait IndexedColumn<Idx: Unsigned, IndexedColumns: TableIndex + TypedIndex<Idx, Self>>:
+pub trait IndexedColumn<Idx: Unsigned, IndexedColumns: TableIndex + TupleIndex<Idx, Type=Self>>:
     TypedColumn
 {
 }
@@ -28,8 +30,8 @@ pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
 /// Use the `fk!` macro to implement this trait.
 pub trait HostColumn<
     Idx: Unsigned,
-    HostColumns: ForeignKey<ReferencedColumns> + TypedIndex<Idx, Self>,
-    ReferencedColumns: TableIndex + NthIndex<Idx, NthType: TypedColumn<Type = <Self as TypedColumn>::Type>>,
+    HostColumns: ForeignKey<ReferencedColumns> + TupleIndex<Idx, Type=Self>,
+    ReferencedColumns: TableIndex + TupleIndex<Idx, Type: TypedColumn<Type = <Self as TypedColumn>::Type>>,
 >: TypedColumn
 {
 }

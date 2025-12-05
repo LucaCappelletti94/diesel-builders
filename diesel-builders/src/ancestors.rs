@@ -1,6 +1,7 @@
 //! Submodule defining the `Descendant` trait.
 
-use typed_tuple::prelude::{ChainRight, TypedFirst, TypedLast, Unsigned};
+use tuplities::prelude::TuplePushBack;
+use typenum::Unsigned;
 
 use crate::{TableAddition, Tables};
 
@@ -28,7 +29,7 @@ pub trait AncestorsOf<T: Descendant<Ancestors = Self>>: Tables {}
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableAddition {
     /// The ancestor tables of this table.
-    type Ancestors: AncestorsOf<Self>;
+    type Ancestors: AncestorsOf<Self> + TuplePushBack<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
     type Root: Root;
@@ -37,16 +38,16 @@ pub trait Descendant: TableAddition {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
     /// The ancestor tables of this table, including itself.
-    type AncestorsWithSelf: Tables + TypedLast<Self> + TypedFirst<Self::Root>;
+    type AncestorsWithSelf: Tables;
 }
 
 impl<T> DescendantWithSelf for T
 where
     T: Descendant,
-    T::Ancestors: ChainRight<(T,)>,
-    <T::Ancestors as ChainRight<(T,)>>::Output: Tables + TypedLast<T> + TypedFirst<T::Root>,
+    T::Ancestors: TuplePushBack<Self>,
+    <T::Ancestors as TuplePushBack<Self>>::Output: Tables,
 {
-    type AncestorsWithSelf = <T::Ancestors as ChainRight<(T,)>>::Output;
+    type AncestorsWithSelf = <T::Ancestors as TuplePushBack<Self>>::Output;
 }
 
 // Generate implementations for all tuple sizes (0-32)

@@ -5,8 +5,6 @@ pub mod builder_error;
 pub use builder_error::{BuilderError, BuilderResult, IncompleteBuilderError};
 
 // Re-exported modules from diesel-additions
-pub mod utils;
-pub use utils::*;
 pub mod tables;
 pub use tables::{NonCompositePrimaryKeyTables, Tables};
 pub mod table_model;
@@ -75,6 +73,14 @@ pub use builder_bundle::{
 };
 pub mod bundlable_tables;
 pub use bundlable_tables::BundlableTables;
+pub mod get_foreign;
+pub use get_foreign::GetForeign;
+
+/// Re-export typenum for convenience
+pub mod typenum {
+    pub use typenum::*;
+}
+
 
 pub mod prelude {
     //! Prelude module containing the most commonly used items from

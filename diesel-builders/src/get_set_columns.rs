@@ -1,33 +1,29 @@
 //! Submodule providing the `GetColumns` trait.
 
-use diesel::associations::HasTable;
-
 use crate::{
     Columns, GetColumn, HasTableAddition, HomogeneousColumns, InsertableTableModel, MayGetColumn,
-    OptionTuple, RefTuple, TableAddition, TrySetColumn, TypedColumn,
+    TableAddition, TrySetColumn, TypedColumn,
 };
+use diesel::associations::HasTable;
+use tuplities::prelude::*;
 
 /// Marker trait indicating a builder can get multiple columns.
 pub trait GetColumns<CS: Columns> {
     /// Get the values of the specified columns.
-    fn get_columns(&self) -> <CS::Types as crate::RefTuple>::Output<'_>;
+    fn get_columns(&self) -> <CS::Types as TupleRef>::Ref<'_>;
 }
 
 /// Marker trait indicating a builder which may get multiple columns.
 pub trait MayGetColumns<CS: Columns> {
     /// May get the values of the specified columns.
-    fn may_get_columns(
-        &self,
-    ) -> <<CS::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output;
+    fn may_get_columns(&self)
+    -> <<CS::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions;
 }
 
 /// Marker trait indicating a builder can set multiple columns.
 pub trait SetColumns<CS: Columns> {
     /// Set the values of the specified columns.
-    fn set_columns(
-        &mut self,
-        values: <<CS as Columns>::Types as crate::RefTuple>::Output<'_>,
-    ) -> &mut Self;
+    fn set_columns(&mut self, values: <<CS as Columns>::Types as TupleRef>::Ref<'_>) -> &mut Self;
 }
 
 /// Marker trait indicating a builder which may set multiple columns.
@@ -35,7 +31,7 @@ pub trait MaySetColumns<CS: Columns> {
     /// May set the values of the specified columns.
     fn may_set_columns(
         &mut self,
-        values: <<<CS as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output,
+        values: <<<CS as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions,
     ) -> &mut Self;
 }
 
@@ -48,7 +44,7 @@ pub trait TrySetColumns<Error, CS: Columns> {
     /// Returns an error if any column cannot be set.
     fn try_set_columns(
         &mut self,
-        values: <<CS as Columns>::Types as RefTuple>::Output<'_>,
+        values: <<CS as Columns>::Types as TupleRef>::Ref<'_>,
     ) -> Result<&mut Self, Error>;
 }
 
@@ -61,7 +57,7 @@ pub trait TryMaySetColumns<Error, CS: Columns> {
     /// Returns an error if any column cannot be set.
     fn try_may_set_columns(
         &mut self,
-        values: <<<CS as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output,
+        values: <<<CS as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions,
     ) -> Result<&mut Self, Error>;
 }
 

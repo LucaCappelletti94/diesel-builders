@@ -9,224 +9,6 @@ use quote::quote;
 
 use crate::tuple_generator::{generate_all_sizes, type_params, MAX_TUPLE_SIZE};
 
-/// Generate DefaultTuple trait implementations for all tuple sizes
-pub fn generate_default_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let defaults = type_params.iter().map(|_| quote! { Default::default() });
-
-        quote! {
-            impl<#(#type_params: Default),*> DefaultTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn default_tuple() -> Self {
-                    (#(#defaults),*)
-                }
-            }
-        }
-    })
-}
-
-/// Generate OptionTuple and TransposeOptionTuple trait implementations
-pub fn generate_option_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-
-        quote! {
-            impl<#(#type_params: Clone + core::fmt::Debug),*> OptionTuple for (#(#type_params,)*) {
-                type Output = (#(Option<#type_params>,)*);
-
-                #[inline]
-                fn into_option(self) -> Self::Output {
-                    (#(Some(self.#indices),)*)
-                }
-            }
-
-            impl<#(#type_params: Clone + core::fmt::Debug),*> TransposeOptionTuple for (#(Option<#type_params>,)*) {
-                type Transposed = (#(#type_params,)*);
-
-                #[inline]
-                fn transpose_option(self) -> Option<Self::Transposed> {
-                    Some((#(self.#indices?,)*))
-                }
-            }
-        }
-    })
-}
-
-/// Generate RefTuple trait implementations
-pub fn generate_ref_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        quote! {
-            impl<#(#type_params: Clone + core::fmt::Debug,)*> RefTuple for (#(#type_params,)*) {
-                type Output<'a> = (#(&'a #type_params,)*) where Self: 'a;
-            }
-        }
-    })
-}
-
-/// Generate ClonableTuple trait implementations for all tuple sizes
-pub fn generate_clonable_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let clones = indices.iter().map(|idx| quote! { self.#idx.clone() });
-
-        quote! {
-            impl<#(#type_params: Clone),*> ClonableTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn clone_tuple(&self) -> Self {
-                    (#(#clones,)*)
-                }
-            }
-        }
-    })
-}
-
-/// Generate CopiableTuple trait implementations for all tuple sizes
-pub fn generate_copiable_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let copies = indices.iter().map(|idx| quote! { self.#idx });
-
-        quote! {
-            impl<#(#type_params: Copy),*> CopiableTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn copy_tuple(&self) -> Self {
-                    (#(#copies,)*)
-                }
-            }
-        }
-    })
-}
-
-/// Generate PartialEqTuple trait implementations for all tuple sizes
-pub fn generate_partial_e_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let eq_checks = indices.iter().map(|idx| quote! { self.#idx == other.#idx });
-
-        quote! {
-            impl<#(#type_params: PartialEq),*> PartialEqTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn partial_eq_tuple(&self, other: &Self) -> bool {
-                    #(#eq_checks && )* true
-                }
-            }
-        }
-    })
-}
-
-/// Generate EqTuple trait implementations for all tuple sizes
-pub fn generate_eq_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let eq_checks = indices.iter().map(|idx| quote! { self.#idx == other.#idx });
-
-        quote! {
-            impl<#(#type_params: Eq),*> EqTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn eq_tuple(&self, other: &Self) -> bool {
-                    #(#eq_checks && )* true
-                }
-            }
-        }
-    })
-}
-
-/// Generate HashTuple trait implementations for all tuple sizes
-pub fn generate_hash_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let hash_calls = indices.iter().map(|idx| quote! { self.#idx.hash(state); });
-
-        quote! {
-            impl<#(#type_params: std::hash::Hash),*> HashTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn hash_tuple<H: std::hash::Hasher>(&self, state: &mut H) {
-                    #(#hash_calls)*
-                }
-            }
-        }
-    })
-}
-
-/// Generate PartialOrdTuple trait implementations for all tuple sizes
-pub fn generate_partial_ord_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices = (0..size).map(syn::Index::from);
-        quote! {
-            impl<#(#type_params: PartialOrd),*> PartialOrdTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn partial_cmp_tuple(&self, other: &Self) -> Option<std::cmp::Ordering> {
-                    #(
-                        match self.#indices.partial_cmp(&other.#indices) {
-                            Some(std::cmp::Ordering::Equal) => {},
-                            non_eq => return non_eq,
-                        }
-                    )*
-                    Some(std::cmp::Ordering::Equal)
-                }
-            }
-        }
-    })
-}
-
-/// Generate OrdTuple trait implementations for all tuple sizes
-pub fn generate_ord_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices = (0..size).map(syn::Index::from);
-        quote! {
-            impl<#(#type_params: Ord),*> OrdTuple for (#(#type_params,)*)
-            {
-                #[inline]
-                fn cmp_tuple(&self, other: &Self) -> std::cmp::Ordering {
-                    #(
-                        match self.#indices.cmp(&other.#indices) {
-                            std::cmp::Ordering::Equal => {},
-                            non_eq => return non_eq,
-                        }
-                    )*
-                    std::cmp::Ordering::Equal
-                }
-            }
-        }
-    })
-}
-
-/// Generate DebuggableTuple trait implementations for all tuple sizes
-pub fn generate_debuggable_tuple() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let format_str = format!("({})", vec!["{:?}"; size].join(", "));
-        let debug_refs = indices.iter().map(|idx| quote! { &self.#idx });
-
-        quote! {
-            impl<#(#type_params: std::fmt::Debug),*> DebuggableTuple for (#(#type_params,)*)
-            {
-                fn debug_tuple(&self) -> String {
-                    format!(#format_str, #(#debug_refs),*)
-                }
-            }
-        }
-    })
-}
-
 /// Generate Columns trait implementations
 pub fn generate_columns() -> TokenStream {
     generate_all_sizes(|size| {
@@ -238,11 +20,29 @@ pub fn generate_columns() -> TokenStream {
                 type Types = (#(<#type_params as TypedColumn>::Type,)*);
                 type Tables = (#(<#type_params as diesel::Column>::Table,)*);
             }
+        }
+    })
+}
 
-            impl<T: diesel::Table, #(#type_params: TypedColumn<Table=T>),*> Projection<T> for (#(#type_params,)*)
+/// Generate `Projection` trait implementations
+pub fn generate_projection() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+
+        quote! {
+            impl<T: crate::TableAddition, #(#type_params: TypedColumn<Table=T>),*> Projection<T> for (#(#type_params,)*)
             {
             }
+        }
+    })
+}
 
+/// Generate `HomogeneousColumns` trait implementations
+pub fn generate_homogeneous_columns() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+
+        quote! {
             impl<Type, #(#type_params: TypedColumn<Type=Type>),*> HomogeneousColumns<Type> for (#(#type_params,)*)
             {
             }
@@ -287,7 +87,7 @@ pub fn generate_get_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn get_columns(&self) -> <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> {
+                fn get_columns(&self) -> <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> {
                     (#(<T as GetColumn<#type_params>>::get_column(self),)*)
                 }
             }
@@ -307,7 +107,7 @@ pub fn generate_may_get_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
+                fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
                     (#(<T as MayGetColumn<#type_params>>::may_get_column(self),)*)
                 }
             }
@@ -337,7 +137,7 @@ pub fn generate_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> &mut Self {
+                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_>) -> &mut Self {
                     #(#set_individual_calls)*
                     self
                 }
@@ -368,7 +168,7 @@ pub fn generate_may_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> &mut Self {
+                fn may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> &mut Self {
                     #(#may_set_individual_calls)*
                     self
                 }
@@ -404,7 +204,7 @@ pub fn generate_try_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_>) -> Result<&mut Self, Error> {
+                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_>) -> Result<&mut Self, Error> {
                     #(#try_set_individual_calls)*
                     Ok(self)
                 }
@@ -471,7 +271,7 @@ pub fn generate_try_may_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output) -> Result<&mut Self, Error> {
+                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> Result<&mut Self, Error> {
                     #(#try_may_set_individual_calls)*
                     Ok(self)
                 }
@@ -541,13 +341,14 @@ pub fn generate_buildable_tables() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
         let where_statement =
-            (size > 0).then(|| quote! { where #(#type_params: BuildableTable),* });
+            (size > 0).then(|| quote! { where #(#type_params: crate::BuildableTable),* });
 
         quote! {
             impl<#(#type_params),*> crate::BuildableTables for (#(#type_params,)*)
             #where_statement
             {
                 type Builders = (#(crate::TableBuilder<#type_params>,)*);
+                type OptionalBuilders = (#(Option<crate::TableBuilder<#type_params>>,)*);
             }
         }
     })
@@ -613,12 +414,12 @@ pub fn generate_table_model() -> TokenStream {
                 >,
             {
                 #[inline]
-                fn get_primary_keys(&self) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_> {
+                fn get_primary_keys(&self) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> {
                     (#(#get_pk_calls,)*)
                 }
 
                 #[inline]
-                fn may_get_primary_keys(optional_self: &<Self as OptionTuple>::Output) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as crate::RefTuple>::Output<'_> as OptionTuple>::Output {
+                fn may_get_primary_keys(optional_self: &<Self as IntoTupleOption>::IntoOptions) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
                     (#(#pk_extractors,)*)
                 }
             }
@@ -688,11 +489,11 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
         quote! {
             impl<T, #(#type_params),*> HorizontalSameAsKeys<T> for (#(#type_params,)*)
             where
-                T: diesel::Table #additional_requirements,
+                T: crate::TableAddition #additional_requirements,
                 #(#type_params: HorizontalSameAsKey<Table = T>,)*
             {
                 type ReferencedTables = (#(<#type_params as SingletonForeignKey>::ReferencedTable,)*);
-                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as NthIndex<U0>>::NthType,)*);
+                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as TuplePopFront>::Front,)*);
             }
         }
     })
@@ -732,9 +533,9 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                 #(#ancestor_types: AncestralBuildableTable<T>,)*
                 #last_type: BundlableTable,
                 CompletedTableBuilderBundle<#first_type>: RecursiveInsert<Error, Conn, Table = #first_type>,
-                #full_tuple: TypedFirst<
-                    CompletedTableBuilderBundle<#first_type>,
-                    PopOutput = (#(CompletedTableBuilderBundle<#remaining_types>,)*),
+                #full_tuple: TuplePopFront<
+                    Front=CompletedTableBuilderBundle<#first_type>,
+                    Tail = (#(CompletedTableBuilderBundle<#remaining_types>,)*),
                 >,
                 CompletedTableBuilder<T, (#(CompletedTableBuilderBundle<#remaining_types>,)*)>: RecursiveInsert<Error, Conn, Table = T>
                     + TrySetHomogeneousColumn<
@@ -751,8 +552,7 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                     <<Self as HasTable>::Table as TableAddition>::Model,
                     Error
                 > {
-                    use typed_tuple::prelude::TypedTuple;
-                    let (first, bundles) = self.bundles.pop();
+                    let (first, bundles) = self.bundles.pop_front();
                     let model: <#first_type as TableAddition>::Model = first.recursive_insert(conn)?;
                     let mut next_builder: CompletedTableBuilder<T, _> =
                         CompletedTableBuilder { bundles, table: PhantomData };
@@ -790,9 +590,8 @@ pub fn generate_horizontal_same_as_columns() -> TokenStream {
                 #(#host_column_table_bounds,)*
                 #(#column_impl_bounds,)*
                 (#(#type_params,)*): NonEmptyProjection<Table = <Key as SingletonForeignKey>::ReferencedTable, Types = <(#(#host_column_params,)*) as Columns>::Types>
-                    + NthIndex<
-                        U0,
-                        NthType: TypedColumn<
+                    + TuplePopFront<
+                        Front: TypedColumn<
                             Type = <<<Key as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
                             Table = <Key as SingletonForeignKey>::ReferencedTable,
                         >,
@@ -811,7 +610,7 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
         let keys = type_params(size);
         let column_types = keys.iter().map(|key| {
             quote! {
-                <<#key as HorizontalSameAsKey>::ForeignColumns as typed_tuple::prelude::NthIndex<typed_tuple::prelude::U0>>::NthType
+                <<#key as HorizontalSameAsKey>::ForeignColumns as tuplities::prelude::TuplePopFront>::Front
             }
         }).collect::<Vec<_>>();
 
@@ -929,7 +728,7 @@ pub fn generate_table_index() -> proc_macro2::TokenStream {
             let indices: Vec<_> = (0..size)
                 .map(|i| {
                     let ident = quote::format_ident!("U{}", i);
-                    quote! { typed_tuple::prelude::#ident }
+                    quote! { typenum::#ident }
                 })
                 .collect();
 
@@ -968,7 +767,7 @@ pub fn generate_foreign_key() -> proc_macro2::TokenStream {
             let indices: Vec<_> = (0..size)
                 .map(|i| {
                     let ident = quote::format_ident!("U{}", i);
-                    quote! { typed_tuple::prelude::#ident }
+                    quote! { typenum::#ident }
                 })
                 .collect();
             // Generate HostColumn bounds for each host parameter with type equality

@@ -1,11 +1,14 @@
 //! Extended `Table` trait with additional functionality.
 
-use typed_tuple::prelude::U0;
+use diesel::query_dsl::methods::SelectDsl;
+use typenum::U0;
 
 use crate::{IndexedColumn, InsertableTableModel, Projection, TableModel};
 
 /// Extended trait for Diesel tables.
-pub trait TableAddition: 'static + diesel::Table<AllColumns: Projection<Self>> + Default {
+pub trait TableAddition:
+    'static + diesel::Table<AllColumns: Projection<Self>> + Default + SelectDsl<Self::AllColumns>
+{
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The associated insertable model for this table.

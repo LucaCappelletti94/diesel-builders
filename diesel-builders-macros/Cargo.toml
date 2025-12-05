@@ -16,13 +16,12 @@ proc-macro2 = "1.0"
 trybuild.workspace = true
 diesel.workspace = true
 diesel-builders.workspace = true
-typed_tuple.workspace = true
 
 [lints]
 workspace = true
 
 [features]
-default = ["size-32"]
+default = []
 size-16 = []
 size-32 = []
 size-64 = []

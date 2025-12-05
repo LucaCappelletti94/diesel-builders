@@ -7,7 +7,7 @@
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles complex table relationships including arbitrary inheritance (e.g. chains, DAG dependencies), foreign keys, and both mandatory and optional triangular dependencies. Diesel Builders provides compile-time guarantees for proper insertion order and referential integrity in databases with complex schemas.
 
-It additionally offers ergonomic APIs for getting/setting column values and associated builders and models.
+It additionally offers ergonomic APIs for getting/setting column values and associated builders and models, and serde support.
 
 ## Installation
 
@@ -17,8 +17,6 @@ Add this to your `Cargo.toml`:
 [dependencies]
 diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.git", branch = "main" }
 ```
-
-The crate is not yet on [crates.io](https://crates.io) because it depends on an unreleased version of [`typed_tuple`](https://github.com/cedtwo/typed_tuple/tree/faster-compile) which we are still refining.
 
 ## Supported Patterns
 

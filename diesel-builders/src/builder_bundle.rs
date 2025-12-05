@@ -3,23 +3,21 @@
 //! builders.
 
 use diesel::{Column, associations::HasTable};
-use typed_tuple::prelude::TypedIndex;
-use typed_tuple::prelude::TypedTuple;
 
 use crate::BuilderError;
 use crate::BuilderResult;
 use crate::IncompleteBuilderError;
 use crate::InsertableTableModel;
 use crate::{
-    BuildableTable, BuildableTables, ClonableTuple, Columns, DebuggableTuple, DefaultTuple,
-    DiscretionarySameAsIndex, FlatInsert, HashTuple, HorizontalSameAsGroup, HorizontalSameAsKeys,
-    MandatorySameAsIndex, MayGetColumn, NonCompositePrimaryKeyTableModels, OptionTuple, OrdTuple,
-    PartialEqTuple, PartialOrdTuple, RecursiveInsert, RefTuple, TableAddition, TableBuilder,
-    Tables, TransposeOptionTuple, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
-    TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
-    TrySetMandatorySameAsColumns, TypedColumn,
+    BuildableTable, BuildableTables, Columns, DiscretionarySameAsIndex, FlatInsert,
+    HorizontalSameAsGroup, HorizontalSameAsKeys, MandatorySameAsIndex, MayGetColumn,
+    NonCompositePrimaryKeyTableModels, RecursiveInsert, TableAddition, TableBuilder, Tables,
+    TryMaySetColumns, TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsColumns,
+    TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn, TrySetMandatorySameAsColumns,
+    TypedColumn,
     nested_insert::{NestedInsertOptionTuple, NestedInsertTuple},
 };
+use tuplities::prelude::*;
 
 /// Trait representing a Diesel table with associated mandatory and
 /// discretionary triangular same-as columns.
@@ -35,17 +33,17 @@ pub struct TableBuilderBundle<T: BundlableTable> {
 	/// The insertable model for the table.
 	insertable_model: T::InsertableModel,
 	/// The mandatory associated builders relative to triangular same-as.
-	mandatory_associated_builders: <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
+	mandatory_associated_builders: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders,
 	/// The discretionary associated builders relative to triangular same-as.
-	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
+	discretionary_associated_builders: <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders,
 }
 
 #[cfg(feature = "serde")]
 impl<T: BundlableTable> serde::Serialize for TableBuilderBundle<T>
 where
     T::InsertableModel: serde::Serialize,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: serde::Serialize,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: serde::Serialize,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: serde::Serialize,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: serde::Serialize,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
@@ -70,8 +68,8 @@ where
 impl<'de, T: BundlableTable> serde::Deserialize<'de> for TableBuilderBundle<T>
 where
     <T as TableAddition>::InsertableModel: serde::Deserialize<'de>,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: serde::Deserialize<'de>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: serde::Deserialize<'de>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: serde::Deserialize<'de>,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: serde::Deserialize<'de>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -94,12 +92,17 @@ where
     }
 }
 
-impl<T: BundlableTable> Clone for TableBuilderBundle<T> {
+impl<T: BundlableTable> Clone for TableBuilderBundle<T>
+where
+    T::InsertableModel: Clone,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleClone,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleClone,
+{
     fn clone(&self) -> Self {
         Self {
             insertable_model: self.insertable_model.clone(),
-            mandatory_associated_builders: self.mandatory_associated_builders.clone_tuple(),
-            discretionary_associated_builders: self.discretionary_associated_builders.clone_tuple(),
+            mandatory_associated_builders: self.mandatory_associated_builders.tuple_clone(),
+            discretionary_associated_builders: self.discretionary_associated_builders.tuple_clone(),
         }
     }
 }
@@ -107,93 +110,98 @@ impl<T: BundlableTable> Clone for TableBuilderBundle<T> {
 impl<T: BundlableTable> Copy for TableBuilderBundle<T>
 where
     T::InsertableModel: Copy,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: Copy,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleClone,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleClone,
 {
 }
 
 impl<T: BundlableTable> PartialEq for TableBuilderBundle<T>
 where
     T::InsertableModel: PartialEq,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq,
 {
     fn eq(&self, other: &Self) -> bool {
         self.insertable_model == other.insertable_model
-            && self.mandatory_associated_builders.partial_eq_tuple(&other.mandatory_associated_builders)
-            && self.discretionary_associated_builders.partial_eq_tuple(&other.discretionary_associated_builders)
+            && self.mandatory_associated_builders.tuple_eq(&other.mandatory_associated_builders)
+            && self.discretionary_associated_builders.tuple_eq(&other.discretionary_associated_builders)
     }
 }
 
 impl<T: BundlableTable> Eq for TableBuilderBundle<T>
 where
     T::InsertableModel: PartialEq + Eq,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialEqTuple + crate::EqTuple,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq + TupleEq,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq + TupleEq,
 {
 }
 
 impl<T: BundlableTable> std::hash::Hash for TableBuilderBundle<T>
 where
     T::InsertableModel: std::hash::Hash,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::HashTuple,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::HashTuple,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleHash,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleHash,
 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.insertable_model.hash(state);
-        self.mandatory_associated_builders.hash_tuple(state);
-        self.discretionary_associated_builders.hash_tuple(state);
+        self.mandatory_associated_builders.tuple_hash(state);
+        self.discretionary_associated_builders.tuple_hash(state);
     }
 }
 
 impl<T: BundlableTable> PartialOrd for TableBuilderBundle<T>
 where
     T::InsertableModel: PartialOrd + PartialEq,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialOrdTuple + crate::PartialEqTuple,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::PartialOrdTuple + crate::PartialEqTuple,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd + TuplePartialEq,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd + TuplePartialEq,
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.insertable_model.partial_cmp(&other.insertable_model) {
             Some(std::cmp::Ordering::Equal) => {}
             ord => return ord,
         }
-        match self.mandatory_associated_builders.partial_cmp_tuple(&other.mandatory_associated_builders) {
+        match self.mandatory_associated_builders.tuple_partial_cmp(&other.mandatory_associated_builders) {
             Some(std::cmp::Ordering::Equal) => {}
             ord => return ord,
         }
-        self.discretionary_associated_builders.partial_cmp_tuple(&other.discretionary_associated_builders)
+        self.discretionary_associated_builders.tuple_partial_cmp(&other.discretionary_associated_builders)
     }
 }
 impl<T: BundlableTable> Ord for TableBuilderBundle<T>
 where
     T::InsertableModel: Ord + PartialOrd + Eq + PartialEq,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::OrdTuple + crate::PartialOrdTuple + crate::EqTuple + crate::PartialEqTuple,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: crate::OrdTuple + crate::PartialOrdTuple + crate::EqTuple + crate::PartialEqTuple,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd + TuplePartialOrd + TupleEq + TuplePartialEq,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd + TuplePartialOrd + TupleEq + TuplePartialEq,
 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         match self.insertable_model.cmp(&other.insertable_model) {
             std::cmp::Ordering::Equal => {}
             ord => return ord,
         }
-        match self.mandatory_associated_builders.cmp_tuple(&other.mandatory_associated_builders) {
+        match self.mandatory_associated_builders.tuple_cmp(&other.mandatory_associated_builders) {
             std::cmp::Ordering::Equal => {}
             ord => return ord,
         }
-        self.discretionary_associated_builders.cmp_tuple(&other.discretionary_associated_builders)
+        self.discretionary_associated_builders.tuple_cmp(&other.discretionary_associated_builders)
     }
 }
 
-impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {
+impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T>
+where
+    T::InsertableModel: core::fmt::Debug,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleDebug,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleDebug,
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("TableBuilderBundle")
             .field("insertable_model", &self.insertable_model)
             .field(
                 "mandatory_associated_builders",
-                &self.mandatory_associated_builders.debug_tuple(),
+                &self.mandatory_associated_builders.tuple_debug(),
             )
             .field(
                 "discretionary_associated_builders",
-                &self.discretionary_associated_builders.debug_tuple(),
+                &self.discretionary_associated_builders.tuple_debug(),
             )
             .finish()
     }
@@ -202,12 +210,15 @@ impl<T: BundlableTable> core::fmt::Debug for TableBuilderBundle<T> {
 impl<T> Default for TableBuilderBundle<T>
 where
     T: BundlableTable,
+    T::InsertableModel: Default,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleDefault,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleDefault,
 {
     fn default() -> Self {
         Self {
             insertable_model: Default::default(),
-            mandatory_associated_builders: DefaultTuple::default_tuple(),
-            discretionary_associated_builders: DefaultTuple::default_tuple(),
+            mandatory_associated_builders: TupleDefault::tuple_default(),
+            discretionary_associated_builders: TupleDefault::tuple_default(),
         }
     }
 }
@@ -231,7 +242,7 @@ pub struct CompletedTableBuilderBundle<T: BundlableTable> {
 	/// The mandatory associated builders relative to triangular same-as.
 	mandatory_associated_builders: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders,
 	/// The discretionary associated builders relative to triangular same-as.
-	discretionary_associated_builders: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output,
+	discretionary_associated_builders: <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders,
 }
 
 impl<T> HasTable for CompletedTableBuilderBundle<T>
@@ -314,12 +325,11 @@ where
     T: BundlableTable,
     C: crate::MandatorySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::MandatorySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<C as crate::MandatorySameAsIndex>::Idx, Type=Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn set_mandatory_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
-        self.mandatory_associated_builders.replace(Some(builder));
+        *self.mandatory_associated_builders.tuple_index_mut() = Some(builder);
         self
     }
 }
@@ -329,23 +339,11 @@ where
     Key::Table: BundlableTable,
     Key: crate::MandatorySameAsIndex,
     Key::ReferencedTable: crate::BuildableTable,
-    <<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
-        Key::Table,
-    >>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<
-            <Key as crate::MandatorySameAsIndex>::Idx,
-            crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
-        >,
-    <<<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
-        Key::Table,
-    >>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output:
-        typed_tuple::prelude::TypedIndex<
-                <Key as crate::MandatorySameAsIndex>::Idx,
-                Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>,
-            >,
+    <<<Key::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<Key as crate::MandatorySameAsIndex>::Idx, Type=Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn try_set_mandatory_builder(&mut self, builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
-        self.mandatory_associated_builders.replace(Some(builder));
+        *self.mandatory_associated_builders.tuple_index_mut() = Some(builder);
         Ok(self)
     }
 }
@@ -355,12 +353,11 @@ where
     T: BundlableTable,
     C: crate::DiscretionarySameAsIndex,
     C::ReferencedTable: crate::BuildableTable,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<C as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<C as crate::DiscretionarySameAsIndex>::Idx, Type=Option<crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn set_discretionary_builder(&mut self, builder: crate::TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>) -> &mut Self {
-        self.discretionary_associated_builders.replace(Some(builder));
+        *self.discretionary_associated_builders.tuple_index_mut() = Some(builder);
         self
     }
 }
@@ -370,15 +367,14 @@ where
     Key::Table: BundlableTable,
     Key: crate::DiscretionarySameAsIndex,
     Key::ReferencedTable: crate::BuildableTable,
-    <<<Key::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::Builders: typed_tuple::prelude::TypedIndex<<Key as crate::DiscretionarySameAsIndex>::Idx, crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>,
-    <<<<Key::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: typed_tuple::prelude::TypedIndex<<Key as crate::DiscretionarySameAsIndex>::Idx, Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>>,
+    <<<Key::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<Key::Table>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<Key as crate::DiscretionarySameAsIndex>::Idx, Type=Option<crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>>>,
 {
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
         builder: crate::TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
     ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
-        self.discretionary_associated_builders.replace(Some(builder));
+        *self.discretionary_associated_builders.tuple_index_mut() = Some(builder);
         Ok(self)
     }
 }
@@ -387,7 +383,7 @@ impl<Key: MandatorySameAsIndex<Table: BundlableTable, ReferencedTable: Buildable
     for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table= Key::ReferencedTable>,
-    <<<<Key as Column>::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders: TypedIndex<<Key as MandatorySameAsIndex>::Idx, TableBuilder<<C as Column>::Table>>,
+    <<<<Key as Column>::Table as BundlableTable>::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders: TupleIndexMut<<Key as MandatorySameAsIndex>::Idx, Type=TableBuilder<<C as Column>::Table>>,
     TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
 {
     type Error = <TableBuilder<<C as Column>::Table> as TrySetColumn<C>>::Error;
@@ -397,9 +393,7 @@ where
         &mut self,
         value: <C as TypedColumn>::Type,
     ) -> Result<&mut Self, Self::Error> {
-        self.mandatory_associated_builders.map_mut(|builder| {
-            builder.try_set_column(value).map(|_| ())
-        })?;
+        self.mandatory_associated_builders.tuple_index_mut().try_set_column(value)?;
         Ok(self)
     }
 }
@@ -408,7 +402,7 @@ impl<Key: DiscretionarySameAsIndex<Table: BundlableTable, ReferencedTable: Build
     for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table= Key::ReferencedTable>,
-    <<<<<Key as Column>::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: TypedIndex<<Key as DiscretionarySameAsIndex>::Idx, Option<TableBuilder<<C as Column>::Table>>>,
+    <<<<Key as Column>::Table as BundlableTable>::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<<Key as Column>::Table>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleIndexMut<<Key as DiscretionarySameAsIndex>::Idx, Type=Option<TableBuilder<<C as Column>::Table>>>,
     TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
 {
     type Error = <TableBuilder<<C as Column>::Table> as TrySetColumn<C>>::Error;
@@ -418,13 +412,9 @@ where
         &mut self,
         value: <C as TypedColumn>::Type,
     ) -> Result<&mut Self, Self::Error> {
-        self.discretionary_associated_builders.map_mut(|opt_builder| {
-            if let Some(builder) = opt_builder {
-                builder.try_set_column(value).map(|_| ())
-            } else {
-                Ok(())
-            }
-        })?;
+        if let Some(builder) = self.discretionary_associated_builders.tuple_index_mut().as_mut() {
+            builder.try_set_column(value)?;
+        }
         Ok(self)
     }
 }
@@ -441,7 +431,7 @@ where
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
             mandatory_associated_builders: if let Some(mandatory_associated_builders) =
-                value.mandatory_associated_builders.transpose_option()
+                value.mandatory_associated_builders.transpose()
             {
                 mandatory_associated_builders
             } else {
@@ -462,16 +452,16 @@ where
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders: NestedInsertTuple<
         Error,
     Conn, ModelsTuple = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models>,
-    <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::Builders as crate::OptionTuple>::Output: NestedInsertOptionTuple<
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: NestedInsertOptionTuple<
         Error,
-        Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output>,
+        Conn, OptionModelsTuple = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as IntoTupleOption>::IntoOptions>,
 {
     fn recursive_insert(mut self, conn: &mut Conn) -> BuilderResult<<T as TableAddition>::Model, Error> {
         let mandatory_models: <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models = self.mandatory_associated_builders.nested_insert_tuple(conn)?;
-        let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> = mandatory_models.get_primary_keys();
+        let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Columns>::Types as TupleRef>::Ref<'_> = mandatory_models.get_primary_keys();
         self.insertable_model.try_set_columns(mandatory_primary_keys).map_err(BuilderError::Validation)?;
-        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as OptionTuple>::Output = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
-        let discretionary_primary_keys: <<<T::DiscretionaryTriangularSameAsColumns as Columns>::Types as RefTuple>::Output<'_> as OptionTuple>::Output = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
+        let discretionary_models: <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as IntoTupleOption>::IntoOptions = self.discretionary_associated_builders.nested_insert_option_tuple(conn)?;
+        let discretionary_primary_keys = <<<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as Tables>::Models as NonCompositePrimaryKeyTableModels>::may_get_primary_keys(&discretionary_models);
         self.insertable_model.try_may_set_columns(discretionary_primary_keys).map_err(BuilderError::Validation)?;
         Ok(self.insertable_model.flat_insert(conn)?)
     }
@@ -479,7 +469,7 @@ where
 
 /// Trait for n-tuples of TableBuilderBundles, providing conversion to
 /// CompletedTableBuilderBundles.
-pub trait BuilderBundles: DefaultTuple + ClonableTuple + DebuggableTuple {
+pub trait BuilderBundles: TupleDefault {
     /// The tuple of completed builder bundles.
     type CompletedBundles;
 

@@ -2,7 +2,8 @@
 
 use diesel::associations::HasTable;
 
-use crate::{Columns, DefaultTuple, InsertableTableModel, OptionTuple, TableAddition, TableModel};
+use crate::{Columns, InsertableTableModel, TableAddition, TableModel};
+use tuplities::prelude::*;
 
 /// A trait representing a collection of Diesel tables.
 pub trait Tables {
@@ -21,13 +22,13 @@ pub trait NonCompositePrimaryKeyTables: Tables {
 }
 
 /// Trait representing an n-uple of TableModels.
-pub trait TableModels: OptionTuple {
+pub trait TableModels: IntoTupleOption {
     /// The n-uple of tables corresponding to these models.
     type Tables: Tables<Models = Self>;
 }
 
 /// Trait representing an n-uple of InsertableTableModels.
-pub trait InsertableTableModels: Sized + DefaultTuple {
+pub trait InsertableTableModels: Sized + TupleDefault {
     /// The n-uple of tables corresponding to these insertable models.
     type Tables: Tables<InsertableModels = Self>;
 }

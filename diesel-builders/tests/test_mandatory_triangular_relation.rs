@@ -20,8 +20,8 @@ use std::convert::Infallible;
 use diesel::associations::HasTable;
 use diesel::prelude::*;
 use diesel_builders::{
-    CompletedTableBuilderBundle, TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*,
-    table_builder::CompletedTableBuilder,
+    CompletedTableBuilderBundle, GetForeign, TableBuilder, TableBuilderBundle, TrySetColumn,
+    prelude::*, table_builder::CompletedTableBuilder,
 };
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
@@ -166,6 +166,17 @@ pub struct TableB {
     pub column_b: String,
     /// The remote column_c value from table C that B references via c_id.
     pub remote_column_c: Option<String>,
+}
+
+impl TableB {
+    fn foreign_c_id(&self, conn: &mut SqliteConnection) -> diesel::QueryResult<TableC>
+    where
+        Self: GetForeign<SqliteConnection, (table_c::id,), (table_b::c_id,)>,
+    {
+        <TableB as GetForeign<SqliteConnection, (table_c::id,), (table_b::c_id,)>>::get_foreign(
+            self, conn,
+        )
+    }
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -383,10 +394,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .unwrap();
     assert_eq!(associated_a.column_a, "Value A for B");
 
-    let associated_c: TableC = table_c::table
-        .filter(table_c::id.eq(b.c_id))
-        .first(&mut conn)
-        .unwrap();
+    let associated_c: TableC = b.foreign_c_id(&mut conn).unwrap();
     assert_eq!(associated_c.column_c.as_deref(), Some("Value C"));
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
