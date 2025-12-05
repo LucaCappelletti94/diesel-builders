@@ -1,6 +1,6 @@
 //! Submodule providing the `TypedColumn` trait.
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 use crate::TableAddition;
 

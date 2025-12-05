@@ -22,8 +22,8 @@ pub enum IncompleteBuilderError {
 /// A specialized `Result` type for builder operations.
 pub type BuilderResult<T, E> = Result<T, BuilderError<E>>;
 
-impl std::fmt::Display for IncompleteBuilderError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for IncompleteBuilderError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             IncompleteBuilderError::MissingMandatoryTriangularFields => {
                 write!(f, "Not all mandatory associated builders have been set")
@@ -32,8 +32,8 @@ impl std::fmt::Display for IncompleteBuilderError {
     }
 }
 
-impl<E: std::fmt::Display> std::fmt::Display for BuilderError<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<E: core::fmt::Display> core::fmt::Display for BuilderError<E> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             BuilderError::Diesel(e) => write!(f, "Diesel error: {e}"),
             BuilderError::Incomplete(e) => write!(f, "Incomplete builder error: {e}"),
@@ -44,8 +44,8 @@ impl<E: std::fmt::Display> std::fmt::Display for BuilderError<E> {
 
 impl core::error::Error for IncompleteBuilderError {}
 
-impl<E: std::error::Error + 'static> core::error::Error for BuilderError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+impl<E: core::error::Error + 'static> core::error::Error for BuilderError<E> {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
         match self {
             BuilderError::Diesel(e) => Some(e),
             BuilderError::Incomplete(e) => Some(e),

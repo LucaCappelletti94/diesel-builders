@@ -1,6 +1,6 @@
 //! Submodule providing the `SetColumn` trait.
 
-use std::convert::Infallible;
+use core::convert::Infallible;
 
 use crate::TypedColumn;
 

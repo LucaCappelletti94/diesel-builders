@@ -1,7 +1,8 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
-use std::{fmt::Debug, marker::PhantomData};
+use core::fmt::Debug;
+use core::marker::PhantomData;
 
 use diesel::{Column, Table, associations::HasTable};
 use tuple_set::TupleSet;
@@ -85,34 +86,33 @@ where
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Eq for TableBuilder<T> where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TuplePartialEq + TupleEq
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleEq
 {
 }
 
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> std::hash::Hash for TableBuilder<T>
+impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> core::hash::Hash for TableBuilder<T>
 where
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleHash,
 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.bundles.tuple_hash(state);
     }
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> PartialOrd for TableBuilder<T>
 where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TuplePartialOrd + TuplePartialEq,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TuplePartialOrd,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         self.bundles.tuple_partial_cmp(&other.bundles)
     }
 }
 
 impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Ord for TableBuilder<T>
 where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleOrd + TuplePartialOrd + TupleEq + TuplePartialEq,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleOrd,
 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.bundles.tuple_cmp(&other.bundles)
     }
 }
@@ -267,7 +267,7 @@ impl<Key, T> TrySetMandatoryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
     Key: crate::MandatorySameAsIndex,
-    Key::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetColumns<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, <Key as HorizontalSameAsKey>::HostColumns>,
     TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>:
@@ -296,7 +296,7 @@ impl<C, T> crate::SetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: crate::MandatorySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
     TableBuilderBundle<C::Table>: crate::SetMandatoryBuilder<C>,
@@ -323,7 +323,7 @@ impl<Key, T> crate::TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
     Key: crate::DiscretionarySameAsIndex,
-    Key::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetColumns<
         <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error,
@@ -351,7 +351,7 @@ impl<C, T> crate::SetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: crate::DiscretionarySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BundlableTable + BuildableTable,
+    C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:

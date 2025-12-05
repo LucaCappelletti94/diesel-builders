@@ -110,8 +110,8 @@ where
 impl<T: BundlableTable> Copy for TableBuilderBundle<T>
 where
     T::InsertableModel: Copy,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleClone,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleClone,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleCopy,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: Copy + TupleCopy,
 {
 }
 
@@ -130,19 +130,19 @@ where
 
 impl<T: BundlableTable> Eq for TableBuilderBundle<T>
 where
-    T::InsertableModel: PartialEq + Eq,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq + TupleEq,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialEq + TupleEq,
+    T::InsertableModel: Eq,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleEq,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleEq,
 {
 }
 
-impl<T: BundlableTable> std::hash::Hash for TableBuilderBundle<T>
+impl<T: BundlableTable> core::hash::Hash for TableBuilderBundle<T>
 where
-    T::InsertableModel: std::hash::Hash,
+    T::InsertableModel: core::hash::Hash,
     <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleHash,
     <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleHash,
 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.insertable_model.hash(state);
         self.mandatory_associated_builders.tuple_hash(state);
         self.discretionary_associated_builders.tuple_hash(state);
@@ -151,17 +151,17 @@ where
 
 impl<T: BundlableTable> PartialOrd for TableBuilderBundle<T>
 where
-    T::InsertableModel: PartialOrd + PartialEq,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd + TuplePartialEq,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd + TuplePartialEq,
+    T::InsertableModel: PartialOrd,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TuplePartialOrd,
 {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         match self.insertable_model.partial_cmp(&other.insertable_model) {
-            Some(std::cmp::Ordering::Equal) => {}
+            Some(core::cmp::Ordering::Equal) => {}
             ord => return ord,
         }
         match self.mandatory_associated_builders.tuple_partial_cmp(&other.mandatory_associated_builders) {
-            Some(std::cmp::Ordering::Equal) => {}
+            Some(core::cmp::Ordering::Equal) => {}
             ord => return ord,
         }
         self.discretionary_associated_builders.tuple_partial_cmp(&other.discretionary_associated_builders)
@@ -169,17 +169,17 @@ where
 }
 impl<T: BundlableTable> Ord for TableBuilderBundle<T>
 where
-    T::InsertableModel: Ord + PartialOrd + Eq + PartialEq,
-    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd + TuplePartialOrd + TupleEq + TuplePartialEq,
-    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd + TuplePartialOrd + TupleEq + TuplePartialEq,
+    T::InsertableModel: Ord,
+    <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd,
+    <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<T>>::ReferencedTables as crate::BuildableTables>::OptionalBuilders: TupleOrd,
 {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         match self.insertable_model.cmp(&other.insertable_model) {
-            std::cmp::Ordering::Equal => {}
+            core::cmp::Ordering::Equal => {}
             ord => return ord,
         }
         match self.mandatory_associated_builders.tuple_cmp(&other.mandatory_associated_builders) {
-            std::cmp::Ordering::Equal => {}
+            core::cmp::Ordering::Equal => {}
             ord => return ord,
         }
         self.discretionary_associated_builders.tuple_cmp(&other.discretionary_associated_builders)

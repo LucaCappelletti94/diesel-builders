@@ -741,8 +741,8 @@ checksum = "f120559cdc1e9823da6d3a28f7441f4ff955b6831b4d7169cfca9157a2c9ee22"
 
 [[package]]
 name = "tuplities"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-clone",
  "tuplities-copy",
@@ -764,20 +764,22 @@ dependencies = [
  "tuplities-push-front",
  "tuplities-ref",
  "tuplities-remove",
+ "tuplities-reverse",
+ "tuplities-split",
 ]
 
 [[package]]
 name = "tuplities-clone"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-copy"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-clone",
  "tuplities-derive",
@@ -785,24 +787,24 @@ dependencies = [
 
 [[package]]
 name = "tuplities-debug"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-default"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-derive"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -813,25 +815,26 @@ dependencies = [
 
 [[package]]
 name = "tuplities-eq"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
+ "tuplities-partial-eq",
 ]
 
 [[package]]
 name = "tuplities-hash"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
- "siphasher",
  "tuplities-derive",
+ "tuplities-eq",
 ]
 
 [[package]]
 name = "tuplities-index"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -839,8 +842,8 @@ dependencies = [
 
 [[package]]
 name = "tuplities-insert"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -848,8 +851,8 @@ dependencies = [
 
 [[package]]
 name = "tuplities-len"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -857,16 +860,16 @@ dependencies = [
 
 [[package]]
 name = "tuplities-mut"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-option"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-default",
  "tuplities-derive",
@@ -874,72 +877,92 @@ dependencies = [
 
 [[package]]
 name = "tuplities-ord"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
+ "tuplities-eq",
+ "tuplities-partial-ord",
 ]
 
 [[package]]
 name = "tuplities-partial-eq"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-partial-ord"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
+ "tuplities-partial-eq",
 ]
 
 [[package]]
 name = "tuplities-pop-back"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-pop-front"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-push-back"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-push-front"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-ref"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-remove"
-version = "0.1.0"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#329a0e69ada3815fc87439845e8e37260642b0c5"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
+dependencies = [
+ "tuplities-derive",
+ "typenum",
+]
+
+[[package]]
+name = "tuplities-reverse"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
+dependencies = [
+ "tuplities-derive",
+]
+
+[[package]]
+name = "tuplities-split"
+version = "0.1.3"
+source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#bffaa2f44febfb9a741d0682fa0b82e651e84163"
 dependencies = [
  "tuplities-derive",
  "typenum",
