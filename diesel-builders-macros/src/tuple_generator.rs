@@ -8,26 +8,37 @@ use proc_macro2::{Ident, Span, TokenStream};
 #[cfg(not(any(
     feature = "size-16",
     feature = "size-32",
+    feature = "size-48",
     feature = "size-64",
+    feature = "size-96",
     feature = "size-128"
 )))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 8;
 #[cfg(all(
     feature = "size-16",
-    not(any(feature = "size-32", feature = "size-64", feature = "size-128"))
+    not(any(feature = "size-32", feature = "size-48", feature = "size-64", feature = "size-96", feature = "size-128"))
 ))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 16;
 #[cfg(all(
     feature = "size-32",
-    not(any(feature = "size-64", feature = "size-128"))
+    not(any(feature = "size-48", feature = "size-64", feature = "size-96", feature = "size-128"))
 ))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 32;
-#[cfg(all(feature = "size-64", not(feature = "size-128")))]
+#[cfg(all(
+    feature = "size-48",
+    not(any(feature = "size-64", feature = "size-96", feature = "size-128"))
+))]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 48;
+#[cfg(all(feature = "size-64", not(any(feature = "size-96", feature = "size-128"))))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 64;
+#[cfg(all(feature = "size-96", not(feature = "size-128")))]
+/// Maximum number of elements supported in tuple implementations.
+pub const MAX_TUPLE_SIZE: usize = 96;
 #[cfg(feature = "size-128")]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 128;

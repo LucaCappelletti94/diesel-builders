@@ -303,12 +303,13 @@ let b = table_b::table::builder()
 
 Compile times by tuple size (using `cargo clean && time cargo build --features size-{tuple_size}`):
 
-| Tuple Size | Real | User | Sys |
-|------------|------|------|-----|
-| 8 | 0m8.687s | 0m14.936s | 0m3.059s |
-| 16 | 0m10.751s | 0m17.271s | 0m3.061s |
-| 32 | 0m26.720s | 0m34.456s | 0m3.587s |
-| 64 | 3m13.852s | 3m28.713s | 0m6.157s |
+| Max Tuple Size | Compile Time |
+|----------------|--------------|
+| 8 (default)    | 0m9.029s    |
+| 16             | 0m10.483s   |
+| 32             | 0m23.802s   |
+| 48             | 1m3.948s    |
+| 64             | 2m33.036s   |
 
 ## License
 
