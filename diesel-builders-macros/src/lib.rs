@@ -257,19 +257,6 @@ pub fn impl_table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `BuilderBundles` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_builder_bundles(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_builder_bundles();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
 /// Generate `AncestorsOf` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -1404,41 +1391,6 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         }
     };
 
-    // Generate VerticalSameAsGroup implementations for all ancestors
-    let vertical_same_as_impls: Vec<_> = if ancestors.is_empty() {
-        vec![]
-    } else {
-        let non_root_ancestors = &ancestors[1..];
-        ancestors
-            .iter()
-            .enumerate()
-            .map(|(i, ancestor)| {
-                if i == 0 {
-                    // For the root, use the descendant table's primary key
-                    quote! {
-                        impl diesel_builders::vertical_same_as_group::VerticalSameAsGroup<#table_type>
-                            for <#ancestor as diesel::Table>::PrimaryKey
-                        {
-                            type VerticalSameAsColumns = (
-                                #(<#non_root_ancestors as diesel::Table>::PrimaryKey,)*
-                                <#table_type as diesel::Table>::PrimaryKey,
-                            );
-                        }
-                    }
-                } else {
-                    // For intermediate ancestors, use an empty tuple
-                    quote! {
-                        impl diesel_builders::vertical_same_as_group::VerticalSameAsGroup<#table_type>
-                            for <#ancestor as diesel::Table>::PrimaryKey
-                        {
-                            type VerticalSameAsColumns = ();
-                        }
-                    }
-                }
-            })
-            .collect()
-    };
-
     Ok(quote! {
         #item_impl
 
@@ -1451,8 +1403,6 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
         #(#get_column_impls)*
 
         #(#ancestor_of_index_impls)*
-
-        #(#vertical_same_as_impls)*
     }
     .into())
 }

@@ -1,13 +1,15 @@
 //! Submodule defining the `BundlableTables` trait, which defines an n-tuple of
 //! Diesel tables that implement the `BundlableTable` trait.
 
-use crate::{BuilderBundles, CompletedTableBuilderBundle, TableBuilderBundle};
+use tuplities::prelude::TupleDefault;
+
+use crate::{CompletedTableBuilderBundle, TableBuilderBundle};
 
 /// A trait for collections of Diesel tables that can be used in table builder
 /// bundles.
 pub trait BundlableTables {
     /// The bundles of table builders for the buildable tables.
-    type BuilderBundles: BuilderBundles<CompletedBundles = Self::CompletedBuilderBundles>;
+    type BuilderBundles: TupleDefault;
     /// The completed bundles of table builders for the buildable tables.
     type CompletedBuilderBundles;
 }

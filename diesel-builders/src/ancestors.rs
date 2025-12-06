@@ -3,7 +3,7 @@
 use tuplities::prelude::TuplePushBack;
 use typenum::Unsigned;
 
-use crate::{TableAddition, Tables};
+use crate::{BundlableTables, TableAddition, Tables};
 
 /// Marker trait for root table models (tables with no ancestors).
 ///
@@ -38,14 +38,14 @@ pub trait Descendant: TableAddition {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
     /// The ancestor tables of this table, including itself.
-    type AncestorsWithSelf: Tables;
+    type AncestorsWithSelf: BundlableTables;
 }
 
 impl<T> DescendantWithSelf for T
 where
     T: Descendant,
     T::Ancestors: TuplePushBack<Self>,
-    <T::Ancestors as TuplePushBack<Self>>::Output: Tables,
+    <T::Ancestors as TuplePushBack<Self>>::Output: BundlableTables,
 {
     type AncestorsWithSelf = <T::Ancestors as TuplePushBack<Self>>::Output;
 }

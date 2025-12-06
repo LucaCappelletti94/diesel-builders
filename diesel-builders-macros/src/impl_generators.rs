@@ -59,9 +59,6 @@ pub fn generate_tables() -> TokenStream {
             {
                 type Models = (#(<#type_params as TableAddition>::Model,)*);
                 type InsertableModels = (#(<#type_params as TableAddition>::InsertableModel,)*);
-            }
-            impl<#(#type_params: crate::table_addition::HasPrimaryKey),*> NonCompositePrimaryKeyTables for (#(#type_params,)*)
-            {
                 type PrimaryKeys = (#(<#type_params as diesel::Table>::PrimaryKey,)*);
             }
             impl<#(#type_params: TableModel),*> TableModels for (#(#type_params,)*)
@@ -409,45 +406,18 @@ pub fn generate_table_model() -> TokenStream {
             impl<#(#type_params),*> NonCompositePrimaryKeyTableModels for (#(#type_params,)*)
             where
                 #(#type_params: NonCompositePrimaryKeyTableModel,)*
-                Self::Tables: NonCompositePrimaryKeyTables<
+                Self::Tables: Tables<
                     PrimaryKeys = (#(#primary_key_types,)*),
                 >,
             {
                 #[inline]
-                fn get_primary_keys(&self) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> {
+                fn get_primary_keys(&self) -> <<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> {
                     (#(#get_pk_calls,)*)
                 }
 
                 #[inline]
-                fn may_get_primary_keys(optional_self: &<Self as IntoTupleOption>::IntoOptions) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
+                fn may_get_primary_keys(optional_self: &<Self as IntoTupleOption>::IntoOptions) -> <<<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
                     (#(#pk_extractors,)*)
-                }
-            }
-        }
-    })
-}
-
-/// Generate BuilderBundles trait implementations
-pub fn generate_builder_bundles() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-
-        // Generate try_from calls for each element
-        let try_from_calls = indices.iter().map(|idx| {
-            quote! {
-                CompletedTableBuilderBundle::try_from(self.#idx)?
-            }
-        });
-
-        quote! {
-            impl<#(#type_params: BundlableTable),*> BuilderBundles for (#(TableBuilderBundle<#type_params>,)*)
-            {
-                type CompletedBundles = (#(CompletedTableBuilderBundle<#type_params>,)*);
-
-                #[inline]
-                fn try_complete(self) -> Result<Self::CompletedBundles, crate::IncompleteBuilderError> {
-                    Ok((#(#try_from_calls,)*))
                 }
             }
         }
@@ -520,28 +490,36 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
         let ancestor_types = &type_params[..size-1];
 
         // Build the full tuple type
-        let full_tuple = quote! { (#(CompletedTableBuilderBundle<#type_params>,)*) };
+        let full_tuple = quote! { (#(crate::CompletedTableBuilderBundle<#type_params>,)*) };
 
         quote! {
-            impl<Error, Conn, T, #(#type_params),*> RecursiveInsert<Error, Conn>
+            impl<
+                Error,
+                Conn,
+                T,
+                #(#type_params: BundlableTable + crate::HasPrimaryKey<PrimaryKey: TypedColumn<Type=<<T as diesel::Table>::PrimaryKey as TypedColumn>::Type>>,)*
+            >
+            RecursiveInsert<Error, Conn>
                 for CompletedTableBuilder<T, #full_tuple>
             where
                 Conn: diesel::connection::LoadConnection,
-                T: BuildableTable + HasPrimaryKey,
+                T: BuildableTable + crate::HasPrimaryKey,
                 // Only require DescendantOf for ancestor tables, not for T itself
                 #(T: DescendantOf<#ancestor_types>,)*
-                #(#ancestor_types: AncestralBuildableTable<T>,)*
                 #last_type: BundlableTable,
-                CompletedTableBuilderBundle<#first_type>: RecursiveInsert<Error, Conn, Table = #first_type>,
-                #full_tuple: TuplePopFront<
-                    Front=CompletedTableBuilderBundle<#first_type>,
-                    Tail = (#(CompletedTableBuilderBundle<#remaining_types>,)*),
+                <#first_type as crate::TableAddition>::Model: crate::GetColumn<
+                    <#first_type as diesel::Table>::PrimaryKey
                 >,
-                CompletedTableBuilder<T, (#(CompletedTableBuilderBundle<#remaining_types>,)*)>: RecursiveInsert<Error, Conn, Table = T>
-                    + TrySetHomogeneousColumn<
+                crate::CompletedTableBuilderBundle<#first_type>: RecursiveInsert<Error, Conn, Table = #first_type>,
+                #full_tuple: tuplities::prelude::TuplePopFront<
+                    Front=crate::CompletedTableBuilderBundle<#first_type>,
+                    Tail=(#(crate::CompletedTableBuilderBundle<#remaining_types>,)*)
+                >,
+                CompletedTableBuilder<T, (#(crate::CompletedTableBuilderBundle<#remaining_types>,)*)>: RecursiveInsert<Error, Conn, Table = T>
+                    + crate::TrySetHomogeneousColumn<
                         Error,
-                        <<#first_type as Table>::PrimaryKey as TypedColumn>::Type,
-                        <<#first_type as Table>::PrimaryKey as VerticalSameAsGroup<T>>::VerticalSameAsColumns,
+                        <<#first_type as diesel::Table>::PrimaryKey as TypedColumn>::Type,
+                        (#(<#remaining_types as diesel::Table>::PrimaryKey,)*)
                     >
             {
                 #[inline]
@@ -552,11 +530,14 @@ pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
                     <<Self as HasTable>::Table as TableAddition>::Model,
                     Error
                 > {
+                    use crate::get_column::GetColumnExt;
+                    use crate::get_set_columns::TrySetHomogeneousColumn;
+                    use tuplities::prelude::TuplePopFront;
                     let (first, bundles) = self.bundles.pop_front();
                     let model: <#first_type as TableAddition>::Model = first.recursive_insert(conn)?;
                     let mut next_builder: CompletedTableBuilder<T, _> =
                         CompletedTableBuilder { bundles, table: PhantomData };
-                    next_builder.try_set_homogeneous_columns(model.get_column()).map_err(BuilderError::Validation)?;
+                    next_builder.try_set_homogeneous_columns(model.get_column()).map_err(crate::BuilderError::Validation)?;
                     next_builder.recursive_insert(conn)
                 }
             }
@@ -672,7 +653,7 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
                 <<T as Table>::PrimaryKey as TypedColumn>::Type,
                 (#(#keys,)*),
                 (#(#column_types,)*)
-            > for CompletedTableBuilderBundle<T>
+            > for crate::CompletedTableBuilderBundle<T>
             where
                 #(#mandatory_trait_bounds,)*
             {
@@ -695,7 +676,7 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
                 <<T as Table>::PrimaryKey as TypedColumn>::Type,
                 (#(#keys,)*),
                 (#(#column_types,)*)
-            > for CompletedTableBuilderBundle<T>
+            > for crate::CompletedTableBuilderBundle<T>
             where
                 #(#discretionary_trait_bounds,)*
             {

@@ -5,7 +5,7 @@ use tuplities::prelude::*;
 
 use crate::{
     Columns, GetColumn, GetColumns, HasTableAddition, NonCompositePrimaryKeyTables, TableAddition,
-    table_addition::HasPrimaryKey, tables::TableModels,
+    Tables, table_addition::HasPrimaryKey, tables::TableModels,
 };
 
 /// Trait representing a Diesel table model.
@@ -49,12 +49,12 @@ pub trait NonCompositePrimaryKeyTableModels:
     /// Get references to the primary keys of all models in the tuple.
     fn get_primary_keys(
         &self,
-    ) -> <<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_>;
+    ) -> <<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_>;
 
     /// Get references to the primary keys of all optional models in the tuple.
     fn may_get_primary_keys(
         optional_self: &<Self as IntoTupleOption>::IntoOptions,
-    ) -> <<<<Self::Tables as NonCompositePrimaryKeyTables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions;
+    ) -> <<<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions;
 }
 
 // Generate implementations for all tuple sizes (1-32)

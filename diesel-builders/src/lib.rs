@@ -51,7 +51,7 @@ pub mod buildable_table;
 pub mod buildable_tables;
 pub mod table_builder;
 pub use buildable_columns::{BuildableColumn, BuildableColumns};
-pub use buildable_table::{AncestralBuildableTable, BuildableTable};
+pub use buildable_table::BuildableTable;
 pub use buildable_tables::BuildableTables;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
@@ -68,9 +68,8 @@ pub use get_builder::{GetBuilder, MayGetBuilder};
 pub mod nested_insert;
 pub use nested_insert::{Insert, RecursiveInsert};
 pub mod builder_bundle;
-pub use builder_bundle::{
-    BuilderBundles, BundlableTable, CompletedTableBuilderBundle, TableBuilderBundle,
-};
+pub use builder_bundle::CompletedTableBuilderBundle;
+pub use builder_bundle::{BundlableTable, TableBuilderBundle};
 pub mod bundlable_tables;
 pub use bundlable_tables::BundlableTables;
 pub mod get_foreign;
@@ -109,7 +108,7 @@ pub mod prelude {
     // Table relationship traits
     pub use crate::ancestors::{Descendant, DescendantOf};
     // Core table building traits
-    pub use crate::buildable_table::{AncestralBuildableTable, BuildableTable};
+    pub use crate::buildable_table::BuildableTable;
     // Column accessor extension traits (always use Ext variants)
     pub use crate::get_column::{GetColumnExt, MayGetColumnExt};
     // Note: Root is NOT exported here to avoid collision with Root macro from

@@ -19,10 +19,7 @@ use std::convert::Infallible;
 
 use diesel::associations::HasTable;
 use diesel::prelude::*;
-use diesel_builders::{
-    CompletedTableBuilderBundle, GetForeign, TableBuilder, TableBuilderBundle, TrySetColumn,
-    prelude::*, table_builder::CompletedTableBuilder,
-};
+use diesel_builders::{GetForeign, TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*};
 use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)
@@ -400,9 +397,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     assert_eq!(associated_c.a_id, associated_a.id);
 
     let _ = TableBuilderBundle::<table_b::table>::table();
-    let _ = CompletedTableBuilderBundle::<table_b::table>::table();
     let _ = TableBuilder::<table_b::table>::table();
-    let _ = CompletedTableBuilder::<table_b::table, ()>::table();
 
     Ok(())
 }

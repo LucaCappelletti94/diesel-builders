@@ -1,149 +1,25 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
-use core::fmt::Debug;
-use core::marker::PhantomData;
-
-use diesel::{Column, Table, associations::HasTable};
-use tuple_set::TupleSet;
+use diesel::{Column, associations::HasTable};
 use tuplities::prelude::*;
 
+mod completed_table_builder;
+mod core_traits;
+mod serde;
+
 use crate::{
-    AncestorOfIndex, AncestralBuildableTable, BuilderBundles, BuilderError, BuilderResult,
-    BundlableTable, BundlableTables, CompletedTableBuilderBundle, DescendantOf, GetColumn,
-    HorizontalSameAsKey, IncompleteBuilderError, Insert, InsertableTableModel, MayGetColumn,
-    MayGetColumns, MaySetColumns, RecursiveInsert, SingletonForeignKey, TableAddition,
-    TableBuilderBundle, TryMaySetColumns, TrySetColumn, TrySetHomogeneousColumn,
-    TrySetMandatoryBuilder, TypedColumn, buildable_table::BuildableTable,
-    table_addition::HasPrimaryKey, vertical_same_as_group::VerticalSameAsGroup,
+    AncestorOfIndex, BundlableTable, BundlableTables, DescendantOf, HorizontalSameAsKey,
+    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, SingletonForeignKey,
+    TableAddition, TableBuilderBundle, TryMaySetColumns, TrySetColumn, TrySetMandatoryBuilder,
+    TypedColumn, buildable_table::BuildableTable,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
-pub struct TableBuilder<T: BuildableTable<AncestorsWithSelf: BundlableTables>> {
+pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
     bundles: <T::AncestorsWithSelf as BundlableTables>::BuilderBundles,
-}
-
-#[cfg(feature = "serde")]
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> serde::Serialize for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: serde::Serialize,
-{
-    #[inline]
-    fn serialize<S>(
-        &self,
-        serializer: S,
-    ) -> Result<<S as serde::ser::Serializer>::Ok, <S as serde::ser::Serializer>::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        self.bundles.serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, T: BuildableTable<AncestorsWithSelf: BundlableTables>> serde::Deserialize<'de>
-    for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: serde::Deserialize<'de>,
-{
-    #[inline]
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::de::Deserializer<'de>,
-    {
-        let bundles =
-            <T::AncestorsWithSelf as BundlableTables>::BuilderBundles::deserialize(deserializer)?;
-        Ok(Self { bundles })
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Clone for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleClone,
-{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            bundles: self.bundles.tuple_clone(),
-        }
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Copy for TableBuilder<T> where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: Copy + TupleCopy
-{
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> PartialEq for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TuplePartialEq,
-{
-    fn eq(&self, other: &Self) -> bool {
-        self.bundles.tuple_eq(&other.bundles)
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Eq for TableBuilder<T> where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleEq
-{
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> core::hash::Hash for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleHash,
-{
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.bundles.tuple_hash(state);
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> PartialOrd for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TuplePartialOrd,
-{
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        self.bundles.tuple_partial_cmp(&other.bundles)
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Ord for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleOrd,
-{
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.bundles.tuple_cmp(&other.bundles)
-    }
-}
-
-impl<T: BuildableTable<AncestorsWithSelf: BundlableTables>> Debug for TableBuilder<T>
-where
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleDebug,
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("TableBuilder")
-            .field("bundles", &self.bundles.tuple_debug())
-            .finish()
-    }
-}
-
-impl<T: BuildableTable> Default for TableBuilder<T> {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            bundles: TupleDefault::tuple_default(),
-        }
-    }
-}
-
-/// A completed builder for creating insertable models for a Diesel table and
-/// its ancestors.
-pub struct CompletedTableBuilder<T: Table, Bundles> {
-    /// The insertable models for the table and its ancestors.
-    bundles: Bundles,
-    /// The table type.
-    table: PhantomData<T>,
 }
 
 impl<T> HasTable for TableBuilder<T>
@@ -155,43 +31,6 @@ where
     #[inline]
     fn table() -> Self::Table {
         T::default()
-    }
-}
-
-impl<T, Bundles> HasTable for CompletedTableBuilder<T, Bundles>
-where
-    T: BuildableTable,
-{
-    type Table = T;
-
-    #[inline]
-    fn table() -> Self::Table {
-        T::default()
-    }
-}
-
-impl<T> TryFrom<TableBuilder<T>>
-    for CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>
-where
-    T: BuildableTable,
-{
-    type Error = IncompleteBuilderError;
-
-    #[inline]
-    fn try_from(
-        value: TableBuilder<T>,
-    ) -> Result<
-        CompletedTableBuilder<
-            T,
-            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        >,
-        Self::Error,
-    > {
-        let bundles = value.bundles.try_complete()?;
-        Ok(CompletedTableBuilder {
-            bundles,
-            table: PhantomData,
-        })
     }
 }
 
@@ -227,38 +66,6 @@ where
         value: <C as TypedColumn>::Type,
     ) -> Result<&mut Self, Self::Error> {
         self.bundles.tuple_index_mut().try_set_column(value)?;
-        Ok(self)
-    }
-}
-
-impl<C, T, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
-    CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
-    // We require for the non-completed variant of the builder
-    // to implement TrySetColumn as well so to have a compile-time
-    // verification of the availability of the column which
-    // the `TupleSet` dynamic trait cannot guarantee.
-    TableBuilder<T>: TrySetColumn<C>,
-    Bundles: TupleSet,
-{
-    type Error = <CompletedTableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
-
-    #[inline]
-    fn try_set_column(
-        &mut self,
-        value: <C as TypedColumn>::Type,
-    ) -> Result<&mut Self, Self::Error> {
-        <Bundles as TupleSet>::map(
-            &mut self.bundles,
-            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                builder_bundle.try_set_column(value).map(|_| ())
-            },
-        )
-        .transpose()?;
-        // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }
 }
@@ -373,61 +180,3 @@ where
         self
     }
 }
-
-impl<T, Conn> Insert<Conn> for TableBuilder<T>
-where
-    Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        RecursiveInsert<
-                <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error,
-                Conn,
-                Table = T,
-            >,
-{
-    #[inline]
-    fn insert(self, conn: &mut Conn) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
-        self.recursive_insert(conn)
-    }
-}
-
-impl<T, Error, Conn> RecursiveInsert<Error, Conn> for TableBuilder<T>
-where
-    Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        RecursiveInsert<Error, Conn, Table = T>,
-{
-    #[inline]
-    fn recursive_insert(
-        self,
-        conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
-        let completed_builder: CompletedTableBuilder<
-            T,
-            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        > = self.try_into()?;
-        completed_builder.recursive_insert(conn)
-    }
-}
-
-// Base case: single bundle (leaf node)
-impl<Error, Conn, T> RecursiveInsert<Error, Conn>
-    for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>
-where
-    Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilderBundle<T>: RecursiveInsert<Error, Conn, Table = T>,
-{
-    #[inline]
-    fn recursive_insert(
-        self,
-        conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
-        self.bundles.0.recursive_insert(conn)
-    }
-}
-
-// Recursive cases for tuples of size 2-32 are generated by the macro
-#[diesel_builders_macros::impl_completed_table_builder_nested_insert]
-mod completed_table_builder_impls {}
