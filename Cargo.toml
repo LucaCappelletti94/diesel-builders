@@ -51,6 +51,7 @@ tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch
 	"index",
 	"pop-front",
 	"push-back",
+	"push-front",
 	"ref",
 	"replicate",
 	"row",

@@ -39,7 +39,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let dog_builder = dog_builder.breed("Golden Retriever");
 
     // Test MayGetColumn derive - verifying builder state before insertion
-    let breed_value = dog_builder.may_get_column::<dogs::breed>();
+    let breed_value = dog_builder.may_get_column_ref::<dogs::breed>();
     assert_eq!(breed_value, Some(&"Golden Retriever".to_string()));
 
     let dog = dog_builder.insert(&mut conn)?;
@@ -81,7 +81,7 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .try_color("Orange")?;
 
     // Test MayGetColumn derive on builder to verify state
-    let color_value = cat_builder.may_get_column::<common::cats::color>();
+    let color_value = cat_builder.may_get_column_ref::<common::cats::color>();
     assert_eq!(color_value, Some(&"Orange".to_string()));
 
     let cat = cat_builder.insert(&mut conn)?;
@@ -169,7 +169,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Verify the values match - breed is the only field directly in NewDog
     assert_eq!(
         deserialized
-            .may_get_column::<dogs::breed>()
+            .may_get_column_ref::<dogs::breed>()
             .map(String::as_str),
         Some("German Shepherd")
     );

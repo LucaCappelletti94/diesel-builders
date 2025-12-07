@@ -62,36 +62,10 @@ pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `TupleGetColumns` trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_tuple_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_tuple_get_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
 /// Generates tuple trait implementations for `MayGetColumns`.
 #[proc_macro_attribute]
 pub fn impl_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_may_get_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `TupleMayGetColumns` trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_tuple_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_tuple_may_get_columns_trait();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -157,32 +131,6 @@ pub fn impl_try_set_columns_collection(_attr: TokenStream, item: TokenStream) ->
 #[proc_macro_attribute]
 pub fn impl_try_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_try_may_set_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `NestedInsertTuple` trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_insert_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `NestedInsertOptionTuple` trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_insert_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_insert_option_tuple();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -369,7 +317,7 @@ pub fn derive_get_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
             impl diesel_builders::GetColumn<#table_name::#field_name> for #struct_name {
-                fn get_column(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
+                fn get_column_ref(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
                     &self.#field_name
                 }
             }
@@ -449,7 +397,7 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
             impl diesel_builders::MayGetColumn<#table_name::#field_name> for #struct_name {
-                fn may_get_column(&self) -> Option<&<#table_name::#field_name as diesel_builders::Typed>::Type> {
+                fn may_get_column_ref(&self) -> Option<&<#table_name::#field_name as diesel_builders::Typed>::Type> {
                     self.#field_name.as_ref()
                 }
             }
@@ -914,7 +862,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                     #[inline]
                     #[doc = #get_field_name_method_doc_comment]
                     fn #field_name(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
-                        self.get_column()
+                        self.get_column_ref()
                     }
                 }
                 impl<T> #get_field_name for T where T: diesel_builders::GetColumn<#table_name::#field_name> {}
@@ -1301,7 +1249,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                 impl diesel_builders::GetColumn<<#ancestor as diesel::Table>::PrimaryKey>
                     for #descendant_table_model
                 {
-                    fn get_column(
+                    fn get_column_ref(
                         &self,
                     ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::Type {
                         use diesel::Identifiable;

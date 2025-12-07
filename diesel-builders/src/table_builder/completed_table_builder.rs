@@ -8,9 +8,7 @@ use crate::tables::HasTables;
 use crate::{GetColumns, HasTableAddition, InsertableTableModel, Typed};
 use diesel::Table;
 use diesel::associations::HasTable;
-use tuplities::prelude::{
-    FlattenNestedTuple, NestTuple, NestedTupleIndexMut, TupleRef, TupleTryFrom,
-};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleIndexMut, TupleTryFrom};
 
 use crate::{
     AncestorOfIndex, BuildableTable, BuilderResult, BundlableTable, BundlableTables,
@@ -134,9 +132,8 @@ where
     }
 }
 
-impl<'a, T, C, Depth, Bundles> TrySetColumn<C> for RecursiveTableBuilder<T, Depth, Bundles>
+impl<T, C, Depth, Bundles> TrySetColumn<C> for RecursiveTableBuilder<T, Depth, Bundles>
 where
-    Self: 'a,
     Bundles: NestedTupleIndexMut<
             <<C::Table as AncestorOfIndex<T>>::Idx as Sub<Depth>>::Output,
             Element = CompletedTableBuilderBundle<C::Table>,
@@ -186,12 +183,13 @@ where
         GetColumns<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns>,
     Tail::Flattened: HasTables,
     Depth: core::ops::Add<typenum::U1>,
-    RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>: RecursiveBuilderInsert<Error, Conn, Table=T>
-        + for<'a> crate::TrySetHomogeneous<
-            Error,
-            <<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns as Typed>::Type as TupleRef>::Ref<'a>,
-            <<Tail::Flattened as HasTables>::Tables as Tables>::PrimaryKeyColumnsCollection,
-        >,
+    RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>:
+        RecursiveBuilderInsert<Error, Conn, Table = T>
+            + for<'a> crate::TrySetHomogeneous<
+                Error,
+                <<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns as Typed>::Type,
+                <<Tail::Flattened as HasTables>::Tables as Tables>::PrimaryKeyColumnsCollection,
+            >,
 {
     #[inline]
     fn recursive_insert(

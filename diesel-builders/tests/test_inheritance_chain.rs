@@ -327,7 +327,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match - age_months is the only field directly in NewPuppy
     assert_eq!(
-        deserialized.may_get_column::<puppies::age_months>(),
+        deserialized.may_get_column_ref::<puppies::age_months>(),
         Some(&6)
     );
 

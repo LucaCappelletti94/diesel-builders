@@ -10,7 +10,6 @@ use crate::{
     TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsColumns, TupleGetColumns, TupleMayGetColumns, Typed, TypedColumn,
     builder_bundle::BundlableTableExt, horizontal_same_as_group::HorizontalSameAsGroupExt,
-    tables::TableModels,
 };
 
 /// The build-ready variant of a table builder bundle.
@@ -172,14 +171,16 @@ where
     ) -> BuilderResult<<T as TableAddition>::Model, Error> {
         let mandatory_models: T::MandatoryModels =
             self.mandatory_associated_builders.insert_tuple(conn)?;
-        let mandatory_primary_keys: <<T::MandatoryTriangularSameAsColumns as Typed>::Type as TupleRef>::Ref<'_> = mandatory_models.tuple_get_columns();
+        let mandatory_primary_keys: T::MandatoryForeignPrimaryKeyTypes =
+            mandatory_models.nest().tuple_get_columns();
         self.insertable_model
             .try_set_columns(mandatory_primary_keys)
             .map_err(BuilderError::Validation)?;
         let discretionary_models: T::OptionalDiscretionaryModels = self
             .discretionary_associated_builders
             .insert_option_tuple(conn)?;
-        let discretionary_primary_keys = discretionary_models.tuple_may_get_columns();
+        let discretionary_primary_keys: T::OptionalDiscretionaryForeignPrimaryKeyTypes =
+            discretionary_models.nest().tuple_may_get_columns();
         self.insertable_model
             .try_may_set_columns(discretionary_primary_keys)
             .map_err(BuilderError::Validation)?;
@@ -187,11 +188,10 @@ where
     }
 }
 
-#[diesel_builders_macros::impl_insert_tuple]
 /// Trait defining the insertion of a tuple of builders into the database.
 trait InsertTuple<Error, Conn> {
     /// The type of the models associated with the builders in the tuple.
-    type ModelsTuple: TableModels;
+    type ModelsTuple;
 
     /// Insert the tuple of builders' data into the database using the provided
     /// connection.
@@ -207,7 +207,52 @@ trait InsertTuple<Error, Conn> {
     fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error>;
 }
 
-#[diesel_builders_macros::impl_insert_option_tuple]
+impl<Err, Conn> InsertTuple<Err, Conn> for ()
+where
+    Conn: diesel::connection::LoadConnection,
+{
+    type ModelsTuple = ();
+
+    #[inline]
+    fn insert_tuple(self, _conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Err> {
+        Ok(())
+    }
+}
+
+impl<Error, Conn, T> InsertTuple<Error, Conn> for (T,)
+where
+    Conn: diesel::connection::LoadConnection,
+    T: crate::RecursiveBuilderInsert<Error, Conn>,
+{
+    type ModelsTuple = (<<T as HasTable>::Table as TableAddition>::Model,);
+
+    #[inline]
+    fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error> {
+        Ok((self.0.recursive_insert(conn)?,))
+    }
+}
+
+impl<Error, Conn, Head, Tail> InsertTuple<Error, Conn> for (Head, Tail)
+where
+    Conn: diesel::connection::LoadConnection,
+    Head: crate::RecursiveBuilderInsert<Error, Conn>,
+    Tail: InsertTuple<Error, Conn>,
+    (
+        <<Head as HasTable>::Table as TableAddition>::Model,
+        <Tail as InsertTuple<Error, Conn>>::ModelsTuple,
+    ): FlattenNestedTuple,
+{
+    type ModelsTuple = <(
+        <<Head as HasTable>::Table as TableAddition>::Model,
+        <Tail as InsertTuple<Error, Conn>>::ModelsTuple,
+    ) as FlattenNestedTuple>::Flattened;
+
+    #[inline]
+    fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error> {
+        Ok((self.0.recursive_insert(conn)?, self.1.insert_tuple(conn)?).flatten())
+    }
+}
+
 /// Trait defining the insertion of a tuple of optional builders into the
 /// database.
 trait InsertOptionTuple<Error, Conn> {
@@ -228,4 +273,60 @@ trait InsertOptionTuple<Error, Conn> {
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
     fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error>;
+}
+
+impl<Err, Conn> InsertOptionTuple<Err, Conn> for ()
+where
+    Conn: diesel::connection::LoadConnection,
+{
+    type OptionModelsTuple = ();
+
+    #[inline]
+    fn insert_option_tuple(self, _conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Err> {
+        Ok(())
+    }
+}
+
+impl<Error, Conn, T> InsertOptionTuple<Error, Conn> for (Option<T>,)
+where
+    Conn: diesel::connection::LoadConnection,
+    T: crate::RecursiveBuilderInsert<Error, Conn>,
+{
+    type OptionModelsTuple = (Option<<<T as HasTable>::Table as TableAddition>::Model>,);
+
+    #[inline]
+    fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error> {
+        Ok((match self.0 {
+            Some(builder) => Some(builder.recursive_insert(conn)?),
+            None => None,
+        },))
+    }
+}
+
+impl<Error, Conn, Head, Tail> InsertOptionTuple<Error, Conn> for (Option<Head>, Tail)
+where
+    Conn: diesel::connection::LoadConnection,
+    Head: crate::RecursiveBuilderInsert<Error, Conn>,
+    Tail: InsertOptionTuple<Error, Conn>,
+    (
+        Option<<<Head as HasTable>::Table as TableAddition>::Model>,
+        <Tail as InsertOptionTuple<Error, Conn>>::OptionModelsTuple,
+    ): FlattenNestedTuple,
+{
+    type OptionModelsTuple = <(
+        Option<<<Head as HasTable>::Table as TableAddition>::Model>,
+        <Tail as InsertOptionTuple<Error, Conn>>::OptionModelsTuple,
+    ) as FlattenNestedTuple>::Flattened;
+
+    #[inline]
+    fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error> {
+        Ok((
+            match self.0 {
+                Some(builder) => Some(builder.recursive_insert(conn)?),
+                None => None,
+            },
+            self.1.insert_option_tuple(conn)?,
+        )
+            .flatten())
+    }
 }

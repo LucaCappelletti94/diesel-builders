@@ -679,12 +679,12 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Verify the values match
     assert_eq!(
         deserialized
-            .may_get_column::<table_b::column_b>()
+            .may_get_column_ref::<table_b::column_b>()
             .map(String::as_str),
         Some("Serialized B")
     );
     assert_eq!(
-        deserialized.may_get_column::<table_b::remote_column_c>(),
+        deserialized.may_get_column_ref::<table_b::remote_column_c>(),
         Some(&Some("Serialized C".to_string()))
     );
 

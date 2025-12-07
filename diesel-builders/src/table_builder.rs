@@ -45,8 +45,13 @@ where
         TupleIndex<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
 {
     #[inline]
-    fn may_get_column(&self) -> Option<&<C as Typed>::Type> {
+    fn may_get_column(&self) -> Option<<C as Typed>::Type> {
         self.bundles.tuple_index().may_get_column()
+    }
+
+    #[inline]
+    fn may_get_column_ref(&self) -> Option<&<C as Typed>::Type> {
+        self.bundles.tuple_index().may_get_column_ref()
     }
 }
 

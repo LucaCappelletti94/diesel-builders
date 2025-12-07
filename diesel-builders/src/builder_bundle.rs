@@ -10,7 +10,6 @@ mod serde;
 pub use completed_table_builder_bundle::CompletedTableBuilderBundle;
 pub(crate) use completed_table_builder_bundle::RecursiveBundleInsert;
 
-use crate::tables::TablesExt;
 use crate::{
     BuildableTables, HorizontalSameAsKeys, MayGetColumn, NonCompositePrimaryKeyTables,
     TableAddition, Tables, TrySetColumn, TupleGetColumns, TupleMayGetColumns, TypedColumn,
@@ -22,9 +21,37 @@ use tuplities::prelude::*;
 /// discretionary triangular same-as columns.
 pub trait BundlableTable: TableAddition {
     /// The columns defining mandatory triangular same-as.
-    type MandatoryTriangularSameAsColumns: HorizontalSameAsKeys<Self, ReferencedTables: BuildableTables>;
+    type MandatoryTriangularSameAsColumns: HorizontalSameAsKeys<
+            Self,
+            ReferencedTables: BuildableTables
+                + NonCompositePrimaryKeyTables<
+                    PrimaryKeys: NestTuple<
+                        Nested: Typed<
+                            Type = <<Self::MandatoryTriangularSameAsColumns as Typed>::Type as NestTuple>::Nested,
+                        >,
+                    >,
+                >,
+        > + NestTuple<
+            Nested: Typed<
+                Type = <<Self::MandatoryTriangularSameAsColumns as Typed>::Type as NestTuple>::Nested,
+            >,
+        > + Typed<Type: NestTuple + IntoTupleOption<IntoOptions: NestTuple>>;
     /// The columns defining discretionary triangular same-as.
-    type DiscretionaryTriangularSameAsColumns: HorizontalSameAsKeys<Self, ReferencedTables: BuildableTables>;
+    type DiscretionaryTriangularSameAsColumns: HorizontalSameAsKeys<
+            Self,
+            ReferencedTables: BuildableTables
+                + NonCompositePrimaryKeyTables<
+                    PrimaryKeys: NestTuple<
+                        Nested: Typed<
+                            Type = <<Self::DiscretionaryTriangularSameAsColumns as Typed>::Type as NestTuple>::Nested,
+                        >,
+                    >,
+                >,
+        > + NestTuple<
+            Nested: Typed<
+                Type = <<Self::DiscretionaryTriangularSameAsColumns as Typed>::Type as NestTuple>::Nested,
+            >,
+        > + Typed<Type: NestTuple + IntoTupleOption<IntoOptions: NestTuple>>;
 }
 
 /// Extension trait for `BundlableTable`.
@@ -36,8 +63,12 @@ pub trait BundlableTableExt:
                 Builders = Self::MandatoryBuilders,
                 OptionalBuilders = Self::OptionalMandatoryBuilders,
                 Models = Self::MandatoryModels,
+            > + NonCompositePrimaryKeyTables<
+                PrimaryKeys = Self::MandatoryForeignPrimaryKeys,
             >,
-        >,
+        > + NestTuple<
+            Nested = Self::NestedMandatoryTriangularSameAsColumns,
+        > + Typed<Type = Self::MandatoryForeignPrimaryKeyTypes>,
         DiscretionaryTriangularSameAsColumns: HorizontalSameAsKeys<
             Self,
             ReferencedTables: BuildableTables<
@@ -45,10 +76,59 @@ pub trait BundlableTableExt:
                 OptionalBuilders = Self::OptionalDiscretionaryBuilders,
                 Models = Self::DiscretionaryModels,
                 OptionalModels = Self::OptionalDiscretionaryModels,
+            > + NonCompositePrimaryKeyTables<
+                PrimaryKeys = Self::DiscretionaryForeignPrimaryKeys,
             >,
+        > + NestTuple<
+            Nested = Self::NestedDiscretionaryTriangularSameAsColumns,
+        > + Typed<
+            Type = Self::DiscretionaryForeignPrimaryKeyTypes,
         >,
     >
 {
+    /// Nested mandatory triangular same-as columns.
+    type NestedMandatoryTriangularSameAsColumns: Typed<
+        Type = Self::NestedMandatoryForeignPrimaryKeyTypes,
+    >;
+    /// Nested discretionary triangular same-as columns.
+    type NestedDiscretionaryTriangularSameAsColumns: Typed<
+        Type = Self::NestedDiscretionaryForeignPrimaryKeyTypes,
+    >;
+    /// Mandatory foreign primary keys.
+    type MandatoryForeignPrimaryKeys: NestTuple<Nested = Self::NestedMandatoryForeignPrimaryKeys>
+        + Typed<Type = Self::MandatoryForeignPrimaryKeyTypes>;
+    /// Mandatory foreign primary key types.
+    type MandatoryForeignPrimaryKeyTypes: NestTuple<Nested = Self::NestedMandatoryForeignPrimaryKeyTypes>
+        + TupleRef
+        + IntoTupleOption<IntoOptions: NestTuple>;
+    /// Nested mandatory foreign primary keys.
+    type NestedMandatoryForeignPrimaryKeys: FlattenNestedTuple<Flattened = Self::MandatoryForeignPrimaryKeys>
+        + Typed<Type = Self::NestedMandatoryForeignPrimaryKeyTypes>;
+    /// Nested mandatory foreign primary keys types.
+    type NestedMandatoryForeignPrimaryKeyTypes: FlattenNestedTuple<
+        Flattened = Self::MandatoryForeignPrimaryKeyTypes,
+    >;
+    /// Optional discretionary foreign primary key types.
+    type OptionalDiscretionaryForeignPrimaryKeyTypes: TupleOption<Transposed = Self::DiscretionaryForeignPrimaryKeyTypes>
+        + NestTuple<Nested = Self::NestedOptionalDiscretionaryForeignPrimaryKeyTypes>;
+    /// Nested optional discretionary foreign primary key types.
+    type NestedOptionalDiscretionaryForeignPrimaryKeyTypes: FlattenNestedTuple<
+        Flattened = Self::OptionalDiscretionaryForeignPrimaryKeyTypes,
+    >;
+    /// Discretionary foreign primary keys.
+    type DiscretionaryForeignPrimaryKeys: NestTuple<Nested = Self::NestedDiscretionaryForeignPrimaryKeys>
+        + Typed<Type = Self::DiscretionaryForeignPrimaryKeyTypes>;
+    /// Discretionary foreign primary key types.
+    type DiscretionaryForeignPrimaryKeyTypes: NestTuple<Nested = Self::NestedDiscretionaryForeignPrimaryKeyTypes>
+        + TupleRef
+        + IntoTupleOption<IntoOptions = Self::OptionalDiscretionaryForeignPrimaryKeyTypes>;
+    /// Nested discretionary foreign primary keys.
+    type NestedDiscretionaryForeignPrimaryKeys: FlattenNestedTuple<Flattened = Self::DiscretionaryForeignPrimaryKeys>
+        + Typed<Type = Self::NestedDiscretionaryForeignPrimaryKeyTypes>;
+    /// Nested discretionary foreign primary key types.
+    type NestedDiscretionaryForeignPrimaryKeyTypes: FlattenNestedTuple<
+        Flattened = Self::DiscretionaryForeignPrimaryKeyTypes,
+    >;
     /// Builders for the mandatory associated tables.
     type MandatoryBuilders: IntoTupleOption<IntoOptions = Self::OptionalMandatoryBuilders>;
     /// Optional builders for the mandatory associated tables.
@@ -58,22 +138,54 @@ pub trait BundlableTableExt:
     /// Optional builders for the discretionary associated tables.
     type OptionalDiscretionaryBuilders: TupleOption<Transposed = Self::DiscretionaryBuilders>;
     /// The mandatory models.
-    type MandatoryModels: TupleGetColumns<<<Self::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
-        Self,
-    >>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys>;
+    type MandatoryModels: NestTuple + IntoTupleOption<IntoOptions: NestTuple>;
+    /// The nested mandatory models.
+    type NestedMandatoryModels: TupleGetColumns<Self::NestedMandatoryForeignPrimaryKeys>;
     /// The discretionary models.
-    type DiscretionaryModels: IntoTupleOption<IntoOptions = Self::OptionalDiscretionaryModels> + TupleGetColumns<<<Self::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
-        Self,
-    >>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys>;
+    type DiscretionaryModels: NestTuple
+        + IntoTupleOption<IntoOptions = Self::OptionalDiscretionaryModels>;
+    /// The nested discretionary models.
+    type NestedDiscretionaryModels;
     /// The optional discretionary models.
-    type OptionalDiscretionaryModels: TupleOption<Transposed = Self::DiscretionaryModels> + TupleMayGetColumns<<<Self::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
-        Self,
-    >>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys>;
+    type OptionalDiscretionaryModels: TupleOption<Transposed = Self::DiscretionaryModels>
+        + NestTuple<Nested = Self::NestedOptionalDiscretionaryModels>;
+    /// The nested optional discretionary models.
+    type NestedOptionalDiscretionaryModels: TupleMayGetColumns<
+        Self::NestedDiscretionaryForeignPrimaryKeys,
+    >;
 }
+
 impl<T> BundlableTableExt for T
 where
     T: BundlableTable,
 {
+    type NestedMandatoryTriangularSameAsColumns =
+        <T::MandatoryTriangularSameAsColumns as NestTuple>::Nested;
+    type NestedDiscretionaryTriangularSameAsColumns =
+        <T::DiscretionaryTriangularSameAsColumns as NestTuple>::Nested;
+    type MandatoryForeignPrimaryKeys =
+        <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
+            T,
+        >>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys;
+    type MandatoryForeignPrimaryKeyTypes = <Self::MandatoryForeignPrimaryKeys as Typed>::Type;
+    type NestedMandatoryForeignPrimaryKeys =
+        <Self::MandatoryForeignPrimaryKeys as NestTuple>::Nested;
+    type NestedMandatoryForeignPrimaryKeyTypes =
+        <Self::MandatoryForeignPrimaryKeyTypes as NestTuple>::Nested;
+    type DiscretionaryForeignPrimaryKeys =
+        <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
+            T,
+        >>::ReferencedTables as NonCompositePrimaryKeyTables>::PrimaryKeys;
+    type DiscretionaryForeignPrimaryKeyTypes =
+        <Self::DiscretionaryForeignPrimaryKeys as Typed>::Type;
+    type NestedDiscretionaryForeignPrimaryKeys =
+        <Self::DiscretionaryForeignPrimaryKeys as NestTuple>::Nested;
+    type NestedDiscretionaryForeignPrimaryKeyTypes =
+        <Self::DiscretionaryForeignPrimaryKeyTypes as NestTuple>::Nested;
+    type OptionalDiscretionaryForeignPrimaryKeyTypes =
+        <Self::DiscretionaryForeignPrimaryKeyTypes as IntoTupleOption>::IntoOptions;
+    type NestedOptionalDiscretionaryForeignPrimaryKeyTypes =
+        <Self::OptionalDiscretionaryForeignPrimaryKeyTypes as NestTuple>::Nested;
     type MandatoryBuilders = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
         T,
     >>::ReferencedTables as BuildableTables>::Builders;
@@ -86,15 +198,18 @@ where
     type OptionalDiscretionaryBuilders = <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
         T,
     >>::ReferencedTables as BuildableTables>::OptionalBuilders;
-    type MandatoryModels = <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
-        T,
-    >>::ReferencedTables as Tables>::Models;
+    type MandatoryModels =
+        <<T::MandatoryTriangularSameAsColumns as HorizontalSameAsKeys<
+            T,
+        >>::ReferencedTables as Tables>::Models;
+    type NestedMandatoryModels = <Self::MandatoryModels as NestTuple>::Nested;
     type DiscretionaryModels = <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
         T,
     >>::ReferencedTables as Tables>::Models;
-    type OptionalDiscretionaryModels = <<T::DiscretionaryTriangularSameAsColumns as HorizontalSameAsKeys<
-        T,
-    >>::ReferencedTables as TablesExt>::OptionalModels;
+    type NestedDiscretionaryModels = <Self::DiscretionaryModels as NestTuple>::Nested;
+    type OptionalDiscretionaryModels = <Self::DiscretionaryModels as IntoTupleOption>::IntoOptions;
+    type NestedOptionalDiscretionaryModels =
+        <Self::OptionalDiscretionaryModels as NestTuple>::Nested;
 }
 
 /// A bundle of a table's insertable model and its associated builders.
@@ -126,8 +241,8 @@ where
     T::InsertableModel: MayGetColumn<C>,
 {
     #[inline]
-    fn may_get_column(&self) -> Option<&C::Type> {
-        self.insertable_model.may_get_column()
+    fn may_get_column_ref(&self) -> Option<&C::Type> {
+        self.insertable_model.may_get_column_ref()
     }
 }
 

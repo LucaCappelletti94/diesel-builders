@@ -19,8 +19,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = animals::table::builder();
 
     // Test MayGetColumn derive - optional fields start as None
-    assert_eq!(builder.may_get_column::<animals::name>(), None);
-    assert_eq!(builder.may_get_column::<animals::description>(), None);
+    assert_eq!(builder.may_get_column_ref::<animals::name>(), None);
+    assert_eq!(builder.may_get_column_ref::<animals::description>(), None);
 
     // Test generated TrySetAnimalsName helper trait - fallible setter by reference
     builder.try_name_ref("Max")?;
@@ -28,11 +28,11 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     // Test MayGetColumn derive - verifying field is set after mutation
     assert_eq!(
         builder
-            .may_get_column::<animals::name>()
+            .may_get_column_ref::<animals::name>()
             .map(String::as_str),
         Some("Max")
     );
-    assert_eq!(builder.may_get_column::<animals::description>(), None);
+    assert_eq!(builder.may_get_column_ref::<animals::description>(), None);
 
     let animal = builder.insert(&mut conn)?;
 
@@ -128,7 +128,7 @@ fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = animals::table::builder();
     builder.try_description_ref(None)?;
     assert_eq!(
-        builder.may_get_column::<animals::description>(),
+        builder.may_get_column_ref::<animals::description>(),
         Some(&None)
     );
     Ok(())
@@ -168,12 +168,12 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Verify the values match
     assert_eq!(
         deserialized
-            .may_get_column::<animals::name>()
+            .may_get_column_ref::<animals::name>()
             .map(String::as_str),
         Some("Serialized Animal")
     );
     assert_eq!(
-        deserialized.may_get_column::<animals::description>(),
+        deserialized.may_get_column_ref::<animals::description>(),
         Some(&Some("Testing serde serialization".to_owned()))
     );
 

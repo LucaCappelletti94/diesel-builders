@@ -56,7 +56,7 @@ where
         model: &<<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> &mut Self {
         let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as SetColumn<C>>::set_column(self, primary_key.clone());
+        <Self as SetColumn<C>>::set_column(self, primary_key);
         let columns = model.get_columns();
         self.set_columns(columns)
     }
@@ -124,8 +124,8 @@ where
         &mut self,
         model: &<<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model,
     ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
-        let primary_key: &C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as TrySetColumn<C>>::try_set_column(self, primary_key.clone())?;
+        let primary_key: C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
+        <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
         let columns = model.get_columns();
         self.try_set_columns(columns)
     }

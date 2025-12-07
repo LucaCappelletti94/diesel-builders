@@ -2,33 +2,43 @@
 
 use diesel::associations::HasTable;
 
-use crate::{Columns, TableAddition, TupleMayGetColumns, Typed, get_set_columns::TupleGetColumns};
+use crate::{Columns, TableAddition, TupleGetColumns, TupleMayGetColumns, Typed};
 use tuplities::prelude::*;
 
 /// A trait representing a collection of Diesel tables.
 pub trait Tables {
     /// The n-uple of models corresponding to the tables in this collection.
-    type Models: TableModels<Tables = Self> + TupleLen;
+    type Models: TableModels<Tables = Self>
+        + TupleLen
+        + NestTuple
+        + IntoTupleOption<IntoOptions: NestTuple>;
     /// The n-uple of insertable models corresponding to the tables in this
     /// collection.
     type InsertableModels: InsertableTableModels<Tables = Self>
-        + TupleLen<Len = <Self::Models as TupleLen>::Len>;
+        + TupleLen<Len = <Self::Models as TupleLen>::Len>
+        + NestTuple;
     /// Tuple of tuples representing the primary key columns of each table in this collection.
     /// Even non-composite primary keys are represented as single-element tuples for uniformity.
     type PrimaryKeyColumnsCollection: Typed<Type: TupleRefMap + FirstTupleRow>
-        + FirstTupleRow<FirstRowType: Columns<Tables = Self>>
-        + TupleLen<Len = <Self::Models as TupleLen>::Len>;
+        + FirstTupleRow<
+            FirstRowType: NestTuple<
+                Nested: Typed<
+                    Type: IntoTupleOption + FlattenNestedTuple<Flattened: IntoTupleOption>,
+                >,
+            > + Columns<Tables = Self>
+                              + Typed<Type: NestTuple + IntoTupleOption<IntoOptions: NestTuple>>,
+        > + TupleLen<Len = <Self::Models as TupleLen>::Len>;
 }
 
 /// Extension trait for `Tables`.
 pub trait TablesExt: Tables<Models: IntoTupleOption<IntoOptions = Self::OptionalModels>> {
     /// The models as an optional tuple.
-    type OptionalModels: TupleOption<Transposed = Self::Models>;
+    type OptionalModels: TupleOption<Transposed = Self::Models> + NestTuple;
 }
 
 impl<T> TablesExt for T
 where
-    T: Tables<Models: IntoTupleOption>,
+    T: Tables,
 {
     type OptionalModels = <Self::Models as IntoTupleOption>::IntoOptions;
 }
@@ -46,26 +56,34 @@ pub trait NonCompositePrimaryKeyTables:
         PrimaryKeyColumnsCollection: FirstTupleRow<
             FirstRowType = <Self as NonCompositePrimaryKeyTables>::PrimaryKeys,
         >,
-        Models: TupleGetColumns<<Self as NonCompositePrimaryKeyTables>::PrimaryKeys>,
-        OptionalModels: TupleMayGetColumns<<Self as NonCompositePrimaryKeyTables>::PrimaryKeys>,
+        Models: NestTuple<Nested: TupleGetColumns<<Self::PrimaryKeys as NestTuple>::Nested>>
+                    + IntoTupleOption<
+            IntoOptions: NestTuple<
+                Nested: TupleMayGetColumns<<Self::PrimaryKeys as NestTuple>::Nested>,
+            >,
+        >,
     >
 {
     /// The "flat" n-uple of primary keys, containing the primary key column
     /// for each table in the collection. Since all tables have non-composite
     /// primary keys, this is a flat n-uple.
-    type PrimaryKeys: Columns<Tables = Self>;
+    type PrimaryKeys: Columns<Tables = Self>
+        + Typed<Type: NestTuple + IntoTupleOption<IntoOptions: NestTuple>>
+        + NestTuple<
+            Nested: Typed<Type: IntoTupleOption + FlattenNestedTuple<Flattened: IntoTupleOption>>,
+        >;
 }
 
 impl<T> NonCompositePrimaryKeyTables for T
 where
     T: TablesExt<
-            Models: TupleGetColumns<
-                <Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType,
+        Models: NestTuple<Nested: TupleGetColumns<<<Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType as NestTuple>::Nested>>
+            + IntoTupleOption<
+                IntoOptions: NestTuple<
+                    Nested: TupleMayGetColumns<<<Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType as NestTuple>::Nested>,
+                >
             >,
-            OptionalModels: TupleMayGetColumns<
-                <Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType,
-            >,
-        >,
+    >,
 {
     type PrimaryKeys = <Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType;
 }

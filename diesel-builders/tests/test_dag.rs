@@ -58,7 +58,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .try_color("Orange")?;
 
     // Test MayGetColumn derive - checking if optional fields are set
-    let color_value = cat_builder.may_get_column::<cats::color>();
+    let color_value = cat_builder.may_get_column_ref::<cats::color>();
     assert!(color_value.is_some());
     assert_eq!(color_value, Some(&"Orange".to_string()));
 
@@ -77,7 +77,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     let pet_builder = pet_builder.owner_name("Alice Smith"); // Helper method from SetPetOwnerName
 
     // Test MayGetColumn on builder to verify values before insertion
-    let owner_name = pet_builder.may_get_column::<pets::owner_name>();
+    let owner_name = pet_builder.may_get_column_ref::<pets::owner_name>();
     assert_eq!(owner_name, Some(&"Alice Smith".to_string()));
 
     // Test Debug formatting
@@ -89,9 +89,9 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test TableModel derive - using IndexedColumn implementations
     assert_eq!(pet.id(), &pet.id);
-    assert_eq!(pet.get_column::<animals::id>(), &pet.id);
-    assert_eq!(pet.get_column::<dogs::id>(), &pet.id);
-    assert_eq!(pet.get_column::<cats::id>(), &pet.id);
+    assert_eq!(pet.get_column_ref::<animals::id>(), &pet.id);
+    assert_eq!(pet.get_column_ref::<dogs::id>(), &pet.id);
+    assert_eq!(pet.get_column_ref::<cats::id>(), &pet.id);
 
     // Query to verify relationships
     let queried_animal: Animal = animals::table
@@ -371,7 +371,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Verify the values match - owner_name is the only field directly in NewPet
     assert_eq!(
         deserialized
-            .may_get_column::<pets::owner_name>()
+            .may_get_column_ref::<pets::owner_name>()
             .map(String::as_str),
         Some("Test Owner")
     );

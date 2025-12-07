@@ -7,7 +7,7 @@ use tuplities::prelude::*;
 use crate::{GetColumn, TableAddition, Typed, TypedColumn, columns::NonEmptyProjection};
 
 /// A trait for Diesel tables that define indices which
-/// can be used by foreign keys.
+/// can be used by foreign keys. Limited to 8 columns as composite foreign keys with more than 8 columns are extremely rare and indicate poor design.
 #[diesel_builders_macros::impl_table_index]
 pub trait TableIndex: NonEmptyProjection + TupleLen {}
 
@@ -42,6 +42,7 @@ impl<T> HasPrimaryKeyColumn for T where
 }
 
 /// A trait for Diesel tables that define foreign key relationships.
+/// A trait for Diesel tables that define foreign key relationships. Limited to 8 columns as foreign keys with more than 8 columns are impractical and suggest design issues.
 #[diesel_builders_macros::impl_foreign_key]
 pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
 

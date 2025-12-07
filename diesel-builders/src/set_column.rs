@@ -27,9 +27,9 @@ where
 pub trait MaySetColumn<Column: TypedColumn>: SetColumn<Column> {
     #[inline]
     /// Set the value of the specified column if the value is present.
-    fn may_set_column(&mut self, value: Option<&<Column as Typed>::Type>) -> &mut Self {
+    fn may_set_column(&mut self, value: Option<<Column as Typed>::Type>) -> &mut Self {
         if let Some(v) = value {
-            <Self as SetColumn<Column>>::set_column(self, v.clone());
+            <Self as SetColumn<Column>>::set_column(self, v);
         }
         self
     }

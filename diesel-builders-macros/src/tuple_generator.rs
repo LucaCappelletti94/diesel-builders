@@ -72,12 +72,12 @@ pub(crate) fn type_params_with_prefix(count: usize, prefix: &str) -> Vec<Ident> 
         .collect()
 }
 
-/// Generate all tuple implementations from size 0 (unit) to MAX_TUPLE_SIZE
+/// Generate all tuple implementations
 pub(crate) fn generate_all_sizes<F>(impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
 {
-    (0..=MAX_TUPLE_SIZE).map(impl_fn).collect()
+    generate_all_sizes_with_max(MAX_TUPLE_SIZE, impl_fn)
 }
 
 /// Generate all tuple implementations from size 1 to MAX_TUPLE_SIZE
@@ -85,7 +85,24 @@ pub(crate) fn generate_all_sizes_non_empty<F>(impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
 {
-    (1..=MAX_TUPLE_SIZE).map(impl_fn).collect()
+    generate_all_sizes_non_empty_with_max(MAX_TUPLE_SIZE, impl_fn)
+}
+
+/// Generate all tuple implementations from size 0 (unit) to the specified max_size
+pub(crate) fn generate_all_sizes_with_max<F>(mut max_size: usize, impl_fn: F) -> TokenStream
+where
+    F: Fn(usize) -> TokenStream,
+{
+    max_size = max_size.min(MAX_TUPLE_SIZE);
+    (0..=max_size).map(impl_fn).collect()
+}
+
+/// Generate all tuple implementations from size 1 to the specified max_size
+pub(crate) fn generate_all_sizes_non_empty_with_max<F>(max_size: usize, impl_fn: F) -> TokenStream
+where
+    F: Fn(usize) -> TokenStream,
+{
+    (1..=max_size).map(impl_fn).collect()
 }
 
 mod tests {
@@ -100,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_generate_all_sizes() {
-        let _generated = super::generate_all_sizes(|size| {
+        let _generated = super::generate_all_sizes_with_max(8, |size| {
             let struct_ident =
                 syn::Ident::new(&format!("TupleSize{size}"), proc_macro2::Span::call_site());
             quote::quote! {

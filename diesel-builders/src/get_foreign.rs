@@ -86,7 +86,7 @@ where
         conn: &mut Conn,
     ) -> diesel::QueryResult<<<ForeignColumns as NonEmptyProjection>::Table as TableAddition>::Model> {
         let foreign_table: <ForeignColumns as NonEmptyProjection>::Table = Default::default();
-        let foreign_key_values = self.get_columns();
+        let foreign_key_values = self.get_columns_ref();
         RunQueryDsl::first(
             FilterDsl::filter(
                 SelectDsl::select(

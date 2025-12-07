@@ -85,23 +85,38 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     let mut builder = user_roles::table::builder();
 
-    assert_eq!(builder.may_get_column::<user_roles::user_id>(), None);
-    assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
-    assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
+    assert_eq!(builder.may_get_column_ref::<user_roles::user_id>(), None);
+    assert_eq!(builder.may_get_column_ref::<user_roles::role_id>(), None);
+    assert_eq!(
+        builder.may_get_column_ref::<user_roles::assigned_at>(),
+        None
+    );
 
     builder.try_user_id_ref(1)?;
 
-    assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
-    assert_eq!(builder.may_get_column::<user_roles::role_id>(), None);
-    assert_eq!(builder.may_get_column::<user_roles::assigned_at>(), None);
+    assert_eq!(
+        builder.may_get_column_ref::<user_roles::user_id>(),
+        Some(&1)
+    );
+    assert_eq!(builder.may_get_column_ref::<user_roles::role_id>(), None);
+    assert_eq!(
+        builder.may_get_column_ref::<user_roles::assigned_at>(),
+        None
+    );
 
     builder.try_role_id_ref(10)?;
     builder.try_assigned_at_ref("2025-01-01")?;
 
-    assert_eq!(builder.may_get_column::<user_roles::user_id>(), Some(&1));
-    assert_eq!(builder.may_get_column::<user_roles::role_id>(), Some(&10));
     assert_eq!(
-        builder.may_get_column::<user_roles::assigned_at>(),
+        builder.may_get_column_ref::<user_roles::user_id>(),
+        Some(&1)
+    );
+    assert_eq!(
+        builder.may_get_column_ref::<user_roles::role_id>(),
+        Some(&10)
+    );
+    assert_eq!(
+        builder.may_get_column_ref::<user_roles::assigned_at>(),
         Some(&"2025-01-01".to_string())
     );
 
@@ -350,16 +365,16 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match
     assert_eq!(
-        deserialized.may_get_column::<user_roles::user_id>(),
+        deserialized.may_get_column_ref::<user_roles::user_id>(),
         Some(&42)
     );
     assert_eq!(
-        deserialized.may_get_column::<user_roles::role_id>(),
+        deserialized.may_get_column_ref::<user_roles::role_id>(),
         Some(&100)
     );
     assert_eq!(
         deserialized
-            .may_get_column::<user_roles::assigned_at>()
+            .may_get_column_ref::<user_roles::assigned_at>()
             .map(String::as_str),
         Some("2025-12-04")
     );

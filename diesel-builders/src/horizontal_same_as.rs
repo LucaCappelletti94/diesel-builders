@@ -98,7 +98,7 @@ pub trait DiscretionarySameAsIndex: HorizontalSameAsKey {
 }
 
 /// A trait for Diesel columns collections that define horizontal same-as
-/// relationships.
+/// relationships. Limited to 8 columns as complex horizontal relationships with more columns lead to unwieldy queries and potential performance issues.
 #[impl_horizontal_same_as_keys]
 pub trait HorizontalSameAsKeys<T: crate::TableAddition>: Columns {
     /// The set of referenced tables.
