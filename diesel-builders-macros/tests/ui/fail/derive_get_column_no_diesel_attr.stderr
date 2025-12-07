@@ -1,8 +1,0 @@
-error: GetColumn derive requires a #[diesel(table_name = ...)] attribute
- --> tests/ui/fail/derive_get_column_no_diesel_attr.rs:6:1
-  |
-6 | / struct User {
-7 | |     id: i32,
-8 | |     name: String,
-9 | | }
-  | |_^
