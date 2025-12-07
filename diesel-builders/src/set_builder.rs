@@ -247,7 +247,7 @@ pub trait TrySetMandatoryBuilderExt: HasTableAddition {
     }
 }
 
-impl<T: HasTableAddition + Sized> TrySetMandatoryBuilderExt for T {}
+impl<T: HasTableAddition> TrySetMandatoryBuilderExt for T {}
 
 /// Extension trait for `TrySetDiscretionaryBuilder` that allows specifying the
 /// column at the method level.

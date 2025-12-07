@@ -20,6 +20,5 @@ impl<T> TableModel for T where
         + GetColumns<<T::Table as Table>::AllColumns>
         + GetColumns<<T::Table as TableAddition>::PrimaryKeyColumns>
         + GetColumn<<<T::Table as TableAddition>::PrimaryKeyColumns as TuplePopFront>::Front>
-        + Sized
 {
 }

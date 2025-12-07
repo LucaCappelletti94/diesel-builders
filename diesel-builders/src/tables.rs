@@ -98,7 +98,7 @@ pub trait InsertableTableModels:
 {
 }
 impl<T> InsertableTableModels for T where
-    T: Sized + TupleDefault + HasTables<Tables: Tables<InsertableModels = T>>
+    T: TupleDefault + HasTables<Tables: Tables<InsertableModels = T>>
 {
 }
 

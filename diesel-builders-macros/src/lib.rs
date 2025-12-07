@@ -196,6 +196,7 @@ pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> To
 /// Generate `TableIndex` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    // (impl_table_index proceeds)
     let impls = impl_generators::generate_table_index();
     let item = proc_macro2::TokenStream::from(item);
 
@@ -661,7 +662,15 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 /// This macro should be derived on Model structs to automatically generate
 /// `TypedColumn` implementations for each column based on the struct's field
 /// types.
-#[proc_macro_derive(TableModel)]
+///
+/// Supports a helper attribute to override the insertable model name:
+/// ```ignore
+/// #[derive(TableModel)]
+/// #[table_model(insertable = MyCustomInsertable)]
+/// #[diesel(table_name = my_table)]
+/// struct MyModel { ... }
+/// ```
+#[proc_macro_derive(TableModel, attributes(table_model))]
 #[allow(clippy::too_many_lines)]
 pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -900,7 +909,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #set_field_name_discretionary_model_trait for T
                     where
-                        T: diesel_builders::SetDiscretionaryModel<#table_name::#field_name> + Sized,
+                        T: diesel_builders::SetDiscretionaryModel<#table_name::#field_name>,
                         for<'a> #table_name::#field_name: diesel_builders::DiscretionarySameAsIndex
                     {}
 
@@ -932,7 +941,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #set_field_name_mandatory_builder_trait for T
                 where
-                    T: diesel_builders::SetMandatoryBuilder<#table_name::#field_name> + Sized,
+                    T: diesel_builders::SetMandatoryBuilder<#table_name::#field_name>,
                     for<'a> #table_name::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
                     {}
 
@@ -964,7 +973,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #set_field_name_discretionary_builder_trait for T
                 where
-                    T: diesel_builders::SetDiscretionaryBuilder<#table_name::#field_name> + Sized,
+                    T: diesel_builders::SetDiscretionaryBuilder<#table_name::#field_name>,
                     for<'a> #table_name::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
                     {}
 
@@ -1003,7 +1012,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #try_set_field_name_discretionary_model_trait for T
                 where
-                    T: diesel_builders::TrySetDiscretionaryModel<#table_name::#field_name> + Sized,
+                    T: diesel_builders::TrySetDiscretionaryModel<#table_name::#field_name>,
                     for<'a> #table_name::#field_name: diesel_builders::DiscretionarySameAsIndex
                     {}
 
@@ -1042,7 +1051,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #try_set_field_name_mandatory_builder_trait for T
                 where
-                    T: diesel_builders::TrySetMandatoryBuilder<#table_name::#field_name> + Sized,
+                    T: diesel_builders::TrySetMandatoryBuilder<#table_name::#field_name>,
                     for<'a> #table_name::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
                     {}
 
@@ -1081,7 +1090,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
                 impl<T> #try_set_field_name_discretionary_builder_trait for T
                 where
-                    T: diesel_builders::TrySetDiscretionaryBuilder<#table_name::#field_name> + Sized,
+                    T: diesel_builders::TrySetDiscretionaryBuilder<#table_name::#field_name>,
                     for<'a> #table_name::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
                     {}
             }
@@ -1114,7 +1123,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 }
             }
 
-            impl<T> #set_field_name for T where T: diesel_builders::SetColumn<#table_name::#field_name> + Sized {}
+            impl<T> #set_field_name for T where T: diesel_builders::SetColumn<#table_name::#field_name> {}
 
             #[doc = #try_set_trait_doc_comment]
             pub trait #try_set_field_name: diesel_builders::TrySetColumn<#table_name::#field_name> + Sized {
@@ -1146,7 +1155,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 }
             }
 
-            impl<T> #try_set_field_name for T where T: diesel_builders::TrySetColumn<#table_name::#field_name> + Sized {}
+            impl<T> #try_set_field_name for T where T: diesel_builders::TrySetColumn<#table_name::#field_name> {}
 
             impl diesel_builders::Typed for #table_name::#field_name {
                 type Type = #field_type;
@@ -1170,11 +1179,39 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         }
     });
 
-    let insertable_ident = syn::Ident::new(
-        &format!("New{}", struct_ident),
-        proc_macro2::Span::call_site(),
-    );
+    // Check for #[table_model(insertable = X)] helper attribute
+    let insertable_ident = input
+        .attrs
+        .iter()
+        .find_map(|attr| {
+            if !attr.path().is_ident("table_model") {
+                return None;
+            }
 
+            let mut found: Option<syn::Ident> = None;
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("insertable") {
+                    let value = meta.value()?;
+                    if let Ok(id) = value.parse::<syn::Ident>() {
+                        found = Some(id);
+                        return Ok(());
+                    }
+                    if let Ok(lit) = value.parse::<syn::LitStr>() {
+                        found = Some(syn::Ident::new(&lit.value(), lit.span()));
+                        return Ok(());
+                    }
+                }
+                Ok(())
+            });
+
+            found
+        })
+        .unwrap_or_else(|| {
+            syn::Ident::new(
+                &format!("New{}", struct_ident),
+                proc_macro2::Span::call_site(),
+            )
+        });
     quote::quote! {
         #(#typed_column_impls)*
         #(#indexed_column_impls)*
