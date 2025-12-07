@@ -99,12 +99,6 @@ pub struct NewTableA {
     pub column_a: Option<String>,
 }
 
-impl TableAddition for table_a::table {
-    type InsertableModel = NewTableA;
-    type Model = TableA;
-    type PrimaryKeyColumns = (table_a::id,);
-}
-
 // Table C models
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
@@ -142,12 +136,6 @@ pub struct NewTableC {
     pub a_id: Option<i32>,
     /// Column C value.
     pub column_c: Option<Option<String>>,
-}
-
-impl TableAddition for table_c::table {
-    type InsertableModel = NewTableC;
-    type Model = TableC;
-    type PrimaryKeyColumns = (table_c::id,);
 }
 
 // Table B models
@@ -255,12 +243,6 @@ impl TrySetColumn<table_b::remote_column_c> for NewTableB {
 
 impl InsertableTableModel for NewTableB {
     type Error = ErrorB;
-}
-
-impl TableAddition for table_b::table {
-    type InsertableModel = NewTableB;
-    type Model = TableB;
-    type PrimaryKeyColumns = (table_b::id,);
 }
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references

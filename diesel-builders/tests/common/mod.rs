@@ -163,12 +163,6 @@ impl InsertableTableModel for NewAnimal {
     type Error = NewAnimalError;
 }
 
-impl TableAddition for animals::table {
-    type InsertableModel = NewAnimal;
-    type Model = Animal;
-    type PrimaryKeyColumns = (animals::id,);
-}
-
 /// SQL to create the animals table.
 #[allow(dead_code)]
 pub const CREATE_ANIMALS_TABLE: &str = "CREATE TABLE animals (
@@ -240,12 +234,6 @@ pub struct NewDog {
     pub id: Option<i32>,
     /// The breed of the dog.
     pub breed: Option<String>,
-}
-
-impl TableAddition for dogs::table {
-    type InsertableModel = NewDog;
-    type Model = Dog;
-    type PrimaryKeyColumns = (dogs::id,);
 }
 
 /// SQL to create the dogs table.
@@ -352,12 +340,6 @@ impl diesel_builders::TrySetColumn<cats::color> for NewCat {
     }
 }
 
-impl TableAddition for cats::table {
-    type InsertableModel = NewCat;
-    type Model = Cat;
-    type PrimaryKeyColumns = (cats::id,);
-}
-
 impl InsertableTableModel for NewCat {
     type Error = NewCatError;
 }
@@ -434,12 +416,6 @@ pub struct NewPuppy {
     pub age_months: Option<i32>,
 }
 
-impl TableAddition for puppies::table {
-    type InsertableModel = NewPuppy;
-    type Model = Puppy;
-    type PrimaryKeyColumns = (puppies::id,);
-}
-
 /// SQL to create the puppies table.
 #[allow(dead_code)]
 pub const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
@@ -510,12 +486,6 @@ pub struct NewPet {
     pub id: Option<i32>,
     /// The owner name of the pet.
     pub owner_name: Option<String>,
-}
-
-impl TableAddition for pets::table {
-    type InsertableModel = NewPet;
-    type Model = Pet;
-    type PrimaryKeyColumns = (pets::id,);
 }
 
 /// SQL to create the pets table (for DAG tests).

@@ -63,12 +63,6 @@ pub struct NewUserRole {
     pub assigned_at: Option<String>,
 }
 
-impl TableAddition for user_roles::table {
-    type InsertableModel = NewUserRole;
-    type Model = UserRole;
-    type PrimaryKeyColumns = (user_roles::user_id, user_roles::role_id);
-}
-
 #[test]
 fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = common::establish_test_connection()?;

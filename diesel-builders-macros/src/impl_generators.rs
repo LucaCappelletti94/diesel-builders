@@ -229,7 +229,7 @@ pub fn generate_try_set_columns_collections_trait() -> TokenStream {
         });
 
         quote! {
-            impl<Error, T, #(#type_params: Typed<Type: TupleRef>,)*> TrySetColumnsCollection<Error, (#(#type_params,)*)> for T
+            impl<Error, T, #(#type_params: Typed,)*> TrySetColumnsCollection<Error, (#(#type_params,)*)> for T
             #where_statement
             {
                 #[inline]

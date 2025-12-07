@@ -42,7 +42,7 @@ impl<Chead, CTail, Thead, TTail> TupleGetColumns<(Chead, CTail)> for (Thead, TTa
 where
     Chead: TypedColumn,
     CTail: Typed<Type: FlattenNestedTuple>,
-    (Chead::Type, CTail::Type): FlattenNestedTuple<Flattened: TupleRef>,
+    (Chead::Type, CTail::Type): FlattenNestedTuple,
     Thead: GetColumn<Chead>,
     TTail: TupleGetColumns<CTail>,
     <CTail::Type as FlattenNestedTuple>::Flattened: TuplePushFront<
@@ -140,7 +140,7 @@ pub trait MaySetColumns<CS: Columns> {
 
 #[diesel_builders_macros::impl_try_set_columns]
 /// Trait indicating a builder can fallibly set multiple columns.
-pub trait TrySetColumns<Error, CS: Typed<Type: TupleRef>> {
+pub trait TrySetColumns<Error, CS: Typed> {
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors
@@ -188,7 +188,7 @@ pub trait TrySetHomogeneous<Error, Type, CS: Typed>: TrySetColumnsCollection<Err
     fn try_set_homogeneous(&mut self, value: Type) -> Result<&mut Self, Error>;
 }
 
-impl<Error, T, Type: core::fmt::Debug + Clone, ColumnsCollection: Typed<Type: TupleReplicate<Type>>>
+impl<Error, T, Type: Clone, ColumnsCollection: Typed<Type: TupleReplicate<Type>>>
     TrySetHomogeneous<Error, Type, ColumnsCollection> for T
 where
     T: TrySetColumnsCollection<Error, ColumnsCollection>,

@@ -498,13 +498,10 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         #(#impls)*
 
 
-    impl diesel_builders::InsertableTableModel for #struct_name
-    where
-        Self: 'static
-            + diesel_builders::HasTableAddition<Table: diesel_builders::TableAddition<InsertableModel = Self>>
+            impl diesel_builders::InsertableTableModel for #struct_name
+            where
+                Self: diesel_builders::HasTableAddition<Table: diesel_builders::TableAddition<InsertableModel = Self>>
             + Default
-            + Clone
-            + core::fmt::Debug
             + diesel::Insertable<<Self as diesel::associations::HasTable>::Table>
     {
         type Error = core::convert::Infallible;
@@ -1173,9 +1170,21 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         }
     });
 
+    let insertable_ident = syn::Ident::new(
+        &format!("New{}", struct_ident),
+        proc_macro2::Span::call_site(),
+    );
+
     quote::quote! {
         #(#typed_column_impls)*
         #(#indexed_column_impls)*
+
+        // Auto-implement TableAddition for the table associated with this model.
+        impl diesel_builders::TableAddition for #table_name::table {
+            type InsertableModel = #insertable_ident;
+            type Model = #struct_ident;
+            type PrimaryKeyColumns = (#(#table_name::#primary_key_columns,)*) ;
+        }
     }
     .into()
 }
