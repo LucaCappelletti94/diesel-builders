@@ -45,7 +45,6 @@ pub trait SetDiscretionaryModel<Column: crate::DiscretionarySameAsIndex> {
 impl<C, T> SetDiscretionaryModel<C> for T
 where
     C: crate::DiscretionarySameAsIndex,
-    C::ReferencedTable: BuildableTable,
     Self: SetColumns<<C as HorizontalSameAsKey>::HostColumns> + SetColumn<C>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
         GetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
@@ -113,7 +112,6 @@ impl<C, T> TrySetDiscretionaryModel<C> for T
 where
     T: HasTableAddition,
     C: crate::DiscretionarySameAsIndex,
-    C::ReferencedTable: BuildableTable,
     Self: TrySetColumns<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, <C as HorizontalSameAsKey>::HostColumns> + TrySetColumn<C>,
     <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<Self as TrySetColumn<C>>::Error>,
     <<C as SingletonForeignKey>::ReferencedTable as TableAddition>::Model:
