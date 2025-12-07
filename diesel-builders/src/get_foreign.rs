@@ -10,17 +10,20 @@ use diesel::query_dsl::methods::LoadQuery;
 use diesel::query_dsl::methods::SelectDsl;
 use tuplities::prelude::*;
 
+use crate::Columns;
 use crate::ForeignKey;
 use crate::TableIndex;
-use crate::{Columns, GetColumns, TableAddition, columns::NonEmptyProjection};
+use crate::Typed;
+use crate::columns::NonEmptyProjection;
+use crate::{GetColumns, TableAddition};
 
 /// The `GetForeign` trait allows retrieving the foreign table
 /// model curresponding to specified foreign columns from a host table model.
 pub trait GetForeign<
     Conn,
     ForeignColumns: TableIndex,
-    HostColumns: NonEmptyProjection<Types = <ForeignColumns as Columns>::Types>,
->: GetColumns<HostColumns> + HasTable<Table = HostColumns::Table>
+    HostColumns: Columns<Type = <ForeignColumns as Typed>::Type>,
+>: GetColumns<HostColumns>
 {
     /// Retrieve the foreign table model corresponding to the specified
     /// foreign columns from the host table model.
@@ -42,32 +45,35 @@ pub trait GetForeign<
 impl<
     Conn,
     ForeignColumns: TableIndex,
-    HostColumns: NonEmptyProjection<Types = <ForeignColumns as Columns>::Types>,
+    HostColumns: NonEmptyProjection<Type = <ForeignColumns as Typed>::Type>,
     T: GetColumns<HostColumns> + HasTable<Table=HostColumns::Table>,
 > GetForeign<Conn, ForeignColumns, HostColumns> for T
 where
     HostColumns: ForeignKey<ForeignColumns>,
     Conn: diesel::connection::LoadConnection,
-    for<'a> ForeignColumns: EqAll<<<ForeignColumns as Columns>::Types as TupleRef>::Ref<'a>>,
+    <ForeignColumns as NonEmptyProjection>::Table: SelectDsl<
+        <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
+    >,
+    for<'a> ForeignColumns: EqAll<<<ForeignColumns as Typed>::Type as TupleRef>::Ref<'a>>,
     for<'a> <<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >>::Output: FilterDsl<
         <ForeignColumns as EqAll<
-            <<ForeignColumns as Columns>::Types as TupleRef>::Ref<'a>,
+            <<ForeignColumns as Typed>::Type as TupleRef>::Ref<'a>,
         >>::Output,
     >,
     for<'a> <<<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >>::Output as FilterDsl<
         <ForeignColumns as EqAll<
-            <<ForeignColumns as Columns>::Types as TupleRef>::Ref<'a>,
+            <<ForeignColumns as Typed>::Type as TupleRef>::Ref<'a>,
         >>::Output,
     >>::Output: LimitDsl + RunQueryDsl<Conn>,
     for<'query> <<<<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >>::Output as FilterDsl<
         <ForeignColumns as EqAll<
-            <<ForeignColumns as Columns>::Types as TupleRef>::Ref<'query>,
+            <<ForeignColumns as Typed>::Type as TupleRef>::Ref<'query>,
         >>::Output,
     >>::Output as LimitDsl>::Output: LoadQuery<
             'query,

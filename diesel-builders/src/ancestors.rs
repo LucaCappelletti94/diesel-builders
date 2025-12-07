@@ -1,6 +1,6 @@
 //! Submodule defining the `Descendant` trait.
 
-use tuplities::prelude::TuplePushBack;
+use tuplities::prelude::{TuplePopFront, TuplePushBack};
 use typenum::Unsigned;
 
 use crate::{BundlableTables, TableAddition, Tables};
@@ -38,14 +38,14 @@ pub trait Descendant: TableAddition {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
     /// The ancestor tables of this table, including itself.
-    type AncestorsWithSelf: BundlableTables;
+    type AncestorsWithSelf: BundlableTables + TuplePopFront<Front = Self::Root>;
 }
 
 impl<T> DescendantWithSelf for T
 where
     T: Descendant,
     T::Ancestors: TuplePushBack<Self>,
-    <T::Ancestors as TuplePushBack<Self>>::Output: BundlableTables,
+    <T::Ancestors as TuplePushBack<Self>>::Output: BundlableTables + TuplePopFront<Front = T::Root>,
 {
     type AncestorsWithSelf = <T::Ancestors as TuplePushBack<Self>>::Output;
 }

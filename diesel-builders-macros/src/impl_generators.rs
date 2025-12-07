@@ -7,7 +7,9 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use crate::tuple_generator::{generate_all_sizes, type_params, MAX_TUPLE_SIZE};
+use crate::tuple_generator::{
+    generate_all_sizes, generate_all_sizes_non_empty, type_params, type_params_with_prefix,
+};
 
 /// Generate Columns trait implementations
 pub fn generate_columns() -> TokenStream {
@@ -15,36 +17,27 @@ pub fn generate_columns() -> TokenStream {
         let type_params = type_params(size);
 
         quote! {
-            impl<#(#type_params: TypedColumn),*> Columns for (#(#type_params,)*)
+            impl<#(#type_params: Typed),*> Typed for (#(#type_params,)*)
             {
-                type Types = (#(<#type_params as TypedColumn>::Type,)*);
+                type Type = (#(<#type_params as Typed>::Type,)*);
+            }
+            impl<#(#type_params: crate::TypedColumn),*> Columns for (#(#type_params,)*)
+            {
                 type Tables = (#(<#type_params as diesel::Column>::Table,)*);
             }
         }
     })
 }
-
-/// Generate `Projection` trait implementations
-pub fn generate_projection() -> TokenStream {
-    generate_all_sizes(|size| {
+/// Generate NonEmptyProjection trait implementations
+pub fn generate_non_empty_projection() -> TokenStream {
+    generate_all_sizes_non_empty(|size| {
         let type_params = type_params(size);
+        let first_param = &type_params[0];
 
         quote! {
-            impl<T: crate::TableAddition, #(#type_params: TypedColumn<Table=T>),*> Projection<T> for (#(#type_params,)*)
+            impl<#(#type_params: crate::TypedColumn),*> NonEmptyProjection for (#(#type_params,)*)
             {
-            }
-        }
-    })
-}
-
-/// Generate `HomogeneousColumns` trait implementations
-pub fn generate_homogeneous_columns() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-
-        quote! {
-            impl<Type, #(#type_params: TypedColumn<Type=Type>),*> HomogeneousColumns<Type> for (#(#type_params,)*)
-            {
+                type Table = <#first_param as diesel::Column>::Table;
             }
         }
     })
@@ -59,13 +52,9 @@ pub fn generate_tables() -> TokenStream {
             {
                 type Models = (#(<#type_params as TableAddition>::Model,)*);
                 type InsertableModels = (#(<#type_params as TableAddition>::InsertableModel,)*);
-                type PrimaryKeys = (#(<#type_params as diesel::Table>::PrimaryKey,)*);
+                type PrimaryKeyColumnsCollection = (#(<#type_params as TableAddition>::PrimaryKeyColumns,)*);
             }
-            impl<#(#type_params: TableModel),*> TableModels for (#(#type_params,)*)
-            {
-                type Tables = (#(<#type_params as HasTable>::Table,)*);
-            }
-            impl<#(#type_params: InsertableTableModel),*> InsertableTableModels for (#(#type_params,)*)
+            impl<#(#type_params: HasTable<Table: TableAddition>),*> HasTables for (#(#type_params,)*)
             {
                 type Tables = (#(<#type_params as HasTable>::Table,)*);
             }
@@ -84,8 +73,27 @@ pub fn generate_get_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn get_columns(&self) -> <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> {
+                fn get_columns(&self) -> <<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> {
                     (#(<T as GetColumn<#type_params>>::get_column(self),)*)
+                }
+            }
+        }
+    })
+}
+
+/// Generate `TupleGetColumns` trait implementations
+pub fn generate_tuple_get_columns_trait() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let column_type_params = type_params_with_prefix(size, "C");
+        let indices = (0..size).map(syn::Index::from);
+
+        quote! {
+            impl<#(#type_params: GetColumn<#column_type_params>,)* #(#column_type_params: TypedColumn,)*> TupleGetColumns<(#(#column_type_params,)*)> for (#(#type_params,)*)
+            {
+                #[inline]
+                fn tuple_get_columns(&self) -> <<(#(#column_type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> {
+                    (#(<#type_params as GetColumn<#column_type_params>>::get_column(&self.#indices),)*)
                 }
             }
         }
@@ -104,8 +112,27 @@ pub fn generate_may_get_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
+                fn may_get_columns(&self) -> <<<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
                     (#(<T as MayGetColumn<#type_params>>::may_get_column(self),)*)
+                }
+            }
+        }
+    })
+}
+
+/// Generate `TupleMayGetColumns` trait implementations
+pub fn generate_tuple_may_get_columns_trait() -> TokenStream {
+    generate_all_sizes(|size| {
+        let type_params = type_params(size);
+        let column_type_params = type_params_with_prefix(size, "C");
+        let indices = (0..size).map(syn::Index::from);
+
+        quote! {
+            impl<#(#type_params: MayGetColumn<#column_type_params>,)* #(#column_type_params: TypedColumn,)*> TupleMayGetColumns<(#(#column_type_params,)*)> for (#(#type_params,)*)
+            {
+                #[inline]
+                fn tuple_may_get_columns(&self) -> <<<(#(#column_type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
+                    (#(<#type_params as MayGetColumn<#column_type_params>>::may_get_column(&self.#indices),)*)
                 }
             }
         }
@@ -134,7 +161,7 @@ pub fn generate_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_>) -> &mut Self {
+                fn set_columns(&mut self, values: <<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_>) -> &mut Self {
                     #(#set_individual_calls)*
                     self
                 }
@@ -165,7 +192,7 @@ pub fn generate_may_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> &mut Self {
+                fn may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> &mut Self {
                     #(#may_set_individual_calls)*
                     self
                 }
@@ -174,20 +201,11 @@ pub fn generate_may_set_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate TrySetColumns trait implementations
+/// Generate `TrySetColumns` trait implementations
 pub fn generate_try_set_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-        let try_set_individual_calls: Vec<_> = type_params
-            .iter()
-            .zip(&indices)
-            .map(|(t, idx)| {
-                quote! {
-                    <T as TrySetColumn<#t>>::try_set_column(self, values.#idx.clone())?;
-                }
-            })
-            .collect();
         let where_statement = (size > 0).then(|| {
             quote! {
                 where
@@ -197,12 +215,12 @@ pub fn generate_try_set_columns_trait() -> TokenStream {
         });
 
         quote! {
-            impl<Error, T: HasTableAddition, #(#type_params: TypedColumn,)*> TrySetColumns<Error, (#(#type_params,)*)> for T
+            impl<Error, T, #(#type_params: Typed,)*> TrySetColumns<Error, (#(#type_params,)*)> for T
             #where_statement
             {
                 #[inline]
-                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_>) -> Result<&mut Self, Error> {
-                    #(#try_set_individual_calls)*
+                fn try_set_columns(&mut self, values: <<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_>) -> Result<&mut Self, Error> {
+                    #(<T as TrySetColumn<#type_params>>::try_set_column(self, values.#indices.clone())?;)*
                     Ok(self)
                 }
             }
@@ -210,30 +228,26 @@ pub fn generate_try_set_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate TrySetHomogeneousColumn trait implementations
-pub fn generate_try_set_homogeneous_column_trait() -> TokenStream {
+/// Generate `TrySetColumnsCollections` trait implementations
+pub fn generate_try_set_columns_collections_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
-        let value_replicates = type_params
-            .iter()
-            .map(|_| quote! { value })
-            .collect::<Vec<_>>();
-        let type_column_bounds =
-            (size > 0).then(|| quote! { #(#type_params: TypedColumn<Type = Type>),* });
+        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
         let where_statement = (size > 0).then(|| {
             quote! {
                 where
-                    T: TrySetColumns<Error, (#(#type_params,)*)>
+                    #(T: TrySetColumns<Error, #type_params>,)*
             }
         });
 
         quote! {
-            impl<Error, T: HasTableAddition, Type: core::fmt::Debug + Clone, #type_column_bounds> TrySetHomogeneousColumn<Error, Type, (#(#type_params,)*)> for T
+            impl<Error, T, #(#type_params: Typed<Type: TupleRef>,)*> TrySetColumnsCollection<Error, (#(#type_params,)*)> for T
             #where_statement
             {
                 #[inline]
-                fn try_set_homogeneous_columns(&mut self, value: &Type) -> Result<&mut Self, Error> {
-                    <T as TrySetColumns<Error, (#(#type_params,)*)>>::try_set_columns(self, (#(#value_replicates,)*))
+                fn try_set_columns_collection(&mut self, values: <<(#(#type_params,)*) as Typed>::Type as TupleRefMap>::RefMap<'_>) -> Result<&mut Self, Error> {
+                    #(<T as TrySetColumns<Error, #type_params>>::try_set_columns(self, values.#indices)?;)*
+                    Ok(self)
                 }
             }
         }
@@ -268,7 +282,7 @@ pub fn generate_try_may_set_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> Result<&mut Self, Error> {
+                fn try_may_set_columns(&mut self, values: <<<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions) -> Result<&mut Self, Error> {
                     #(#try_may_set_individual_calls)*
                     Ok(self)
                 }
@@ -277,8 +291,8 @@ pub fn generate_try_may_set_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate NestedInsertTuple trait implementations
-pub fn generate_nested_insert_tuple() -> TokenStream {
+/// Generate InsertTuple trait implementations
+pub fn generate_insert_tuple() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
@@ -288,15 +302,15 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
             .map(|t| quote! { <<#t as HasTable>::Table as TableAddition>::Model });
 
         quote! {
-            impl<Error, Conn, #(#type_params),*> NestedInsertTuple<Error, Conn> for (#(#type_params,)*)
+            impl<Error, Conn, #(#type_params),*> InsertTuple<Error, Conn> for (#(#type_params,)*)
             where
-                Conn: LoadConnection,
-                #(#type_params: crate::RecursiveInsert<Error, Conn> + HasTableAddition,)*
+                Conn: diesel::connection::LoadConnection,
+                #(#type_params: crate::RecursiveBuilderInsert<Error, Conn> + crate::HasTableAddition,)*
             {
                 type ModelsTuple = (#(#model_types,)*);
 
                 #[inline]
-                fn nested_insert_tuple(self, conn: &mut Conn) -> crate::BuilderResult<Self::ModelsTuple, Error> {
+                fn insert_tuple(self, conn: &mut Conn) -> crate::BuilderResult<Self::ModelsTuple, Error> {
                     Ok((#(self.#indices.recursive_insert(conn)?,)*))
                 }
             }
@@ -304,8 +318,8 @@ pub fn generate_nested_insert_tuple() -> TokenStream {
     })
 }
 
-/// Generate NestedInsertOptionTuple trait implementations
-pub fn generate_nested_insert_option_tuple() -> TokenStream {
+/// Generate InsertOptionTuple trait implementations
+pub fn generate_insert_option_tuple() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
         let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
@@ -315,14 +329,14 @@ pub fn generate_nested_insert_option_tuple() -> TokenStream {
             .map(|t| quote! { Option<<<#t as HasTable>::Table as TableAddition>::Model> });
 
         quote! {
-            impl<Error, Conn, #(#type_params,)*> NestedInsertOptionTuple<Error, Conn> for (#(Option<#type_params>,)*)
+            impl<Error, Conn, #(#type_params,)*> InsertOptionTuple<Error, Conn> for (#(Option<#type_params>,)*)
             where
-                Conn: LoadConnection,
-                #(#type_params: crate::RecursiveInsert<Error, Conn> + HasTableAddition,)*
+                Conn: diesel::connection::LoadConnection,
+                #(#type_params: crate::RecursiveBuilderInsert<Error, Conn> + crate::HasTableAddition,)*
             {
                 type OptionModelsTuple = (#(#option_model_types,)*);
 
-                fn nested_insert_option_tuple(self, conn: &mut Conn) -> crate::BuilderResult<Self::OptionModelsTuple, Error> {
+                fn insert_option_tuple(self, conn: &mut Conn) -> crate::BuilderResult<Self::OptionModelsTuple, Error> {
                     Ok((#(match self.#indices {
                         Some(builder) => Some(builder.recursive_insert(conn)?),
                         None => None,
@@ -366,64 +380,6 @@ pub fn generate_bundlable_tables() -> TokenStream {
     })
 }
 
-/// Generate BuildableColumns trait implementations
-pub fn generate_buildable_columns() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-
-        quote! {
-            impl<#(#type_params),*> BuildableColumns for (#(#type_params,)*)
-            where
-                Self::Tables: BuildableTables,
-                #(#type_params: BuildableColumn),*
-            {}
-        }
-    })
-}
-
-/// Generate NonCompositePrimaryKeyTableModels and MayGetPrimaryKeys trait
-/// implementations
-pub fn generate_table_model() -> TokenStream {
-    generate_all_sizes(|size| {
-        let type_params = type_params(size);
-        let indices: Vec<_> = (0..size).map(syn::Index::from).collect();
-
-        let get_pk_calls = indices.iter().map(|idx| quote! { self.#idx.get_column() });
-
-        // For may_get_primary_keys, build extractors for each optional model
-        let pk_extractors = type_params.iter().zip(&indices).map(|(t, idx)| {
-            quote! {
-                optional_self.#idx.as_ref().map(|model: &#t| model.get_column())
-            }
-        });
-
-        // Build the PrimaryKeys type for the where clause
-        let primary_key_types = type_params
-            .iter()
-            .map(|t| quote! { <<#t as HasTable>::Table as diesel::Table>::PrimaryKey });
-
-        quote! {
-            impl<#(#type_params),*> NonCompositePrimaryKeyTableModels for (#(#type_params,)*)
-            where
-                #(#type_params: NonCompositePrimaryKeyTableModel,)*
-                Self::Tables: Tables<
-                    PrimaryKeys = (#(#primary_key_types,)*),
-                >,
-            {
-                #[inline]
-                fn get_primary_keys(&self) -> <<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> {
-                    (#(#get_pk_calls,)*)
-                }
-
-                #[inline]
-                fn may_get_primary_keys(optional_self: &<Self as IntoTupleOption>::IntoOptions) -> <<<<Self::Tables as Tables>::PrimaryKeys as Columns>::Types as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
-                    (#(#pk_extractors,)*)
-                }
-            }
-        }
-    })
-}
-
 /// Generate AncestorsOf trait implementations
 pub fn generate_ancestors_of() -> TokenStream {
     generate_all_sizes(|size| {
@@ -454,7 +410,7 @@ pub fn generate_ancestors_of() -> TokenStream {
 pub fn generate_horizontal_same_as_keys() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
-        let additional_requirements = (size > 0).then(|| quote! {+ HasPrimaryKey });
+        let additional_requirements = (size > 0).then(|| quote! {+ HasPrimaryKeyColumn });
 
         quote! {
             impl<T, #(#type_params),*> HorizontalSameAsKeys<T> for (#(#type_params,)*)
@@ -463,147 +419,20 @@ pub fn generate_horizontal_same_as_keys() -> TokenStream {
                 #(#type_params: HorizontalSameAsKey<Table = T>,)*
             {
                 type ReferencedTables = (#(<#type_params as SingletonForeignKey>::ReferencedTable,)*);
-                type FirstForeignColumns = (#(<<#type_params as HorizontalSameAsKey>::ForeignColumns as TuplePopFront>::Front,)*);
+                type HostColumnsMatrix = (#(<#type_params as HorizontalSameAsKey>::HostColumns,)*);
+                type ForeignColumnsMatrix = (#(<#type_params as HorizontalSameAsKey>::ForeignColumns,)*);
             }
         }
     })
 }
 
-/// Generate CompletedTableBuilder NestedInsert trait implementations for all
-/// tuple sizes.
-///
-/// The size 1 case is handled separately in the main codebase as a base case.
-/// This generates implementations for tuples of size 2 and up, where the
-/// pattern is:
-/// - Pop the first bundle from the tuple
-/// - Insert it to get the parent model
-/// - Set the foreign key columns in the remaining bundles
-/// - Recursively insert the remaining bundles
-pub fn generate_completed_table_builder_nested_insert() -> TokenStream {
-    // Start from size 2 since size 1 is the base case handled separately
-    (2..=MAX_TUPLE_SIZE).map(|size| {
-        let type_params = type_params(size);
-        let first_type = &type_params[0];
-        let remaining_types = &type_params[1..];
-        let last_type = &type_params[size-1];
-        // Ancestors are all types except the last one (which is T itself)
-        let ancestor_types = &type_params[..size-1];
-
-        // Build the full tuple type
-        let full_tuple = quote! { (#(crate::CompletedTableBuilderBundle<#type_params>,)*) };
-
-        quote! {
-            impl<
-                Error,
-                Conn,
-                T,
-                #(#type_params: BundlableTable + crate::HasPrimaryKey<PrimaryKey: TypedColumn<Type=<<T as diesel::Table>::PrimaryKey as TypedColumn>::Type>>,)*
-            >
-            RecursiveInsert<Error, Conn>
-                for CompletedTableBuilder<T, #full_tuple>
-            where
-                Conn: diesel::connection::LoadConnection,
-                T: BuildableTable + crate::HasPrimaryKey,
-                // Only require DescendantOf for ancestor tables, not for T itself
-                #(T: DescendantOf<#ancestor_types>,)*
-                #last_type: BundlableTable,
-                <#first_type as crate::TableAddition>::Model: crate::GetColumn<
-                    <#first_type as diesel::Table>::PrimaryKey
-                >,
-                crate::CompletedTableBuilderBundle<#first_type>: RecursiveInsert<Error, Conn, Table = #first_type>,
-                #full_tuple: tuplities::prelude::TuplePopFront<
-                    Front=crate::CompletedTableBuilderBundle<#first_type>,
-                    Tail=(#(crate::CompletedTableBuilderBundle<#remaining_types>,)*)
-                >,
-                CompletedTableBuilder<T, (#(crate::CompletedTableBuilderBundle<#remaining_types>,)*)>: RecursiveInsert<Error, Conn, Table = T>
-                    + crate::TrySetHomogeneousColumn<
-                        Error,
-                        <<#first_type as diesel::Table>::PrimaryKey as TypedColumn>::Type,
-                        (#(<#remaining_types as diesel::Table>::PrimaryKey,)*)
-                    >
-            {
-                #[inline]
-                fn recursive_insert(
-                    self,
-                    conn: &mut Conn
-                ) -> BuilderResult<
-                    <<Self as HasTable>::Table as TableAddition>::Model,
-                    Error
-                > {
-                    use crate::get_column::GetColumnExt;
-                    use crate::get_set_columns::TrySetHomogeneousColumn;
-                    use tuplities::prelude::TuplePopFront;
-                    let (first, bundles) = self.bundles.pop_front();
-                    let model: <#first_type as TableAddition>::Model = first.recursive_insert(conn)?;
-                    let mut next_builder: CompletedTableBuilder<T, _> =
-                        CompletedTableBuilder { bundles, table: PhantomData };
-                    next_builder.try_set_homogeneous_columns(model.get_column()).map_err(crate::BuilderError::Validation)?;
-                    next_builder.recursive_insert(conn)
-                }
-            }
-        }
-    }).collect::<proc_macro2::TokenStream>()
-}
-
-/// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes.
-pub fn generate_horizontal_same_as_columns() -> TokenStream {
-    (1..=MAX_TUPLE_SIZE).map(|size| {
-        let type_params = type_params(size);
-        let host_column_params = type_params.iter().enumerate().map(|(i, _)| {
-            syn::Ident::new(&format!("HC{i}"), proc_macro2::Span::call_site())
-        }).collect::<Vec<_>>();
-        // Generate bounds: T0: HorizontalSameAsColumn<Key, HC0>, T1: HorizontalSameAsColumn<Key, HC1>, etc.
-        let column_impl_bounds = type_params.iter().zip(host_column_params.iter()).map(|(col, hc)| {
-            quote! {
-                #col: HorizontalSameAsColumn<Key, #hc, Table = <Key as SingletonForeignKey>::ReferencedTable>
-            }
-        });
-        // Generate bounds that each host column is on the Key's table
-        let host_column_table_bounds = host_column_params.iter().zip(type_params.iter()).map(|(hc, tp)| {
-            quote! {
-                #hc: TypedColumn<Table = <Key as Column>::Table, Type = <#tp as TypedColumn>::Type>
-            }
-        });
-        quote! {
-            impl<Key, #(#host_column_params,)* #(#type_params),*> HorizontalSameAsColumns<Key, (#(#host_column_params,)*)> for (#(#type_params,)*)
-            where
-                Key: HorizontalSameAsKey<HostColumns = (#(#host_column_params,)*), ForeignColumns = (#(#type_params,)*)>,
-                #(#host_column_table_bounds,)*
-                #(#column_impl_bounds,)*
-                (#(#type_params,)*): NonEmptyProjection<Table = <Key as SingletonForeignKey>::ReferencedTable, Types = <(#(#host_column_params,)*) as Columns>::Types>
-                    + TuplePopFront<
-                        Front: TypedColumn<
-                            Type = <<<Key as Column>::Table as Table>::PrimaryKey as TypedColumn>::Type,
-                            Table = <Key as SingletonForeignKey>::ReferencedTable,
-                        >,
-                    >,
-            {
-            }
-        }
-    }).collect::<TokenStream>()
-}
-
-/// Generate `TrySetMandatorySameAsColumns` and
-/// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes.
-pub fn generate_try_set_same_as_columns() -> TokenStream {
+/// Generate `TryMaySetDiscretionarySameAsColumns` trait implementations for all tuple sizes.
+pub fn generate_try_may_set_discretionary_same_as_columns() -> TokenStream {
     // Generate implementations for tuples of size 1-32
-    let tuple_impls = (1..=MAX_TUPLE_SIZE).map(|size| {
-        let keys = type_params(size);
-        let column_types = keys.iter().map(|key| {
-            quote! {
-                <<#key as HorizontalSameAsKey>::ForeignColumns as tuplities::prelude::TuplePopFront>::Front
-            }
-        }).collect::<Vec<_>>();
+    generate_all_sizes_non_empty(|size| {
+        let keys = type_params_with_prefix(size, "K");
+        let column_types = type_params_with_prefix(size, "C");
 
-        let first_key = &keys[0];
-        let first_column_type = &column_types[0];
-
-        // Generate the try_set_mandatory_same_as_column calls
-        let mandatory_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
-            quote! {
-                <Self as TrySetMandatorySameAsColumn<#key, #column_type>>::try_set_mandatory_same_as_column(self, value.clone())?;
-            }
-        });
         // Generate the try_set_discretionary_same_as_column calls
         let discretionary_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
             quote! {
@@ -611,169 +440,172 @@ pub fn generate_try_set_same_as_columns() -> TokenStream {
             }
         });
 
-        let mandatory_error_type = quote! {
-            <Self as TrySetMandatorySameAsColumn<#first_key, #first_column_type>>::Error
-        };
-
-        // Generate where clauses for TrySetMandatorySameAsColumn
-        let mandatory_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
-            if key == first_key {
-                quote! {
-                    Self: TrySetMandatorySameAsColumn<#key, #column_type>
-                }
-            } else {
-                quote! {
-                    Self: TrySetMandatorySameAsColumn<#key, #column_type, Error = #mandatory_error_type>
-                }
-            }
-        });
-
-        let discretionary_error_type = quote! {
-            <Self as TryMaySetDiscretionarySameAsColumn<#first_key, #first_column_type>>::Error
-        };
-
         // Generate where clauses for TryMaySetDiscretionarySameAsColumn
         let discretionary_trait_bounds = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
-            if key == first_key {
-                quote! {
-                    Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type>
-                }
-            } else {
-                quote! {
-                    Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type, Error = #discretionary_error_type>
-                }
+            quote! {
+                Self: TryMaySetDiscretionarySameAsColumn<#key, #column_type>,
+                Error: From<<Self as TryMaySetDiscretionarySameAsColumn<#key, #column_type>>::Error>
             }
         });
 
         quote! {
             impl<
-                #(#keys: MandatorySameAsIndex<Table = T>,)*
-                T: BundlableTable + HasPrimaryKey
-            > TrySetMandatorySameAsColumns<
-                <<T as Table>::PrimaryKey as TypedColumn>::Type,
-                (#(#keys,)*),
-                (#(#column_types,)*)
-            > for crate::CompletedTableBuilderBundle<T>
-            where
-                #(#mandatory_trait_bounds,)*
-            {
-                type Error = #mandatory_error_type;
-
-                #[inline]
-                fn try_set_mandatory_same_as_columns(
-                    &mut self,
-                    value: &<<T as diesel::Table>::PrimaryKey as TypedColumn>::Type
-                ) -> Result<&mut Self, Self::Error> {
-                    #(#mandatory_calls)*
-                    Ok(self)
-                }
-            }
-
-            impl<
-                #(#keys: DiscretionarySameAsIndex<Table = T>,)*
-                T: BundlableTable + HasPrimaryKey
+                Type: Clone + 'static,
+                Error,
+                T,
+                #(#keys: DiscretionarySameAsIndex,)*
+                #(#column_types: crate::TypedColumn<Table=#keys::ReferencedTable, Type=Type>,)*
             > TryMaySetDiscretionarySameAsColumns<
-                <<T as Table>::PrimaryKey as TypedColumn>::Type,
+                Type,
+                Error,
                 (#(#keys,)*),
                 (#(#column_types,)*)
-            > for crate::CompletedTableBuilderBundle<T>
+            > for T
             where
                 #(#discretionary_trait_bounds,)*
             {
-                type Error = #discretionary_error_type;
-
                 #[inline]
                 fn try_may_set_discretionary_same_as_columns(
                     &mut self,
-                    value: &<<Self::Table as diesel::Table>::PrimaryKey as TypedColumn>::Type
-                ) -> Result<&mut Self, Self::Error> {
+                    value: &Type
+                ) -> Result<&mut Self, Error> {
                     #(#discretionary_calls)*
                     Ok(self)
                 }
             }
         }
-    }).collect::<TokenStream>();
+    })
+}
 
-    quote! {
-        #tuple_impls
-    }
+/// Generate `TrySetMandatorySameAsColumns` trait implementations for all tuple sizes.
+pub fn generate_try_set_mandatory_same_as_columns() -> TokenStream {
+    // Generate implementations for tuples of size 1-32
+    generate_all_sizes_non_empty(|size| {
+        let keys = type_params_with_prefix(size, "K");
+        let column_types = type_params_with_prefix(size, "C");
+
+        // Generate the try_set_mandatory_same_as_column calls
+        let mandatory_calls = keys.iter().zip(column_types.iter()).map(|(key, column_type)| {
+            quote! {
+                <Self as TrySetMandatorySameAsColumn<#key, #column_type>>::try_set_mandatory_same_as_column(self, value.clone())?;
+            }
+        });
+
+        // Generate where clauses for TrySetMandatorySameAsColumn
+        let mandatory_trait_bounds = keys.iter().zip(column_types.iter()).map(
+            |(key, column_type)| {
+                quote! {
+                    Self: TrySetMandatorySameAsColumn<#key, #column_type>,
+                    Error: From<<Self as TrySetMandatorySameAsColumn<#key, #column_type>>::Error>
+                }
+            },
+        );
+
+        quote! {
+            impl<
+                Type: Clone + 'static,
+                Error,
+                #(#keys: MandatorySameAsIndex,)*
+                #(#column_types: crate::TypedColumn<Table=#keys::ReferencedTable, Type=Type>,)*
+                T,
+            > TrySetMandatorySameAsColumns<
+                Type,
+                Error,
+                (#(#keys,)*),
+                (#(#column_types,)*)
+            > for T
+            where
+                #(#mandatory_trait_bounds,)*
+            {
+                #[inline]
+                fn try_set_mandatory_same_as_columns(
+                    &mut self,
+                    value: &Type
+                ) -> Result<&mut Self, Error> {
+                    #(#mandatory_calls)*
+                    Ok(self)
+                }
+            }
+        }
+    })
 }
 
 /// Generate `TableIndex` trait marker implementations for all tuple sizes.
 pub fn generate_table_index() -> proc_macro2::TokenStream {
-    (1..=MAX_TUPLE_SIZE)
-        .map(|size| {
-            let type_params = type_params(size);
+    generate_all_sizes_non_empty(|size| {
+        let type_params = type_params(size);
 
-            // Generate index constants (U0, U1, U2, ...)
-            let indices: Vec<_> = (0..size)
-                .map(|i| {
-                    let ident = quote::format_ident!("U{}", i);
-                    quote! { typenum::#ident }
-                })
-                .collect();
+        // Generate index constants (U0, U1, U2, ...)
+        let indices: Vec<_> = (0..size)
+            .map(|i| {
+                let ident = quote::format_ident!("U{}", i);
+                quote! { typenum::#ident }
+            })
+            .collect();
 
-            // Generate IndexedColumn bounds for each column
-            let indexed_column_bounds =
-                type_params.iter().zip(indices.iter()).map(|(param, idx)| {
-                    quote! {
-                        #param: IndexedColumn<#idx, (#(#type_params,)*)>
-                    }
-                });
-
+        // Generate IndexedColumn bounds for each column
+        let indexed_column_bounds = type_params.iter().zip(indices.iter()).map(|(param, idx)| {
             quote! {
-                impl<#(#type_params: TypedColumn,)*> TableIndex for (#(#type_params,)*)
-                where
-                    (#(#type_params,)*): NonEmptyProjection,
-                    #(#indexed_column_bounds,)*
-                {
-                }
+                #param: IndexedColumn<#idx, (#(#type_params,)*), Table=Self::Table>,
+                (#(#type_params,)*): TupleIndex<#idx, Element = #param>
             }
-        })
-        .collect()
+        });
+
+        quote! {
+            impl<#(#type_params: TypedColumn,)*> TableIndex for (#(#type_params,)*)
+            where
+                (#(#type_params,)*): NonEmptyProjection,
+                #(#indexed_column_bounds,)*
+            {
+            }
+        }
+    })
 }
 
 /// Generate `ForeignKey` trait marker implementations for all tuple sizes.
 pub fn generate_foreign_key() -> proc_macro2::TokenStream {
-    (1..=MAX_TUPLE_SIZE)
-        .map(|size| {
-            let host_params = type_params(size);
-            let ref_params: Vec<_> = (1..=size)
-                .map(|i| {
-                    let ident = quote::format_ident!("R{}", i);
-                    quote! { #ident }
-                })
-                .collect();
-            // Generate index constants (U0, U1, U2, ...)
-            let indices: Vec<_> = (0..size)
-                .map(|i| {
-                    let ident = quote::format_ident!("U{}", i);
-                    quote! { typenum::#ident }
-                })
-                .collect();
-            // Generate HostColumn bounds for each host parameter with type equality
-            let host_column_bounds = host_params.iter().zip(ref_params.iter()).zip(indices.iter()).map(|((host_param, ref_param), idx)| {
+    generate_all_sizes_non_empty(|size| {
+        let host_params = type_params(size);
+        let ref_params = type_params_with_prefix(size, "R");
+        // Generate index constants (U0, U1, U2, ...)
+        let indices: Vec<_> = (0..size)
+            .map(|i| {
+                let ident = quote::format_ident!("U{}", i);
+                quote! { typenum::#ident }
+            })
+            .collect();
+        // Generate HostColumn bounds for each host parameter with type equality
+        let bounds = host_params
+            .iter()
+            .zip(ref_params.iter())
+            .zip(indices.iter())
+            .map(|((host_param, ref_param), idx)| {
                 quote! {
-                    #host_param: HostColumn<#idx, (#(#host_params,)*), (#(#ref_params,)*)> + TypedColumn<Type = <#ref_param as TypedColumn>::Type>
-                }
-            });
-            // Generate IndexedColumn bounds for each referenced parameter
-            let indexed_column_bounds = ref_params.iter().zip(indices.iter()).map(|(ref_param, idx)| {
-                quote! {
-                    #ref_param: IndexedColumn<#idx, (#(#ref_params,)*)>
+                    #host_param: HostColumn<
+                        #idx,
+                        (#(#host_params,)*),
+                        (#(#ref_params,)*),
+                        Type = <#ref_param as crate::Typed>::Type,
+                        Table = Self::Table
+                    >,
+                    #ref_param: IndexedColumn<
+                        #idx,
+                        (#(#ref_params,)*),
+                        Table = <(#(#ref_params,)*) as NonEmptyProjection>::Table
+                    >,
+                    (#(#host_params,)*): TupleIndex<#idx, Element = #host_param>,
+                    (#(#ref_params,)*): TupleIndex<#idx, Element = #ref_param>
                 }
             });
 
-            quote! {
-                impl<#(#host_params: TypedColumn,)* #(#ref_params: TypedColumn,)*> ForeignKey<(#(#ref_params,)*)> for (#(#host_params,)*)
-                where
-                    (#(#host_params,)*): NonEmptyProjection,
-                    (#(#ref_params,)*): NonEmptyProjection,
-                    #(#host_column_bounds,)*
-                    #(#indexed_column_bounds,)*
-                {
-                }
+        quote! {
+            impl<#(#host_params: TypedColumn,)* #(#ref_params: TypedColumn,)*> ForeignKey<(#(#ref_params,)*)> for (#(#host_params,)*)
+            where
+                (#(#host_params,)*): NonEmptyProjection,
+                (#(#ref_params,)*): NonEmptyProjection,
+                #(#bounds,)*
+            {
             }
-        })
-        .collect()
+        }
+    })
 }

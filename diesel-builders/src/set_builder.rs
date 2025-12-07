@@ -1,12 +1,13 @@
 //! Submodule providing the `SetBuilder` trait.
 
-use diesel::{Table, associations::HasTable};
+use diesel::{Column, Table, associations::HasTable};
+use tuplities::prelude::TupleReplicate;
 
 use crate::{
-    BuildableTable, BundlableTable, Columns, DiscretionarySameAsIndex, GetColumnExt, GetColumns,
-    HasPrimaryKey, HasTableAddition, HomogeneousColumns, HorizontalSameAsKey, InsertableTableModel,
+    BuildableTable, Columns, DiscretionarySameAsIndex, GetColumnExt, GetColumns,
+    HasPrimaryKeyColumn, HasTableAddition, HorizontalSameAsKey, InsertableTableModel,
     MandatorySameAsIndex, SetColumn, SetColumns, SingletonForeignKey, TableAddition, TableBuilder,
-    TrySetColumn, TrySetColumns, TypedColumn,
+    TrySetColumn, TrySetColumns, Typed,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -382,7 +383,7 @@ impl<T> TrySetDiscretionaryModelExt for T {}
 /// Trait to try set a column in a mandatory same-as relationship.
 pub trait TrySetMandatorySameAsColumn<
     Key: MandatorySameAsIndex,
-    Column: TypedColumn<Table = Key::ReferencedTable>,
+    C: Typed + Column<Table = Key::ReferencedTable>,
 >
 {
     /// The associated error type for the operation.
@@ -397,17 +398,19 @@ pub trait TrySetMandatorySameAsColumn<
     /// same-as relationship.
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: <Column as TypedColumn>::Type,
+        value: <C as Typed>::Type,
     ) -> Result<&mut Self, Self::Error>;
 }
 
+#[diesel_builders_macros::impl_try_set_mandatory_same_as_columns]
 /// Trait to try set a column in a mandatory same-as relationship.
-pub trait TrySetMandatorySameAsColumns<Type, Keys: Columns, CS: HomogeneousColumns<Type>>:
-    HasTable
+pub trait TrySetMandatorySameAsColumns<
+    Type,
+    Error,
+    Keys: Columns,
+    CS: Columns + Typed<Type: TupleReplicate<Type>>,
+>
 {
-    /// The associated error type for the operation.
-    type Error;
-
     /// Attempt to set the value of the specified columns in the mandatory
     /// same-as relationship.
     ///
@@ -415,14 +418,13 @@ pub trait TrySetMandatorySameAsColumns<Type, Keys: Columns, CS: HomogeneousColum
     ///
     /// Returns an error if the column values cannot be set in the mandatory
     /// same-as relationship.
-    fn try_set_mandatory_same_as_columns(&mut self, value: &Type)
-    -> Result<&mut Self, Self::Error>;
+    fn try_set_mandatory_same_as_columns(&mut self, value: &Type) -> Result<&mut Self, Error>;
 }
 
 /// Trait to try set a column in a discretionary same-as relationship.
 pub trait TryMaySetDiscretionarySameAsColumn<
     Key: DiscretionarySameAsIndex,
-    Column: TypedColumn<Table = Key::ReferencedTable>,
+    C: Typed + Column<Table = Key::ReferencedTable>,
 >
 {
     /// The associated error type for the operation.
@@ -437,42 +439,20 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     /// same-as relationship.
     fn try_may_set_discretionary_same_as_column(
         &mut self,
-        value: <Column as TypedColumn>::Type,
+        value: <C as Typed>::Type,
     ) -> Result<&mut Self, Self::Error>;
 }
 
-impl<Type, T: HasTable> TrySetMandatorySameAsColumns<Type, (), ()> for T {
-    type Error = core::convert::Infallible;
-
+impl<Type, Error, T: HasTable> TrySetMandatorySameAsColumns<Type, Error, (), ()> for T {
     #[inline]
-    fn try_set_mandatory_same_as_columns(
-        &mut self,
-        _value: &Type,
-    ) -> Result<&mut Self, Self::Error> {
-        Ok(self)
-    }
-}
-
-impl<Type, T: HasTable> TryMaySetDiscretionarySameAsColumns<Type, (), ()> for T {
-    type Error = core::convert::Infallible;
-
-    #[inline]
-    fn try_may_set_discretionary_same_as_columns(
-        &mut self,
-        _value: &Type,
-    ) -> Result<&mut Self, Self::Error> {
+    fn try_set_mandatory_same_as_columns(&mut self, _value: &Type) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }
 
 /// Trait to try set a column in a discretionary same-as relationship.
-#[diesel_builders_macros::impl_try_set_same_as_columns]
-pub trait TryMaySetDiscretionarySameAsColumns<Type, Keys: Columns, CS: HomogeneousColumns<Type>>:
-    HasTable
-{
-    /// The associated error type for the operation.
-    type Error;
-
+#[diesel_builders_macros::impl_try_may_set_discretionary_same_as_columns]
+pub trait TryMaySetDiscretionarySameAsColumns<Type, Error, Keys: Columns, CS: Columns> {
     /// Attempt to set the value of the specified columns in the discretionary
     /// same-as relationship.
     ///
@@ -483,5 +463,17 @@ pub trait TryMaySetDiscretionarySameAsColumns<Type, Keys: Columns, CS: Homogeneo
     fn try_may_set_discretionary_same_as_columns(
         &mut self,
         value: &Type,
-    ) -> Result<&mut Self, Self::Error>;
+    ) -> Result<&mut Self, Error>;
+}
+
+impl<Type, Error, T: HasTable<Table: HasPrimaryKeyColumn>>
+    TryMaySetDiscretionarySameAsColumns<Type, Error, (), ()> for T
+{
+    #[inline]
+    fn try_may_set_discretionary_same_as_columns(
+        &mut self,
+        _value: &Type,
+    ) -> Result<&mut Self, Error> {
+        Ok(self)
+    }
 }

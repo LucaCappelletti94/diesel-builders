@@ -1,6 +1,6 @@
 //! Submodule defining the `TableModel` trait.
 
-use crate::{HasTableAddition, MayGetColumns, TableAddition, TrySetColumns};
+use crate::{HasTableAddition, TableAddition};
 
 /// Trait representing an Insertable Diesel table model.
 pub trait InsertableTableModel:
@@ -10,8 +10,6 @@ pub trait InsertableTableModel:
     + Clone
     + core::fmt::Debug
     + diesel::Insertable<Self::Table>
-    + MayGetColumns<<Self::Table as TableAddition>::InsertableColumns>
-    + TrySetColumns<Self::Error, <Self::Table as TableAddition>::InsertableColumns>
 {
     /// The higher-level validation error type for this insertable table model.
     type Error;

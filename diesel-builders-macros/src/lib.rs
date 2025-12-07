@@ -22,23 +22,10 @@ pub fn impl_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `Projection` trait implementations for all tuple sizes.
+/// Generate `NonEmptyProjection` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
-pub fn impl_projection(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_projection();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `HomogeneousColumns` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_homogeneous_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_homogeneous_columns();
+pub fn impl_non_empty_projection(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_non_empty_projection();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -75,10 +62,36 @@ pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Generate `TupleGetColumns` trait implementations for all tuple sizes
+#[proc_macro_attribute]
+pub fn impl_tuple_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_tuple_get_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
 /// Generates tuple trait implementations for `MayGetColumns`.
 #[proc_macro_attribute]
 pub fn impl_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_may_get_columns_trait();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `TupleMayGetColumns` trait implementations for all tuple sizes
+#[proc_macro_attribute]
+pub fn impl_tuple_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_tuple_may_get_columns_trait();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -127,10 +140,10 @@ pub fn impl_try_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStrea
     .into()
 }
 
-/// Generates tuple trait implementations for `TrySetHomogeneousColumn`.
+/// Generates tuple trait implementations for `TrySetColumnsCollection`.
 #[proc_macro_attribute]
-pub fn impl_try_set_homogeneous_column(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_try_set_homogeneous_column_trait();
+pub fn impl_try_set_columns_collection(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_try_set_columns_collections_trait();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -155,8 +168,8 @@ pub fn impl_try_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenS
 
 /// Generate `NestedInsertTuple` trait implementations for all tuple sizes
 #[proc_macro_attribute]
-pub fn impl_nested_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_nested_insert_tuple();
+pub fn impl_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_insert_tuple();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -168,29 +181,8 @@ pub fn impl_nested_insert_tuple(_attr: TokenStream, item: TokenStream) -> TokenS
 
 /// Generate `NestedInsertOptionTuple` trait implementations for all tuple sizes
 #[proc_macro_attribute]
-pub fn impl_nested_insert_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_nested_insert_option_tuple();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `CompletedTableBuilder` `NestedInsert` trait implementations for
-/// all tuple sizes
-///
-/// This generates the recursive nested insert implementations for
-/// `CompletedTableBuilder` with varying tuple sizes. The size 1 case is handled
-/// separately as a base case.
-#[proc_macro_attribute]
-pub fn impl_completed_table_builder_nested_insert(
-    _attr: TokenStream,
-    item: TokenStream,
-) -> TokenStream {
-    let impls = impl_generators::generate_completed_table_builder_nested_insert();
+pub fn impl_insert_option_tuple(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let impls = impl_generators::generate_insert_option_tuple();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -217,37 +209,6 @@ pub fn impl_buildable_tables(_attr: TokenStream, item: TokenStream) -> TokenStre
 #[proc_macro_attribute]
 pub fn impl_bundlable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let impls = impl_generators::generate_bundlable_tables();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `BuildableColumns` trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_buildable_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_buildable_columns();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `NonCompositePrimaryKeyTableModels` and `MayGetPrimaryKeys` trait
-/// implementations for all tuple sizes.
-///
-/// Generates implementations for:
-/// - `NonCompositePrimaryKeyTableModels` for tuples of models
-/// - `MayGetPrimaryKeys` for tuples of optional models
-#[proc_macro_attribute]
-pub fn impl_table_model(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_table_model();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -284,20 +245,6 @@ pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> To
     .into()
 }
 
-/// Generate `HorizontalSameAsColumns` trait implementations for all tuple sizes
-///.
-#[proc_macro_attribute]
-pub fn impl_horizontal_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_horizontal_same_as_columns();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
 /// Generate `TableIndex` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
 pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -324,12 +271,29 @@ pub fn impl_foreign_key(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Generate `TrySetMandatorySameAsColumns` and
-/// `TrySetDiscretionarySameAsColumns` trait implementations for all tuple sizes
-///.
+/// Generate `TryMaySetDiscretionarySameAsColumns` trait implementations for all tuple sizes.
 #[proc_macro_attribute]
-pub fn impl_try_set_same_as_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_try_set_same_as_columns();
+pub fn impl_try_may_set_discretionary_same_as_columns(
+    _attr: TokenStream,
+    item: TokenStream,
+) -> TokenStream {
+    let impls = impl_generators::generate_try_may_set_discretionary_same_as_columns();
+    let item = proc_macro2::TokenStream::from(item);
+
+    quote::quote! {
+        #item
+        #impls
+    }
+    .into()
+}
+
+/// Generate `TrySetMandatorySameAsColumns` trait implementations for all tuple sizes.
+#[proc_macro_attribute]
+pub fn impl_try_set_mandatory_same_as_columns(
+    _attr: TokenStream,
+    item: TokenStream,
+) -> TokenStream {
+    let impls = impl_generators::generate_try_set_mandatory_same_as_columns();
     let item = proc_macro2::TokenStream::from(item);
 
     quote::quote! {
@@ -405,7 +369,7 @@ pub fn derive_get_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
             impl diesel_builders::GetColumn<#table_name::#field_name> for #struct_name {
-                fn get_column(&self) -> &<#table_name::#field_name as diesel_builders::TypedColumn>::Type {
+                fn get_column(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
                     &self.#field_name
                 }
             }
@@ -485,7 +449,7 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
             impl diesel_builders::MayGetColumn<#table_name::#field_name> for #struct_name {
-                fn may_get_column(&self) -> Option<&<#table_name::#field_name as diesel_builders::TypedColumn>::Type> {
+                fn may_get_column(&self) -> Option<&<#table_name::#field_name as diesel_builders::Typed>::Type> {
                     self.#field_name.as_ref()
                 }
             }
@@ -573,7 +537,7 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
                     type Error = core::convert::Infallible;
 
                     #[inline]
-                    fn try_set_column(&mut self, value: <#table_name::#field_name as diesel_builders::TypedColumn>::Type) -> Result<&mut Self, Self::Error> {
+                    fn try_set_column(&mut self, value: <#table_name::#field_name as diesel_builders::Typed>::Type) -> Result<&mut Self, Self::Error> {
                         self.#field_name = Some(value);
                         Ok(self)
                     }
@@ -594,8 +558,6 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
             + Clone
             + core::fmt::Debug
             + diesel::Insertable<<Self as diesel::associations::HasTable>::Table>
-            + diesel_builders::MayGetColumns<<Self::Table as diesel_builders::TableAddition>::InsertableColumns>
-            + diesel_builders::TrySetColumns<core::convert::Infallible, <Self::Table as diesel_builders::TableAddition>::InsertableColumns>,
     {
         type Error = core::convert::Infallible;
     }
@@ -722,6 +684,7 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 
         quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
+                type Idx = diesel_builders::typenum::U0;
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }
@@ -950,7 +913,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 pub trait #get_field_name: diesel_builders::GetColumn<#table_name::#field_name> {
                     #[inline]
                     #[doc = #get_field_name_method_doc_comment]
-                    fn #field_name(&self) -> &<#table_name::#field_name as diesel_builders::TypedColumn>::Type {
+                    fn #field_name(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
                         self.get_column()
                     }
                 }
@@ -1189,7 +1152,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 #[doc = #field_name_ref_method_doc_comment]
                 fn #field_name_ref(
                     &mut self,
-                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                    value: impl Into<<#table_name::#field_name as diesel_builders::Typed>::Type>
                 ) -> &mut Self {
                     use diesel_builders::SetColumnExt;
                     self.set_column_ref::<#table_name::#field_name>(value)
@@ -1199,7 +1162,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 #[doc = #field_name_method_doc_comment]
                 fn #field_name(
                     self,
-                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                    value: impl Into<<#table_name::#field_name as diesel_builders::Typed>::Type>
                 ) -> Self {
                     use diesel_builders::SetColumnExt;
                     self.set_column::<#table_name::#field_name>(value)
@@ -1218,7 +1181,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 #[doc = "Returns an error if the column check constraints are not respected."]
                 fn #try_field_name_ref(
                     &mut self,
-                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                    value: impl Into<<#table_name::#field_name as diesel_builders::Typed>::Type>
                 ) -> Result<&mut Self, Self::Error> {
                     use diesel_builders::TrySetColumnExt;
                     self.try_set_column_ref::<#table_name::#field_name>(value)
@@ -1231,7 +1194,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
                 #[doc = "Returns an error if the value cannot be converted to the column type."]
                 fn #try_field_name(
                     self,
-                    value: impl Into<<#table_name::#field_name as diesel_builders::TypedColumn>::Type>
+                    value: impl Into<<#table_name::#field_name as diesel_builders::Typed>::Type>
                 ) -> Result<Self, Self::Error> {
                     use diesel_builders::TrySetColumnExt;
                     self.try_set_column::<#table_name::#field_name>(value)
@@ -1240,7 +1203,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
             impl<T> #try_set_field_name for T where T: diesel_builders::TrySetColumn<#table_name::#field_name> + Sized {}
 
-            impl diesel_builders::TypedColumn for #table_name::#field_name {
+            impl diesel_builders::Typed for #table_name::#field_name {
                 type Type = #field_type;
             }
         }
@@ -1340,7 +1303,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
                 {
                     fn get_column(
                         &self,
-                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::TypedColumn>::Type {
+                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::Type {
                         use diesel::Identifiable;
                         self.id()
                     }
@@ -1506,6 +1469,7 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
     let primary_key_group = if !mandatory_columns.is_empty() || !discretionary_columns.is_empty() {
         Some(
             quote! {impl diesel_builders::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
+                type Idx = diesel_builders::typenum::U0;
                 type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
                 type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
             }},
@@ -1591,6 +1555,7 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref().unwrap();
         quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
+                type Idx = diesel_builders::typenum::U0;
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }

@@ -2,11 +2,11 @@
 
 use tuple_set::TupleSet;
 
-use crate::Tables;
+use crate::tables::TablesExt;
 use tuplities::prelude::*;
 
 /// A trait for collections of Diesel tables that can be built.
-pub trait BuildableTables: Tables {
+pub trait BuildableTables: TablesExt {
     /// The builders associated with the buildable tables.
     type Builders: IntoTupleOption<IntoOptions = Self::OptionalBuilders> + TupleSet;
     /// The optional builders associated with the buildable tables.

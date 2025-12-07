@@ -1,11 +1,8 @@
-//! Submodule providing the `TypedColumn` trait.
+//! Submodule providing the `Typed` trait.
 
-use core::fmt::Debug;
+use crate::{TableAddition, Typed};
 
-use crate::TableAddition;
+/// Trait representing an object with an associated type.
+pub trait TypedColumn: diesel::Column<Table: TableAddition> + Typed + Default {}
 
-/// Trait representing a Diesel column associated with a specific type.
-pub trait TypedColumn: diesel::Column<Table: TableAddition> + Debug + Clone + Default {
-    /// The Rust type associated with this column, as it appears in queries.
-    type Type: 'static + Clone;
-}
+impl<T> TypedColumn for T where T: diesel::Column<Table: TableAddition> + Typed + Default {}

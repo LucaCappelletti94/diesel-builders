@@ -17,13 +17,24 @@ use proc_macro2::{Ident, Span, TokenStream};
 pub const MAX_TUPLE_SIZE: usize = 8;
 #[cfg(all(
     feature = "size-16",
-    not(any(feature = "size-32", feature = "size-48", feature = "size-64", feature = "size-96", feature = "size-128"))
+    not(any(
+        feature = "size-32",
+        feature = "size-48",
+        feature = "size-64",
+        feature = "size-96",
+        feature = "size-128"
+    ))
 ))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 16;
 #[cfg(all(
     feature = "size-32",
-    not(any(feature = "size-48", feature = "size-64", feature = "size-96", feature = "size-128"))
+    not(any(
+        feature = "size-48",
+        feature = "size-64",
+        feature = "size-96",
+        feature = "size-128"
+    ))
 ))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 32;
@@ -33,7 +44,10 @@ pub const MAX_TUPLE_SIZE: usize = 32;
 ))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 48;
-#[cfg(all(feature = "size-64", not(any(feature = "size-96", feature = "size-128"))))]
+#[cfg(all(
+    feature = "size-64",
+    not(any(feature = "size-96", feature = "size-128"))
+))]
 /// Maximum number of elements supported in tuple implementations.
 pub const MAX_TUPLE_SIZE: usize = 64;
 #[cfg(all(feature = "size-96", not(feature = "size-128")))]
@@ -49,8 +63,12 @@ pub const MAX_TUPLE_SIZE: usize = 128;
 ///
 /// * `count` - The number of type parameters to generate.
 pub(crate) fn type_params(count: usize) -> Vec<Ident> {
+    type_params_with_prefix(count, "T")
+}
+
+pub(crate) fn type_params_with_prefix(count: usize, prefix: &str) -> Vec<Ident> {
     (1..=count)
-        .map(|i| Ident::new(&format!("T{i}"), Span::call_site()))
+        .map(|i| Ident::new(&format!("{prefix}{i}"), Span::call_site()))
         .collect()
 }
 
@@ -60,6 +78,14 @@ where
     F: Fn(usize) -> TokenStream,
 {
     (0..=MAX_TUPLE_SIZE).map(impl_fn).collect()
+}
+
+/// Generate all tuple implementations from size 1 to MAX_TUPLE_SIZE
+pub(crate) fn generate_all_sizes_non_empty<F>(impl_fn: F) -> TokenStream
+where
+    F: Fn(usize) -> TokenStream,
+{
+    (1..=MAX_TUPLE_SIZE).map(impl_fn).collect()
 }
 
 mod tests {

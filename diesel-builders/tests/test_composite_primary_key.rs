@@ -66,11 +66,7 @@ pub struct NewUserRole {
 impl TableAddition for user_roles::table {
     type InsertableModel = NewUserRole;
     type Model = UserRole;
-    type InsertableColumns = (
-        user_roles::user_id,
-        user_roles::role_id,
-        user_roles::assigned_at,
-    );
+    type PrimaryKeyColumns = (user_roles::user_id, user_roles::role_id);
 }
 
 #[test]

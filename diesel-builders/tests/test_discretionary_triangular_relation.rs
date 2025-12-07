@@ -89,7 +89,7 @@ pub struct NewTableA {
 impl TableAddition for table_a::table {
     type InsertableModel = NewTableA;
     type Model = TableA;
-    type InsertableColumns = (table_a::column_a,);
+    type PrimaryKeyColumns = (table_a::id,);
 }
 
 // Table C models
@@ -121,7 +121,7 @@ pub struct NewTableC {
 impl TableAddition for table_c::table {
     type InsertableModel = NewTableC;
     type Model = TableC;
-    type InsertableColumns = (table_c::a_id, table_c::column_c);
+    type PrimaryKeyColumns = (table_c::id,);
 }
 
 // Table B models
@@ -221,12 +221,7 @@ impl InsertableTableModel for NewTableB {
 impl TableAddition for table_b::table {
     type InsertableModel = NewTableB;
     type Model = TableB;
-    type InsertableColumns = (
-        table_b::id,
-        table_b::c_id,
-        table_b::column_b,
-        table_b::remote_column_c,
-    );
+    type PrimaryKeyColumns = (table_b::id,);
 }
 
 // Implement SingletonForeignKey for table_b::c_id to indicate it references

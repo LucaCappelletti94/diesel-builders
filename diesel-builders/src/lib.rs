@@ -8,9 +8,9 @@ pub use builder_error::{BuilderError, BuilderResult, IncompleteBuilderError};
 pub mod tables;
 pub use tables::{NonCompositePrimaryKeyTables, Tables};
 pub mod table_model;
-pub use table_model::{
-    NonCompositePrimaryKeyTableModel, NonCompositePrimaryKeyTableModels, TableModel,
-};
+pub use table_model::TableModel;
+pub mod typed;
+pub use typed::Typed;
 pub mod typed_column;
 pub use typed_column::TypedColumn;
 pub mod get_column;
@@ -18,18 +18,20 @@ pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
 pub mod get_set_columns;
 pub use get_set_columns::{
     GetColumns, MayGetColumns, MaySetColumns, SetColumns, TryMaySetColumns, TrySetColumns,
-    TrySetHomogeneousColumn,
+    TrySetHomogeneous, TupleGetColumns, TupleMayGetColumns,
 };
 pub mod columns;
-pub use columns::{Columns, HomogeneousColumns, Projection};
+pub use columns::Columns;
 pub mod table_addition;
-pub use table_addition::{HasPrimaryKey, HasTableAddition, TableAddition};
+pub use table_addition::{HasTableAddition, TableAddition};
 pub mod set_column;
 pub use set_column::{MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt};
 pub mod insertable_table_model;
 pub use insertable_table_model::InsertableTableModel;
 pub mod foreign_key;
-pub use foreign_key::{ForeignKey, HostColumn, IndexedColumn, SingletonForeignKey, TableIndex};
+pub use foreign_key::{
+    ForeignKey, HasPrimaryKeyColumn, HostColumn, IndexedColumn, SingletonForeignKey, TableIndex,
+};
 pub mod flat_insert;
 pub use flat_insert::FlatInsert;
 
@@ -50,9 +52,10 @@ pub mod buildable_columns;
 pub mod buildable_table;
 pub mod buildable_tables;
 pub mod table_builder;
-pub use buildable_columns::{BuildableColumn, BuildableColumns};
+pub use buildable_columns::BuildableColumn;
 pub use buildable_table::BuildableTable;
 pub use buildable_tables::BuildableTables;
+pub(crate) use table_builder::RecursiveBuilderInsert;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
 pub use set_builder::{
@@ -66,7 +69,7 @@ pub use set_builder::{
 pub mod get_builder;
 pub use get_builder::{GetBuilder, MayGetBuilder};
 pub mod nested_insert;
-pub use nested_insert::{Insert, RecursiveInsert};
+pub use nested_insert::Insert;
 pub mod builder_bundle;
 pub use builder_bundle::CompletedTableBuilderBundle;
 pub use builder_bundle::{BundlableTable, TableBuilderBundle};
@@ -121,7 +124,7 @@ pub mod prelude {
     };
     pub use crate::{
         builder_bundle::BundlableTable,
-        nested_insert::{Insert, RecursiveInsert},
+        nested_insert::Insert,
         set_column::{SetColumnExt, TrySetColumnExt},
         table_addition::TableAddition,
     };

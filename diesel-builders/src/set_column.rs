@@ -2,7 +2,7 @@
 
 use core::convert::Infallible;
 
-use crate::TypedColumn;
+use crate::{Typed, TypedColumn};
 
 /// Trait providing a setter for a specific Diesel column.
 pub trait SetColumn<Column: TypedColumn>:
@@ -10,7 +10,7 @@ pub trait SetColumn<Column: TypedColumn>:
 {
     #[inline]
     /// Set the value of the specified column.
-    fn set_column(&mut self, value: impl Into<<Column as TypedColumn>::Type>) -> &mut Self {
+    fn set_column(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self {
         // Safe to unwrap because the Error type is Infallible
         <Self as TrySetColumn<Column>>::try_set_column(self, value.into()).unwrap()
     }
@@ -27,7 +27,7 @@ where
 pub trait MaySetColumn<Column: TypedColumn>: SetColumn<Column> {
     #[inline]
     /// Set the value of the specified column if the value is present.
-    fn may_set_column(&mut self, value: Option<&<Column as TypedColumn>::Type>) -> &mut Self {
+    fn may_set_column(&mut self, value: Option<&<Column as Typed>::Type>) -> &mut Self {
         if let Some(v) = value {
             <Self as SetColumn<Column>>::set_column(self, v.clone());
         }
@@ -43,7 +43,7 @@ where
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
-pub trait TrySetColumn<Column: TypedColumn> {
+pub trait TrySetColumn<C: Typed> {
     /// The associated error type for the operation.
     type Error: From<Infallible>;
 
@@ -52,10 +52,21 @@ pub trait TrySetColumn<Column: TypedColumn> {
     /// # Errors
     ///
     /// Returns an error if the column cannot be set.
-    fn try_set_column(
-        &mut self,
-        value: <Column as TypedColumn>::Type,
-    ) -> Result<&mut Self, Self::Error>;
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error>;
+}
+
+impl<C, T> TrySetColumn<C> for (T,)
+where
+    T: TrySetColumn<C>,
+    C: Typed,
+{
+    type Error = T::Error;
+
+    #[inline]
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        <T as TrySetColumn<C>>::try_set_column(&mut self.0, value)?;
+        Ok(self)
+    }
 }
 
 /// Extension trait for `SetColumn` that allows specifying the column at the
@@ -66,10 +77,7 @@ pub trait TrySetColumn<Column: TypedColumn> {
 pub trait SetColumnExt: Sized {
     #[inline]
     /// Set the value of the specified column.
-    fn set_column_ref<Column>(
-        &mut self,
-        value: impl Into<<Column as TypedColumn>::Type>,
-    ) -> &mut Self
+    fn set_column_ref<Column>(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>,
@@ -80,7 +88,7 @@ pub trait SetColumnExt: Sized {
     #[inline]
     #[must_use]
     /// Set the value of the specified column.
-    fn set_column<Column>(mut self, value: impl Into<<Column as TypedColumn>::Type>) -> Self
+    fn set_column<Column>(mut self, value: impl Into<<Column as Typed>::Type>) -> Self
     where
         Column: TypedColumn,
         Self: SetColumn<Column>,
@@ -106,10 +114,7 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column_ref<Column>(
         &mut self,
-        value: impl TryInto<
-            <Column as TypedColumn>::Type,
-            Error: Into<<Self as TrySetColumn<Column>>::Error>,
-        >,
+        value: impl TryInto<<Column as Typed>::Type, Error: Into<<Self as TrySetColumn<Column>>::Error>>,
     ) -> Result<&mut Self, <Self as TrySetColumn<Column>>::Error>
     where
         Column: TypedColumn,
@@ -126,10 +131,7 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         mut self,
-        value: impl TryInto<
-            <Column as TypedColumn>::Type,
-            Error: Into<<Self as TrySetColumn<Column>>::Error>,
-        >,
+        value: impl TryInto<<Column as Typed>::Type, Error: Into<<Self as TrySetColumn<Column>>::Error>>,
     ) -> Result<Self, <Self as TrySetColumn<Column>>::Error>
     where
         Column: TypedColumn,

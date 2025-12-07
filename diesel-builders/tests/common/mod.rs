@@ -166,7 +166,7 @@ impl InsertableTableModel for NewAnimal {
 impl TableAddition for animals::table {
     type InsertableModel = NewAnimal;
     type Model = Animal;
-    type InsertableColumns = (animals::name, animals::description);
+    type PrimaryKeyColumns = (animals::id,);
 }
 
 /// SQL to create the animals table.
@@ -245,7 +245,7 @@ pub struct NewDog {
 impl TableAddition for dogs::table {
     type InsertableModel = NewDog;
     type Model = Dog;
-    type InsertableColumns = (dogs::id, dogs::breed);
+    type PrimaryKeyColumns = (dogs::id,);
 }
 
 /// SQL to create the dogs table.
@@ -355,7 +355,7 @@ impl diesel_builders::TrySetColumn<cats::color> for NewCat {
 impl TableAddition for cats::table {
     type InsertableModel = NewCat;
     type Model = Cat;
-    type InsertableColumns = (cats::id, cats::color);
+    type PrimaryKeyColumns = (cats::id,);
 }
 
 impl InsertableTableModel for NewCat {
@@ -437,7 +437,7 @@ pub struct NewPuppy {
 impl TableAddition for puppies::table {
     type InsertableModel = NewPuppy;
     type Model = Puppy;
-    type InsertableColumns = (puppies::id, puppies::age_months);
+    type PrimaryKeyColumns = (puppies::id,);
 }
 
 /// SQL to create the puppies table.
@@ -515,7 +515,7 @@ pub struct NewPet {
 impl TableAddition for pets::table {
     type InsertableModel = NewPet;
     type Model = Pet;
-    type InsertableColumns = (pets::id, pets::owner_name);
+    type PrimaryKeyColumns = (pets::id,);
 }
 
 /// SQL to create the pets table (for DAG tests).

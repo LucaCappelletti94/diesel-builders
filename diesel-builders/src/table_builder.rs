@@ -7,12 +7,13 @@ use tuplities::prelude::*;
 mod completed_table_builder;
 mod core_traits;
 mod serde;
+pub(crate) use completed_table_builder::RecursiveBuilderInsert;
 
 use crate::{
     AncestorOfIndex, BundlableTable, BundlableTables, DescendantOf, HorizontalSameAsKey,
     InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, SingletonForeignKey,
     TableAddition, TableBuilderBundle, TryMaySetColumns, TrySetColumn, TrySetMandatoryBuilder,
-    TypedColumn, buildable_table::BuildableTable,
+    Typed, TypedColumn, buildable_table::BuildableTable,
 };
 
 /// A builder for creating insertable models for a Diesel table and its
@@ -41,10 +42,10 @@ where
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndex<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
+        TupleIndex<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
 {
     #[inline]
-    fn may_get_column(&self) -> Option<&<C as TypedColumn>::Type> {
+    fn may_get_column(&self) -> Option<&<C as Typed>::Type> {
         self.bundles.tuple_index().may_get_column()
     }
 }
@@ -55,16 +56,12 @@ where
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
 {
     type Error = <TableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
 
     #[inline]
-    fn try_set_column(
-        &mut self,
-        value: <C as TypedColumn>::Type,
-    ) -> Result<&mut Self, Self::Error> {
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
         self.bundles.tuple_index_mut().try_set_column(value)?;
         Ok(self)
     }
@@ -84,7 +81,7 @@ where
             Table = Key::Table,
         >,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<Key::Table>>,
+        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<Key::Table>>,
     <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
 {
     #[inline]
@@ -109,8 +106,7 @@ where
     TableBuilderBundle<C::Table>: crate::SetMandatoryBuilder<C>,
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_mandatory_builder(
@@ -139,7 +135,7 @@ where
         MayGetColumns<<Key as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<Key::Table>: crate::TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
     <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Type=TableBuilderBundle<Key::Table>>,
+        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Element=TableBuilderBundle<Key::Table>>,
     <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
 {
     #[inline]
@@ -164,8 +160,7 @@ where
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
         MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
     TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Type = TableBuilderBundle<C::Table>>,
+    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
 {
     #[inline]
     fn set_discretionary_builder(

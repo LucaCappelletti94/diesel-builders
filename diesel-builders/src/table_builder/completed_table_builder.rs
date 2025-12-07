@@ -1,30 +1,97 @@
 //! Submodule for the completed table builder and related impls.
 
-use std::marker::PhantomData;
-
-use diesel::{Table, associations::HasTable};
+use crate::builder_bundle::RecursiveBundleInsert;
+use crate::get_set_columns::TrySetHomogeneous;
+use crate::tables::HasTables;
+use crate::{GetColumns, HasTableAddition, InsertableTableModel, Typed};
+use diesel::Table;
+use diesel::associations::HasTable;
 use tuple_set::TupleSet;
-use tuplities::prelude::TupleTryFrom;
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, TuplePopBack, TupleRef, TupleTryFrom};
 
 use crate::{
     AncestorOfIndex, BuildableTable, BuilderResult, BundlableTable, BundlableTables,
-    CompletedTableBuilderBundle, DescendantOf, IncompleteBuilderError, Insert,
-    InsertableTableModel, RecursiveInsert, TableAddition, TableBuilder, TrySetColumn, TypedColumn,
+    CompletedTableBuilderBundle, DescendantOf, IncompleteBuilderError, TableAddition, TableBuilder,
+    Tables, TrySetColumn, TypedColumn,
 };
 
 /// A completed builder for creating insertable models for a Diesel table and
 /// its ancestors.
-struct CompletedTableBuilder<T: Table, Bundles> {
+struct CompletedTableBuilder<T, Bundles> {
     /// The insertable models for the table and its ancestors.
     bundles: Bundles,
-    /// The table type.
-    table: PhantomData<T>,
+    /// Marker for the table type.
+    _marker: std::marker::PhantomData<T>,
 }
 
-impl<T, Bundles> HasTable for CompletedTableBuilder<T, Bundles>
+impl<T, Bundles> CompletedTableBuilder<T, Bundles> {
+    fn from_bundles(bundles: Bundles) -> Self {
+        CompletedTableBuilder {
+            bundles,
+            _marker: std::marker::PhantomData,
+        }
+    }
+}
+
+/// Trait defining the insertion of a builder into the database.
+pub(crate) trait RecursiveBuilderInsert<Error, Conn>: HasTableAddition {
+    /// Insert the builder's data into the database using the provided
+    /// connection.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the database connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the insertion fails or if any database constraints
+    /// are violated.
+    fn recursive_insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error>;
+}
+
+impl<T, Error, Conn> RecursiveBuilderInsert<Error, Conn> for TableBuilder<T>
 where
+    Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
+    <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles: NestTuple,
+    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
+        TryFrom<Self, Error = crate::IncompleteBuilderError>,
+    CompletedTableBuilder<
+        T,
+        <<T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles as NestTuple>::Nested,
+    >: RecursiveBuilderInsert<Error, Conn> + HasTable<Table = T>,
 {
+    #[inline]
+    fn recursive_insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
+        use NestTuple;
+        let completed_builder: CompletedTableBuilder<
+            T,
+            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
+        > = self.try_into()?;
+        // Convert flat tuple to nested tuple for recursive processing
+        let nested = completed_builder.bundles.nest();
+        let nested_builder = CompletedTableBuilder::from_bundles(nested);
+        nested_builder.recursive_insert(conn)
+    }
+}
+
+impl<T: BuildableTable, Conn> crate::Insert<Conn> for TableBuilder<T>
+where
+    Self: RecursiveBuilderInsert<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, Conn>
+{
+    #[inline]
+    fn insert(self, conn: &mut Conn) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
+        self.recursive_insert(conn)
+    }
+}
+
+impl<T: Table + Default, Bundles> HasTable for CompletedTableBuilder<T, Bundles> {
     type Table = T;
 
     #[inline]
@@ -45,45 +112,29 @@ where
     type Error = IncompleteBuilderError;
 
     #[inline]
-    fn try_from(
-        value: TableBuilder<T>,
-    ) -> Result<
-        CompletedTableBuilder<
-            T,
-            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        >,
-        Self::Error,
-    > {
-        Ok(CompletedTableBuilder {
-            bundles:
-                <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles::tuple_try_from(
-                    value.bundles,
-                )?,
-            table: PhantomData,
-        })
+    fn try_from(value: TableBuilder<T>) -> Result<Self, Self::Error> {
+        Ok(CompletedTableBuilder::from_bundles(
+            <<T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles as TupleTryFrom<
+                _,
+                _,
+            >>::tuple_try_from(value.bundles)?,
+        ))
     }
 }
 
-impl<C, T, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
+impl<T, C, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
 where
+    Bundles: TuplePopBack + TupleSet,
     T: BuildableTable + DescendantOf<C::Table>,
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
-    // We require for the non-completed variant of the builder
-    // to implement TrySetColumn as well so to have a compile-time
-    // verification of the availability of the column which
-    // the `TupleSet` dynamic trait cannot guarantee.
     TableBuilder<T>: TrySetColumn<C>,
-    Bundles: TupleSet,
 {
     type Error = <CompletedTableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
 
     #[inline]
-    fn try_set_column(
-        &mut self,
-        value: <C as TypedColumn>::Type,
-    ) -> Result<&mut Self, Self::Error> {
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
         <Bundles as TupleSet>::map(
             &mut self.bundles,
             |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
@@ -96,60 +147,55 @@ where
     }
 }
 
-impl<T, Conn> Insert<Conn> for TableBuilder<T>
+// Base case: single element nested tuple
+impl<T, Error, Conn, Head> RecursiveBuilderInsert<Error, Conn> for CompletedTableBuilder<T, (Head,)>
 where
     Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        RecursiveInsert<
-                <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error,
-                Conn,
-                Table = T,
-            > + TryFrom<Self, Error = IncompleteBuilderError>,
-{
-    #[inline]
-    fn insert(self, conn: &mut Conn) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
-        self.recursive_insert(conn)
-    }
-}
-
-impl<T, Error, Conn> RecursiveInsert<Error, Conn> for TableBuilder<T>
-where
-    Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        RecursiveInsert<Error, Conn, Table = T> + TryFrom<Self, Error = IncompleteBuilderError>,
+    Head: RecursiveBundleInsert<Error, Conn>,
+    Self: HasTableAddition<Table = <Head as HasTable>::Table>,
 {
     #[inline]
     fn recursive_insert(
         self,
         conn: &mut Conn,
     ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
-        let completed_builder: CompletedTableBuilder<
-            T,
-            <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
-        > = self.try_into()?;
-        completed_builder.recursive_insert(conn)
+        self.bundles.0.recursive_bundle_insert(conn)
     }
 }
 
-// Base case: single bundle (leaf node)
-impl<Error, Conn, T> RecursiveInsert<Error, Conn>
-    for CompletedTableBuilder<T, (CompletedTableBuilderBundle<T>,)>
+// Recursive case: nested 2-tuple (Head, Tail) where Tail is itself a nested tuple
+impl<T, Error, Conn, Head, Tail> RecursiveBuilderInsert<Error, Conn>
+    for CompletedTableBuilder<T, (Head, Tail)>
 where
+    T: TableAddition,
     Conn: diesel::connection::LoadConnection,
-    T: BuildableTable,
-    CompletedTableBuilderBundle<T>: RecursiveInsert<Error, Conn, Table = T>,
+    Head: RecursiveBundleInsert<Error, Conn> + HasTable,
+    Tail: FlattenNestedTuple,
+    <<Head as HasTable>::Table as TableAddition>::Model:
+        GetColumns<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns>,
+    Tail::Flattened: HasTables,
+    CompletedTableBuilder<T, Tail>: RecursiveBuilderInsert<Error, Conn, Table=T>
+        + for<'a> crate::TrySetHomogeneous<
+            Error,
+            <<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns as Typed>::Type as TupleRef>::Ref<'a>,
+            <<Tail::Flattened as HasTables>::Tables as Tables>::PrimaryKeyColumnsCollection,
+        >,
 {
     #[inline]
     fn recursive_insert(
         self,
         conn: &mut Conn,
     ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
-        self.bundles.0.recursive_insert(conn)
+        // Insert the first table and get its model (with primary keys)
+        let first = self.bundles.0;
+        let model: <<Head as HasTable>::Table as TableAddition>::Model =
+            first.recursive_bundle_insert(conn)?;
+        // Extract primary keys and set them in the tail builder
+        let mut tail_builder = CompletedTableBuilder::from_bundles(self.bundles.1);
+        tail_builder
+            .try_set_homogeneous(model.get_columns())
+            .map_err(crate::BuilderError::Validation)?;
+        // Recursively insert the tail
+        tail_builder.recursive_insert(conn)
     }
 }
-
-// Recursive cases for tuples of size 2-32 are generated by the macro
-#[diesel_builders_macros::impl_completed_table_builder_nested_insert]
-mod completed_table_builder_impls {}
