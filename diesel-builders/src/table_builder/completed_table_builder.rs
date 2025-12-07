@@ -1,13 +1,16 @@
 //! Submodule for the completed table builder and related impls.
 
+use std::ops::Sub;
+
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::get_set_columns::TrySetHomogeneous;
 use crate::tables::HasTables;
 use crate::{GetColumns, HasTableAddition, InsertableTableModel, Typed};
 use diesel::Table;
 use diesel::associations::HasTable;
-use tuple_set::TupleSet;
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, TuplePopBack, TupleRef, TupleTryFrom};
+use tuplities::prelude::{
+    FlattenNestedTuple, NestTuple, NestedTupleIndexMut, TupleRef, TupleTryFrom,
+};
 
 use crate::{
     AncestorOfIndex, BuildableTable, BuilderResult, BundlableTable, BundlableTables,
@@ -17,24 +20,24 @@ use crate::{
 
 /// A completed builder for creating insertable models for a Diesel table and
 /// its ancestors.
-struct CompletedTableBuilder<T, Bundles> {
+struct RecursiveTableBuilder<T, Depth, Bundles> {
     /// The insertable models for the table and its ancestors.
     bundles: Bundles,
-    /// Marker for the table type.
-    _marker: std::marker::PhantomData<T>,
+    /// Marker for the table and depth.
+    _markers: std::marker::PhantomData<(T, Depth)>,
 }
 
-impl<T, Bundles> CompletedTableBuilder<T, Bundles> {
+impl<T, Depth, Bundles> RecursiveTableBuilder<T, Depth, Bundles> {
     fn from_bundles(bundles: Bundles) -> Self {
-        CompletedTableBuilder {
+        RecursiveTableBuilder {
             bundles,
-            _marker: std::marker::PhantomData,
+            _markers: std::marker::PhantomData,
         }
     }
 }
 
 /// Trait defining the insertion of a builder into the database.
-pub(crate) trait RecursiveBuilderInsert<Error, Conn>: HasTableAddition {
+pub trait RecursiveBuilderInsert<Error, Conn>: HasTableAddition {
     /// Insert the builder's data into the database using the provided
     /// connection.
     ///
@@ -57,10 +60,14 @@ where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
     <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles: NestTuple,
-    CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>:
-        TryFrom<Self, Error = crate::IncompleteBuilderError>,
-    CompletedTableBuilder<
+    RecursiveTableBuilder<
         T,
+        typenum::U0,
+        <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
+    >: TryFrom<Self, Error = crate::IncompleteBuilderError>,
+    RecursiveTableBuilder<
+        T,
+        typenum::U0,
         <<T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles as NestTuple>::Nested,
     >: RecursiveBuilderInsert<Error, Conn> + HasTable<Table = T>,
 {
@@ -70,13 +77,14 @@ where
         conn: &mut Conn,
     ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error> {
         use NestTuple;
-        let completed_builder: CompletedTableBuilder<
+        let completed_builder: RecursiveTableBuilder<
             T,
+            typenum::U0,
             <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
         > = self.try_into()?;
         // Convert flat tuple to nested tuple for recursive processing
         let nested = completed_builder.bundles.nest();
-        let nested_builder = CompletedTableBuilder::from_bundles(nested);
+        let nested_builder = RecursiveTableBuilder::from_bundles(nested);
         nested_builder.recursive_insert(conn)
     }
 }
@@ -91,7 +99,7 @@ where
     }
 }
 
-impl<T: Table + Default, Bundles> HasTable for CompletedTableBuilder<T, Bundles> {
+impl<T: Table + Default, Depth, Bundles> HasTable for RecursiveTableBuilder<T, Depth, Bundles> {
     type Table = T;
 
     #[inline]
@@ -101,7 +109,11 @@ impl<T: Table + Default, Bundles> HasTable for CompletedTableBuilder<T, Bundles>
 }
 
 impl<T> TryFrom<TableBuilder<T>>
-    for CompletedTableBuilder<T, <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles>
+    for RecursiveTableBuilder<
+        T,
+        typenum::U0,
+        <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles,
+    >
 where
     T: BuildableTable,
     <T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles: TupleTryFrom<
@@ -113,7 +125,7 @@ where
 
     #[inline]
     fn try_from(value: TableBuilder<T>) -> Result<Self, Self::Error> {
-        Ok(CompletedTableBuilder::from_bundles(
+        Ok(RecursiveTableBuilder::from_bundles(
             <<T::AncestorsWithSelf as BundlableTables>::CompletedBuilderBundles as TupleTryFrom<
                 _,
                 _,
@@ -122,12 +134,16 @@ where
     }
 }
 
-impl<T, C, Bundles> TrySetColumn<C> for CompletedTableBuilder<T, Bundles>
+impl<'a, T, C, Depth, Bundles> TrySetColumn<C> for RecursiveTableBuilder<T, Depth, Bundles>
 where
-    Bundles: TuplePopBack + TupleSet,
+    Self: 'a,
+    Bundles: NestedTupleIndexMut<
+            <<C::Table as AncestorOfIndex<T>>::Idx as Sub<Depth>>::Output,
+            Element = CompletedTableBuilderBundle<C::Table>,
+        >,
     T: BuildableTable + DescendantOf<C::Table>,
     C: TypedColumn,
-    C::Table: AncestorOfIndex<T> + BundlableTable,
+    C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
 {
@@ -135,20 +151,15 @@ where
 
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        <Bundles as TupleSet>::map(
-            &mut self.bundles,
-            |builder_bundle: &mut CompletedTableBuilderBundle<C::Table>| {
-                builder_bundle.try_set_column(value).map(|_| ())
-            },
-        )
-        .transpose()?;
+        self.bundles.nested_index_mut().try_set_column(value)?;
         // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }
 }
 
 // Base case: single element nested tuple
-impl<T, Error, Conn, Head> RecursiveBuilderInsert<Error, Conn> for CompletedTableBuilder<T, (Head,)>
+impl<T, Depth, Error, Conn, Head> RecursiveBuilderInsert<Error, Conn>
+    for RecursiveTableBuilder<T, Depth, (Head,)>
 where
     Conn: diesel::connection::LoadConnection,
     Head: RecursiveBundleInsert<Error, Conn>,
@@ -164,8 +175,8 @@ where
 }
 
 // Recursive case: nested 2-tuple (Head, Tail) where Tail is itself a nested tuple
-impl<T, Error, Conn, Head, Tail> RecursiveBuilderInsert<Error, Conn>
-    for CompletedTableBuilder<T, (Head, Tail)>
+impl<T, Depth, Error, Conn, Head, Tail> RecursiveBuilderInsert<Error, Conn>
+    for RecursiveTableBuilder<T, Depth, (Head, Tail)>
 where
     T: TableAddition,
     Conn: diesel::connection::LoadConnection,
@@ -174,7 +185,8 @@ where
     <<Head as HasTable>::Table as TableAddition>::Model:
         GetColumns<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns>,
     Tail::Flattened: HasTables,
-    CompletedTableBuilder<T, Tail>: RecursiveBuilderInsert<Error, Conn, Table=T>
+    Depth: core::ops::Add<typenum::U1>,
+    RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>: RecursiveBuilderInsert<Error, Conn, Table=T>
         + for<'a> crate::TrySetHomogeneous<
             Error,
             <<<<Head as HasTable>::Table as TableAddition>::PrimaryKeyColumns as Typed>::Type as TupleRef>::Ref<'a>,
@@ -191,7 +203,7 @@ where
         let model: <<Head as HasTable>::Table as TableAddition>::Model =
             first.recursive_bundle_insert(conn)?;
         // Extract primary keys and set them in the tail builder
-        let mut tail_builder = CompletedTableBuilder::from_bundles(self.bundles.1);
+        let mut tail_builder = RecursiveTableBuilder::from_bundles(self.bundles.1);
         tail_builder
             .try_set_homogeneous(model.get_columns())
             .map_err(crate::BuilderError::Validation)?;

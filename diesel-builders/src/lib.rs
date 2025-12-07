@@ -55,7 +55,7 @@ pub mod table_builder;
 pub use buildable_columns::BuildableColumn;
 pub use buildable_table::BuildableTable;
 pub use buildable_tables::BuildableTables;
-pub(crate) use table_builder::RecursiveBuilderInsert;
+pub use table_builder::RecursiveBuilderInsert;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
 pub use set_builder::{

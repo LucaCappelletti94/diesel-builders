@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 diesel.workspace = true
-tuple_set.workspace = true
 diesel-builders-macros.workspace = true
 serde = { workspace = true, optional = true }
 tuplities.workspace = true

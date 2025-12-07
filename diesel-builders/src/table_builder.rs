@@ -7,7 +7,7 @@ use tuplities::prelude::*;
 mod completed_table_builder;
 mod core_traits;
 mod serde;
-pub(crate) use completed_table_builder::RecursiveBuilderInsert;
+pub use completed_table_builder::RecursiveBuilderInsert;
 
 use crate::{
     AncestorOfIndex, BundlableTable, BundlableTables, DescendantOf, HorizontalSameAsKey,

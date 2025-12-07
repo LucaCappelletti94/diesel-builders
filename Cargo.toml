@@ -10,22 +10,52 @@ description = "A type-safe builder pattern library for Diesel that handles compl
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/lucacappelletti94/diesel-builders"
 homepage = "https://github.com/lucacappelletti94/diesel-builders"
-keywords = ["diesel", "orm", "builder-pattern", "rust", "type-safety", "code-generation"]
-categories = ["database", "development-tools::code-generation", "development-tools::libraries"]
+keywords = [
+	"diesel",
+	"orm",
+	"builder-pattern",
+	"rust",
+	"type-safety",
+	"code-generation",
+]
+categories = [
+	"database",
+	"development-tools::code-generation",
+	"development-tools::libraries",
+]
 version = "0.1.0"
 readme = "../README.md"
 rust-version = "1.85"
 
 [workspace.dependencies]
 diesel = "2.3.4"
-tuple_set = "0.1.3"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 diesel-builders = { path = "diesel-builders" }
 diesel-builders-macros = { path = "diesel-builders-macros" }
 trybuild = "1.0"
 typenum = "1"
-tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main" }
+tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
+	"clone",
+	"copy",
+	"debug",
+	"tuple-default",
+	"eq",
+	"flatten-nest",
+	"hash",
+	"option",
+	"ord",
+	"partial-eq",
+	"partial-ord",
+	"len",
+	"index",
+	"pop-front",
+	"push-back",
+	"ref",
+	"replicate",
+	"row",
+	"try-from",
+] }
 
 [workspace.lints.rust]
 missing_docs = "forbid"

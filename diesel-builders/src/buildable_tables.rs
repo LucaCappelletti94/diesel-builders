@@ -1,14 +1,12 @@
 //! Module for buildable columns in Diesel.
 
-use tuple_set::TupleSet;
-
 use crate::tables::TablesExt;
 use tuplities::prelude::*;
 
 /// A trait for collections of Diesel tables that can be built.
 pub trait BuildableTables: TablesExt {
     /// The builders associated with the buildable tables.
-    type Builders: IntoTupleOption<IntoOptions = Self::OptionalBuilders> + TupleSet;
+    type Builders: IntoTupleOption<IntoOptions = Self::OptionalBuilders>;
     /// The optional builders associated with the buildable tables.
     type OptionalBuilders: TupleOption<Transposed = Self::Builders>;
 }
