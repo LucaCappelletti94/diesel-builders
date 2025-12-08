@@ -1,4 +1,4 @@
-//! Tests for BuilderError Display and Error trait implementations.
+//! Tests for `BuilderError` Display and Error trait implementations.
 
 mod common;
 

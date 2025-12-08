@@ -2,8 +2,8 @@
 //!
 //! This test sets up four tables: A (root), C (references A), D (references A),
 //! and B which:
-//! - Has a mandatory triangular relation with C (via c_id)
-//! - Has a discretionary triangular relation with D (via d_id)
+//! - Has a mandatory triangular relation with C (via `c_id`)
+//! - Has a discretionary triangular relation with D (via `d_id`)
 
 mod common;
 
@@ -56,9 +56,9 @@ diesel::table! {
         d_id -> Integer,
         /// Column B value.
         column_b -> Text,
-        /// The remote column_c value from table C.
+        /// The remote `column_c` value from table C.
         remote_column_c -> Nullable<Text>,
-        /// The remote column_d value from table D.
+        /// The remote `column_d` value from table D.
         remote_column_d -> Nullable<Text>,
     }
 }

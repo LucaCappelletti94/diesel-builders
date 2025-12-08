@@ -11,7 +11,7 @@ use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel
 use std::collections::HashMap;
 
 diesel::table! {
-    /// Define a user_roles table with composite primary key for testing.
+    /// Define a `user_roles` table with composite primary key for testing.
     user_roles (user_id, role_id) {
         /// The ID of the user.
         user_id -> Integer,

@@ -50,13 +50,13 @@ diesel::table! {
 diesel::table! {
     /// Table B extends C via foreign key and also references A.
     table_b (id) {
-        /// Primary key of table B, foreign key to table_c.id.
+        /// Primary key of table B, foreign key to `table_c.id`.
         id -> Integer,
-        /// Foreign key to table C (must match C's a_id - discretionary triangular relation).
+        /// Foreign key to table C (must match C's `a_id` - discretionary triangular relation).
         c_id -> Integer,
         /// A simple column for table B.
         column_b -> Text,
-        /// The remote column_c value from table C that B references via c_id.
+        /// The remote `column_c` value from table C that B references via `c_id`.
         remote_column_c -> Nullable<Text>,
     }
 }
@@ -119,7 +119,7 @@ pub struct TableB {
     pub c_id: i32,
     /// Column B value.
     pub column_b: String,
-    /// The remote column_c value from table C that B references via c_id.
+    /// The remote `column_c` value from table C that B references via `c_id`.
     pub remote_column_c: Option<String>,
 }
 
@@ -130,9 +130,9 @@ impl Descendant for table_b::table {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-/// Errors for NewTableB validation.
+/// Errors for `NewTableB` validation.
 pub enum ErrorB {
-    /// remote_column_c cannot be empty.
+    /// `remote_column_c` cannot be empty.
     EmptyRemoteColumnC,
 }
 
@@ -153,7 +153,7 @@ pub struct NewTableB {
     pub c_id: Option<i32>,
     /// Column B value.
     pub column_b: Option<String>,
-    /// The remote column_c value from table C that B references via c_id.
+    /// The remote `column_c` value from table C that B references via `c_id`.
     pub remote_column_c: Option<Option<String>>,
 }
 

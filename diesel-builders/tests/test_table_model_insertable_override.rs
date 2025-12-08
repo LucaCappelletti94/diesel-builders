@@ -1,4 +1,4 @@
-//! Test for TableModel derive with custom insertable override.
+//! Test for `TableModel` derive with custom insertable override.
 
 mod common;
 

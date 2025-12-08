@@ -5,9 +5,9 @@ use std::{convert::Infallible, fmt::Display};
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_builders::prelude::*;
 
-/// Establish a SQLite connection with all necessary PRAGMAs enabled.
+/// Establish a `SQLite` connection with all necessary PRAGMAs enabled.
 ///
-/// This function creates an in-memory SQLite database connection and enables
+/// This function creates an in-memory `SQLite` database connection and enables
 /// important PRAGMAs for testing:
 /// - `foreign_keys = ON`: Enforces foreign key constraints
 /// - `recursive_triggers = ON`: Allows triggers to be recursive
