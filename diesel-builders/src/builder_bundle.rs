@@ -241,7 +241,10 @@ where
     T::InsertableModel: MayGetColumn<C>,
 {
     #[inline]
-    fn may_get_column_ref(&self) -> Option<&C::Type> {
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::Type>
+    where
+        C::Table: 'a,
+    {
         self.insertable_model.may_get_column_ref()
     }
 }

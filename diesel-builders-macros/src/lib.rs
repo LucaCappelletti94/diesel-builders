@@ -320,7 +320,10 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
         let field_name = field.ident.as_ref()?;
         Some(quote::quote! {
             impl diesel_builders::MayGetColumn<#table_name::#field_name> for #struct_name {
-                fn may_get_column_ref(&self) -> Option<&<#table_name::#field_name as diesel_builders::Typed>::Type> {
+                fn may_get_column_ref<'a>(&'a self) -> Option<&'a <#table_name::#field_name as diesel_builders::Typed>::Type>
+                    where
+                        #table_name::table: 'a,
+                    {
                     self.#field_name.as_ref()
                 }
             }

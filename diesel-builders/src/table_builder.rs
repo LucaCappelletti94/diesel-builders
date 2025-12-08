@@ -50,7 +50,10 @@ where
     }
 
     #[inline]
-    fn may_get_column_ref(&self) -> Option<&<C as Typed>::Type> {
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a <C as Typed>::Type>
+    where
+        C::Table: 'a,
+    {
         self.bundles.tuple_index().may_get_column_ref()
     }
 }

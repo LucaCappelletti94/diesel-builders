@@ -7,9 +7,7 @@ use crate::{
 };
 
 /// Extended trait for Diesel tables.
-pub trait TableAddition:
-    'static + diesel::Table<AllColumns: Columns, PrimaryKey: Typed> + Default
-{
+pub trait TableAddition: diesel::Table<AllColumns: Columns, PrimaryKey: Typed> + Default {
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The associated insertable model for this table.

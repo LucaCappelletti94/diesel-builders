@@ -352,9 +352,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .column_b_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
-    let b = b_builder
-        .try_c_id_builder(c_builder)?
-        .insert(&mut conn)?;
+    let b = b_builder.try_c_id_builder(c_builder)?.insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(b.id))

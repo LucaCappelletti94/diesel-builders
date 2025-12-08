@@ -379,7 +379,7 @@ pub fn generate_try_may_set_discretionary_same_as_columns() -> TokenStream {
 
         quote! {
             impl<
-                Type: Clone + 'static,
+                Type: Clone,
                 Error,
                 T,
                 #(#keys: DiscretionarySameAsIndex,)*
@@ -431,7 +431,7 @@ pub fn generate_try_set_mandatory_same_as_columns() -> TokenStream {
 
         quote! {
             impl<
-                Type: Clone + 'static,
+                Type: Clone,
                 Error,
                 #(#keys: MandatorySameAsIndex,)*
                 #(#column_types: crate::TypedColumn<Table=#keys::ReferencedTable, Type=Type>,)*

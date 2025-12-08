@@ -62,8 +62,7 @@ where
 
 #[diesel_builders_macros::impl_may_get_columns]
 /// Trait indicating a builder which may get multiple columns.
-pub trait MayGetColumns<CS: Columns>
-{
+pub trait MayGetColumns<CS: Columns> {
     /// May get the owned values of the specified columns.
     fn may_get_columns(&self) -> <CS::Type as IntoTupleOption>::IntoOptions;
 }
