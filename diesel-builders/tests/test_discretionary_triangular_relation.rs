@@ -129,10 +129,11 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
 /// Errors for `NewTableB` validation.
 pub enum ErrorB {
     /// `remote_column_c` cannot be empty.
+    #[error("`remote_column_c` cannot be empty")]
     EmptyRemoteColumnC,
 }
 
@@ -303,22 +304,18 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     triangular_b_builder
         .column_a_ref("Value A for B")
         .column_b_ref("Value B")
-        .try_c_id_builder_ref(c_builder.clone())
-        .unwrap();
+        .try_c_id_builder_ref(c_builder.clone())?;
 
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");
 
     let triangular_b = triangular_b_builder
-        .try_c_id_builder(c_builder)
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_c_id_builder(c_builder)?
+        .insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(triangular_b.id))
-        .first(&mut conn)
-        .unwrap();
+        .first(&mut conn)?;
     assert_eq!(associated_a.column_a, "Value A for B");
 
     // We can also reference an existing model using the _model variant
@@ -326,8 +323,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     let associated_c: TableC = table_c::table
         .filter(table_c::id.eq(triangular_b.c_id))
-        .first(&mut conn)
-        .unwrap();
+        .first(&mut conn)?;
     assert_eq!(associated_c.column_c.as_deref(), Some("Value C for B"));
     assert_eq!(associated_c.a_id, triangular_b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
@@ -335,10 +331,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let indipendent_b = table_b::table::builder()
         .column_a("Independent A for B")
         .column_b("Independent B")
-        .try_c_id_model(&c)
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_c_id_model(&c)?
+        .insert(&mut conn)?;
 
     assert_eq!(indipendent_b.column_b, "Independent B");
     assert_eq!(indipendent_b.remote_column_c.as_deref(), Some("Value C"));
@@ -380,8 +374,7 @@ fn test_discretionary_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .column_b("B Value")
-        .try_c_id_builder(c_builder)
-        .unwrap()
+        .try_c_id_builder(c_builder)?
         .insert(&mut conn);
 
     assert!(matches!(
@@ -398,8 +391,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Create a builder with discretionary triangular relation
     let builder = table_b::table::builder()
         .column_b("Serialized B")
-        .try_remote_column_c(Some("Serialized C".to_string()))
-        .unwrap();
+        .try_remote_column_c("Serialized C".to_string())?;
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;

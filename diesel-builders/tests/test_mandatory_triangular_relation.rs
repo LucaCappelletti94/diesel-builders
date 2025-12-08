@@ -166,10 +166,11 @@ impl Descendant for table_b::table {
     type Root = table_a::table;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash, thiserror::Error)]
 /// Errors for `NewTableB` validation.
 pub enum ErrorB {
     /// `remote_column_c` cannot be empty.
+    #[error("`remote_column_c` cannot be empty")]
     EmptyRemoteColumnC,
 }
 
@@ -346,25 +347,21 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     ));
 
     b_builder
-        .try_c_id_builder_ref(c_builder.clone())
-        .unwrap()
+        .try_c_id_builder_ref(c_builder.clone())?
         .column_a_ref("Value A for B")
         .column_b_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
     let b = b_builder
-        .try_c_id_builder(c_builder)
-        .unwrap()
-        .insert(&mut conn)
-        .unwrap();
+        .try_c_id_builder(c_builder)?
+        .insert(&mut conn)?;
 
     let associated_a: TableA = table_a::table
         .filter(table_a::id.eq(b.id))
-        .first(&mut conn)
-        .unwrap();
+        .first(&mut conn)?;
     assert_eq!(associated_a.column_a, "Value A for B");
 
-    let associated_c: TableC = b.foreign_c_id(&mut conn).unwrap();
+    let associated_c: TableC = b.foreign_c_id(&mut conn)?;
     assert_eq!(associated_c.column_c.as_deref(), Some("Value C"));
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
@@ -499,7 +496,7 @@ fn test_triangular_builder_hash() {
 }
 
 #[test]
-fn test_triangular_builder_partial_ord() {
+fn test_triangular_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
     // Test PartialOrd implementation for TableBuilder
     let a_builder1 = table_a::table::builder().column_a("A1");
     let a_builder2 = table_a::table::builder().column_a("A1");
@@ -511,12 +508,10 @@ fn test_triangular_builder_partial_ord() {
 
     let b_builder1 = table_b::table::builder()
         .column_b("B1")
-        .try_c_id_builder(c_builder1.clone())
-        .unwrap();
+        .try_c_id_builder(c_builder1.clone())?;
     let b_builder2 = table_b::table::builder()
         .column_b("B1")
-        .try_c_id_builder(c_builder3.clone())
-        .unwrap();
+        .try_c_id_builder(c_builder3.clone())?;
     let b_builder3 = table_b::table::builder().column_b("B1");
     let b_builder4 = table_b::table::builder().column_b("B1");
 
@@ -570,6 +565,7 @@ fn test_triangular_builder_partial_ord() {
     assert_eq!(b_builder1.cmp(&b_builder2), std::cmp::Ordering::Less);
     assert_eq!(b_builder2.cmp(&b_builder1), std::cmp::Ordering::Greater);
     assert_eq!(b_builder3.cmp(&b_builder4), std::cmp::Ordering::Equal);
+    Ok(())
 }
 
 #[test]
@@ -626,8 +622,7 @@ fn test_mandatory_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .column_b("B Value")
-        .try_c_id_builder(c_builder)
-        .unwrap()
+        .try_c_id_builder(c_builder)?
         .insert(&mut conn);
 
     assert!(matches!(
@@ -644,8 +639,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Create a builder with mandatory triangular relation
     let builder = table_b::table::builder()
         .column_b("Serialized B")
-        .try_remote_column_c(Some("Serialized C".to_string()))
-        .unwrap();
+        .try_remote_column_c("Serialized C".to_string())?;
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;

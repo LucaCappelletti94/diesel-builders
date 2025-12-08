@@ -33,6 +33,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 diesel-builders = { path = "diesel-builders" }
 diesel-builders-macros = { path = "diesel-builders-macros" }
+thiserror = "2.0"
 typenum = "1"
 tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
 	"clone",

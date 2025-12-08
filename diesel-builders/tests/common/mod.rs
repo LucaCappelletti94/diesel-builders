@@ -1,6 +1,6 @@
 //! Common utilities and shared table definitions for tests.
 
-use std::{convert::Infallible, fmt::Display};
+use std::convert::Infallible;
 
 use diesel::{prelude::*, sqlite::SqliteConnection};
 use diesel_builders::prelude::*;
@@ -73,36 +73,21 @@ pub struct NewAnimal {
 }
 
 /// Error variants for `NewAnimal` validation.
-#[derive(Debug, PartialEq, PartialOrd, Eq, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Clone, thiserror::Error)]
 pub enum NewAnimalError {
     /// Name cannot be empty.
+    #[error("Animal name cannot be empty")]
     NameEmpty,
     /// Name is too long (max 100 characters).
+    #[error("Animal name cannot exceed 100 characters")]
     NameTooLong,
     /// Description cannot be empty when provided.
+    #[error("Animal description cannot be empty when provided")]
     DescriptionEmpty,
     /// Description is too long (max 500 characters).
+    #[error("Animal description cannot exceed 500 characters")]
     DescriptionTooLong,
 }
-
-impl Display for NewAnimalError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NewAnimalError::NameEmpty => write!(f, "Animal name cannot be empty"),
-            NewAnimalError::NameTooLong => {
-                write!(f, "Animal name cannot exceed 100 characters")
-            }
-            NewAnimalError::DescriptionEmpty => {
-                write!(f, "Animal description cannot be empty when provided")
-            }
-            NewAnimalError::DescriptionTooLong => {
-                write!(f, "Animal description cannot exceed 500 characters")
-            }
-        }
-    }
-}
-
-impl std::error::Error for NewAnimalError {}
 
 impl From<std::convert::Infallible> for NewAnimalError {
     fn from(inf: std::convert::Infallible) -> Self {
@@ -264,9 +249,10 @@ pub struct NewCat {
     pub color: Option<String>,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Hash)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
 pub enum NewCatError {
     /// Color cannot be empty.
+    #[error("Color cannot be empty")]
     ColorEmpty,
 }
 
@@ -275,16 +261,6 @@ impl From<Infallible> for NewCatError {
         unreachable!()
     }
 }
-
-impl Display for NewCatError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NewCatError::ColorEmpty => write!(f, "Color cannot be empty"),
-        }
-    }
-}
-
-impl core::error::Error for NewCatError {}
 
 impl diesel_builders::TrySetColumn<cats::id> for NewCat {
     type Error = Infallible;

@@ -150,6 +150,7 @@ dependencies = [
  "diesel-builders-macros",
  "serde",
  "serde_json",
+ "thiserror",
  "tuplities",
  "typenum",
 ]
