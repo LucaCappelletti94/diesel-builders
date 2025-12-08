@@ -12,18 +12,21 @@ pub fn generate_typed_column_impls(
     struct_ident: &Ident,
     primary_key_columns: &[Ident],
 ) -> TokenStream {
-    fields.iter().filter_map(|field| {
-        let field_name = field.ident.as_ref()?;
-        let field_type = &field.ty;
-        
-        Some(generate_field_traits(
-            field_name,
-            field_type,
-            table_name,
-            struct_ident,
-            primary_key_columns,
-        ))
-    }).collect()
+    fields
+        .iter()
+        .filter_map(|field| {
+            let field_name = field.ident.as_ref()?;
+            let field_type = &field.ty;
+
+            Some(generate_field_traits(
+                field_name,
+                field_type,
+                table_name,
+                struct_ident,
+                primary_key_columns,
+            ))
+        })
+        .collect()
 }
 
 /// Generate all trait implementations for a single field.
@@ -38,7 +41,12 @@ fn generate_field_traits(
 
     // Generate getter trait only for non-id fields
     let maybe_getter_impl = (field_name != "id").then(|| {
-        generate_getter_trait(field_name, table_name, struct_ident, &camel_cased_field_name)
+        generate_getter_trait(
+            field_name,
+            table_name,
+            struct_ident,
+            &camel_cased_field_name,
+        )
     });
 
     // Generate triangular relation traits only for single primary key tables
@@ -51,8 +59,18 @@ fn generate_field_traits(
         )
     });
 
-    let set_trait = generate_set_trait(field_name, table_name, struct_ident, &camel_cased_field_name);
-    let try_set_trait = generate_try_set_trait(field_name, table_name, struct_ident, &camel_cased_field_name);
+    let set_trait = generate_set_trait(
+        field_name,
+        table_name,
+        struct_ident,
+        &camel_cased_field_name,
+    );
+    let try_set_trait = generate_try_set_trait(
+        field_name,
+        table_name,
+        struct_ident,
+        &camel_cased_field_name,
+    );
     let typed_impl = generate_typed_impl(field_name, field_type, table_name);
 
     quote! {
@@ -76,12 +94,10 @@ fn generate_getter_trait(
         proc_macro2::Span::call_site(),
     );
 
-    let get_trait_doc_comment = format!(
-        "Trait to get the `{field_name}` column from a `{table_name}` table model."
-    );
-    let get_field_name_method_doc_comment = format!(
-        "Gets the value of the `{field_name}` column from a `{table_name}` table model."
-    );
+    let get_trait_doc_comment =
+        format!("Trait to get the `{field_name}` column from a `{table_name}` table model.");
+    let get_field_name_method_doc_comment =
+        format!("Gets the value of the `{field_name}` column from a `{table_name}` table model.");
 
     quote! {
         #[doc = #get_trait_doc_comment]
@@ -107,20 +123,15 @@ fn generate_set_trait(
         &format!("Set{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let field_name_ref = syn::Ident::new(
-        &format!("{field_name}_ref"),
-        proc_macro2::Span::call_site(),
-    );
+    let field_name_ref =
+        syn::Ident::new(&format!("{field_name}_ref"), proc_macro2::Span::call_site());
 
-    let set_trait_doc_comment = format!(
-        "Trait to set the `{field_name}` column on a `{table_name}` table builder."
-    );
-    let field_name_ref_method_doc_comment = format!(
-        "Sets the `{field_name}` column on a `{table_name}` table builder by reference."
-    );
-    let field_name_method_doc_comment = format!(
-        "Sets the `{field_name}` column on a `{table_name}` table builder."
-    );
+    let set_trait_doc_comment =
+        format!("Trait to set the `{field_name}` column on a `{table_name}` table builder.");
+    let field_name_ref_method_doc_comment =
+        format!("Sets the `{field_name}` column on a `{table_name}` table builder by reference.");
+    let field_name_method_doc_comment =
+        format!("Sets the `{field_name}` column on a `{table_name}` table builder.");
 
     quote! {
         #[doc = #set_trait_doc_comment]
@@ -161,24 +172,20 @@ fn generate_try_set_trait(
         &format!("TrySet{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let try_field_name = syn::Ident::new(
-        &format!("try_{field_name}"),
-        proc_macro2::Span::call_site(),
-    );
+    let try_field_name =
+        syn::Ident::new(&format!("try_{field_name}"), proc_macro2::Span::call_site());
     let try_field_name_ref = syn::Ident::new(
         &format!("try_{field_name}_ref"),
         proc_macro2::Span::call_site(),
     );
 
-    let try_set_trait_doc_comment = format!(
-        "Trait to try to set the `{field_name}` column on a `{table_name}` table builder."
-    );
+    let try_set_trait_doc_comment =
+        format!("Trait to try to set the `{field_name}` column on a `{table_name}` table builder.");
     let try_field_name_ref_method_doc_comment = format!(
         "Tries to set the `{field_name}` column on a `{table_name}` table builder by reference."
     );
-    let try_field_name_method_doc_comment = format!(
-        "Tries to set the `{field_name}` column on a `{table_name}` table builder."
-    );
+    let try_field_name_method_doc_comment =
+        format!("Tries to set the `{field_name}` column on a `{table_name}` table builder.");
 
     quote! {
         #[doc = #try_set_trait_doc_comment]

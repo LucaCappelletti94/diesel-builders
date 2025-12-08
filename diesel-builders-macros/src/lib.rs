@@ -596,7 +596,7 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(TableModel, attributes(table_model))]
 pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
-    
+
     match table_model::derive_table_model_impl(&input) {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),

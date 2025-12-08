@@ -46,7 +46,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     };
 
     // Generate all components
-    let typed_column_impls = generate_typed_column_impls(fields, &table_name, struct_ident, &primary_key_columns);
+    let typed_column_impls =
+        generate_typed_column_impls(fields, &table_name, struct_ident, &primary_key_columns);
     let get_column_impls = generate_get_column_impls(fields, &table_name, struct_ident);
     let indexed_column_impls = generate_indexed_column_impls(&table_name, &primary_key_columns);
 
