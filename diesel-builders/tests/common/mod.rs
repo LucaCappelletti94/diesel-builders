@@ -13,23 +13,17 @@ use diesel_builders::prelude::*;
 /// - `recursive_triggers = ON`: Allows triggers to be recursive
 /// - `journal_mode = WAL`: Uses Write-Ahead Logging for better concurrency
 #[allow(dead_code)]
-pub fn establish_test_connection() -> Result<SqliteConnection, diesel::ConnectionError> {
+pub fn establish_test_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
     let mut conn = SqliteConnection::establish(":memory:")?;
 
     // Enable foreign key constraints
-    diesel::sql_query("PRAGMA foreign_keys = ON")
-        .execute(&mut conn)
-        .expect("Failed to enable foreign keys");
+    diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut conn)?;
 
     // Enable recursive triggers
-    diesel::sql_query("PRAGMA recursive_triggers = ON")
-        .execute(&mut conn)
-        .expect("Failed to enable recursive triggers");
+    diesel::sql_query("PRAGMA recursive_triggers = ON").execute(&mut conn)?;
 
     // Set journal mode to WAL for better performance
-    diesel::sql_query("PRAGMA journal_mode = WAL")
-        .execute(&mut conn)
-        .expect("Failed to set journal mode");
+    diesel::sql_query("PRAGMA journal_mode = WAL").execute(&mut conn)?;
 
     Ok(conn)
 }

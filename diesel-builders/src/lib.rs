@@ -1,4 +1,6 @@
 #![doc = include_str!("../../README.md")]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 
 // Error handling helpers
 pub mod builder_error;

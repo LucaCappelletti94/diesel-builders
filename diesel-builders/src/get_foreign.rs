@@ -44,17 +44,15 @@ pub trait GetForeign<
 
 impl<
     Conn,
-    ForeignColumns: TableIndex,
-    HostColumns: NonEmptyProjection<Type = <ForeignColumns as Typed>::Type>,
+    ForeignColumns: TableIndex + for<'a> EqAll<<<ForeignColumns as Typed>::Type as TupleRef>::Ref<'a>>,
+    HostColumns: NonEmptyProjection<Type = <ForeignColumns as Typed>::Type> + ForeignKey<ForeignColumns>,
     T: GetColumns<HostColumns> + HasTable<Table=HostColumns::Table>,
 > GetForeign<Conn, ForeignColumns, HostColumns> for T
 where
-    HostColumns: ForeignKey<ForeignColumns>,
     Conn: diesel::connection::LoadConnection,
     <ForeignColumns as NonEmptyProjection>::Table: SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >,
-    for<'a> ForeignColumns: EqAll<<<ForeignColumns as Typed>::Type as TupleRef>::Ref<'a>>,
     for<'a> <<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >>::Output: FilterDsl<

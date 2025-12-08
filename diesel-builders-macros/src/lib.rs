@@ -314,15 +314,15 @@ pub fn derive_get_column(input: TokenStream) -> TokenStream {
         }
     };
 
-    let impls = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
-        quote::quote! {
+    let impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
+        Some(quote::quote! {
             impl diesel_builders::GetColumn<#table_name::#field_name> for #struct_name {
                 fn get_column_ref(&self) -> &<#table_name::#field_name as diesel_builders::Typed>::Type {
                     &self.#field_name
                 }
             }
-        }
+        })
     });
 
     quote::quote! {
@@ -394,15 +394,15 @@ pub fn derive_may_get_column(input: TokenStream) -> TokenStream {
         }
     };
 
-    let impls = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
-        quote::quote! {
+    let impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
+        Some(quote::quote! {
             impl diesel_builders::MayGetColumn<#table_name::#field_name> for #struct_name {
                 fn may_get_column_ref(&self) -> Option<&<#table_name::#field_name as diesel_builders::Typed>::Type> {
                     self.#field_name.as_ref()
                 }
             }
-        }
+        })
     });
 
     quote::quote! {
@@ -478,9 +478,9 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
         }
     };
 
-    let impls = fields.iter().flat_map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
-        vec![
+    let impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
+        Some(
             quote::quote! {
                 impl diesel_builders::TrySetColumn<#table_name::#field_name> for #struct_name {
                     type Error = core::convert::Infallible;
@@ -492,7 +492,7 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
                     }
                 }
             },
-        ]
+        )
     });
 
     quote::quote! {
@@ -625,16 +625,16 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
     };
 
     // Generate HorizontalSameAsGroup impl for each field
-    let horizontal_impls = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
+    let horizontal_impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
 
-        quote::quote! {
+        Some(quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type Idx = diesel_builders::typenum::U0;
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }
-        }
+        })
     });
 
     quote::quote! {
@@ -759,8 +759,8 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
             vec![syn::Ident::new("id", proc_macro2::Span::call_site())]
         });
 
-    let typed_column_impls = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
+    let typed_column_impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
         let field_type = &field.ty;
         let camel_cased_field_name = utils::snake_to_camel_case(&field_name.to_string());
         let set_field_name =
@@ -1096,7 +1096,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
             }
         });
 
-        quote::quote! {
+        Some(quote::quote! {
             #maybe_getter_impl
             #maybe_triangular_impls
 
@@ -1160,7 +1160,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
             impl diesel_builders::Typed for #table_name::#field_name {
                 type Type = #field_type;
             }
-        }
+        })
     });
 
     // Generate IndexedColumn implementations for primary key columns
@@ -1208,7 +1208,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         })
         .unwrap_or_else(|| {
             syn::Ident::new(
-                &format!("New{}", struct_ident),
+                &format!("New{struct_ident}"),
                 proc_macro2::Span::call_site(),
             )
         });
@@ -1545,15 +1545,15 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
         }
     };
 
-    let impls = fields.iter().map(|field| {
-        let field_name = field.ident.as_ref().unwrap();
-        quote::quote! {
+    let impls = fields.iter().filter_map(|field| {
+        let field_name = field.ident.as_ref()?;
+        Some(quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type Idx = diesel_builders::typenum::U0;
                 type MandatoryHorizontalSameAsKeys = ();
                 type DiscretionaryHorizontalSameAsKeys = ();
             }
-        }
+        })
     });
 
     quote::quote! {

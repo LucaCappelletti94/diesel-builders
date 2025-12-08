@@ -43,8 +43,7 @@ where
             <T::InsertableModel as TrySetColumn<C>>::Error,
             C::DiscretionaryHorizontalSameAsKeys,
             C::DiscretionaryForeignColumns,
-        >,
-    Self: TrySetMandatorySameAsColumns<
+        > + TrySetMandatorySameAsColumns<
             C::Type,
             <T::InsertableModel as TrySetColumn<C>>::Error,
             C::MandatoryHorizontalSameAsKeys,
@@ -158,9 +157,9 @@ impl<T, Error, Conn> RecursiveBundleInsert<Error, Conn> for CompletedTableBuilde
 where
     Conn: diesel::connection::LoadConnection,
     T: BundlableTableExt,
-    T::InsertableModel: FlatInsert<Conn>,
-    T::InsertableModel: TrySetColumns<Error, T::MandatoryTriangularSameAsColumns>,
-    T::InsertableModel: TryMaySetColumns<Error, T::DiscretionaryTriangularSameAsColumns>,
+    T::InsertableModel: FlatInsert<Conn>
+        + TrySetColumns<Error, T::MandatoryTriangularSameAsColumns>
+        + TryMaySetColumns<Error, T::DiscretionaryTriangularSameAsColumns>,
     T::MandatoryBuilders: InsertTuple<Error, Conn, ModelsTuple = T::MandatoryModels>,
     T::OptionalDiscretionaryBuilders:
         InsertOptionTuple<Error, Conn, OptionModelsTuple = T::OptionalDiscretionaryModels>,

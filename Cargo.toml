@@ -65,6 +65,9 @@ unreachable_patterns = "forbid"
 unused_import_braces = "forbid"
 unused_must_use = "forbid"
 deprecated = "deny"
+unused_variables = "deny"
+unused_imports = "deny"
+dead_code = "deny"
 
 [workspace.lints.clippy]
 unreadable_literal = "allow"
@@ -75,6 +78,18 @@ should_panic_without_expect = "allow"
 doc_markdown = "allow"
 unnecessary_cast = "forbid"
 unused_unit = "allow"
+trait_duplication_in_bounds = "forbid"
+needless_lifetimes = "forbid"
 redundant_clone = "forbid"
+redundant_closure = "forbid"
+extra_unused_type_parameters = "forbid"
+type_repetition_in_bounds = "forbid"
 clone_on_copy = "forbid"
+panic = "deny"
+todo = "deny"
+unimplemented = "deny"
 pedantic = { level = "deny", priority = -1 }
+redundant_guards = "deny"
+complexity = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }

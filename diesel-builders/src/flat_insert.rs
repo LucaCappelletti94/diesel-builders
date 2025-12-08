@@ -26,8 +26,7 @@ pub trait FlatInsert<Conn: diesel::connection::LoadConnection>: HasTableAddition
 impl<Conn, T> FlatInsert<Conn> for T
 where
     Conn: diesel::connection::LoadConnection,
-    T: HasTableAddition<Table: TableAddition>,
-    T: diesel::Insertable<Self::Table>,
+    T: HasTableAddition + diesel::Insertable<Self::Table>,
     diesel::query_builder::InsertStatement<
         Self::Table,
         <Self as diesel::Insertable<Self::Table>>::Values,

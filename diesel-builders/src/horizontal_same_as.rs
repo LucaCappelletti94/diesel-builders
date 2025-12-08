@@ -57,14 +57,13 @@ impl<Key, HostColumns, ForeignColumns> HorizontalSameAsColumns<Key, HostColumns>
 where
     Key: HorizontalSameAsKey<HostColumns = HostColumns, ForeignColumns = ForeignColumns>,
     HostColumns: Columns,
-    ForeignColumns:
-        NonEmptyProjection<Table = Key::ReferencedTable, Type = <HostColumns as Typed>::Type>,
-    ForeignColumns: TuplePopFront<
-        Front: TypedColumn<
-            Type = <<<Key as Column>::Table as Table>::PrimaryKey as Typed>::Type,
-            Table = Key::ReferencedTable,
+    ForeignColumns: NonEmptyProjection<Table = Key::ReferencedTable, Type = <HostColumns as Typed>::Type>
+        + TuplePopFront<
+            Front: TypedColumn<
+                Type = <<<Key as Column>::Table as Table>::PrimaryKey as Typed>::Type,
+                Table = Key::ReferencedTable,
+            >,
         >,
-    >,
 {
 }
 
