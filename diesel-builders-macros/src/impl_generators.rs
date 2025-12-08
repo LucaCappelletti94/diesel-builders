@@ -112,11 +112,6 @@ pub fn generate_may_get_columns_trait() -> TokenStream {
             #where_statement
             {
                 #[inline]
-                fn may_get_columns_ref(&self) -> <<<(#(#type_params,)*) as Typed>::Type as TupleRef>::Ref<'_> as IntoTupleOption>::IntoOptions {
-                    (#(<T as MayGetColumn<#type_params>>::may_get_column_ref(self),)*)
-                }
-
-                #[inline]
                 fn may_get_columns(
                     &self,
                 ) -> <<(#(#type_params,)*) as Typed>::Type as IntoTupleOption>::IntoOptions {

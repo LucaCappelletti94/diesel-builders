@@ -9,7 +9,7 @@ use tuplities::prelude::*;
 #[diesel_builders_macros::impl_columns]
 /// A trait representing a collection of Diesel columns.
 pub trait Columns:
-    TupleDefault + Typed<Type: IntoTupleOption + for<'a> TupleRef<Ref<'a>: IntoTupleOption>>
+    TupleDefault + Typed<Type: IntoTupleOption + TupleRef>
 {
     /// Tables to which these columns belong.
     type Tables: Tables<
