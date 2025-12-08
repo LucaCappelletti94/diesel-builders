@@ -1,11 +1,11 @@
-//! TypedColumn trait implementations and associated setter/getter traits.
+//! `TypedColumn` trait implementations and associated setter/getter traits.
 
 use crate::utils::snake_to_camel_case;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{punctuated::Punctuated, Field, Ident, Token};
 
-/// Generate TypedColumn implementations and associated setter/getter traits for all fields.
+/// Generate `TypedColumn` implementations and associated setter/getter traits for all fields.
 pub fn generate_typed_column_impls(
     fields: &Punctuated<Field, Token![,]>,
     table_name: &Ident,
@@ -96,7 +96,7 @@ fn generate_getter_trait(
     }
 }
 
-/// Generate the SetColumn trait for a field.
+/// Generate the `SetColumn` trait for a field.
 fn generate_set_trait(
     field_name: &Ident,
     table_name: &Ident,
@@ -150,7 +150,7 @@ fn generate_set_trait(
     }
 }
 
-/// Generate the TrySetColumn trait for a field.
+/// Generate the `TrySetColumn` trait for a field.
 fn generate_try_set_trait(
     field_name: &Ident,
     table_name: &Ident,

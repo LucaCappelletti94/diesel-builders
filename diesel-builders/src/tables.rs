@@ -88,11 +88,11 @@ where
     type PrimaryKeys = <Self::PrimaryKeyColumnsCollection as FirstTupleRow>::FirstRowType;
 }
 
-/// Trait representing an n-uple of TableModels.
+/// Trait representing an n-uple of `TableModels`.
 pub trait TableModels: HasTables<Tables: Tables<Models = Self>> + IntoTupleOption {}
 impl<T> TableModels for T where T: HasTables<Tables: Tables<Models = T>> + IntoTupleOption {}
 
-/// Trait representing an n-uple of InsertableTableModels.
+/// Trait representing an n-uple of `InsertableTableModels`.
 pub trait InsertableTableModels:
     Sized + TupleDefault + HasTables<Tables: Tables<InsertableModels = Self>>
 {

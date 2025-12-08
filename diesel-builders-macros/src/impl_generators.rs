@@ -1,7 +1,7 @@
 //! Implementation module for tuple trait generators.
 //!
 //! This module contains the logic for generating trait implementations
-//! for tuples, replacing the complex macro_rules! patterns with cleaner
+//! for tuples, replacing the complex `macro_rules`! patterns with cleaner
 //! procedural macros.
 
 use proc_macro2::TokenStream;
@@ -17,7 +17,7 @@ use crate::tuple_generator::{
 /// and indicate poor database design. Also helps reduce compile times.
 pub const COMPOSITE_KEY_MAX_SIZE: usize = 8;
 
-/// Maximum size for table hierarchies (BuildableTables and AncestorsOf).
+/// Maximum size for table hierarchies (`BuildableTables` and `AncestorsOf`).
 /// These MUST use the same size as they are tightly coupled in the inheritance
 /// implementation. Limited to 8 because deep hierarchies cause performance issues.
 pub const TABLE_HIERARCHY_MAX_SIZE: usize = 32;
@@ -43,7 +43,7 @@ pub fn generate_columns() -> TokenStream {
         }
     })
 }
-/// Generate NonEmptyProjection trait implementations
+/// Generate `NonEmptyProjection` trait implementations
 pub fn generate_non_empty_projection() -> TokenStream {
     generate_all_sizes_non_empty(|size| {
         let type_params = type_params(size);
@@ -77,7 +77,7 @@ pub fn generate_tables() -> TokenStream {
     })
 }
 
-/// Generate GetColumns trait implementations
+/// Generate `GetColumns` trait implementations
 pub fn generate_get_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -100,7 +100,7 @@ pub fn generate_get_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate MayGetColumns trait implementations
+/// Generate `MayGetColumns` trait implementations
 pub fn generate_may_get_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -127,7 +127,7 @@ pub fn generate_may_get_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate SetColumns trait implementations
+/// Generate `SetColumns` trait implementations
 pub fn generate_set_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -158,7 +158,7 @@ pub fn generate_set_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate MaySetColumns trait implementations
+/// Generate `MaySetColumns` trait implementations
 pub fn generate_may_set_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -242,7 +242,7 @@ pub fn generate_try_set_columns_collections_trait() -> TokenStream {
     })
 }
 
-/// Generate TryMaySetColumns trait implementations
+/// Generate `TryMaySetColumns` trait implementations
 pub fn generate_try_may_set_columns_trait() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -279,7 +279,7 @@ pub fn generate_try_may_set_columns_trait() -> TokenStream {
     })
 }
 
-/// Generate BuildableTables trait implementations
+/// Generate `BuildableTables` trait implementations
 pub fn generate_buildable_tables() -> TokenStream {
     let max_size = TABLE_HIERARCHY_MAX_SIZE.min(crate::tuple_generator::MAX_TUPLE_SIZE);
     generate_all_sizes_with_max(max_size, |size| {
@@ -298,7 +298,7 @@ pub fn generate_buildable_tables() -> TokenStream {
     })
 }
 
-/// Generate BundlableTables trait implementations
+/// Generate `BundlableTables` trait implementations
 pub fn generate_bundlable_tables() -> TokenStream {
     generate_all_sizes(|size| {
         let type_params = type_params(size);
@@ -313,7 +313,7 @@ pub fn generate_bundlable_tables() -> TokenStream {
     })
 }
 
-/// Generate AncestorsOf trait implementations
+/// Generate `AncestorsOf` trait implementations
 pub fn generate_ancestors_of() -> TokenStream {
     let max_size = TABLE_HIERARCHY_MAX_SIZE.min(crate::tuple_generator::MAX_TUPLE_SIZE);
     generate_all_sizes_with_max(max_size, |size| {
@@ -340,7 +340,7 @@ pub fn generate_ancestors_of() -> TokenStream {
     })
 }
 
-/// Generate HorizontalSameAsKeys trait implementations
+/// Generate `HorizontalSameAsKeys` trait implementations
 pub fn generate_horizontal_same_as_keys() -> TokenStream {
     let max_size = HORIZONTAL_SAME_AS_KEYS_MAX_SIZE.min(crate::tuple_generator::MAX_TUPLE_SIZE);
     generate_all_sizes_with_max(max_size, |size| {

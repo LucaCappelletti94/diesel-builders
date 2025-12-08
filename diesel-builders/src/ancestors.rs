@@ -50,7 +50,7 @@ where
     type AncestorsWithSelf = <T::Ancestors as TuplePushBack<Self>>::Output;
 }
 
-/// Implementation of AncestorsOf trait for tuples.
+/// Implementation of `AncestorsOf` trait for tuples.
 /// Limited to 8 ancestors as deep inheritance hierarchies beyond
 /// this point are problematic for query performance and maintainability.
 #[diesel_builders_macros::impl_ancestors_of]

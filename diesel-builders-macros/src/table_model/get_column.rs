@@ -1,11 +1,11 @@
-//! GetColumn implementation generation for TableModel derive.
+//! `GetColumn` implementation generation for `TableModel` derive.
 
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{punctuated::Punctuated, Field, Ident, Token};
 
-/// Generate GetColumn trait implementations for all fields.
-/// This replaces the separate GetColumn derive macro.
+/// Generate `GetColumn` trait implementations for all fields.
+/// This replaces the separate `GetColumn` derive macro.
 pub fn generate_get_column_impls(
     fields: &Punctuated<Field, Token![,]>,
     table_name: &Ident,

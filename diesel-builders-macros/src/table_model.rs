@@ -1,4 +1,4 @@
-//! Module for TableModel derive macro implementation.
+//! Module for `TableModel` derive macro implementation.
 //!
 //! This module contains the implementation of the `TableModel` derive macro,
 //! split into logical components for better maintainability.
@@ -17,7 +17,7 @@ use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
 use typed_column::generate_typed_column_impls;
 
-/// Main entry point for the TableModel derive macro.
+/// Main entry point for the `TableModel` derive macro.
 pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
     let struct_ident = &input.ident;
 

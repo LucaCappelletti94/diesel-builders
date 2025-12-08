@@ -1,4 +1,4 @@
-//! Attribute parsing utilities for TableModel derive.
+//! Attribute parsing utilities for `TableModel` derive.
 
 use syn::{DeriveInput, Ident};
 

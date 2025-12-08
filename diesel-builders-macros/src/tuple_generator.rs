@@ -80,7 +80,7 @@ where
     generate_all_sizes_with_max(MAX_TUPLE_SIZE, impl_fn)
 }
 
-/// Generate all tuple implementations from size 1 to MAX_TUPLE_SIZE
+/// Generate all tuple implementations from size 1 to `MAX_TUPLE_SIZE`
 pub(crate) fn generate_all_sizes_non_empty<F>(impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
@@ -88,7 +88,7 @@ where
     generate_all_sizes_non_empty_with_max(MAX_TUPLE_SIZE, impl_fn)
 }
 
-/// Generate all tuple implementations from size 0 (unit) to the specified max_size
+/// Generate all tuple implementations from size 0 (unit) to the specified `max_size`
 pub(crate) fn generate_all_sizes_with_max<F>(mut max_size: usize, impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,
@@ -97,7 +97,7 @@ where
     (0..=max_size).map(impl_fn).collect()
 }
 
-/// Generate all tuple implementations from size 1 to the specified max_size
+/// Generate all tuple implementations from size 1 to the specified `max_size`
 pub(crate) fn generate_all_sizes_non_empty_with_max<F>(max_size: usize, impl_fn: F) -> TokenStream
 where
     F: Fn(usize) -> TokenStream,

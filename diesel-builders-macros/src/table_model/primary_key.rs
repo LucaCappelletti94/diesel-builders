@@ -1,10 +1,10 @@
-//! Primary key IndexedColumn implementation generation.
+//! Primary key `IndexedColumn` implementation generation.
 
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::Ident;
 
-/// Generate IndexedColumn implementations for primary key columns.
+/// Generate `IndexedColumn` implementations for primary key columns.
 pub fn generate_indexed_column_impls(
     table_name: &Ident,
     primary_key_columns: &[Ident],
