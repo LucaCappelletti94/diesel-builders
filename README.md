@@ -9,6 +9,8 @@ A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles
 
 It additionally offers ergonomic APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
 
+This library is transparent in terms of backends and should work for any Diesel backend.
+
 ## Installation
 
 Add this to your `Cargo.toml`:
