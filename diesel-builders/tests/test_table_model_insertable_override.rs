@@ -14,9 +14,7 @@ diesel::table! {
 }
 
 /// Model for override table.
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[table_model(insertable = MyInsertable)]
 #[diesel(table_name = override_table)]
 pub struct OverrideModel {

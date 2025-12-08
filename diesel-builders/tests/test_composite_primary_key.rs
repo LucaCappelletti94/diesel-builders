@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
 use std::collections::HashMap;
 
 diesel::table! {
@@ -22,9 +22,7 @@ diesel::table! {
     }
 }
 
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = user_roles)]
 #[diesel(primary_key(user_id, role_id))]
 /// A user role assignment model.

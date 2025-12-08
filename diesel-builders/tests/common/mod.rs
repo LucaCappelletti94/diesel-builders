@@ -45,16 +45,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    PartialOrd,
-    GetColumn,
-    Root,
-    TableModel,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, Root, TableModel,
 )]
 #[diesel(table_name = animals)]
 /// Model for the animals table.
@@ -180,16 +171,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    PartialOrd,
-    GetColumn,
-    TableModel,
-    Decoupled,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = dogs)]
 /// Model for the dogs table.
@@ -252,16 +234,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    PartialOrd,
-    GetColumn,
-    TableModel,
-    Decoupled,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
@@ -360,16 +333,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    PartialOrd,
-    GetColumn,
-    TableModel,
-    Decoupled,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = puppies)]
 /// Model for the puppies table.
@@ -432,16 +396,7 @@ diesel::table! {
 }
 
 #[derive(
-    Debug,
-    Queryable,
-    Clone,
-    Selectable,
-    Identifiable,
-    PartialEq,
-    PartialOrd,
-    GetColumn,
-    TableModel,
-    Decoupled,
+    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = pets)]
 /// Model for the pets table.

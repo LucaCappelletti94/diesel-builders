@@ -103,9 +103,9 @@ pub mod prelude {
     // pub use crate::table_model::TableModel;
 
     // Re-export commonly used macros from diesel_builders_macros
+    // Note: GetColumn is now automatically implemented by TableModel derive
     pub use diesel_builders_macros::{
-        Decoupled, GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of,
-        fk, index,
+        Decoupled, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of, fk, index,
     };
 
     pub use crate::insertable_table_model::InsertableTableModel;

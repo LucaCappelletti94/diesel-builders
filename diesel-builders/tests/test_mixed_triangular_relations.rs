@@ -9,7 +9,7 @@ mod common;
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{GetColumn, HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 diesel::table! {
     /// Root table A.
@@ -66,9 +66,7 @@ diesel::table! {
 diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
 
 // Table A models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_a)]
 /// Model for table A.
 pub struct TableA {
@@ -88,9 +86,7 @@ pub struct NewTableA {
 }
 
 // Table C models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_c)]
 /// Model for table C.
 pub struct TableC {
@@ -114,9 +110,7 @@ pub struct NewTableC {
 }
 
 // Table D models
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_d)]
 /// Model for table D.
 pub struct TableD {
@@ -140,7 +134,7 @@ pub struct NewTableD {
 }
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, GetColumn, TableModel)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = table_b)]
 /// Model for table B.
 pub struct TableB {
