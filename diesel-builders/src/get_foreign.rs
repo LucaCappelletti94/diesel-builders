@@ -10,12 +10,10 @@ use diesel::query_dsl::methods::LoadQuery;
 use diesel::query_dsl::methods::SelectDsl;
 use tuplities::prelude::*;
 
-use crate::Columns;
 use crate::ForeignKey;
 use crate::TableIndex;
-use crate::TypedNestedTuple;
 use crate::TypedTuple;
-use crate::columns::NestedColumns;
+use crate::columns::NonEmptyNestedProjection;
 use crate::columns::NonEmptyProjection;
 use crate::{GetNestedColumns, TableExt};
 
@@ -24,7 +22,10 @@ use crate::{GetNestedColumns, TableExt};
 pub trait GetForeign<
     Conn,
     ForeignColumns: TableIndex,
-    HostColumns: Columns<TupleType = <ForeignColumns as TypedTuple>::TupleType, Nested: NestedColumns>,
+    HostColumns: NonEmptyProjection<
+            TupleType = <ForeignColumns as TypedTuple>::TupleType,
+            Nested: NonEmptyNestedProjection,
+        >,
 >: GetNestedColumns<<HostColumns as NestTuple>::Nested> where
     ForeignColumns::Table: TableExt,
 {
@@ -50,7 +51,7 @@ impl<
     ForeignColumns: TableIndex + EqAll<<ForeignColumns as TypedTuple>::TupleType>,
     HostColumns: NonEmptyProjection<
             TupleType = <ForeignColumns as TypedTuple>::TupleType,
-            Nested: TypedNestedTuple<
+            Nested: NonEmptyNestedProjection<
                 NestedTupleType: FlattenNestedTuple<
                     Flattened = <ForeignColumns as TypedTuple>::TupleType,
                 >,

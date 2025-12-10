@@ -1,18 +1,13 @@
 //! Trait for builders which may get multiple nested columns.
 use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePushFront};
 
-use crate::{MayGetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
+use crate::{MayGetColumn, TypedColumn, TypedNestedTuple, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder which may get multiple columns.
-pub trait MayGetNestedColumns<CS: NestedColumns> {
+pub trait MayGetNestedColumns<CS: NonEmptyNestedProjection> {
     /// May get the owned values of the specified columns.
     fn may_get_nested_columns(&self)
     -> <CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions;
-}
-
-impl<T> MayGetNestedColumns<()> for T {
-    #[inline]
-    fn may_get_nested_columns(&self) {}
 }
 
 impl<C1, T> MayGetNestedColumns<(C1,)> for T
@@ -31,8 +26,8 @@ where
 impl<Chead, CTail, T> MayGetNestedColumns<(Chead, CTail)> for T
 where
 	Chead: TypedColumn,
-	CTail: NestedColumns,
-	(Chead, CTail): NestedColumns,
+	CTail: NonEmptyNestedProjection,
+	(Chead, CTail): NonEmptyNestedProjection,
 	(Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
 	T: MayGetColumn<Chead> + MayGetNestedColumns<CTail>,
 	<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions: NestedTuplePushFront<

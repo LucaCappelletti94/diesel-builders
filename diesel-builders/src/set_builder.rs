@@ -6,7 +6,7 @@ use crate::{
     BuildableTable, DiscretionarySameAsIndex, GetColumnExt, GetNestedColumns, HasTableExt,
     InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns, SingletonForeignKey,
     TableBuilder, TableExt, TrySetColumn, TrySetNestedColumns, Typed, TypedColumn,
-    TypedNestedTuple,
+    TypedNestedTuple, columns::NonEmptyNestedProjection,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -38,7 +38,7 @@ pub trait SetDiscretionaryModel<Key: DiscretionarySameAsIndex> {
 impl<C, T> SetDiscretionaryModel<C> for T
 where
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: TypedNestedTuple<
+    C::NestedForeignColumns: NonEmptyNestedProjection<
         NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
     Self: SetNestedColumns<C::NestedHostColumns> + SetColumn<C>,
@@ -114,7 +114,7 @@ impl<C, T> TrySetDiscretionaryModel<C> for T
 where
     T: HasTableExt,
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: TypedNestedTuple<
+    C::NestedForeignColumns: NonEmptyNestedProjection<
         NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
     Self: TrySetNestedColumns<

@@ -9,7 +9,10 @@ use crate::{
     Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, SingletonForeignKey,
     TableIndex, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
     ancestors::DescendantWithSelf,
-    columns::{ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyProjection},
+    columns::{
+        ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyNestedProjection,
+        NonEmptyProjection,
+    },
     tables::NonCompositePrimaryKeyNestedTables,
 };
 
@@ -66,19 +69,19 @@ pub trait HorizontalKey:
 {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: NonEmptyProjection<Table = Self::Table>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table, Nested: NonEmptyNestedProjection>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
-    type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns>;
+    type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns, Nested: NonEmptyNestedProjection>;
 }
 
 /// Extension trait for `HorizontalKey` to access nested host and foreign
 /// columns.
 pub trait HorizontalKeyExt: HorizontalKey {
     /// The nested host columns.
-    type NestedHostColumns: NestedColumns;
+    type NestedHostColumns: NonEmptyNestedProjection;
     /// The nested foreign columns.
-    type NestedForeignColumns: NestedColumns;
+    type NestedForeignColumns: NonEmptyNestedProjection;
 }
 
 impl<K> HorizontalKeyExt for K

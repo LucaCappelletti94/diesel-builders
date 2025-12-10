@@ -1,7 +1,5 @@
 //! Helper functions for creating builder-related errors.
 
-use std::convert::Infallible;
-
 /// Error type for incomplete builder operations.
 #[derive(Debug)]
 pub enum BuilderError<E> {
@@ -65,11 +63,5 @@ impl<E> From<diesel::result::Error> for BuilderError<E> {
 impl<E> From<IncompleteBuilderError> for BuilderError<E> {
     fn from(error: IncompleteBuilderError) -> Self {
         BuilderError::Incomplete(error)
-    }
-}
-
-impl<E: From<Infallible>> From<Infallible> for BuilderError<E> {
-    fn from(error: Infallible) -> Self {
-        BuilderError::Validation(E::from(error))
     }
 }

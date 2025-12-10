@@ -55,20 +55,6 @@ pub trait TrySetColumn<C: Typed> {
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error>;
 }
 
-impl<C, T> TrySetColumn<C> for (T,)
-where
-    T: TrySetColumn<C>,
-    C: Typed,
-{
-    type Error = T::Error;
-
-    #[inline]
-    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        <T as TrySetColumn<C>>::try_set_column(&mut self.0, value)?;
-        Ok(self)
-    }
-}
-
 /// Extension trait for `SetColumn` that allows specifying the column at the
 /// method level.
 ///

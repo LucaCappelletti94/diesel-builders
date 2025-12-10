@@ -2,17 +2,12 @@
 
 use tuplities::prelude::NestedTuplePushFront;
 
-use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
+use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can get multiple columns.
-pub trait GetNestedColumns<CS: NestedColumns> {
+pub trait GetNestedColumns<CS: NonEmptyNestedProjection> {
     /// Get the values of the specified columns.
     fn get_nested_columns(&self) -> CS::NestedTupleType;
-}
-
-impl<T> GetNestedColumns<()> for T {
-    #[inline]
-    fn get_nested_columns(&self) {}
 }
 
 impl<C1, T> GetNestedColumns<(C1,)> for T
@@ -29,8 +24,8 @@ where
 impl<Chead, CTail, T> GetNestedColumns<(Chead, CTail)> for T
 where
     Chead: TypedColumn,
-    CTail: NestedColumns,
-    (Chead, CTail): NestedColumns,
+    CTail: NonEmptyNestedProjection,
+    (Chead, CTail): NonEmptyNestedProjection,
     T: GetColumn<Chead> + GetNestedColumns<CTail>,
     CTail::NestedTupleType: NestedTuplePushFront<
             Chead::Type,

@@ -1,7 +1,8 @@
 //! Trait for fallibly setting multiple columns from a collection.
 
 use crate::{
-    TypedNestedTupleCollection, columns::NestedColumns, get_set_columns::TrySetNestedColumns,
+    TypedNestedTupleCollection, columns::NonEmptyNestedProjection,
+    get_set_columns::TrySetNestedColumns,
 };
 use tuplities::prelude::NestedTuplePopFront;
 
@@ -18,20 +19,10 @@ pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleColl
     ) -> Result<&mut Self, Error>;
 }
 
-impl<T, Error> TrySetColumnsCollection<Error, ()> for T {
-    #[inline]
-    fn try_set_nested_columns_collection(
-        &mut self,
-        _nested_values: (),
-    ) -> Result<&mut Self, Error> {
-        Ok(self)
-    }
-}
-
 impl<C1, T, Error> TrySetColumnsCollection<Error, (C1,)> for T
 where
     T: TrySetNestedColumns<Error, C1>,
-    C1: NestedColumns,
+    C1: NonEmptyNestedProjection,
 {
     #[inline]
     fn try_set_nested_columns_collection(
@@ -44,7 +35,7 @@ where
 
 impl<T, Chead, CTail, Error> TrySetColumnsCollection<Error, (Chead, CTail)> for T
 where
-    Chead: NestedColumns,
+    Chead: NonEmptyNestedProjection,
     CTail: TypedNestedTupleCollection,
     (Chead, CTail): TypedNestedTupleCollection,
     T: TrySetNestedColumns<Error, Chead> + TrySetColumnsCollection<Error, CTail>,

@@ -327,3 +327,15 @@ fn test_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn completed_table_builder_bundle_has_table() {
+    use diesel::associations::HasTable;
+    let _table: animals::table =
+        <diesel_builders::CompletedTableBuilderBundle<animals::table> as HasTable>::table();
+    let _table: animals::table = <diesel_builders::table_builder::RecursiveTableBuilder<
+        animals::table,
+        typenum::U0,
+        (),
+    > as HasTable>::table();
+}

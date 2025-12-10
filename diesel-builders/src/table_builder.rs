@@ -15,6 +15,7 @@ use crate::{
     SetDiscretionaryBuilder, SetMandatoryBuilder, SingletonForeignKey, TableBuilderBundle,
     TableExt, TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
     TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
+    columns::NonEmptyNestedProjection,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -154,7 +155,7 @@ impl<Key, T> TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
     Key: DiscretionarySameAsIndex,
-    Key::NestedForeignColumns: TypedNestedTuple<
+    Key::NestedForeignColumns: NonEmptyNestedProjection<
         NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
@@ -190,7 +191,7 @@ impl<C, T> SetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: TypedNestedTuple<
+    C::NestedForeignColumns: NonEmptyNestedProjection<
         NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
     C::Table: AncestorOfIndex<T> + BuildableTable,
