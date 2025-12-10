@@ -23,7 +23,7 @@ thiserror.workspace = true
 workspace = true
 
 [features]
-default = ["serde"]
+default = ["serde", "size-16"]
 size-16 = ["diesel-builders-macros/size-16", "tuplities/size-16"]
 size-32 = ["diesel-builders-macros/size-32", "tuplities/size-32"]
 size-48 = ["diesel-builders-macros/size-48", "tuplities/size-48"]

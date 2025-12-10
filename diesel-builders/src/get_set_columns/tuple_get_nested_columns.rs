@@ -26,13 +26,14 @@ where
     }
 }
 
-impl<Chead, CTail, T> TupleGetNestedColumns<(Chead, CTail)> for T
+impl<Chead, CTail, THead, TTail> TupleGetNestedColumns<(Chead, CTail)> for (THead, TTail)
 where
     Chead: TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
     (Chead::Type, CTail::NestedTupleType): FlattenNestedTuple,
-    T: GetColumn<Chead> + TupleGetNestedColumns<CTail>,
+    THead: GetColumn<Chead>,
+    TTail: TupleGetNestedColumns<CTail>,
     CTail::NestedTupleType: NestedTuplePushFront<
             Chead::Type,
             Output = <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
@@ -40,8 +41,8 @@ where
 {
     #[inline]
     fn tuple_get_nested_columns(&self) -> <(Chead, CTail) as TypedNestedTuple>::NestedTupleType {
-        let head = self.get_column();
-        let tail = self.tuple_get_nested_columns();
+        let head = self.0.get_column();
+        let tail = self.1.tuple_get_nested_columns();
         tail.nested_push_front(head)
     }
 }

@@ -31,13 +31,14 @@ where
     }
 }
 
-impl<Chead, CTail, T> TupleMayGetNestedColumns<(Chead, CTail)> for T
+impl<Chead, CTail, THead, TTail> TupleMayGetNestedColumns<(Chead, CTail)> for (THead, TTail)
 where
     Chead: TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
     (Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
-    T: MayGetColumn<Chead> + TupleMayGetNestedColumns<CTail>,
+    THead: MayGetColumn<Chead>,
+    TTail: TupleMayGetNestedColumns<CTail>,
     <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions: NestedTuplePushFront<
             Option<Chead::Type>,
             Output = <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
@@ -48,8 +49,8 @@ where
 		&self,
 	) -> <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
 	{
-        let head = self.may_get_column();
-        let tail = self.tuple_may_get_nested_columns();
+        let head = self.0.may_get_column();
+        let tail = self.1.tuple_may_get_nested_columns();
         tail.nested_push_front(head)
     }
 }
