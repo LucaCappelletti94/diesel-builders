@@ -21,12 +21,12 @@ use crate::{GetNestedColumns, TableExt};
 /// model curresponding to specified foreign columns from a host table model.
 pub trait GetForeign<
     Conn,
-    ForeignColumns: TableIndex,
     HostColumns: NonEmptyProjection<
-            TupleType = <ForeignColumns as TypedTuple>::TupleType,
-            Nested: NonEmptyNestedProjection,
-        >,
->: GetNestedColumns<<HostColumns as NestTuple>::Nested> where
+        TupleType = <ForeignColumns as TypedTuple>::TupleType,
+        Nested: NonEmptyNestedProjection,
+    >,
+    ForeignColumns: TableIndex,
+>: GetNestedColumns<HostColumns::Nested> where
     ForeignColumns::Table: TableExt,
 {
     /// Retrieve the foreign table model corresponding to the specified
@@ -43,23 +43,24 @@ pub trait GetForeign<
     fn get_foreign(
         &self,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<<<ForeignColumns as NonEmptyProjection>::Table as TableExt>::Model>;
+    ) -> diesel::QueryResult<<ForeignColumns::Table as TableExt>::Model>;
 }
 
 impl<
     Conn,
     ForeignColumns: TableIndex + EqAll<<ForeignColumns as TypedTuple>::TupleType>,
-    HostColumns: NonEmptyProjection<
-            TupleType = <ForeignColumns as TypedTuple>::TupleType,
-            Nested: NonEmptyNestedProjection<
-                NestedTupleType: FlattenNestedTuple<
-                    Flattened = <ForeignColumns as TypedTuple>::TupleType,
-                >,
-            >,
-        > + ForeignKey<ForeignColumns>,
+    HostColumns,
     T: GetNestedColumns<<HostColumns as NestTuple>::Nested> + HasTable<Table = HostColumns::Table>,
-> GetForeign<Conn, ForeignColumns, HostColumns> for T
+> GetForeign<Conn, HostColumns, ForeignColumns> for T
 where
+    HostColumns: NonEmptyProjection<
+        TupleType = <ForeignColumns as TypedTuple>::TupleType,
+        Nested: NonEmptyNestedProjection<
+            NestedTupleType: FlattenNestedTuple<
+                Flattened = <ForeignColumns as TypedTuple>::TupleType,
+            >,
+        >
+    > + ForeignKey<ForeignColumns>,
     <ForeignColumns as NonEmptyProjection>::Table:
         TableExt + SelectDsl<<<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns>,
     Conn: diesel::connection::LoadConnection,
@@ -100,3 +101,34 @@ where
         )
     }
 }
+
+/// Helper trait to execute foreign key queries with the column generics
+/// at the method instead of at the trait-level like in [`GetForeign`].
+pub trait GetForeignExt<Conn> {
+    /// Returns the foreign object associated to the provided foreign key.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails or if no matching record is found.
+    fn get_foreign<HostColumns, ForeignColumns>(
+        &self,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<<ForeignColumns::Table as TableExt>::Model>
+    where
+        Self: GetForeign<Conn, HostColumns, ForeignColumns>,
+        HostColumns: NonEmptyProjection<
+            TupleType = <ForeignColumns as TypedTuple>::TupleType,
+            Nested: NonEmptyNestedProjection,
+        >,
+        ForeignColumns: TableIndex<Table: TableExt>,
+    {
+        <Self as GetForeign<Conn, HostColumns, ForeignColumns>>::get_foreign(self, conn)
+    }
+}
+
+impl<T, Conn> GetForeignExt<Conn> for T {}

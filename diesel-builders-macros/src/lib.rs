@@ -744,12 +744,12 @@ pub fn fk(input: TokenStream) -> TokenStream {
 
     impl Parse for ForeignKey {
         fn parse(input: ParseStream) -> syn::Result<Self> {
-            // Parse: ( host_cols ) REFERENCES ( ref_cols )
+            // Parse: ( host_cols ) -> ( ref_cols )
             let host_content;
             syn::parenthesized!(host_content in input);
             let host_columns = Punctuated::parse_terminated(&host_content)?;
 
-            input.parse::<syn::Ident>()?; // REFERENCES keyword
+            input.parse::<Token![->]>()?;
 
             let ref_content;
             syn::parenthesized!(ref_content in input);
@@ -845,6 +845,160 @@ pub fn index(input: TokenStream) -> TokenStream {
 
     quote! {
         #(#impls)*
+    }
+    .into()
+}
+
+/// Macro to declare a singleton foreign key relationship.
+///
+/// This macro:
+/// 1. Implements `ForeignPrimaryKey` for a column that references another table's primary key
+/// 2. Generates a helper trait with a method to fetch the foreign record using `GetForeignExt`
+///
+/// # Method naming
+/// - If column name ends with `_id` (e.g., `a_id`), the method will be named `a`
+/// - Otherwise, the method will be named `{column_name}_fk`
+///
+/// # Example
+/// ```ignore
+/// fpk!(table_b::c_id -> table_c);
+/// ```
+///
+/// This generates:
+/// - `impl ForeignPrimaryKey for table_b::c_id { type ReferencedTable = table_c::table; }`
+/// - A trait `GetTableBC` with method `c(&self, conn: &mut Conn)` that calls `get_foreign`
+#[proc_macro]
+#[allow(clippy::too_many_lines)]
+pub fn fpk(input: TokenStream) -> TokenStream {
+    use quote::quote;
+    use syn::{
+        parse::{Parse, ParseStream},
+        Token, Path,
+    };
+
+    /// Parsed representation of a singleton foreign key declaration.
+    struct ForeignPrimaryKeyDecl {
+        /// The column that is the foreign key (e.g., `table_b::c_id`)
+        column: Path,
+        /// The referenced table (e.g., `table_c`)
+        referenced_table: Path,
+    }
+
+    impl Parse for ForeignPrimaryKeyDecl {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let column: Path = input.parse()?;
+            input.parse::<Token![->]>()?;
+            let referenced_table: Path = input.parse()?;
+            Ok(ForeignPrimaryKeyDecl {
+                column,
+                referenced_table,
+            })
+        }
+    }
+
+    let decl = syn::parse_macro_input!(input as ForeignPrimaryKeyDecl);
+    let column = decl.column;
+    let referenced_table = decl.referenced_table;
+
+    // Extract column name for method generation — must be present
+    let column_name = match column.segments.last() {
+        Some(seg) => seg.ident.to_string(),
+        None => {
+            return syn::Error::new_spanned(
+                &column,
+                "fpk! macro requires a column path (e.g., `table_b::c_id`). Could not extract column name.",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    // Extract referenced table name for method generation — must be present
+    let referenced_table_name = match referenced_table.segments.last() {
+        Some(seg) => seg.ident.to_string(),
+        None => {
+            // If we cannot extract a referenced table name, fail the macro with a helpful message
+            return syn::Error::new_spanned(
+                &referenced_table,
+                "fpk! macro requires a referenced table path (e.g., `table_c`). Could not extract referenced table name.",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    // Generate method name based on column name
+    let method_name = if let Some(stripped) = column_name.strip_suffix("_id") {
+        stripped.to_string()
+    } else {
+        format!("{column_name}_fk")
+    };
+    let method_ident = syn::Ident::new(&method_name, proc_macro2::Span::call_site());
+
+    // Generate trait name
+    // Extract table name from column path (second-to-last segment)
+    let table_name_segment = if column.segments.len() >= 2 {
+        column.segments[column.segments.len() - 2]
+            .ident
+            .to_string()
+    } else {
+        "table".to_string()
+    };
+
+    // Convert table_name to CamelCase for trait name
+    let trait_name = format!(
+        "FK{}{}",
+        crate::utils::snake_to_camel_case(&table_name_segment),
+        crate::utils::snake_to_camel_case(&column_name)
+    );
+    let trait_ident = syn::Ident::new(&trait_name, proc_macro2::Span::call_site());
+
+    // Generate documentation
+    let trait_doc = format!("Trait to get the foreign record referenced by `{column_name}`.");
+    let method_doc = format!("Fetches the foreign `{referenced_table_name}` record referenced by this `{column_name}`.");
+
+    quote! {
+        impl diesel_builders::ForeignPrimaryKey for #column {
+            type ReferencedTable = #referenced_table::table;
+        }
+
+        #[doc = #trait_doc]
+        pub trait #trait_ident<Conn>: diesel_builders::GetForeignExt<Conn> {
+            #[doc = #method_doc]
+            #[doc = ""]
+            #[doc = "# Arguments"]
+            #[doc = ""]
+            #[doc = "* `conn` - A mutable reference to the database connection."]
+            #[doc = ""]
+            #[doc = "# Errors"]
+            #[doc = "Returns a `diesel::QueryResult` error if the query fails or no matching record is found."]
+            #[inline]
+            fn #method_ident(
+                &self,
+                conn: &mut Conn,
+            ) -> diesel::QueryResult<<#referenced_table::table as diesel_builders::TableExt>::Model>
+            where
+                Self: diesel_builders::GetForeign<
+                    Conn,
+                    (#column,),
+                    (<#referenced_table::table as diesel::Table>::PrimaryKey,),
+                >,
+            {
+                <Self as diesel_builders::GetForeign<
+                    Conn,
+                    (#column,),
+                    (<#referenced_table::table as diesel::Table>::PrimaryKey,),
+                >>::get_foreign(self, conn)
+            }
+        }
+
+        impl<T, Conn> #trait_ident<Conn> for T
+        where
+            T: diesel_builders::GetForeign<
+                Conn,
+                (#column,),
+                (<#referenced_table::table as diesel::Table>::PrimaryKey,)
+            > {}
     }
     .into()
 }

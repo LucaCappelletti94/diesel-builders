@@ -171,7 +171,7 @@ classDiagram
 let b = table_b::table::builder()
     .column_a("Value A for B")
     .column_b("Value B")
-    .c_id_builder(table_c::table::builder().column_c("Value C".to_owned()))
+    .c(table_c::table::builder().column_c("Value C".to_owned()))
     .insert(&mut conn)?;
 ```
 
@@ -207,7 +207,7 @@ classDiagram
 let b = table_b::table::builder()
     .column_a("Value A for B")
     .column_b("Value B")
-    .c_id_builder(table_c::table::builder().column_c("Value C".to_owned()))
+    .c(table_c::table::builder().column_c("Value C".to_owned()))
     .insert(&mut conn)?;
 ```
 
@@ -220,7 +220,7 @@ let c = table_c::table::builder()
 let b = table_b::table::builder()
     .column_a("Value A for B")
     .column_b("Value B")
-    .c_id_model(&c)
+    .c(&c)
     .insert(&mut conn)?;
 ```
 
@@ -254,6 +254,45 @@ The `TableModel` derive automatically generates helper traits for each column, p
 
 These traits are automatically implemented for any type that implements `GetColumn<column>`, `SetColumn<column>`, or `TrySetColumn<column>`.
 
+### Foreign Key Helper Traits
+
+The `fpk!` (foreign primary key) macro generates helper traits for singleton foreign keys, providing convenient methods to fetch related records:
+
+```rust,ignore
+// Declare a singleton foreign key relationship
+fpk!(table_b::c_id -> table_c);
+```
+
+This generates:
+
+- `SingletonForeignKey` implementation for `table_b::c_id`
+- A trait `FKTableBCId` with method `c(&self, conn: &mut Conn)` that fetches the related `TableC` record
+
+**Method naming convention:**
+
+- If column is `id`, the method is named after the foreign table (e.g., `table_c` → `table_c()`)
+- If column ends with `_id` (e.g., `a_id`), the method is named after the prefix (`a()`)
+- Otherwise, the method is `{column_name}_fk()`
+
+Usage example:
+
+```rust,ignore
+fpk!(table_b::c_id -> table_c);
+
+let b: TableB = /* ... */;
+let c: TableC = b.c(&mut conn)?;  // Fetches the related TableC record
+```
+
+Additional example for inheritance (`id` column):
+
+```rust,ignore
+// Declare fpk for dogs.id -> animals
+fpk!(dogs::id -> animals);
+
+let dog: Dog = /* inserted dog */;
+let owner: Animal = dog.id_fk(&mut conn)?; // Fetch the associated Animal record
+```
+
 ### Triangular Relation Traits
 
 For columns involved in triangular relations (both mandatory and discretionary), additional builder and model setter traits are generated:
@@ -286,7 +325,7 @@ assert_eq!(animal.name(), "Buddy");
 // Mandatory triangular relation with builder
 let b = table_b::table::builder()
     .column_b("B Value")
-    .try_c_id_builder(table_c::table::builder().column_c("C Value".to_owned()))?
+    .try_c(table_c::table::builder().column_c("C Value".to_owned()))?
     .insert(conn)?;
 
 // Discretionary triangular relation with existing model
@@ -297,7 +336,7 @@ let c = table_c::table::builder()
 
 let b = table_b::table::builder()
     .column_b("B Value")
-    .c_id_model(&c)  // Reference existing model
+    .c(&c)  // Reference existing model
     .insert(conn)?;
 ```
 
@@ -314,6 +353,41 @@ Compile times by tuple size (using `cargo clean && time cargo build --features s
 | 64             | ~8.6s        |
 | 96             | ~13s         |
 | 128            | ~25s         |
+
+## Macro Reference
+
+### `fpk!` - Foreign Primary Key
+
+Declares a singleton foreign key relationship (single column referencing a primary key):
+
+```rust,ignore
+fpk!(table_b::c_id -> table_c);
+```
+
+Generates:
+
+- `SingletonForeignKey` trait implementation
+- Helper trait with method to fetch the related record
+
+### `fk!` - Composite Foreign Key
+
+Declares multi-column foreign key relationships:
+
+```rust,ignore
+fk!((table_b::c_id, table_b::remote_col) -> (table_c::id, table_c::col));
+```
+
+Generates `HostColumn` implementations for type-safe foreign key constraints.
+
+### `index!` - Table Index
+
+Declares composite indices that can be referenced by foreign keys:
+
+```rust,ignore
+index!(table_c::id, table_c::a_id);
+```
+
+Generates `IndexedColumn` implementations for each column in the index.
 
 ## License
 

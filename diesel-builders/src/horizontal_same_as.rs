@@ -6,7 +6,7 @@ use typenum::Unsigned;
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, SingletonForeignKey,
+    Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, ForeignPrimaryKey,
     TableIndex, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
     ancestors::DescendantWithSelf,
     columns::{
@@ -18,7 +18,7 @@ use crate::{
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalSameAsColumn<
-    KeyColumn: SingletonForeignKey<ReferencedTable = Self::Table>,
+    KeyColumn: ForeignPrimaryKey<ReferencedTable = Self::Table>,
     HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as Typed>::Type>,
 >: TypedColumn<Table: HasPrimaryKeyColumn>
 {
@@ -27,7 +27,7 @@ pub trait HorizontalSameAsColumn<
 impl<KeyColumn, HostColumn, ForeignColumn> HorizontalSameAsColumn<KeyColumn, HostColumn>
     for ForeignColumn
 where
-    KeyColumn: SingletonForeignKey,
+    KeyColumn: ForeignPrimaryKey,
     HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as Typed>::Type>,
     ForeignColumn: TypedColumn<Table = KeyColumn::ReferencedTable>,
     (
@@ -65,7 +65,7 @@ where
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
 pub trait HorizontalKey:
-    SingletonForeignKey<ReferencedTable: DescendantWithSelf, Table: HasPrimaryKeyColumn>
+    ForeignPrimaryKey<ReferencedTable: DescendantWithSelf, Table: HasPrimaryKeyColumn>
 {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
@@ -156,10 +156,8 @@ where
                 NestedTupleType = (Head::Type, Tail::NestedTupleType),
             >,
         > + NestedBuildableTables,
-    (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix):
-        NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
-    (Head::NestedForeignColumns, Tail::NestedForeignColumnsMatrix):
-        NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
+    (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
+    (Head::NestedForeignColumns, Tail::NestedForeignColumnsMatrix): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
 {
     type NestedReferencedTables = (Head::ReferencedTable, Tail::NestedReferencedTables);
     type NestedHostColumnsMatrix = (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix);

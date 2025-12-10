@@ -4,7 +4,7 @@ use diesel::Table;
 
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, GetColumnExt, GetNestedColumns, HasTableExt,
-    InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns, SingletonForeignKey,
+    InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns, ForeignPrimaryKey,
     TableBuilder, TableExt, TrySetColumn, TrySetNestedColumns, Typed, TypedColumn,
     TypedNestedTuple, columns::NonEmptyNestedProjection,
 };
@@ -42,13 +42,13 @@ where
         NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
     Self: SetNestedColumns<C::NestedHostColumns> + SetColumn<C>,
-    <<C as SingletonForeignKey>::ReferencedTable as TableExt>::Model:
+    <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,
 {
     #[inline]
     fn set_discretionary_model(
         &mut self,
-        model: &<<C as SingletonForeignKey>::ReferencedTable as TableExt>::Model,
+        model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> &mut Self {
         let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         <Self as SetColumn<C>>::set_column(self, primary_key);
@@ -68,7 +68,7 @@ pub trait TrySetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: Buil
     /// Returns an error if the column cannot be set.
     fn try_set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<
         &mut Self,
         <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
@@ -123,13 +123,13 @@ where
         > + TrySetColumn<C>,
     <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error:
         From<<Self as TrySetColumn<C>>::Error>,
-    <<C as SingletonForeignKey>::ReferencedTable as TableExt>::Model:
+    <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,
 {
     #[inline]
     fn try_set_discretionary_model(
         &mut self,
-        model: &<<C as SingletonForeignKey>::ReferencedTable as TableExt>::Model,
+        model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> Result<
         &mut Self,
         <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,

@@ -12,7 +12,7 @@ pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder}
 use crate::{
     AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, InsertableTableModel,
     MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
-    SetDiscretionaryBuilder, SetMandatoryBuilder, SingletonForeignKey, TableBuilderBundle,
+    SetDiscretionaryBuilder, SetMandatoryBuilder, ForeignPrimaryKey, TableBuilderBundle,
     TableExt, TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
     TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
     columns::NonEmptyNestedProjection,
@@ -108,7 +108,7 @@ where
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, <T::InsertableModel as InsertableTableModel>::Error> {
         let columns = builder.may_get_nested_columns();
         self.try_may_set_nested_columns(columns)?;
@@ -130,7 +130,7 @@ where
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<C::NestedHostColumns>,
     TableBuilderBundle<C::Table>: SetMandatoryBuilder<C>,
-    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
+    TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>:
         MayGetNestedColumns<C::NestedForeignColumns>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
             <C::Table as AncestorOfIndex<T>>::Idx,
@@ -140,7 +140,7 @@ where
     #[inline]
     fn set_mandatory_builder(
         &mut self,
-        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
     ) -> &mut Self {
         let columns = builder.may_get_nested_columns();
         self.may_set_nested_columns(columns);
@@ -176,7 +176,7 @@ where
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, <T::InsertableModel as InsertableTableModel>::Error> {
         let columns = builder.may_get_nested_columns();
         self.try_may_set_nested_columns(columns)?;
@@ -207,7 +207,7 @@ where
     #[inline]
     fn set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
     ) -> &mut Self {
         let columns = builder.may_get_nested_columns();
         self.may_set_nested_columns(columns);

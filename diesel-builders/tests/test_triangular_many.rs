@@ -223,54 +223,33 @@ pub struct NewChild {
     payload: Option<String>,
 }
 
-/// Child's `m1_id` column references the `mandatory_table` table; this
-/// tells the builder that the ID corresponds to that table.
-impl diesel_builders::SingletonForeignKey for child_table::m1_id {
-    type ReferencedTable = mandatory_table::table;
-}
+// Declare singleton foreign keys for mandatory relationships
+fpk!(child_table::m1_id -> mandatory_table);
+fpk!(child_table::m2_id -> mandatory_table);
+fpk!(child_table::m3_id -> mandatory_table);
 
-/// Child's `m2_id` column references the `mandatory_table` table; this
-/// tells the builder that the ID corresponds to that table.
-impl diesel_builders::SingletonForeignKey for child_table::m2_id {
-    type ReferencedTable = mandatory_table::table;
-}
-
-/// Child's `m3_id` column references the `mandatory_table` table; this
-/// tells the builder that the ID corresponds to that table.
-impl diesel_builders::SingletonForeignKey for child_table::m3_id {
-    type ReferencedTable = mandatory_table::table;
-}
+// Declare singleton foreign key for child id referencing parent
+fpk!(child_table::id -> parent_table);
 
 index!(mandatory_table::id, mandatory_table::col);
 index!(mandatory_table::id, mandatory_table::a_id);
 index!(discretionary_table::id, discretionary_table::col);
 
-/// Child's `d1_id` column references the `discretionary_table` table; this
-/// indicates the referenced table so the builder can assemble nested inserts.
-impl diesel_builders::SingletonForeignKey for child_table::d1_id {
-    type ReferencedTable = discretionary_table::table;
-}
-
-/// Child's `d2_id` column references the `discretionary_table`.
-impl diesel_builders::SingletonForeignKey for child_table::d2_id {
-    type ReferencedTable = discretionary_table::table;
-}
-
-/// Child's `d3_id` column references the `discretionary_table`.
-impl diesel_builders::SingletonForeignKey for child_table::d3_id {
-    type ReferencedTable = discretionary_table::table;
-}
+// Declare singleton foreign keys for discretionary relationships
+fpk!(child_table::d1_id -> discretionary_table);
+fpk!(child_table::d2_id -> discretionary_table);
+fpk!(child_table::d3_id -> discretionary_table);
 
 // FKs from child to intermediates — these macros define the same composite
 // foreign keys that are present in the SQL test DDL and allow the builder
 // to reason about composite relationships when assembling insert bundles.
-fk!((child_table::m1_id, child_table::m1_col) REFERENCES (mandatory_table::id, mandatory_table::col));
-fk!((child_table::m2_id, child_table::m2_col) REFERENCES (mandatory_table::id, mandatory_table::col));
-fk!((child_table::m3_id, child_table::m3_col) REFERENCES (mandatory_table::id, mandatory_table::col));
+fk!((child_table::m1_id, child_table::m1_col) -> (mandatory_table::id, mandatory_table::col));
+fk!((child_table::m2_id, child_table::m2_col) -> (mandatory_table::id, mandatory_table::col));
+fk!((child_table::m3_id, child_table::m3_col) -> (mandatory_table::id, mandatory_table::col));
 
-fk!((child_table::d1_id, child_table::d1_col) REFERENCES (discretionary_table::id, discretionary_table::col));
-fk!((child_table::d2_id, child_table::d2_col) REFERENCES (discretionary_table::id, discretionary_table::col));
-fk!((child_table::d3_id, child_table::d3_col) REFERENCES (discretionary_table::id, discretionary_table::col));
+fk!((child_table::d1_id, child_table::d1_col) -> (discretionary_table::id, discretionary_table::col));
+fk!((child_table::d2_id, child_table::d2_col) -> (discretionary_table::id, discretionary_table::col));
+fk!((child_table::d3_id, child_table::d3_col) -> (discretionary_table::id, discretionary_table::col));
 
 /// Map child-side host columns `(id, m1_col)` to the intermediate table's
 /// `(a_id, col)`, so that horizontal same-as relationships `(child.id == a_id)`
@@ -389,12 +368,12 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
 
     // Now single fluent insert for the child
     let child = child_table::table::builder()
-        .m1_id_builder(mandatory_table::table::builder().col("M1 for Child"))
-        .m2_id_builder(mandatory_table::table::builder().col("M2 for Child"))
-        .m3_id_builder(mandatory_table::table::builder().col("M3 for Child"))
-        .d1_id_model(&discretionary)
-        .d2_id_builder(discretionary_table::table::builder().col("D2 for Child".to_owned()))
-        .d3_id_model(&discretionary)
+        .m1(mandatory_table::table::builder().col("M1 for Child"))
+        .m2(mandatory_table::table::builder().col("M2 for Child"))
+        .m3(mandatory_table::table::builder().col("M3 for Child"))
+        .d1_model(&discretionary)
+        .d2(discretionary_table::table::builder().col("D2 for Child".to_owned()))
+        .d3_model(&discretionary)
         .payload("payload")
         .name("Parent of Child")
         .insert(&mut conn)

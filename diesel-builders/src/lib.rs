@@ -65,7 +65,7 @@ pub use builder_bundle::{BundlableTable, TableBuilderBundle};
 pub mod nested_bundlable_tables;
 pub use nested_bundlable_tables::*;
 pub mod get_foreign;
-pub use get_foreign::GetForeign;
+pub use get_foreign::{GetForeign, GetForeignExt};
 
 /// Re-export typenum for convenience
 pub mod typenum {
@@ -92,10 +92,12 @@ pub mod prelude {
     // Re-export commonly used macros from diesel_builders_macros
     // Note: GetColumn is now automatically implemented by TableModel derive
     pub use diesel_builders_macros::{
-        Decoupled, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of, fk, index,
+        Decoupled, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of, fk, fpk, index,
     };
 
     pub use crate::insertable_table_model::InsertableTableModel;
+
+    pub use crate::get_foreign::GetForeignExt;
 
     // Table relationship traits
     pub use crate::ancestors::{Descendant, DescendantOf};

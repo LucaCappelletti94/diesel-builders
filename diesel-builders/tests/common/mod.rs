@@ -204,6 +204,9 @@ pub const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
     breed TEXT NOT NULL
 )";
 
+// Declare singleton foreign key helper for `dogs.id` -> `animals` (single inheritance)
+fpk!(dogs::id -> animals);
+
 // ============================================================================
 // Cats Table - Extends animals (right branch of DAG)
 // ============================================================================
@@ -293,6 +296,9 @@ pub const CREATE_CATS_TABLE: &str = "CREATE TABLE cats (
     id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
     color TEXT NOT NULL CHECK (color <> '')
 )";
+
+// Declare singleton foreign key helper for `cats.id` -> `animals` (single inheritance)
+fpk!(cats::id -> animals);
 
 // ============================================================================
 // Puppies Table - Extends dogs (for inheritance chain: animals -> dogs -> puppies)

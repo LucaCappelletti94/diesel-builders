@@ -203,11 +203,10 @@ impl InsertableTableModel for NewTableB {
     type Error = ErrorB;
 }
 
-// Implement SingletonForeignKey for table_b::c_id to indicate it references
-// table_c
-impl diesel_builders::SingletonForeignKey for table_b::c_id {
-    type ReferencedTable = table_c::table;
-}
+// Declare singleton foreign key for table_b::c_id to table_c
+fpk!(table_b::c_id -> table_c);
+// Declare singleton foreign key for table_b::id to table_a (inheritance)
+fpk!(table_b::id -> table_a);
 
 // Define table index that can be referenced by foreign keys
 index!(table_c::id, table_c::column_c);
@@ -215,8 +214,8 @@ index!(table_c::id, table_c::a_id);
 
 // Define foreign key relationship using SQL-like syntax
 // B's (c_id, remote_column_c) references C's (id, column_c)
-fk!((table_b::c_id, table_b::remote_column_c) REFERENCES (table_c::id, table_c::column_c));
-fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
+fk!((table_b::c_id, table_b::remote_column_c) -> (table_c::id, table_c::column_c));
+fk!((table_b::c_id, table_b::id) -> (table_c::id, table_c::a_id));
 
 // This is the key part: B's c_id must match C's id, and C's a_id must match A's
 // id. We express that B's c_id is horizontally the same as C's a_id, which in
@@ -292,38 +291,34 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means we can set the C builder or reference an existing C model
-    // Using generated trait methods like try_c_id_builder_ref for type-safe builders
+    // Using generated trait methods like try_c_ref for type-safe builders
     let mut triangular_b_builder = table_b::table::builder();
 
     assert!(matches!(
         triangular_b_builder
-            .try_c_id_builder_ref(table_c::table::builder().column_c(String::new())),
+            .try_c_ref(table_c::table::builder().column_c(String::new())),
         Err(ErrorB::EmptyRemoteColumnC)
     ));
 
     triangular_b_builder
         .column_a_ref("Value A for B")
         .column_b_ref("Value B")
-        .try_c_id_builder_ref(c_builder.clone())?;
+        .try_c_ref(c_builder.clone())?;
 
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");
 
     let triangular_b = triangular_b_builder
-        .try_c_id_builder(c_builder)?
+        .try_c(c_builder)?
         .insert(&mut conn)?;
 
-    let associated_a: TableA = table_a::table
-        .filter(table_a::id.eq(triangular_b.id))
-        .first(&mut conn)?;
+    let associated_a: TableA = triangular_b.id_fk(&mut conn)?;
     assert_eq!(associated_a.column_a, "Value A for B");
 
     // We can also reference an existing model using the _model variant
     // Example: triangular_b_builder.c_id_model_ref(&c) would reference the existing c model
 
-    let associated_c: TableC = table_c::table
-        .filter(table_c::id.eq(triangular_b.c_id))
-        .first(&mut conn)?;
+    let associated_c: TableC = triangular_b.c(&mut conn)?;
     assert_eq!(associated_c.column_c.as_deref(), Some("Value C for B"));
     assert_eq!(associated_c.a_id, triangular_b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
@@ -331,7 +326,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let indipendent_b = table_b::table::builder()
         .column_a("Independent A for B")
         .column_b("Independent B")
-        .try_c_id_model(&c)?
+        .try_c_model(&c)?
         .insert(&mut conn)?;
 
     assert_eq!(indipendent_b.column_b, "Independent B");
@@ -374,7 +369,7 @@ fn test_discretionary_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .column_b("B Value")
-        .try_c_id_builder(c_builder)?
+        .try_c(c_builder)?
         .insert(&mut conn);
 
     assert!(matches!(

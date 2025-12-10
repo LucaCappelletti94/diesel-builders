@@ -19,7 +19,7 @@ use std::convert::Infallible;
 
 use diesel::associations::HasTable;
 use diesel::prelude::*;
-use diesel_builders::{GetForeign, TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*};
+use diesel_builders::{TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*};
 use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)
@@ -149,17 +149,6 @@ pub struct TableB {
     pub remote_column_c: Option<String>,
 }
 
-impl TableB {
-    fn foreign_c_id(&self, conn: &mut SqliteConnection) -> diesel::QueryResult<TableC>
-    where
-        Self: GetForeign<SqliteConnection, (table_c::id,), (table_b::c_id,)>,
-    {
-        <TableB as GetForeign<SqliteConnection, (table_c::id,), (table_b::c_id,)>>::get_foreign(
-            self, conn,
-        )
-    }
-}
-
 #[diesel_builders_macros::descendant_of]
 impl Descendant for table_b::table {
     type Ancestors = (table_a::table,);
@@ -242,11 +231,9 @@ impl InsertableTableModel for NewTableB {
     type Error = ErrorB;
 }
 
-// Implement SingletonForeignKey for table_b::c_id to indicate it references
-// table_c
-impl diesel_builders::SingletonForeignKey for table_b::c_id {
-    type ReferencedTable = table_c::table;
-}
+// Declare singleton foreign key for table_b::c_id to table_c
+fpk!(table_b::c_id -> table_c);
+fpk!(table_b::id -> table_a);
 
 // Define table indices that can be referenced by foreign keys
 index!(table_c::id, table_c::a_id);
@@ -254,10 +241,10 @@ index!(table_c::id, table_c::column_c);
 
 // Define foreign key relationships using SQL-like syntax
 // B's (c_id, id) references C's (id, a_id) - ensures triangular consistency
-fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
+fk!((table_b::c_id, table_b::id) -> (table_c::id, table_c::a_id));
 
 // B's (c_id, remote_column_c) references C's (id, column_c)
-fk!((table_b::c_id, table_b::remote_column_c) REFERENCES (table_c::id, table_c::column_c));
+fk!((table_b::c_id, table_b::remote_column_c) -> (table_c::id, table_c::column_c));
 
 // This is the key part: B's c_id must match C's id, and C's a_id must match A's
 // id. We express that B's c_id is horizontally the same as C's a_id, which in
@@ -336,7 +323,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's a_id should automatically
     // match C's a_id when we only set C's columns
-    // Using generated trait methods like try_c_id_builder_ref for type-safe builders
+    // Using generated trait methods like try_c_ref for type-safe builders
     let mut b_builder = table_b::table::builder();
 
     assert!(matches!(
@@ -347,19 +334,17 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     ));
 
     b_builder
-        .try_c_id_builder_ref(c_builder.clone())?
+        .try_c_ref(c_builder.clone())?
         .column_a_ref("Value A for B")
         .column_b_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
-    let b = b_builder.try_c_id_builder(c_builder)?.insert(&mut conn)?;
+    let b = b_builder.try_c(c_builder)?.insert(&mut conn)?;
 
-    let associated_a: TableA = table_a::table
-        .filter(table_a::id.eq(b.id))
-        .first(&mut conn)?;
+    let associated_a: TableA = b.id_fk(&mut conn)?;
     assert_eq!(associated_a.column_a, "Value A for B");
 
-    let associated_c: TableC = b.foreign_c_id(&mut conn)?;
+    let associated_c: TableC = b.c(&mut conn)?;
     assert_eq!(associated_c.column_c.as_deref(), Some("Value C"));
     assert_eq!(associated_c.a_id, b.id);
     assert_eq!(associated_c.a_id, associated_a.id);
@@ -506,10 +491,10 @@ fn test_triangular_builder_partial_ord() -> Result<(), Box<dyn std::error::Error
 
     let b_builder1 = table_b::table::builder()
         .column_b("B1")
-        .try_c_id_builder(c_builder1.clone())?;
+        .try_c(c_builder1.clone())?;
     let b_builder2 = table_b::table::builder()
         .column_b("B1")
-        .try_c_id_builder(c_builder3.clone())?;
+        .try_c(c_builder3.clone())?;
     let b_builder3 = table_b::table::builder().column_b("B1");
     let b_builder4 = table_b::table::builder().column_b("B1");
 
@@ -620,7 +605,7 @@ fn test_mandatory_triangular_insert_fails_when_c_table_missing()
 
     let result = table_b::table::builder()
         .column_b("B Value")
-        .try_c_id_builder(c_builder)?
+        .try_c(c_builder)?
         .insert(&mut conn);
 
     assert!(matches!(

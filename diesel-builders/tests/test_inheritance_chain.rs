@@ -57,9 +57,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_puppy, puppy);
 
     // Verify we can join through the chain: animals -> dogs
-    let loaded_animal: Animal = animals::table
-        .filter(animals::id.eq(dog.id))
-        .first(&mut conn)?;
+    let loaded_animal: Animal = dog.id_fk(&mut conn)?;
     let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
 
     assert_eq!(loaded_animal.id, loaded_dog.id);

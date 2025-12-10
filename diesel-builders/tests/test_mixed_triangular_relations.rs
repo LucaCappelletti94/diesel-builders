@@ -177,14 +177,10 @@ pub struct NewTableB {
     pub remote_column_d: Option<Option<String>>,
 }
 
-// Implement SingletonForeignKey for both c_id and d_id
-impl diesel_builders::SingletonForeignKey for table_b::c_id {
-    type ReferencedTable = table_c::table;
-}
-
-impl diesel_builders::SingletonForeignKey for table_b::d_id {
-    type ReferencedTable = table_d::table;
-}
+// Declare singleton foreign keys
+fpk!(table_b::c_id -> table_c);
+fpk!(table_b::d_id -> table_d);
+fpk!(table_b::id -> table_a);
 
 // Define indexes
 index!(table_c::id, table_c::column_c);
@@ -193,10 +189,10 @@ index!(table_d::id, table_d::column_d);
 index!(table_d::id, table_d::a_id);
 
 // Define foreign key relationships
-fk!((table_b::c_id, table_b::remote_column_c) REFERENCES (table_c::id, table_c::column_c));
-fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
-fk!((table_b::d_id, table_b::remote_column_d) REFERENCES (table_d::id, table_d::column_d));
-fk!((table_b::d_id, table_b::id) REFERENCES (table_d::id, table_d::a_id));
+fk!((table_b::c_id, table_b::remote_column_c) -> (table_c::id, table_c::column_c));
+fk!((table_b::c_id, table_b::id) -> (table_c::id, table_c::a_id));
+fk!((table_b::d_id, table_b::remote_column_d) -> (table_d::id, table_d::column_d));
+fk!((table_b::d_id, table_b::id) -> (table_d::id, table_d::a_id));
 
 // Define horizontal same-as relationships
 impl diesel_builders::HorizontalKey for table_b::c_id {
@@ -275,8 +271,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     let b = table_b::table::builder()
         .column_a("Value A for B")
         .column_b("Value B")
-        .c_id_builder(table_c::table::builder().column_c("Value C".to_owned()))
-        .d_id_builder(table_d::table::builder().column_d("Value D".to_owned()))
+        .c(table_c::table::builder().column_c("Value C".to_owned()))
+        .d(table_d::table::builder().column_d("Value D".to_owned()))
         .insert(&mut conn)?;
 
     assert_eq!(b.column_b, "Value B");
@@ -284,16 +280,12 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(b.remote_column_d.as_deref(), Some("Value D"));
 
     // Verify associated C
-    let c: TableC = table_c::table
-        .filter(table_c::id.eq(b.c_id))
-        .first(&mut conn)?;
+    let c: TableC = b.c(&mut conn)?;
     assert_eq!(c.a_id, b.id);
     assert_eq!(c.column_c.as_deref(), Some("Value C"));
 
     // Verify associated D
-    let d: TableD = table_d::table
-        .filter(table_d::id.eq(b.d_id))
-        .first(&mut conn)?;
+    let d: TableD = b.d(&mut conn)?;
     assert_eq!(d.a_id, b.id);
     assert_eq!(d.column_d.as_deref(), Some("Value D"));
 
@@ -319,8 +311,8 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let result = table_b::table::builder()
         .column_a("Value A")
         .column_b("Value B")
-        .d_id_builder(table_d::table::builder().column_d("Value D".to_owned()))
-        .d_id_model(&table_d)
+        .d(table_d::table::builder().column_d("Value D".to_owned()))
+        .d_model(&table_d)
         .insert(&mut conn);
 
     assert!(matches!(

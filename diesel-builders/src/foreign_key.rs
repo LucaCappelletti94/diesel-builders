@@ -148,7 +148,7 @@ pub trait HostColumn<
 
 /// A trait for Diesel columns that define single-column foreign key
 /// relationships to tables with a singleton primary key.
-pub trait SingletonForeignKey: TypedColumn {
+pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
     type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<Type = <Self as Typed>::Type>>
         + diesel::query_source::TableNotEqual<Self::Table>;
@@ -158,10 +158,10 @@ impl<C>
     HostColumn<
         typenum::U0,
         (C,),
-        (<<C as SingletonForeignKey>::ReferencedTable as diesel::Table>::PrimaryKey,),
+        (<<C as ForeignPrimaryKey>::ReferencedTable as diesel::Table>::PrimaryKey,),
     > for C
 where
-    <<C as SingletonForeignKey>::ReferencedTable as diesel::Table>::PrimaryKey: PrimaryKeyColumn,
-    C: SingletonForeignKey,
+    <<C as ForeignPrimaryKey>::ReferencedTable as diesel::Table>::PrimaryKey: PrimaryKeyColumn,
+    C: ForeignPrimaryKey,
 {
 }
