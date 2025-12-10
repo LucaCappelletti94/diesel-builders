@@ -3,8 +3,8 @@
 use diesel::Table;
 
 use crate::{
-    BuildableTable, DiscretionarySameAsIndex, GetColumnExt, GetNestedColumns, HasTableExt,
-    InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns, ForeignPrimaryKey,
+    BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
+    HasTableExt, InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns,
     TableBuilder, TableExt, TrySetColumn, TrySetNestedColumns, Typed, TypedColumn,
     TypedNestedTuple, columns::NonEmptyNestedProjection,
 };

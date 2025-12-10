@@ -6,8 +6,8 @@ use typenum::Unsigned;
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, ForeignPrimaryKey,
-    TableIndex, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
+    Columns, ForeignKey, ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TableIndex,
+    Typed, TypedColumn, TypedNestedTuple, TypedTuple,
     ancestors::DescendantWithSelf,
     columns::{
         ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyNestedProjection,
@@ -156,8 +156,10 @@ where
                 NestedTupleType = (Head::Type, Tail::NestedTupleType),
             >,
         > + NestedBuildableTables,
-    (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
-    (Head::NestedForeignColumns, Tail::NestedForeignColumnsMatrix): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
+    (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix):
+        NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
+    (Head::NestedForeignColumns, Tail::NestedForeignColumnsMatrix):
+        NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
 {
     type NestedReferencedTables = (Head::ReferencedTable, Tail::NestedReferencedTables);
     type NestedHostColumnsMatrix = (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix);

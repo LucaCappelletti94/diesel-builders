@@ -873,7 +873,7 @@ pub fn fpk(input: TokenStream) -> TokenStream {
     use quote::quote;
     use syn::{
         parse::{Parse, ParseStream},
-        Token, Path,
+        Path, Token,
     };
 
     /// Parsed representation of a singleton foreign key declaration.
@@ -938,9 +938,7 @@ pub fn fpk(input: TokenStream) -> TokenStream {
     // Generate trait name
     // Extract table name from column path (second-to-last segment)
     let table_name_segment = if column.segments.len() >= 2 {
-        column.segments[column.segments.len() - 2]
-            .ident
-            .to_string()
+        column.segments[column.segments.len() - 2].ident.to_string()
     } else {
         "table".to_string()
     };
@@ -955,7 +953,9 @@ pub fn fpk(input: TokenStream) -> TokenStream {
 
     // Generate documentation
     let trait_doc = format!("Trait to get the foreign record referenced by `{column_name}`.");
-    let method_doc = format!("Fetches the foreign `{referenced_table_name}` record referenced by this `{column_name}`.");
+    let method_doc = format!(
+        "Fetches the foreign `{referenced_table_name}` record referenced by this `{column_name}`."
+    );
 
     quote! {
         impl diesel_builders::ForeignPrimaryKey for #column {

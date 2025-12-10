@@ -22,9 +22,9 @@ use crate::{GetNestedColumns, TableExt};
 pub trait GetForeign<
     Conn,
     HostColumns: NonEmptyProjection<
-        TupleType = <ForeignColumns as TypedTuple>::TupleType,
-        Nested: NonEmptyNestedProjection,
-    >,
+            TupleType = <ForeignColumns as TypedTuple>::TupleType,
+            Nested: NonEmptyNestedProjection,
+        >,
     ForeignColumns: TableIndex,
 >: GetNestedColumns<HostColumns::Nested> where
     ForeignColumns::Table: TableExt,
@@ -54,13 +54,13 @@ impl<
 > GetForeign<Conn, HostColumns, ForeignColumns> for T
 where
     HostColumns: NonEmptyProjection<
-        TupleType = <ForeignColumns as TypedTuple>::TupleType,
-        Nested: NonEmptyNestedProjection<
-            NestedTupleType: FlattenNestedTuple<
-                Flattened = <ForeignColumns as TypedTuple>::TupleType,
+            TupleType = <ForeignColumns as TypedTuple>::TupleType,
+            Nested: NonEmptyNestedProjection<
+                NestedTupleType: FlattenNestedTuple<
+                    Flattened = <ForeignColumns as TypedTuple>::TupleType,
+                >,
             >,
-        >
-    > + ForeignKey<ForeignColumns>,
+        > + ForeignKey<ForeignColumns>,
     <ForeignColumns as NonEmptyProjection>::Table:
         TableExt + SelectDsl<<<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns>,
     Conn: diesel::connection::LoadConnection,
@@ -122,9 +122,9 @@ pub trait GetForeignExt<Conn> {
     where
         Self: GetForeign<Conn, HostColumns, ForeignColumns>,
         HostColumns: NonEmptyProjection<
-            TupleType = <ForeignColumns as TypedTuple>::TupleType,
-            Nested: NonEmptyNestedProjection,
-        >,
+                TupleType = <ForeignColumns as TypedTuple>::TupleType,
+                Nested: NonEmptyNestedProjection,
+            >,
         ForeignColumns: TableIndex<Table: TableExt>,
     {
         <Self as GetForeign<Conn, HostColumns, ForeignColumns>>::get_foreign(self, conn)

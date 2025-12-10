@@ -10,11 +10,11 @@ mod serde;
 pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder};
 
 use crate::{
-    AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, InsertableTableModel,
-    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
-    SetDiscretionaryBuilder, SetMandatoryBuilder, ForeignPrimaryKey, TableBuilderBundle,
-    TableExt, TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
-    TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
+    AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
+    InsertableTableModel, MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
+    SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilderBundle, TableExt,
+    TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder, TrySetMandatoryBuilder,
+    Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
     columns::NonEmptyNestedProjection,
 };
 

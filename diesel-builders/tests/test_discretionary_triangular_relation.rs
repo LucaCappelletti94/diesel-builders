@@ -295,8 +295,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let mut triangular_b_builder = table_b::table::builder();
 
     assert!(matches!(
-        triangular_b_builder
-            .try_c_ref(table_c::table::builder().column_c(String::new())),
+        triangular_b_builder.try_c_ref(table_c::table::builder().column_c(String::new())),
         Err(ErrorB::EmptyRemoteColumnC)
     ));
 
@@ -308,9 +307,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Debug formatting test
     let _formatted = format!("{triangular_b_builder:?}");
 
-    let triangular_b = triangular_b_builder
-        .try_c(c_builder)?
-        .insert(&mut conn)?;
+    let triangular_b = triangular_b_builder.try_c(c_builder)?.insert(&mut conn)?;
 
     let associated_a: TableA = triangular_b.id_fk(&mut conn)?;
     assert_eq!(associated_a.column_a, "Value A for B");
