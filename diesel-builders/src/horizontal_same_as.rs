@@ -6,8 +6,8 @@ use typenum::Unsigned;
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, NonCompositePrimaryKeyTables,
-    SingletonForeignKey, TableIndex, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
+    Columns, ForeignKey, HasPrimaryKeyColumn, NestedBuildableTables, SingletonForeignKey,
+    TableIndex, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
     ancestors::DescendantWithSelf,
     columns::{ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyProjection},
     tables::NonCompositePrimaryKeyNestedTables,
@@ -103,31 +103,9 @@ pub trait DiscretionarySameAsIndex: HorizontalKeyExt {
     type Idx: Unsigned;
 }
 
-/// A trait for Diesel columns collections that define horizontal same-as
-/// relationships.
-pub trait HorizontalKeys<T>: Columns<Nested: NestedColumns> {
-    /// The set of referenced tables.
-    type ReferencedTables: NonCompositePrimaryKeyTables<
-        PrimaryKeyColumns: Columns<TupleType = <Self as TypedTuple>::TupleType>,
-    >;
-    /// Tuple of tuples of host columns associated to each horizontal same-as key.
-    type HostColumnsMatrix: ColumnsCollection;
-    /// Tuple of tuples of foreign columns associated to each horizontal same-as key.
-    type ForeignColumnsMatrix: ColumnsCollection;
-}
-
-impl<T, CS> HorizontalKeys<T> for CS
-where
-    CS: Columns<Nested: HorizontalSameAsNestedKeys<T>, TupleType = <<<<<CS as NestTuple>::Nested as HorizontalSameAsNestedKeys<T>>::NestedReferencedTables as NonCompositePrimaryKeyNestedTables>::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as TypedTuple>::TupleType>,
-{
-    type ReferencedTables = <<<CS as NestTuple>::Nested as HorizontalSameAsNestedKeys<T>>::NestedReferencedTables as FlattenNestedTuple>::Flattened;
-    type HostColumnsMatrix = <<<CS as NestTuple>::Nested as HorizontalSameAsNestedKeys<T>>::NestedHostColumnsMatrix as FlattenNestedTupleMatrix>::FlattenedMatrix;
-    type ForeignColumnsMatrix = <<<CS as NestTuple>::Nested as HorizontalSameAsNestedKeys<T>>::NestedForeignColumnsMatrix as FlattenNestedTupleMatrix>::FlattenedMatrix;
-}
-
 /// A trait for Diesel nested columns collections that define horizontal same-as
 /// relationships.
-pub trait HorizontalSameAsNestedKeys<T>: NestedColumns {
+pub trait HorizontalNestedKeys<T>: NestedColumns {
     /// The set of referenced tables.
     type NestedReferencedTables: NonCompositePrimaryKeyNestedTables<
             NestedPrimaryKeyColumns: NestedColumns<
@@ -140,13 +118,13 @@ pub trait HorizontalSameAsNestedKeys<T>: NestedColumns {
     type NestedForeignColumnsMatrix: NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>;
 }
 
-impl<T> HorizontalSameAsNestedKeys<T> for () {
+impl<T> HorizontalNestedKeys<T> for () {
     type NestedReferencedTables = ();
     type NestedHostColumnsMatrix = ();
     type NestedForeignColumnsMatrix = ();
 }
 
-impl<Head, T> HorizontalSameAsNestedKeys<T> for (Head,)
+impl<Head, T> HorizontalNestedKeys<T> for (Head,)
 where
     T: HasPrimaryKeyColumn,
     Head: HorizontalKeyExt<Table = T>,
@@ -164,11 +142,11 @@ where
     type NestedForeignColumnsMatrix = (Head::NestedForeignColumns,);
 }
 
-impl<Head, Tail, T> HorizontalSameAsNestedKeys<T> for (Head, Tail)
+impl<Head, Tail, T> HorizontalNestedKeys<T> for (Head, Tail)
 where
     T: HasPrimaryKeyColumn,
     Head: HorizontalKeyExt<Table = T>,
-    Tail: HorizontalSameAsNestedKeys<T>,
+    Tail: HorizontalNestedKeys<T>,
     (Head, Tail):
         NestedColumns + TypedNestedTuple<NestedTupleType = (Head::Type, Tail::NestedTupleType)>,
     (Head::ReferencedTable, Tail::NestedReferencedTables): NonCompositePrimaryKeyNestedTables<

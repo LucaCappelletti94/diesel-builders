@@ -12,9 +12,9 @@ pub(crate) use completed_table_builder_bundle::RecursiveBundleInsert;
 use crate::columns::NestedColumns;
 use crate::tables::NonCompositePrimaryKeyNestedTables;
 use crate::{
-    BuildableTable, DiscretionarySameAsIndex, HasNestedTables, HorizontalKeys,
-    HorizontalSameAsNestedKeys, InsertableTableModel, MandatorySameAsIndex, NestedBuildableTables,
-    NestedTableModels, NestedTables, SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder,
+    BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
+    InsertableTableModel, MandatorySameAsIndex, NestedBuildableTables, NestedTableModels,
+    NestedTables, SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder,
     TrySetDiscretionaryBuilder, TrySetMandatoryBuilder, TupleMayGetNestedColumns, Typed,
     TypedNestedTuple,
 };
@@ -25,11 +25,9 @@ use tuplities::prelude::*;
 /// discretionary triangular same-as columns.
 pub trait BundlableTable: Sized {
     /// The columns defining mandatory triangular same-as.
-    type MandatoryTriangularColumns: HorizontalKeys<Self>
-        + NestTuple<Nested: HorizontalSameAsNestedKeys<Self>>;
+    type MandatoryTriangularColumns: Columns<Nested: HorizontalNestedKeys<Self>>;
     /// The columns defining discretionary triangular same-as.
-    type DiscretionaryTriangularColumns: HorizontalKeys<Self>
-        + NestTuple<Nested: HorizontalSameAsNestedKeys<Self>>;
+    type DiscretionaryTriangularColumns: Columns<Nested: HorizontalNestedKeys<Self>>;
 }
 
 /// Extension trait for `BundlableTable`.
@@ -101,13 +99,11 @@ where
 {
     type NestedMandatoryTriangularColumns = <T::MandatoryTriangularColumns as NestTuple>::Nested;
     type NestedMandatoryTables =
-        <Self::NestedMandatoryTriangularColumns as HorizontalSameAsNestedKeys<
-            T,
-        >>::NestedReferencedTables;
+        <Self::NestedMandatoryTriangularColumns as HorizontalNestedKeys<T>>::NestedReferencedTables;
     type NestedDiscretionaryTriangularColumns =
         <T::DiscretionaryTriangularColumns as NestTuple>::Nested;
     type NestedDiscretionaryTables =
-        <Self::NestedDiscretionaryTriangularColumns as HorizontalSameAsNestedKeys<
+        <Self::NestedDiscretionaryTriangularColumns as HorizontalNestedKeys<
             T,
         >>::NestedReferencedTables;
     type NestedMandatoryPrimaryKeys =

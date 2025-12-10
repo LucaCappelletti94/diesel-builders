@@ -37,7 +37,6 @@ thiserror = "2.0"
 typenum = "1"
 tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
 	"flatten-nest",
-	"row",
 ] }
 
 [workspace.lints.rust]

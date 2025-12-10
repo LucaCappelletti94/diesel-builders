@@ -15,10 +15,10 @@ FEATURES=("" "size-16" "size-32" "size-48" "size-64" "size-96" "size-128")
 for feature in "${FEATURES[@]}"; do
     if [ -z "$feature" ]; then
         echo "Testing default (size-8):"
-        time (cargo clean && cargo build --quiet)
+        time (cargo clean && cargo build --quiet --no-default-features)
     else
         echo "Testing $feature:"
-        time (cargo clean && cargo build --quiet --features "$feature")
+        time (cargo clean && cargo build --quiet --no-default-features --features "$feature")
     fi
     echo ""
 done
