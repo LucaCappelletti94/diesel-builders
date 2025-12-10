@@ -408,6 +408,10 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
         Some("Serialized B")
     );
     assert_eq!(
+        deserialized.may_get_column::<table_b::column_b>(),
+        Some("Serialized B".to_owned())
+    );
+    assert_eq!(
         deserialized.may_get_column_ref::<table_b::remote_column_c>(),
         Some(&Some("Serialized C".to_string()))
     );

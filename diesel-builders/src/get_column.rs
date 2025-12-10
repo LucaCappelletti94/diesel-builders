@@ -36,10 +36,6 @@ where
     {
         Some(self.as_ref()?.get_column_ref())
     }
-    #[inline]
-    fn may_get_column(&self) -> Option<<C as Typed>::Type> {
-        Some(self.as_ref()?.get_column())
-    }
 }
 
 /// Extension trait for `GetColumn` that allows specifying the column at the

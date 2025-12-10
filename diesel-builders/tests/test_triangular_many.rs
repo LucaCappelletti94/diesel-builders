@@ -392,7 +392,7 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .m1_id_builder(mandatory_table::table::builder().col("M1 for Child"))
         .m2_id_builder(mandatory_table::table::builder().col("M2 for Child"))
         .m3_id_builder(mandatory_table::table::builder().col("M3 for Child"))
-        .d1_id_builder(discretionary_table::table::builder().col("D1 for Child".to_owned()))
+        .d1_id_model(&discretionary)
         .d2_id_builder(discretionary_table::table::builder().col("D2 for Child".to_owned()))
         .d3_id_model(&discretionary)
         .payload("payload")
