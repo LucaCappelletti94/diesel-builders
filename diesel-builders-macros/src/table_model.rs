@@ -57,8 +57,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #get_column_impls
         #(#indexed_column_impls)*
 
-        // Auto-implement TableAddition for the table associated with this model.
-        impl diesel_builders::TableAddition for #table_name::table {
+        // Auto-implement TableExt for the table associated with this model.
+        impl diesel_builders::TableExt for #table_name::table {
             type InsertableModel = #insertable_ident;
             type Model = #struct_ident;
             type PrimaryKeyColumns = (#(#table_name::#primary_key_columns,)*) ;

@@ -307,12 +307,13 @@ Compile times by tuple size (using `cargo clean && time cargo build --features s
 
 | Max Tuple Size | Compile Time |
 |----------------|--------------|
-| 8 (default)    | ~9s         |
-| 16             | ~10s         |
-| 32             | ~13s         |
-| 48             | ~21s         |
-| 64             | ~38s         |
-| 96             | ~118s        |
+| 8 (default)    | ~8.4s        |
+| 16             | ~8.4s        |
+| 32             | ~8.4s        |
+| 48             | ~8.4s        |
+| 64             | ~8.6s        |
+| 96             | ~13s         |
+| 128            | ~25s         |
 
 ## License
 

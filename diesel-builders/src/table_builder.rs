@@ -1,26 +1,28 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
-use diesel::{Column, associations::HasTable};
+use diesel::associations::HasTable;
 use tuplities::prelude::*;
 
 mod completed_table_builder;
-mod core_traits;
+// mod core_traits;
 mod serde;
-pub use completed_table_builder::RecursiveBuilderInsert;
+pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder};
 
 use crate::{
-    AncestorOfIndex, BundlableTable, BundlableTables, DescendantOf, HorizontalSameAsKey,
-    InsertableTableModel, MayGetColumn, MayGetColumns, MaySetColumns, SingletonForeignKey,
-    TableAddition, TableBuilderBundle, TryMaySetColumns, TrySetColumn, TrySetMandatoryBuilder,
-    Typed, TypedColumn, buildable_table::BuildableTable,
+    AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, InsertableTableModel,
+    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
+    SetDiscretionaryBuilder, SetMandatoryBuilder, SingletonForeignKey, TableBuilderBundle,
+    TableExt, TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
+    TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
 };
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
-    bundles: <T::AncestorsWithSelf as BundlableTables>::BuilderBundles,
+    bundles: T::NestedAncestorBuilders,
 }
 
 impl<T> HasTable for TableBuilder<T>
@@ -41,12 +43,14 @@ where
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndex<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
+    T::NestedAncestorBuilders: NestedTupleIndex<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
 {
     #[inline]
     fn may_get_column(&self) -> Option<<C as Typed>::Type> {
-        self.bundles.tuple_index().may_get_column()
+        self.bundles.nested_index().may_get_column()
     }
 
     #[inline]
@@ -54,7 +58,7 @@ where
     where
         C::Table: 'a,
     {
-        self.bundles.tuple_index().may_get_column_ref()
+        self.bundles.nested_index().may_get_column_ref()
     }
 }
 
@@ -64,13 +68,16 @@ where
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
 {
     type Error = <TableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
 
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        self.bundles.tuple_index_mut().try_set_column(value)?;
+        self.bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)
     }
 }
@@ -78,107 +85,133 @@ where
 impl<Key, T> TrySetMandatoryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
-    Key: crate::MandatorySameAsIndex,
+    Key: MandatorySameAsIndex,
+    Key::NestedForeignColumns: TypedNestedTuple<
+        NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
+    >,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetColumns<<<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error, <Key as HorizontalSameAsKey>::HostColumns>,
-    TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<Key as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<
-            Key,
-            Table = Key::Table,
+    Self: TryMaySetNestedColumns<
+            <T::InsertableModel as InsertableTableModel>::Error,
+            Key::NestedHostColumns,
         >,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<Key::Table>>,
-    <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
+    TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
+    TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<Key, Table = Key::Table>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <Key::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<Key::Table>,
+        >,
+    <T::InsertableModel as InsertableTableModel>::Error:
+        From<<<Key::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>,
 {
     #[inline]
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error> {
-        let columns = builder.may_get_columns();
-        self.try_may_set_columns(columns)?;
-        self.bundles.tuple_index_mut().try_set_mandatory_builder(builder)?;
+    ) -> Result<&mut Self, <T::InsertableModel as InsertableTableModel>::Error> {
+        let columns = builder.may_get_nested_columns();
+        self.try_may_set_nested_columns(columns)?;
+        self.bundles
+            .nested_index_mut()
+            .try_set_mandatory_builder(builder)?;
         Ok(self)
     }
 }
 
-impl<C, T> crate::SetMandatoryBuilder<C> for TableBuilder<T>
+impl<C, T> SetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: crate::MandatorySameAsIndex,
+    C: MandatorySameAsIndex,
+    C::NestedForeignColumns: TypedNestedTuple<
+        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
+    >,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
-    TableBuilderBundle<C::Table>: crate::SetMandatoryBuilder<C>,
+    Self: MaySetColumns<C::NestedHostColumns>,
+    TableBuilderBundle<C::Table>: SetMandatoryBuilder<C>,
     TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
+        MayGetNestedColumns<C::NestedForeignColumns>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
 {
     #[inline]
     fn set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
-        let columns = builder.may_get_columns();
-        self.may_set_columns(columns);
+        let columns = builder.may_get_nested_columns();
+        self.may_set_nested_columns(columns);
         self.bundles
-            .tuple_index_mut()
+            .nested_index_mut()
             .set_mandatory_builder(builder);
         self
     }
 }
 
-impl<Key, T> crate::TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
+impl<Key, T> TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
-    Key: crate::DiscretionarySameAsIndex,
+    Key: DiscretionarySameAsIndex,
+    Key::NestedForeignColumns: TypedNestedTuple<
+        NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
+    >,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetColumns<
-        <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error,
-    <Key as HorizontalSameAsKey>::HostColumns>,
-    TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<Key as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<Key::Table>: crate::TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles:
-        TupleIndexMut<<Key::Table as AncestorOfIndex<T>>::Idx, Element=TableBuilderBundle<Key::Table>>,
-    <<T as TableAddition>::InsertableModel as InsertableTableModel>::Error: From<<<<Key as Column>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>,
+    Self: TryMaySetNestedColumns<
+            <T::InsertableModel as InsertableTableModel>::Error,
+            Key::NestedHostColumns,
+        >,
+    TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
+    TableBuilderBundle<Key::Table>: TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <Key::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<Key::Table>,
+        >,
+    <T::InsertableModel as InsertableTableModel>::Error:
+        From<<<Key::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>,
 {
     #[inline]
     fn try_set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<Key as crate::SingletonForeignKey>::ReferencedTable>,
-    ) -> Result<&mut Self, <<<Self as HasTable>::Table as TableAddition>::InsertableModel as InsertableTableModel>::Error>{
-        let columns = builder.may_get_columns();
-        self.try_may_set_columns(columns)?;
-        self.bundles.tuple_index_mut().try_set_discretionary_builder(builder)?;
+        builder: TableBuilder<<Key as SingletonForeignKey>::ReferencedTable>,
+    ) -> Result<&mut Self, <T::InsertableModel as InsertableTableModel>::Error> {
+        let columns = builder.may_get_nested_columns();
+        self.try_may_set_nested_columns(columns)?;
+        self.bundles
+            .nested_index_mut()
+            .try_set_discretionary_builder(builder)?;
         Ok(self)
     }
 }
 
-impl<C, T> crate::SetDiscretionaryBuilder<C> for TableBuilder<T>
+impl<C, T> SetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: crate::DiscretionarySameAsIndex,
+    C: DiscretionarySameAsIndex,
+    C::NestedForeignColumns: TypedNestedTuple<
+        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
+    >,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<<C as HorizontalSameAsKey>::HostColumns>,
-    TableBuilder<<C as SingletonForeignKey>::ReferencedTable>:
-        MayGetColumns<<C as HorizontalSameAsKey>::ForeignColumns>,
-    TableBuilderBundle<C::Table>: crate::SetDiscretionaryBuilder<C>,
-    <T::AncestorsWithSelf as BundlableTables>::BuilderBundles: TupleIndexMut<<C::Table as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<C::Table>>,
+    Self: MaySetColumns<C::NestedHostColumns>,
+    TableBuilder<C::ReferencedTable>: MayGetNestedColumns<C::NestedForeignColumns>,
+    TableBuilderBundle<C::Table>: SetDiscretionaryBuilder<C>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
 {
     #[inline]
     fn set_discretionary_builder(
         &mut self,
-        builder: TableBuilder<<C as crate::SingletonForeignKey>::ReferencedTable>,
+        builder: TableBuilder<<C as SingletonForeignKey>::ReferencedTable>,
     ) -> &mut Self {
-        let columns = builder.may_get_columns();
-        self.may_set_columns(columns);
+        let columns = builder.may_get_nested_columns();
+        self.may_set_nested_columns(columns);
         self.bundles
-            .tuple_index_mut()
+            .nested_index_mut()
             .set_discretionary_builder(builder);
         self
     }

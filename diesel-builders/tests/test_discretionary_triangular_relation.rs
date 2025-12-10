@@ -19,7 +19,7 @@ mod common;
 use std::convert::Infallible;
 
 use diesel::prelude::*;
-use diesel_builders::{TrySetColumn, prelude::*};
+use diesel_builders::prelude::*;
 use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
 
 // Define table A (root table)
@@ -221,7 +221,7 @@ fk!((table_b::c_id, table_b::id) REFERENCES (table_c::id, table_c::a_id));
 // This is the key part: B's c_id must match C's id, and C's a_id must match A's
 // id. We express that B's c_id is horizontally the same as C's a_id, which in
 // turn is the same as A's id.
-impl diesel_builders::HorizontalSameAsKey for table_b::c_id {
+impl diesel_builders::HorizontalKey for table_b::c_id {
     // HostColumns are columns in table_b (the same table) that relate to this key
     // In this case, there are no other columns in table_b that need to match
     // Actually, we need to think about this differently...
@@ -231,8 +231,8 @@ impl diesel_builders::HorizontalSameAsKey for table_b::c_id {
 
 #[diesel_builders_macros::bundlable_table]
 impl BundlableTable for table_b::table {
-    type MandatoryTriangularSameAsColumns = ();
-    type DiscretionaryTriangularSameAsColumns = (table_b::c_id,);
+    type MandatoryTriangularColumns = ();
+    type DiscretionaryTriangularColumns = (table_b::c_id,);
 }
 
 #[test]

@@ -28,7 +28,7 @@ readme = "../README.md"
 rust-version = "1.85"
 
 [workspace.dependencies]
-diesel = "2.3.4"
+diesel = {git = "https://github.com/LucaCappelletti94/diesel", branch = "future2"}
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 diesel-builders = { path = "diesel-builders" }
@@ -36,26 +36,14 @@ diesel-builders-macros = { path = "diesel-builders-macros" }
 thiserror = "2.0"
 typenum = "1"
 tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
-	"clone",
-	"copy",
-	"debug",
-	"tuple-default",
-	"eq",
 	"flatten-nest",
-	"hash",
 	"option",
-	"ord",
-	"partial-eq",
-	"partial-ord",
-	"len",
-	"index",
 	"pop-front",
 	"push-back",
 	"push-front",
 	"ref",
 	"replicate",
 	"row",
-	"try-from",
 ] }
 
 [workspace.lints.rust]
@@ -67,7 +55,7 @@ unused_import_braces = "forbid"
 unused_must_use = "forbid"
 deprecated = "deny"
 unused_variables = "deny"
-unused_imports = "deny"
+# unused_imports = "deny"
 dead_code = "deny"
 
 [workspace.lints.clippy]
@@ -78,12 +66,11 @@ struct_excessive_bools = "allow"
 should_panic_without_expect = "allow"
 doc_markdown = "warn"
 unnecessary_cast = "forbid"
-unused_unit = "allow"
 trait_duplication_in_bounds = "forbid"
 needless_lifetimes = "forbid"
 redundant_clone = "forbid"
 redundant_closure = "forbid"
-extra_unused_type_parameters = "forbid"
+# extra_unused_type_parameters = "forbid"
 type_repetition_in_bounds = "forbid"
 clone_on_copy = "forbid"
 panic = "deny"

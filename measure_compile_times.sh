@@ -9,7 +9,7 @@ echo "Measuring compile times for different tuple sizes..."
 echo "=================================================="
 
 # Array of features to test (empty string means default/size-8)
-FEATURES=("" "size-16" "size-32" "size-48" "size-64" "size-96")
+FEATURES=("" "size-16" "size-32" "size-48" "size-64" "size-96" "size-128")
 
 # Test each feature
 for feature in "${FEATURES[@]}"; do

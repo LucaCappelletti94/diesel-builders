@@ -5,26 +5,28 @@ use tuplities::prelude::*;
 
 use crate::{
     BuildableTable, BuilderError, BuilderResult, BundlableTable, DiscretionarySameAsIndex,
-    FlatInsert, HasTableAddition, IncompleteBuilderError, MandatorySameAsIndex, TableAddition,
-    TableBuilder, TableBuilderBundle, TryMaySetColumns, TryMaySetDiscretionarySameAsColumn,
-    TryMaySetDiscretionarySameAsColumns, TrySetColumn, TrySetColumns, TrySetMandatorySameAsColumn,
-    TrySetMandatorySameAsColumns, TupleGetColumns, TupleMayGetColumns, Typed, TypedColumn,
-    builder_bundle::BundlableTableExt, horizontal_same_as_group::HorizontalSameAsGroupExt,
+    FlatInsert, HasNestedTables, HasTableExt, IncompleteBuilderError, MandatorySameAsIndex,
+    NestedTables, RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
+    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsNestedColumns,
+    TryMaySetNestedColumns, TrySetColumn, TrySetMandatorySameAsColumn,
+    TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
+    TupleMayGetNestedColumns, Typed, TypedColumn, builder_bundle::BundlableTableExt,
+    horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
 
 /// The build-ready variant of a table builder bundle.
-pub struct CompletedTableBuilderBundle<T: BundlableTableExt> {
+pub struct CompletedTableBuilderBundle<T: BundlableTableExt + TableExt> {
     /// The insertable model for the table.
     insertable_model: T::InsertableModel,
     /// The mandatory associated builders relative to triangular same-as.
-    mandatory_associated_builders: T::MandatoryBuilders,
+    nested_mandatory_associated_builders: T::MandatoryNestedBuilders,
     /// The discretionary associated builders relative to triangular same-as.
-    discretionary_associated_builders: T::OptionalDiscretionaryBuilders,
+    nested_discretionary_associated_builders: T::OptionalDiscretionaryNestedBuilders,
 }
 
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable,
+    T: BundlableTable + TableExt,
 {
     type Table = T;
 
@@ -36,18 +38,18 @@ where
 
 impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable,
-    C: TypedColumn + HorizontalSameAsGroupExt,
-    Self: TryMaySetDiscretionarySameAsColumns<
+    T: BundlableTable + TableExt,
+    C: HorizontalSameAsGroupExt,
+    Self: TryMaySetDiscretionarySameAsNestedColumns<
             C::Type,
             <T::InsertableModel as TrySetColumn<C>>::Error,
-            C::DiscretionaryHorizontalSameAsKeys,
-            C::DiscretionaryForeignColumns,
-        > + TrySetMandatorySameAsColumns<
+            C::NestedDiscretionaryHorizontalKeys,
+            C::NestedDiscretionaryForeignColumns,
+        > + TrySetMandatorySameAsNestedColumns<
             C::Type,
             <T::InsertableModel as TrySetColumn<C>>::Error,
-            C::MandatoryHorizontalSameAsKeys,
-            C::MandatoryForeignColumns,
+            C::NestedMandatoryHorizontalKeys,
+            C::NestedMandatoryForeignColumns,
         >,
     T::InsertableModel: TrySetColumn<C>,
 {
@@ -55,45 +57,48 @@ where
 
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        self.try_may_set_discretionary_same_as_columns(&value)?;
+        self.try_may_set_discretionary_same_as_nested_columns(&value)?;
         self.try_set_mandatory_same_as_columns(&value)?;
         self.insertable_model.try_set_column(value)?;
         Ok(self)
     }
 }
 
-impl<Key: MandatorySameAsIndex<Table: BundlableTable, ReferencedTable: BuildableTable>, C>
-    TrySetMandatorySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
+impl<
+    Key: MandatorySameAsIndex<Table: BundlableTable + TableExt, ReferencedTable: BuildableTable>,
+    C,
+> TrySetMandatorySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table = Key::ReferencedTable>,
-    <<Key as Column>::Table as BundlableTableExt>::MandatoryBuilders:
-        TupleIndexMut<Key::Idx, Element = TableBuilder<<C as Column>::Table>>,
-    TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
+    <Key::Table as BundlableTableExt>::MandatoryNestedBuilders:
+        NestedTupleIndexMut<Key::Idx, Element = TableBuilder<C::Table>>,
+    TableBuilder<C::Table>: TrySetColumn<C>,
 {
-    type Error = <TableBuilder<<C as Column>::Table> as TrySetColumn<C>>::Error;
+    type Error = <TableBuilder<C::Table> as TrySetColumn<C>>::Error;
 
     #[inline]
     fn try_set_mandatory_same_as_column(
         &mut self,
         value: <C as Typed>::Type,
     ) -> Result<&mut Self, Self::Error> {
-        self.mandatory_associated_builders
-            .tuple_index_mut()
+        self.nested_mandatory_associated_builders
+            .nested_index_mut()
             .try_set_column(value)?;
         Ok(self)
     }
 }
 
-impl<Key: DiscretionarySameAsIndex<Table: BundlableTable, ReferencedTable: BuildableTable>, C>
-    TryMaySetDiscretionarySameAsColumn<Key, C>
-    for CompletedTableBuilderBundle<<Key as Column>::Table>
+impl<
+    Key: DiscretionarySameAsIndex<Table: BundlableTable + TableExt, ReferencedTable: BuildableTable>,
+    C,
+> TryMaySetDiscretionarySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table = Key::ReferencedTable>,
-    <<Key as Column>::Table as BundlableTableExt>::OptionalDiscretionaryBuilders:
-        TupleIndexMut<Key::Idx, Element = Option<TableBuilder<<C as Column>::Table>>>,
-    TableBuilder<<C as Column>::Table>: TrySetColumn<C>,
+    <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders:
+        NestedTupleIndexMut<Key::Idx, Element = Option<TableBuilder<C::Table>>>,
+    TableBuilder<C::Table>: TrySetColumn<C>,
 {
-    type Error = <TableBuilder<<C as Column>::Table> as TrySetColumn<C>>::Error;
+    type Error = <TableBuilder<C::Table> as TrySetColumn<C>>::Error;
 
     #[inline]
     fn try_may_set_discretionary_same_as_column(
@@ -101,8 +106,8 @@ where
         value: <C as Typed>::Type,
     ) -> Result<&mut Self, Self::Error> {
         if let Some(builder) = self
-            .discretionary_associated_builders
-            .tuple_index_mut()
+            .nested_discretionary_associated_builders
+            .nested_index_mut()
             .as_mut()
         {
             builder.try_set_column(value)?;
@@ -113,7 +118,7 @@ where
 
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable,
+    T: BundlableTable + TableExt,
 {
     type Error = IncompleteBuilderError;
 
@@ -122,20 +127,21 @@ where
     ) -> Result<CompletedTableBuilderBundle<T>, Self::Error> {
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
-            mandatory_associated_builders: if let Some(mandatory_associated_builders) =
-                value.mandatory_associated_builders.transpose()
+            nested_mandatory_associated_builders: if let Some(mandatory_associated_builders) =
+                value.nested_mandatory_associated_builders.transpose()
             {
                 mandatory_associated_builders
             } else {
                 return Err(IncompleteBuilderError::MissingMandatoryTriangularFields);
             },
-            discretionary_associated_builders: value.discretionary_associated_builders,
+            nested_discretionary_associated_builders: value
+                .nested_discretionary_associated_builders,
         })
     }
 }
 
 /// Trait defining the insertion of a builder into the database.
-pub trait RecursiveBundleInsert<Error, Conn>: HasTableAddition {
+pub trait RecursiveBundleInsert<Error, Conn>: HasTableExt {
     /// Insert the builder's data into the database using the provided
     /// connection.
     ///
@@ -150,48 +156,45 @@ pub trait RecursiveBundleInsert<Error, Conn>: HasTableAddition {
     fn recursive_bundle_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableAddition>::Model, Error>;
+    ) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, Error>;
 }
 
 impl<T, Error, Conn> RecursiveBundleInsert<Error, Conn> for CompletedTableBuilderBundle<T>
 where
     Conn: diesel::connection::LoadConnection,
-    T: BundlableTableExt,
+    T: BundlableTableExt + TableExt,
     T::InsertableModel: FlatInsert<Conn>
-        + TrySetColumns<Error, T::MandatoryTriangularSameAsColumns>
-        + TryMaySetColumns<Error, T::DiscretionaryTriangularSameAsColumns>,
-    T::MandatoryBuilders: InsertTuple<Error, Conn, ModelsTuple = T::MandatoryModels>,
-    T::OptionalDiscretionaryBuilders:
-        InsertOptionTuple<Error, Conn, OptionModelsTuple = T::OptionalDiscretionaryModels>,
+        + TrySetNestedColumns<Error, T::NestedMandatoryTriangularColumns>
+        + TryMaySetNestedColumns<Error, T::NestedDiscretionaryTriangularColumns>,
+    T::MandatoryNestedBuilders: InsertTuple<Error, Conn>,
+    T::OptionalDiscretionaryNestedBuilders: InsertOptionTuple<Error, Conn>,
 {
     fn recursive_bundle_insert(
         mut self,
         conn: &mut Conn,
-    ) -> BuilderResult<<T as TableAddition>::Model, Error> {
-        let mandatory_models: T::MandatoryModels =
-            self.mandatory_associated_builders.insert_tuple(conn)?;
-        let mandatory_primary_keys: T::MandatoryForeignPrimaryKeyTypes =
-            mandatory_models.nest().tuple_get_columns();
+    ) -> BuilderResult<<T as TableExt>::Model, Error> {
+        let mandatory_models: T::NestedMandatoryModels = self
+            .nested_mandatory_associated_builders
+            .insert_tuple(conn)?;
+        let mandatory_primary_keys: T::NestedMandatoryPrimaryKeyTypes =
+            mandatory_models.tuple_get_nested_columns();
         self.insertable_model
-            .try_set_columns(mandatory_primary_keys)
+            .try_set_nested_columns(mandatory_primary_keys)
             .map_err(BuilderError::Validation)?;
-        let discretionary_models: T::OptionalDiscretionaryModels = self
-            .discretionary_associated_builders
+        let discretionary_models: T::OptionalNestedDiscretionaryModels = self
+            .nested_discretionary_associated_builders
             .insert_option_tuple(conn)?;
-        let discretionary_primary_keys: T::OptionalDiscretionaryForeignPrimaryKeyTypes =
-            discretionary_models.nest().tuple_may_get_columns();
+        let discretionary_primary_keys: T::OptionalNestedDiscretionaryPrimaryKeyTypes =
+            discretionary_models.tuple_may_get_nested_columns();
         self.insertable_model
-            .try_may_set_columns(discretionary_primary_keys)
+            .try_may_set_nested_columns(discretionary_primary_keys)
             .map_err(BuilderError::Validation)?;
         Ok(self.insertable_model.flat_insert(conn)?)
     }
 }
 
 /// Trait defining the insertion of a tuple of builders into the database.
-trait InsertTuple<Error, Conn> {
-    /// The type of the models associated with the builders in the tuple.
-    type ModelsTuple;
-
+trait InsertTuple<Error, Conn>: HasNestedTables {
     /// Insert the tuple of builders' data into the database using the provided
     /// connection.
     ///
@@ -203,17 +206,18 @@ trait InsertTuple<Error, Conn> {
     ///
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
-    fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error>;
+    fn insert_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::NestedModels, Error>;
 }
 
 impl<Err, Conn> InsertTuple<Err, Conn> for ()
 where
     Conn: diesel::connection::LoadConnection,
 {
-    type ModelsTuple = ();
-
     #[inline]
-    fn insert_tuple(self, _conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Err> {
+    fn insert_tuple(self, _conn: &mut Conn) -> BuilderResult<(), Err> {
         Ok(())
     }
 }
@@ -223,10 +227,11 @@ where
     Conn: diesel::connection::LoadConnection,
     T: crate::RecursiveBuilderInsert<Error, Conn>,
 {
-    type ModelsTuple = (<<T as HasTable>::Table as TableAddition>::Model,);
-
     #[inline]
-    fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error> {
+    fn insert_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::NestedModels, Error> {
         Ok((self.0.recursive_insert(conn)?,))
     }
 }
@@ -236,29 +241,26 @@ where
     Conn: diesel::connection::LoadConnection,
     Head: crate::RecursiveBuilderInsert<Error, Conn>,
     Tail: InsertTuple<Error, Conn>,
-    (
-        <<Head as HasTable>::Table as TableAddition>::Model,
-        <Tail as InsertTuple<Error, Conn>>::ModelsTuple,
-    ): FlattenNestedTuple,
+    (Head, Tail): HasNestedTables,
+    Self::NestedTables: NestedTables<
+        NestedModels = (
+            <<Head as HasTable>::Table as TableExt>::Model,
+            <Tail::NestedTables as NestedTables>::NestedModels,
+        ),
+    >,
 {
-    type ModelsTuple = <(
-        <<Head as HasTable>::Table as TableAddition>::Model,
-        <Tail as InsertTuple<Error, Conn>>::ModelsTuple,
-    ) as FlattenNestedTuple>::Flattened;
-
     #[inline]
-    fn insert_tuple(self, conn: &mut Conn) -> BuilderResult<Self::ModelsTuple, Error> {
-        Ok((self.0.recursive_insert(conn)?, self.1.insert_tuple(conn)?).flatten())
+    fn insert_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::NestedModels, Error> {
+        Ok((self.0.recursive_insert(conn)?, self.1.insert_tuple(conn)?))
     }
 }
 
 /// Trait defining the insertion of a tuple of optional builders into the
 /// database.
-trait InsertOptionTuple<Error, Conn> {
-    /// The type of the optional models associated with the builders in the
-    /// tuple.
-    type OptionModelsTuple;
-
+trait InsertOptionTuple<Error, Conn>: HasNestedTables {
     /// Insert the tuple of optional builders' data into the database using the
     /// provided connection. If a builder is `None`, the corresponding model
     /// will also be `None`.
@@ -271,30 +273,31 @@ trait InsertOptionTuple<Error, Conn> {
     ///
     /// Returns an error if any insertion fails or if any database constraints
     /// are violated.
-    fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error>;
+    fn insert_option_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::OptionalNestedModels, Error>;
 }
 
-impl<Err, Conn> InsertOptionTuple<Err, Conn> for ()
-where
-    Conn: diesel::connection::LoadConnection,
-{
-    type OptionModelsTuple = ();
-
+impl<Err, Conn> InsertOptionTuple<Err, Conn> for () {
     #[inline]
-    fn insert_option_tuple(self, _conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Err> {
+    fn insert_option_tuple(
+        self,
+        _conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::OptionalNestedModels, Err> {
         Ok(())
     }
 }
 
 impl<Error, Conn, T> InsertOptionTuple<Error, Conn> for (Option<T>,)
 where
-    Conn: diesel::connection::LoadConnection,
-    T: crate::RecursiveBuilderInsert<Error, Conn>,
+    T: RecursiveBuilderInsert<Error, Conn> + HasTable,
 {
-    type OptionModelsTuple = (Option<<<T as HasTable>::Table as TableAddition>::Model>,);
-
     #[inline]
-    fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error> {
+    fn insert_option_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::OptionalNestedModels, Error> {
         Ok((match self.0 {
             Some(builder) => Some(builder.recursive_insert(conn)?),
             None => None,
@@ -304,28 +307,27 @@ where
 
 impl<Error, Conn, Head, Tail> InsertOptionTuple<Error, Conn> for (Option<Head>, Tail)
 where
-    Conn: diesel::connection::LoadConnection,
-    Head: crate::RecursiveBuilderInsert<Error, Conn>,
+    Head: RecursiveBuilderInsert<Error, Conn>,
     Tail: InsertOptionTuple<Error, Conn>,
-    (
-        Option<<<Head as HasTable>::Table as TableAddition>::Model>,
-        <Tail as InsertOptionTuple<Error, Conn>>::OptionModelsTuple,
-    ): FlattenNestedTuple,
+    (Option<Head>, Tail): HasNestedTables,
+    Self::NestedTables: NestedTables<
+        OptionalNestedModels = (
+            Option<<Head::Table as TableExt>::Model>,
+            <Tail::NestedTables as NestedTables>::OptionalNestedModels,
+        ),
+    >,
 {
-    type OptionModelsTuple = <(
-        Option<<<Head as HasTable>::Table as TableAddition>::Model>,
-        <Tail as InsertOptionTuple<Error, Conn>>::OptionModelsTuple,
-    ) as FlattenNestedTuple>::Flattened;
-
     #[inline]
-    fn insert_option_tuple(self, conn: &mut Conn) -> BuilderResult<Self::OptionModelsTuple, Error> {
+    fn insert_option_tuple(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::NestedTables as NestedTables>::OptionalNestedModels, Error> {
         Ok((
             match self.0 {
                 Some(builder) => Some(builder.recursive_insert(conn)?),
                 None => None,
             },
             self.1.insert_option_tuple(conn)?,
-        )
-            .flatten())
+        ))
     }
 }

@@ -199,20 +199,20 @@ fk!((table_b::d_id, table_b::remote_column_d) REFERENCES (table_d::id, table_d::
 fk!((table_b::d_id, table_b::id) REFERENCES (table_d::id, table_d::a_id));
 
 // Define horizontal same-as relationships
-impl diesel_builders::HorizontalSameAsKey for table_b::c_id {
+impl diesel_builders::HorizontalKey for table_b::c_id {
     type HostColumns = (table_b::id, table_b::remote_column_c);
     type ForeignColumns = (table_c::a_id, table_c::column_c);
 }
 
-impl diesel_builders::HorizontalSameAsKey for table_b::d_id {
+impl diesel_builders::HorizontalKey for table_b::d_id {
     type HostColumns = (table_b::id, table_b::remote_column_d);
     type ForeignColumns = (table_d::a_id, table_d::column_d);
 }
 
 #[diesel_builders_macros::bundlable_table]
 impl BundlableTable for table_b::table {
-    type MandatoryTriangularSameAsColumns = (table_b::c_id,);
-    type DiscretionaryTriangularSameAsColumns = (table_b::d_id,);
+    type MandatoryTriangularColumns = (table_b::c_id,);
+    type DiscretionaryTriangularColumns = (table_b::d_id,);
 }
 
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {

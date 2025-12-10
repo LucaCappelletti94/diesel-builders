@@ -4,254 +4,9 @@
 //! for tuples, replacing the complex `macro_rules!` patterns with cleaner
 //! procedural macros.
 
-mod impl_generators;
 mod table_model;
-mod tuple_generator;
 mod utils;
 use proc_macro::TokenStream;
-
-/// Generate `Columns` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_columns();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `NonEmptyProjection` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_non_empty_projection(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_non_empty_projection();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `Tables`, `TableModels`, and `InsertableTableModels` trait
-/// implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_tables();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate column getter/setter trait implementations for all tuple sizes
-#[proc_macro_attribute]
-pub fn impl_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_get_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `MayGetColumns`.
-#[proc_macro_attribute]
-pub fn impl_may_get_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_may_get_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `SetColumns`.
-#[proc_macro_attribute]
-pub fn impl_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_set_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `MaySetColumns`.
-#[proc_macro_attribute]
-pub fn impl_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_may_set_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `TrySetColumns`.
-#[proc_macro_attribute]
-pub fn impl_try_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_try_set_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `TrySetColumnsCollection`.
-#[proc_macro_attribute]
-pub fn impl_try_set_columns_collection(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_try_set_columns_collections_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generates tuple trait implementations for `TryMaySetColumns`.
-#[proc_macro_attribute]
-pub fn impl_try_may_set_columns(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_try_may_set_columns_trait();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `BuildableTables` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_buildable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_buildable_tables();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `BundlableTables` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_bundlable_tables(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_bundlable_tables();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `AncestorsOf` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_ancestors_of(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_ancestors_of();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `HorizontalSameAsKeys` trait implementations for all tuple sizes
-///.
-#[proc_macro_attribute]
-pub fn impl_horizontal_same_as_keys(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_horizontal_same_as_keys();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `TableIndex` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_table_index(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    // (impl_table_index proceeds)
-    let impls = impl_generators::generate_table_index();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `ForeignKey` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_foreign_key(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let impls = impl_generators::generate_foreign_key();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `TryMaySetDiscretionarySameAsColumns` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_try_may_set_discretionary_same_as_columns(
-    _attr: TokenStream,
-    item: TokenStream,
-) -> TokenStream {
-    let impls = impl_generators::generate_try_may_set_discretionary_same_as_columns();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
-
-/// Generate `TrySetMandatorySameAsColumns` trait implementations for all tuple sizes.
-#[proc_macro_attribute]
-pub fn impl_try_set_mandatory_same_as_columns(
-    _attr: TokenStream,
-    item: TokenStream,
-) -> TokenStream {
-    let impls = impl_generators::generate_try_set_mandatory_same_as_columns();
-    let item = proc_macro2::TokenStream::from(item);
-
-    quote::quote! {
-        #item
-        #impls
-    }
-    .into()
-}
 
 /// Derive macro to automatically implement `MayGetColumn` for all fields of a
 /// struct.
@@ -426,7 +181,7 @@ pub fn derive_set_column(input: TokenStream) -> TokenStream {
 
             impl diesel_builders::InsertableTableModel for #struct_name
             where
-                Self: diesel_builders::HasTableAddition<Table: diesel_builders::TableAddition<InsertableModel = Self>>
+                Self: diesel_builders::HasTableExt<Table: diesel_builders::TableExt<InsertableModel = Self>>
             + Default
             + diesel::Insertable<<Self as diesel::associations::HasTable>::Table>
     {
@@ -556,8 +311,8 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
         Some(quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type Idx = diesel_builders::typenum::U0;
-                type MandatoryHorizontalSameAsKeys = ();
-                type DiscretionaryHorizontalSameAsKeys = ();
+                type MandatoryHorizontalKeys = ();
+                type DiscretionaryHorizontalKeys = ();
             }
         })
     });
@@ -573,8 +328,8 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
 
         #[diesel_builders_macros::bundlable_table]
         impl BundlableTable for #table_name::table {
-            type MandatoryTriangularSameAsColumns = ();
-            type DiscretionaryTriangularSameAsColumns = ();
+            type MandatoryTriangularColumns = ();
+            type DiscretionaryTriangularColumns = ();
         }
 
         #(#horizontal_impls)*
@@ -666,7 +421,7 @@ fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<Toke
     // Generate `GetColumn` implementation for each ancestor's primary key
     // for the descendant table model
     let descendant_table_model = quote! {
-        <#table_type as diesel_builders::TableAddition>::Model
+        <#table_type as diesel_builders::TableExt>::Model
     };
     let get_column_impls : Vec<_> = ancestors
         .iter()
@@ -760,8 +515,8 @@ fn extract_tuple_types(ty: &syn::Type) -> syn::Result<Vec<syn::Type>> {
 ///
 /// This macro should be applied to the `impl BundlableTable for table` block.
 /// It will automatically generate index trait implementations for each column
-/// listed in `MandatoryTriangularSameAsColumns` and
-/// `DiscretionaryTriangularSameAsColumns`.
+/// listed in `MandatoryTriangularColumns` and
+/// `DiscretionaryTriangularColumns`.
 #[proc_macro_attribute]
 pub fn bundlable_table(attr: TokenStream, item: TokenStream) -> TokenStream {
     match bundlable_table_impl(attr, item) {
@@ -775,16 +530,16 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
 
     let item_impl: syn::ItemImpl = syn::parse(item)?;
 
-    // Find the MandatoryTriangularSameAsColumns and
-    // DiscretionaryTriangularSameAsColumns associated types
+    // Find the MandatoryTriangularColumns and
+    // DiscretionaryTriangularColumns associated types
     let mut mandatory_columns_type: Option<&syn::Type> = None;
     let mut discretionary_columns_type: Option<&syn::Type> = None;
 
     for item in &item_impl.items {
         if let syn::ImplItem::Type(type_item) = item {
-            if type_item.ident == "MandatoryTriangularSameAsColumns" {
+            if type_item.ident == "MandatoryTriangularColumns" {
                 mandatory_columns_type = Some(&type_item.ty);
-            } else if type_item.ident == "DiscretionaryTriangularSameAsColumns" {
+            } else if type_item.ident == "DiscretionaryTriangularColumns" {
                 discretionary_columns_type = Some(&type_item.ty);
             }
         }
@@ -793,14 +548,14 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
     let mandatory_columns_type = mandatory_columns_type.ok_or_else(|| {
         syn::Error::new_spanned(
             &item_impl,
-            "Missing MandatoryTriangularSameAsColumns associated type",
+            "Missing MandatoryTriangularColumns associated type",
         )
     })?;
 
     let discretionary_columns_type = discretionary_columns_type.ok_or_else(|| {
         syn::Error::new_spanned(
             &item_impl,
-            "Missing DiscretionaryTriangularSameAsColumns associated type",
+            "Missing DiscretionaryTriangularColumns associated type",
         )
     })?;
 
@@ -844,8 +599,8 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
         Some(
             quote! {impl diesel_builders::HorizontalSameAsGroup for <#table_type as diesel::Table>::PrimaryKey {
                 type Idx = diesel_builders::typenum::U0;
-                type MandatoryHorizontalSameAsKeys = (#(#mandatory_columns,)*);
-                type DiscretionaryHorizontalSameAsKeys = (#(#discretionary_columns,)*);
+                type MandatoryHorizontalKeys = (#(#mandatory_columns,)*);
+                type DiscretionaryHorizontalKeys = (#(#discretionary_columns,)*);
             }},
         )
     } else {
@@ -868,8 +623,8 @@ fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<To
 /// columns in a model struct with empty tuples.
 ///
 /// This macro generates `HorizontalSameAsGroup` implementations for each column
-/// in the struct, setting both `MandatoryHorizontalSameAsKeys` and
-/// `DiscretionaryHorizontalSameAsKeys` to `()`.
+/// in the struct, setting both `MandatoryHorizontalKeys` and
+/// `DiscretionaryHorizontalKeys` to `()`.
 #[proc_macro_derive(Decoupled)]
 pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
@@ -930,16 +685,16 @@ pub fn derive_no_horizontal_same_as_group(input: TokenStream) -> TokenStream {
         Some(quote::quote! {
             impl diesel_builders::HorizontalSameAsGroup for #table_name::#field_name {
                 type Idx = diesel_builders::typenum::U0;
-                type MandatoryHorizontalSameAsKeys = ();
-                type DiscretionaryHorizontalSameAsKeys = ();
+                type MandatoryHorizontalKeys = ();
+                type DiscretionaryHorizontalKeys = ();
             }
         })
     });
 
     quote::quote! {
         impl BundlableTable for #table_name::table {
-            type MandatoryTriangularSameAsColumns = ();
-            type DiscretionaryTriangularSameAsColumns = ();
+            type MandatoryTriangularColumns = ();
+            type DiscretionaryTriangularColumns = ();
         }
 
         #(#impls)*

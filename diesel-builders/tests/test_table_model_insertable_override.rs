@@ -3,7 +3,7 @@
 mod common;
 
 use diesel::prelude::*;
-use diesel_builders::{TableAddition, prelude::*};
+use diesel_builders::{TableExt, prelude::*};
 
 diesel::table! {
     /// Override table for testing.
@@ -33,5 +33,5 @@ pub struct MyInsertable {
 #[test]
 fn test_table_model_insertable_override() {
     // If the derive worked, the associated InsertableModel must be MyInsertable.
-    let _v: <override_table::table as TableAddition>::InsertableModel = MyInsertable::default();
+    let _v: <override_table::table as TableExt>::InsertableModel = MyInsertable::default();
 }

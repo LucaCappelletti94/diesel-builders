@@ -1,24 +1,34 @@
-//! Submodule defining and implementing the `Columns` trait.
+//! Submodule defining and implementing traits for Diesel columns.
 
-use crate::{
-    TableAddition, Tables, Typed,
-    tables::{InsertableTableModels, TableModels},
-};
+mod columns_collection;
+mod homogeneously_typed_columns;
+mod homogeneously_typed_nested_columns;
+mod nested_columns;
+mod nested_columns_collection;
+mod non_empty_nested_projection;
+mod non_empty_projection;
+
+pub use columns_collection::ColumnsCollection;
+pub use homogeneously_typed_columns::HomogeneouslyTypedColumns;
+pub use homogeneously_typed_nested_columns::HomogeneouslyTypedNestedColumns;
+pub use nested_columns::NestedColumns;
+pub use nested_columns_collection::NestedColumnsCollection;
+pub use non_empty_nested_projection::NonEmptyNestedProjection;
+pub use non_empty_projection::NonEmptyProjection;
+
+use crate::TypedTuple;
 use tuplities::prelude::*;
 
-#[diesel_builders_macros::impl_columns]
 /// A trait representing a collection of Diesel columns.
-pub trait Columns: TupleDefault + Typed<Type: IntoTupleOption + TupleRef> {
+pub trait Columns: TypedTuple + NestTuple {
     /// Tables to which these columns belong.
-    type Tables: Tables<
-            Models: TableModels<Tables = Self::Tables>,
-            InsertableModels: InsertableTableModels<Tables = Self::Tables>,
-        >;
+    type Tables: NestTuple;
 }
 
-#[diesel_builders_macros::impl_non_empty_projection]
-/// A trait representing a non-empty projection of Diesel columns.
-pub trait NonEmptyProjection: Columns<Type: TupleRefFront> {
-    /// The table associated to this projection.
-    type Table: TableAddition;
+impl<T> Columns for T
+where
+    T: TypedTuple + NestTuple<Nested: NestedColumns>,
+    <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened: NestTuple,
+{
+    type Tables = <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened;
 }

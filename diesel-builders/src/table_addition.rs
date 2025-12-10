@@ -1,23 +1,37 @@
 //! Extended `Table` trait with additional functionality.
 
-use tuplities::prelude::TupleRefFront;
+use tuplities::prelude::{NestTuple, TupleRefFront};
 
 use crate::{
-    Columns, InsertableTableModel, TableModel, Typed, TypedColumn, columns::NonEmptyProjection,
+    Columns, InsertableTableModel, TableModel, TypedColumn,
+    columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
 /// Extended trait for Diesel tables.
-pub trait TableAddition: diesel::Table<AllColumns: Columns, PrimaryKey: Typed> + Default {
+pub trait TableExt: diesel::Table<AllColumns: Columns> + Default {
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The associated insertable model for this table.
     type InsertableModel: InsertableTableModel<Table = Self>;
     /// The primary key columns of this table.
-    type PrimaryKeyColumns: NonEmptyProjection<Table = Self>
+    type PrimaryKeyColumns: NonEmptyProjection<Table = Self, Nested: NonEmptyNestedProjection<Table = Self>>
         + TupleRefFront<Front: TypedColumn<Table = Self>>;
 }
 
-/// Extended trait for Diesel models associated with a table.
-pub trait HasTableAddition: diesel::associations::HasTable<Table: TableAddition> {}
+/// Extended trait for Diesel tables with nested primary key columns.
+pub trait TableExt2: TableExt {
+    /// The nested primary key columns of this table.
+    type NestedPrimaryKeyColumns: NonEmptyNestedProjection<Table = Self>;
+}
 
-impl<T> HasTableAddition for T where T: diesel::associations::HasTable<Table: TableAddition> {}
+impl<T> TableExt2 for T
+where
+    T: TableExt,
+{
+    type NestedPrimaryKeyColumns = <T::PrimaryKeyColumns as NestTuple>::Nested;
+}
+
+/// Extended trait for Diesel models associated with a table.
+pub trait HasTableExt: diesel::associations::HasTable<Table: TableExt> {}
+
+impl<T> HasTableExt for T where T: diesel::associations::HasTable<Table: TableExt> {}

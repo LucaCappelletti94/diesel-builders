@@ -347,7 +347,7 @@ fn generate_triangular_relation_traits(
             #[doc = #set_discretionary_model_method_doc_comment]
             fn #set_field_name_model_method_ref(
                 &mut self,
-                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableAddition>::Model
+                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableExt>::Model
             ) -> &mut Self {
                 use diesel_builders::SetDiscretionaryModelExt;
                 self.set_discretionary_model_ref::<#table_name::#field_name>(value)
@@ -357,7 +357,7 @@ fn generate_triangular_relation_traits(
             #[doc = #set_discretionary_model_method_doc_comment]
             fn #set_field_name_model_method(
                 self,
-                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableAddition>::Model
+                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableExt>::Model
             ) -> Self {
                 use diesel_builders::SetDiscretionaryModelExt;
                 self.set_discretionary_model::<#table_name::#field_name>(value)
@@ -447,8 +447,8 @@ fn generate_triangular_relation_traits(
             #[doc = "Returns an error if the column check constraints are not respected."]
             fn #try_set_field_name_model_method_ref(
                 &mut self,
-                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableAddition>::Model
-            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetDiscretionaryModelExt;
                 self.try_set_discretionary_model_ref::<#table_name::#field_name>(value)
             }
@@ -460,8 +460,8 @@ fn generate_triangular_relation_traits(
             #[doc = "Returns an error if the value cannot be converted to the column type."]
             fn #try_set_field_name_model_method(
                 self,
-                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableAddition>::Model
-            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+                value: &<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetDiscretionaryModelExt;
                 self.try_set_discretionary_model::<#table_name::#field_name>(value)
             }
@@ -487,7 +487,7 @@ fn generate_triangular_relation_traits(
             fn #try_set_field_name_builder_method_ref(
                 &mut self,
                 value: diesel_builders::TableBuilder<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable>
-            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetMandatoryBuilderExt;
                 self.try_set_mandatory_builder_ref::<#table_name::#field_name>(value)
             }
@@ -500,7 +500,7 @@ fn generate_triangular_relation_traits(
             fn #try_set_field_name_builder_method(
                 self,
                 value: diesel_builders::TableBuilder<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable>
-            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetMandatoryBuilderExt;
                 self.try_set_mandatory_builder::<#table_name::#field_name>(value)
             }
@@ -526,7 +526,7 @@ fn generate_triangular_relation_traits(
             fn #try_set_field_name_builder_method_ref(
                 &mut self,
                 value: diesel_builders::TableBuilder<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable>
-            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+            ) -> Result<&mut Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetDiscretionaryBuilderExt;
                 self.try_set_discretionary_builder_ref::<#table_name::#field_name>(value)
             }
@@ -539,7 +539,7 @@ fn generate_triangular_relation_traits(
             fn #try_set_field_name_builder_method(
                 self,
                 value: diesel_builders::TableBuilder<<#table_name::#field_name as diesel_builders::SingletonForeignKey>::ReferencedTable>
-            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableAddition>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
+            ) -> Result<Self, <<<Self as diesel::associations::HasTable>::Table as diesel_builders::TableExt>::InsertableModel as diesel_builders::InsertableTableModel>::Error> {
                 use diesel_builders::TrySetDiscretionaryBuilderExt;
                 self.try_set_discretionary_builder::<#table_name::#field_name>(value)
             }
