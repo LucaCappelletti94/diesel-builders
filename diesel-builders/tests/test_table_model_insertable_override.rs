@@ -19,7 +19,7 @@ diesel::table! {
 #[diesel(table_name = override_table)]
 pub struct OverrideModel {
     /// ID field.
-    pub id: i32,
+    id: i32,
 }
 
 /// Custom insertable model.
@@ -27,7 +27,7 @@ pub struct OverrideModel {
 #[diesel(table_name = override_table)]
 pub struct MyInsertable {
     /// ID field.
-    pub id: Option<i32>,
+    id: Option<i32>,
 }
 
 #[test]

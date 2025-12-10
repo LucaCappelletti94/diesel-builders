@@ -70,9 +70,9 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 /// Model for table A.
 pub struct TableA {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Column A value.
-    pub column_a: String,
+    column_a: String,
 }
 
 #[derive(
@@ -94,7 +94,7 @@ pub struct TableA {
 /// Insertable model for table A.
 pub struct NewTableA {
     /// Column A value.
-    pub column_a: Option<String>,
+    column_a: Option<String>,
 }
 
 // Table C models
@@ -103,11 +103,11 @@ pub struct NewTableA {
 /// Model for table C.
 pub struct TableC {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Foreign key to table A.
-    pub a_id: i32,
+    a_id: i32,
     /// Column C value.
-    pub column_c: Option<String>,
+    column_c: Option<String>,
 }
 
 #[derive(
@@ -124,14 +124,15 @@ pub struct TableC {
     SetColumn,
     HasTable,
 )]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[allow(clippy::option_option)]
 pub struct NewTableC {
     /// Foreign key to table A.
-    pub a_id: Option<i32>,
+    a_id: Option<i32>,
     /// Column C value.
-    pub column_c: Option<Option<String>>,
+    column_c: Option<Option<String>>,
 }
 
 // Table B models
@@ -140,13 +141,13 @@ pub struct NewTableC {
 /// Model for table B.
 pub struct TableB {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Foreign key to table A.
-    pub c_id: i32,
+    c_id: i32,
     /// Column B value.
-    pub column_b: String,
+    column_b: String,
     /// The remote `column_c` value from table C that B references via `c_id`.
-    pub remote_column_c: Option<String>,
+    remote_column_c: Option<String>,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -172,18 +173,19 @@ impl From<Infallible> for ErrorB {
 #[derive(
     Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Insertable, MayGetColumn, HasTable,
 )]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[allow(clippy::option_option)]
 pub struct NewTableB {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// Foreign key to table C.
-    pub c_id: Option<i32>,
+    c_id: Option<i32>,
     /// Column B value.
-    pub column_b: Option<String>,
+    column_b: Option<String>,
     /// The remote `column_c` value from table C that B references via `c_id`.
-    pub remote_column_c: Option<Option<String>>,
+    remote_column_c: Option<Option<String>>,
 }
 
 impl TrySetColumn<table_b::id> for NewTableB {
@@ -306,16 +308,22 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .column_a("Value A")
         .insert(&mut conn)?;
 
-    assert_eq!(a.column_a, "Value A");
+    assert_eq!(a.get_column::<table_a::column_a>(), "Value A");
 
     // Insert into table C (references A)
     let c = table_c::table::builder()
-        .a_id(a.id)
+        .a_id(a.get_column::<table_a::id>())
         .column_c(Some("Value C".to_owned()))
         .insert(&mut conn)?;
 
-    assert_eq!(c.column_c.as_deref(), Some("Value C"));
-    assert_eq!(c.a_id, a.id);
+    assert_eq!(
+        c.get_column::<table_c::column_c>().as_deref(),
+        Some("Value C")
+    );
+    assert_eq!(
+        c.get_column::<table_c::a_id>(),
+        a.get_column::<table_a::id>()
+    );
 
     let mut c_builder = table_c::table::builder();
     c_builder.column_c_ref(Some("Value C".to_owned()));
@@ -342,12 +350,24 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let b = b_builder.try_c(c_builder)?.insert(&mut conn)?;
 
     let associated_a: TableA = b.id_fk(&mut conn)?;
-    assert_eq!(associated_a.column_a, "Value A for B");
+    assert_eq!(
+        associated_a.get_column::<table_a::column_a>(),
+        "Value A for B"
+    );
 
     let associated_c: TableC = b.c(&mut conn)?;
-    assert_eq!(associated_c.column_c.as_deref(), Some("Value C"));
-    assert_eq!(associated_c.a_id, b.id);
-    assert_eq!(associated_c.a_id, associated_a.id);
+    assert_eq!(
+        associated_c.get_column::<table_c::column_c>().as_deref(),
+        Some("Value C")
+    );
+    assert_eq!(
+        associated_c.get_column::<table_c::a_id>(),
+        b.get_column::<table_b::id>()
+    );
+    assert_eq!(
+        associated_c.get_column::<table_c::a_id>(),
+        associated_a.get_column::<table_a::id>()
+    );
 
     let _ = TableBuilderBundle::<table_b::table>::table();
     let _ = TableBuilder::<table_b::table>::table();

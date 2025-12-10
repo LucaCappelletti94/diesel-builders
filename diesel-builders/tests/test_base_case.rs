@@ -36,8 +36,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     let animal = builder.insert(&mut conn)?;
 
-    assert_eq!(animal.name, "Max");
-    assert_eq!(animal.description, None);
+    assert_eq!(animal.name(), "Max");
+    assert!(animal.description().is_none());
 
     // Test GetColumn derive - type-safe column access on models
     assert_eq!(animal.name(), "Max");
@@ -53,7 +53,9 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     assert_eq!(
-        animal_with_desc.description.as_deref(),
+        animal_with_desc
+            .get_column::<animals::description>()
+            .as_deref(),
         Some("A friendly dog")
     );
 
@@ -63,11 +65,11 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .try_description(None)?
         .insert(&mut conn)?;
 
-    assert_eq!(animal_no_desc.description, None);
+    assert_eq!(animal_no_desc.get_column::<animals::description>(), None);
 
     // We attempt to query the inserted animal to ensure everything worked correctly.
     let queried_animal: Animal = animals::table
-        .filter(animals::id.eq(animal.id))
+        .filter(animals::id.eq(animal.id()))
         .first(&mut conn)?;
     assert_eq!(animal, queried_animal);
 

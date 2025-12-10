@@ -33,11 +33,11 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .try_name("Generic Animal")?
         .insert(&mut conn)?;
 
-    assert_eq!(animal.name, "Generic Animal");
+    assert_eq!(animal.name(), "Generic Animal");
 
     // Test GetColumn derive - accessing animal properties type-safely
-    assert_eq!(animal.id(), &animal.id);
-    assert_eq!(animal.name(), &animal.name);
+    assert_eq!(animal.id(), animal.id());
+    assert_eq!(animal.name(), animal.name());
 
     // Insert into dogs table (extends animals)
     // Using helper trait methods for fluent API
@@ -46,10 +46,10 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .breed("Golden Retriever")
         .insert(&mut conn)?;
 
-    assert_eq!(dog.breed, "Golden Retriever");
+    assert_eq!(dog.breed(), "Golden Retriever");
 
     // Test GetColumn derive on descendant table
-    assert_eq!(dog.id(), &dog.id);
+    assert_eq!(dog.id(), dog.id());
     assert_eq!(dog.breed(), "Golden Retriever");
 
     // Insert into cats table (extends animals)
@@ -64,7 +64,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     let cat: Cat = cat_builder.insert(&mut conn)?;
 
-    assert_eq!(cat.color, "Orange");
+    assert_eq!(cat.color(), "Orange");
 
     // Insert into pets table (extends both dogs and cats)
     let pet_builder = pets::table::builder()
@@ -85,24 +85,24 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     let pet: Pet = pet_builder.insert(&mut conn)?;
 
-    assert_eq!(pet.owner_name, "Alice Smith");
+    assert_eq!(pet.owner_name(), "Alice Smith");
 
     // Test TableModel derive - using IndexedColumn implementations
-    assert_eq!(pet.id(), &pet.id);
-    assert_eq!(pet.get_column_ref::<animals::id>(), &pet.id);
-    assert_eq!(pet.get_column_ref::<dogs::id>(), &pet.id);
-    assert_eq!(pet.get_column_ref::<cats::id>(), &pet.id);
+    assert_eq!(pet.id(), pet.id());
+    assert_eq!(pet.get_column_ref::<animals::id>(), pet.id());
+    assert_eq!(pet.get_column_ref::<dogs::id>(), pet.id());
+    assert_eq!(pet.get_column_ref::<cats::id>(), pet.id());
 
     // Query to verify relationships
     let queried_animal: Animal = animals::table
-        .filter(animals::id.eq(pet.id))
+        .filter(animals::id.eq(pet.id()))
         .first(&mut conn)?;
-    assert_eq!(queried_animal.name, "Buddy the Pet");
-    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(pet.id)).first(&mut conn)?;
-    assert_eq!(queried_dog.breed, "Labrador");
-    let queried_cat: Cat = cats::table.filter(cats::id.eq(pet.id)).first(&mut conn)?;
-    assert_eq!(queried_cat.color, "Black");
-    let queried_pet: Pet = pets::table.filter(pets::id.eq(pet.id)).first(&mut conn)?;
+    assert_eq!(queried_animal.name(), "Buddy the Pet");
+    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(pet.id())).first(&mut conn)?;
+    assert_eq!(queried_dog.breed(), "Labrador");
+    let queried_cat: Cat = cats::table.filter(cats::id.eq(pet.id())).first(&mut conn)?;
+    assert_eq!(queried_cat.color(), "Black");
+    let queried_pet: Pet = pets::table.filter(pets::id.eq(pet.id())).first(&mut conn)?;
     assert_eq!(queried_pet, pet);
 
     Ok(())

@@ -71,9 +71,9 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d
 /// Model for table A.
 pub struct TableA {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Column A value.
-    pub column_a: String,
+    column_a: String,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
@@ -82,7 +82,7 @@ pub struct TableA {
 /// Insertable model for table A.
 pub struct NewTableA {
     /// Column A value.
-    pub column_a: Option<String>,
+    column_a: Option<String>,
 }
 
 // Table C models
@@ -91,22 +91,23 @@ pub struct NewTableA {
 /// Model for table C.
 pub struct TableC {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Foreign key to table A.
-    pub a_id: i32,
+    a_id: i32,
     /// Column C value.
-    pub column_c: Option<String>,
+    column_c: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_c)]
 /// Insertable model for table C.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[allow(clippy::option_option)]
 pub struct NewTableC {
     /// Foreign key to table A.
-    pub a_id: Option<i32>,
+    a_id: Option<i32>,
     /// Column C value.
-    pub column_c: Option<Option<String>>,
+    column_c: Option<Option<String>>,
 }
 
 // Table D models
@@ -115,22 +116,23 @@ pub struct NewTableC {
 /// Model for table D.
 pub struct TableD {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Foreign key to table A.
-    pub a_id: i32,
+    a_id: i32,
     /// Column D value.
-    pub column_d: Option<String>,
+    column_d: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_d)]
 /// Insertable model for table D.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[allow(clippy::option_option)]
 pub struct NewTableD {
     /// Foreign key to table A.
-    pub a_id: Option<i32>,
+    a_id: Option<i32>,
     /// Column D value.
-    pub column_d: Option<Option<String>>,
+    column_d: Option<Option<String>>,
 }
 
 // Table B models
@@ -139,17 +141,17 @@ pub struct NewTableD {
 /// Model for table B.
 pub struct TableB {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// Foreign key to table C.
-    pub c_id: i32,
+    c_id: i32,
     /// Foreign key to table D.
-    pub d_id: i32,
+    d_id: i32,
     /// Column B value.
-    pub column_b: String,
+    column_b: String,
     /// Remote column C value.
-    pub remote_column_c: Option<String>,
+    remote_column_c: Option<String>,
     /// Remote column D value.
-    pub remote_column_d: Option<String>,
+    remote_column_d: Option<String>,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -159,22 +161,23 @@ impl Descendant for table_b::table {
 }
 
 #[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[diesel(table_name = table_b)]
 /// Insertable model for table B.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[allow(clippy::option_option)]
 pub struct NewTableB {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// Foreign key to table C.
-    pub c_id: Option<i32>,
+    c_id: Option<i32>,
     /// Foreign key to table D.
-    pub d_id: Option<i32>,
+    d_id: Option<i32>,
     /// Column B value.
-    pub column_b: Option<String>,
+    column_b: Option<String>,
     /// Remote column C value.
-    pub remote_column_c: Option<Option<String>>,
+    remote_column_c: Option<Option<String>>,
     /// Remote column D value.
-    pub remote_column_d: Option<Option<String>>,
+    remote_column_d: Option<Option<String>>,
 }
 
 // Declare singleton foreign keys
@@ -275,19 +278,37 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
         .d(table_d::table::builder().column_d("Value D".to_owned()))
         .insert(&mut conn)?;
 
-    assert_eq!(b.column_b, "Value B");
-    assert_eq!(b.remote_column_c.as_deref(), Some("Value C"));
-    assert_eq!(b.remote_column_d.as_deref(), Some("Value D"));
+    assert_eq!(b.get_column::<table_b::column_b>(), "Value B");
+    assert_eq!(
+        b.get_column::<table_b::remote_column_c>().as_deref(),
+        Some("Value C")
+    );
+    assert_eq!(
+        b.get_column::<table_b::remote_column_d>().as_deref(),
+        Some("Value D")
+    );
 
     // Verify associated C
     let c: TableC = b.c(&mut conn)?;
-    assert_eq!(c.a_id, b.id);
-    assert_eq!(c.column_c.as_deref(), Some("Value C"));
+    assert_eq!(
+        c.get_column::<table_c::a_id>(),
+        b.get_column::<table_b::id>()
+    );
+    assert_eq!(
+        c.get_column::<table_c::column_c>().as_deref(),
+        Some("Value C")
+    );
 
     // Verify associated D
     let d: TableD = b.d(&mut conn)?;
-    assert_eq!(d.a_id, b.id);
-    assert_eq!(d.column_d.as_deref(), Some("Value D"));
+    assert_eq!(
+        d.get_column::<table_d::a_id>(),
+        b.get_column::<table_b::id>()
+    );
+    assert_eq!(
+        d.get_column::<table_d::column_d>().as_deref(),
+        Some("Value D")
+    );
 
     Ok(())
 }
@@ -306,15 +327,30 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use GetForeignExt directly for primary-key based foreign key
     let c_pk: TableC = b.get_foreign::<(table_b::c_id,), (table_c::id,)>(&mut conn)?;
-    assert_eq!(c_pk.id, b.c_id);
-    assert_eq!(c_pk.column_c.as_deref(), Some("Value C"));
+    assert_eq!(
+        c_pk.get_column::<table_c::id>(),
+        b.get_column::<table_b::c_id>()
+    );
+    assert_eq!(
+        c_pk.get_column::<table_c::column_c>().as_deref(),
+        Some("Value C")
+    );
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
     let c_horizontal: TableC =
         b.get_foreign::<(table_b::c_id, table_b::id), (table_c::id, table_c::a_id)>(&mut conn)?;
-    assert_eq!(c_horizontal.id, b.c_id);
-    assert_eq!(c_horizontal.a_id, b.id);
-    assert_eq!(c_horizontal.column_c.as_deref(), Some("Value C"));
+    assert_eq!(
+        c_horizontal.get_column::<table_c::id>(),
+        b.get_column::<table_b::c_id>()
+    );
+    assert_eq!(
+        c_horizontal.get_column::<table_c::a_id>(),
+        b.get_column::<table_b::id>()
+    );
+    assert_eq!(
+        c_horizontal.get_column::<table_c::column_c>().as_deref(),
+        Some("Value C")
+    );
 
     Ok(())
 }
@@ -329,7 +365,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
         .insert(&mut conn)?;
 
     let table_d = table_d::table::builder()
-        .a_id(table_a.id)
+        .a_id(table_a.get_column::<table_a::id>())
         .column_d("Value D".to_owned())
         .insert(&mut conn)?;
 

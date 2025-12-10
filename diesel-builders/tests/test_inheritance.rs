@@ -25,12 +25,12 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     let loaded_animal: Animal = animals::table
-        .filter(animals::id.eq(animal.id))
+        .filter(animals::id.eq(animal.id()))
         .first(&mut conn)?;
-    assert_eq!(loaded_animal, animal);
+    assert_eq!(loaded_animal, animal.clone());
 
     // Test TableModel derive - accessing primary key via GetColumn
-    assert_eq!(loaded_animal.id(), &animal.id);
+    assert_eq!(loaded_animal.id(), animal.id());
 
     // Now create a dog (which also creates an animal entry via inheritance)
     let dog_builder = dogs::table::builder().try_name("Max")?;
@@ -44,18 +44,18 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     let dog = dog_builder.insert(&mut conn)?;
 
-    assert_eq!(dog.breed, "Golden Retriever");
+    assert_eq!(dog.breed(), "Golden Retriever");
 
     // Verify the dog can be queried
-    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
+    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
     assert_eq!(dog, queried_dog);
 
     let loaded_animal: Animal = dog.id_fk(&mut conn)?;
 
-    let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id)).first(&mut conn)?;
+    let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
 
     // Test GetColumn derive on both parent and child models
-    assert_eq!(loaded_animal.id(), &dog.id);
+    assert_eq!(loaded_animal.id(), dog.id());
     assert_eq!(loaded_animal.name(), "Max");
     assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
@@ -84,22 +84,22 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 
     let cat = cat_builder.insert(&mut conn)?;
 
-    assert_eq!(cat.color, "Orange");
+    assert_eq!(cat.color(), "Orange");
 
     // Verify the cat can be queried
     let queried_cat: common::Cat = common::cats::table
-        .filter(common::cats::id.eq(cat.id))
+        .filter(common::cats::id.eq(cat.id()))
         .first(&mut conn)?;
     assert_eq!(cat, queried_cat);
 
     let loaded_animal: Animal = cat.id_fk(&mut conn)?;
 
     let loaded_cat: common::Cat = common::cats::table
-        .filter(common::cats::id.eq(cat.id))
+        .filter(common::cats::id.eq(cat.id()))
         .first(&mut conn)?;
 
     // Test GetColumn derive - type-safe column access on both models
-    assert_eq!(loaded_animal.id(), &cat.id);
+    assert_eq!(loaded_animal.id(), cat.id());
     assert_eq!(loaded_animal.name(), "Whiskers");
     assert_eq!(loaded_cat.color(), "Orange");
     assert_eq!(loaded_cat, cat);

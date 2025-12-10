@@ -362,7 +362,7 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     let discretionary = discretionary_table::table::builder()
-        .a_id(other_parent.id)
+        .a_id(other_parent.get_column::<parent_table::id>())
         .insert(&mut conn)
         .unwrap();
 
@@ -380,6 +380,6 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     // Validate insertion
-    assert_eq!(child.payload, "payload");
+    assert_eq!(child.get_column::<child_table::payload>(), "payload");
     Ok(())
 }

@@ -51,11 +51,11 @@ diesel::table! {
 /// Model for the animals table.
 pub struct Animal {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The name of the animal.
-    pub name: String,
+    name: String,
     /// Optional description.
-    pub description: Option<String>,
+    description: Option<String>,
 }
 
 #[derive(
@@ -67,9 +67,9 @@ pub struct Animal {
 /// Insertable model for the animals table.
 pub struct NewAnimal {
     /// The name of the animal.
-    pub name: Option<String>,
+    name: Option<String>,
     /// Optional description (nullable column uses Option<Option<T>>).
-    pub description: Option<Option<String>>,
+    description: Option<Option<String>>,
 }
 
 /// Error variants for `NewAnimal` validation.
@@ -162,9 +162,9 @@ diesel::table! {
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The breed of the dog.
-    pub breed: String,
+    breed: String,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -192,9 +192,9 @@ impl Descendant for dogs::table {
 /// Insertable model for the dogs table.
 pub struct NewDog {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// The breed of the dog.
-    pub breed: Option<String>,
+    breed: Option<String>,
 }
 
 /// SQL to create the dogs table.
@@ -228,9 +228,9 @@ diesel::table! {
 /// Model for the cats table.
 pub struct Cat {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The color of the cat.
-    pub color: String,
+    color: String,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -247,9 +247,9 @@ impl Descendant for cats::table {
 /// Insertable model for the cats table.
 pub struct NewCat {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// The color of the cat.
-    pub color: Option<String>,
+    color: Option<String>,
 }
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
@@ -321,9 +321,9 @@ diesel::table! {
 /// Model for the puppies table.
 pub struct Puppy {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The age in months of the puppy.
-    pub age_months: i32,
+    age_months: i32,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -351,9 +351,9 @@ impl Descendant for puppies::table {
 /// Insertable model for the puppies table.
 pub struct NewPuppy {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// The age in months of the puppy.
-    pub age_months: Option<i32>,
+    age_months: Option<i32>,
 }
 
 /// SQL to create the puppies table.
@@ -384,9 +384,9 @@ diesel::table! {
 /// Model for the pets table.
 pub struct Pet {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The owner name of the pet.
-    pub owner_name: String,
+    owner_name: String,
 }
 
 #[diesel_builders_macros::descendant_of]
@@ -414,9 +414,9 @@ impl Descendant for pets::table {
 /// Insertable model for the pets table.
 pub struct NewPet {
     /// Primary key.
-    pub id: Option<i32>,
+    id: Option<i32>,
     /// The owner name of the pet.
-    pub owner_name: Option<String>,
+    owner_name: Option<String>,
 }
 
 /// SQL to create the pets table (for DAG tests).

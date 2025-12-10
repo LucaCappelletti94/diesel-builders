@@ -28,11 +28,11 @@ diesel::table! {
 /// A user role assignment model.
 pub struct UserRole {
     /// The ID of the user.
-    pub user_id: i32,
+    user_id: i32,
     /// The ID of the role.
-    pub role_id: i32,
+    role_id: i32,
     /// When the role was assigned.
-    pub assigned_at: String,
+    assigned_at: String,
 }
 
 #[derive(
@@ -54,11 +54,11 @@ pub struct UserRole {
 /// A new user role model for insertions.
 pub struct NewUserRole {
     /// The ID of the user.
-    pub user_id: Option<i32>,
+    user_id: Option<i32>,
     /// The ID of the role.
-    pub role_id: Option<i32>,
+    role_id: Option<i32>,
     /// When the role was assigned.
-    pub assigned_at: Option<String>,
+    assigned_at: Option<String>,
 }
 
 #[test]
@@ -114,9 +114,9 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     let user_role = builder.insert(&mut conn)?;
 
-    assert_eq!(user_role.user_id, 1);
-    assert_eq!(user_role.role_id, 10);
-    assert_eq!(user_role.assigned_at, "2025-01-01");
+    assert_eq!(user_role.user_id(), &1);
+    assert_eq!(user_role.role_id(), &10);
+    assert_eq!(user_role.assigned_at(), "2025-01-01");
 
     assert_eq!(user_role.user_id(), &1);
     assert_eq!(user_role.role_id(), &10);
@@ -124,8 +124,8 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     // We attempt to query the inserted user role to ensure everything worked
     let queried_user_role: UserRole = user_roles::table
-        .filter(user_roles::user_id.eq(user_role.user_id))
-        .filter(user_roles::role_id.eq(user_role.role_id))
+        .filter(user_roles::user_id.eq(user_role.user_id()))
+        .filter(user_roles::role_id.eq(user_role.role_id()))
         .first(&mut conn)?;
     assert_eq!(user_role, queried_user_role);
 
