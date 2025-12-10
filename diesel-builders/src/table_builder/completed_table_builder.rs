@@ -27,6 +27,10 @@ pub struct RecursiveTableBuilder<T: diesel::Table, Depth, NestedBundles> {
 }
 
 impl<T: diesel::Table, Depth, NestedBundles> RecursiveTableBuilder<T, Depth, NestedBundles> {
+    /// Create a new `RecursiveTableBuilder` from the provided nested builder bundles.
+    ///
+    /// This is a private convenience constructor used during `TryFrom` conversions
+    /// when assembling a builder from its nested parts.
     fn from_nested_bundles(nested_bundles: NestedBundles) -> Self {
         RecursiveTableBuilder {
             nested_bundles,

@@ -7,11 +7,11 @@ use tuplities::prelude::*;
 pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
     /// The associated nested models.
     type NestedModels: IntoNestedTupleOption<IntoOptions = Self::OptionalNestedModels>
-        + FlattenNestedTuple<Flattened: IntoTupleOption>
+        + FlattenNestedTuple
         + NestedTableModels<NestedTables = Self>;
     /// The associated nested optional models.
     type OptionalNestedModels: NestedTupleOption<Transposed = Self::NestedModels>
-        + FlattenNestedTuple<Flattened: TupleOption>
+        + FlattenNestedTuple
         + HasNestedTables<NestedTables = Self>
         + Default;
     /// The associated nested insertable models.
@@ -44,10 +44,10 @@ where
     Head: TableExt,
     Tail: NestedTables,
     (Head, Tail): FlattenNestedTuple<Flattened: NestTuple<Nested = (Head, Tail)>>,
-    (Head::Model, Tail::NestedModels): NestedTableModels<Flattened: IntoTupleOption, NestedTables = Self>
+    (Head::Model, Tail::NestedModels): NestedTableModels<NestedTables = Self>
         + IntoNestedTupleOption<IntoOptions = (Option<Head::Model>, Tail::OptionalNestedModels)>,
-    (Option<Head::Model>, Tail::OptionalNestedModels): FlattenNestedTuple<Flattened: TupleOption>
-        + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
+    (Option<Head::Model>, Tail::OptionalNestedModels):
+        FlattenNestedTuple + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
     (Head::InsertableModel, Tail::NestedInsertableModels): FlattenNestedTuple,
     (
         <Head::PrimaryKeyColumns as NestTuple>::Nested,

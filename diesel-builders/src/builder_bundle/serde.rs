@@ -15,8 +15,15 @@ where
     {
         #[derive(serde::Serialize)]
         struct TableBuilderBundleHelper<A, B, C> {
+            /// Owned representation of the insertable model contained in the
+            /// bundle, used for serialization.
             insertable_model: A,
+            /// Optional nested mandatory associated builders; serialized as a
+            /// structure matching the insertable model's nested builder layout.
             nested_mandatory_associated_builders: B,
+            /// Optional nested discretionary associated builders; serialized as
+            /// a structure matching the insertable model's nested builder
+            /// layout.
             nested_discretionary_associated_builders: C,
         }
         let helper = TableBuilderBundleHelper {
@@ -41,8 +48,14 @@ where
     {
         #[derive(serde::Deserialize)]
         struct TableBuilderBundleHelper<A, B, C> {
+            /// Owned representation of the insertable model contained in the
+            /// bundle, used for deserialization.
             insertable_model: A,
+            /// Optional nested mandatory associated builders; deserialized to
+            /// match the insertable model's nested builder layout.
             nested_mandatory_associated_builders: B,
+            /// Optional nested discretionary associated builders; deserialized
+            /// to match the insertable model's nested builder layout.
             nested_discretionary_associated_builders: C,
         }
 

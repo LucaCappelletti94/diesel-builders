@@ -371,6 +371,14 @@ pub fn descendant_of(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[allow(clippy::too_many_lines)]
+/// Implementation for the `#[descendant_of]` attribute macro.
+///
+/// This function parses a `impl` block for a table type and generates
+/// the `Descendant`, `DescendantOf`, `AncestorOfIndex` and `GetColumn`
+/// implementations required by the `diesel-builders` runtime. It inspects the
+/// `Ancestors` and `Root` associated types defined in the `impl` block, and
+/// emits the boilerplate implementations that allow composition of nested
+/// builder operations.
 fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     use quote::quote;
 
@@ -525,6 +533,14 @@ pub fn bundlable_table(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
 }
 
+/// Implementation for the `#[bundlable_table]` attribute macro.
+///
+/// This function parses a `impl BundlableTable for <table>` block, extracts the
+/// `MandatoryTriangularColumns` and `DiscretionaryTriangularColumns` associated
+/// types, and generates the `MandatorySameAsIndex` and `DiscretionarySameAsIndex`
+/// trait implementations for each column referenced. When the table has
+/// non-empty triangular columns, a `HorizontalSameAsGroup` impl is generated
+/// for the primary key to group them together.
 fn bundlable_table_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
     use quote::quote;
 
@@ -716,8 +732,13 @@ pub fn fk(input: TokenStream) -> TokenStream {
         Token, Type,
     };
 
+    /// Parsed representation of a `FOREIGN KEY` specification provided to
+    /// the `fk!()` macro. `host_columns` are the columns on the local table,
+    /// while `ref_columns` are the corresponding columns on the foreign table.
     struct ForeignKey {
+        /// The host/source columns that form the foreign key on the local table.
         host_columns: Punctuated<Type, Token![,]>,
+        /// The referenced/target columns that the host columns point to.
         ref_columns: Punctuated<Type, Token![,]>,
     }
 
@@ -786,7 +807,10 @@ pub fn index(input: TokenStream) -> TokenStream {
         Token, Type,
     };
 
+    /// Parsed representation of an `INDEX` macro invocation, containing the
+    /// columns that form the index definition.
     struct TableIndex {
+        /// The columns included in the index.
         columns: Punctuated<Type, Token![,]>,
     }
 

@@ -8,12 +8,12 @@ use crate::{BuildableTable, HasNestedTables, TableBuilder, tables::NestedTables}
 pub trait NestedBuildableTables: NestedTables {
     /// The builders associated with the buildable tables.
     type NestedBuilders: IntoNestedTupleOption<IntoOptions = Self::NestedOptionalBuilders>
-        + FlattenNestedTuple<Flattened: IntoTupleOption>
+        + FlattenNestedTuple
         + HasNestedTables<NestedTables = Self>
         + Default;
     /// The optional builders associated with the buildable tables.
     type NestedOptionalBuilders: NestedTupleOption<Transposed = Self::NestedBuilders>
-        + FlattenNestedTuple<Flattened: TupleOption>
+        + FlattenNestedTuple
         + HasNestedTables<NestedTables = Self>
         + Default;
 }
@@ -36,9 +36,8 @@ where
     Thead: BuildableTable,
     Ttail: NestedBuildableTables,
     (Thead, Ttail): NestedTables,
-    (TableBuilder<Thead>, Ttail::NestedBuilders): FlattenNestedTuple<Flattened: IntoTupleOption>,
-    (Option<TableBuilder<Thead>>, Ttail::NestedOptionalBuilders):
-        FlattenNestedTuple<Flattened: TupleOption>,
+    (TableBuilder<Thead>, Ttail::NestedBuilders): FlattenNestedTuple,
+    (Option<TableBuilder<Thead>>, Ttail::NestedOptionalBuilders): FlattenNestedTuple,
 {
     type NestedBuilders = (TableBuilder<Thead>, Ttail::NestedBuilders);
     type NestedOptionalBuilders = (Option<TableBuilder<Thead>>, Ttail::NestedOptionalBuilders);

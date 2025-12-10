@@ -37,7 +37,6 @@ thiserror = "2.0"
 typenum = "1"
 tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
 	"flatten-nest",
-	"option",
 	"pop-front",
 	"push-back",
 	"push-front",
@@ -78,6 +77,7 @@ todo = "deny"
 as_conversions = "deny"
 as_pointer_underscore = "deny"
 as_underscore = "deny"
+missing_docs_in_private_items = "deny"
 unimplemented = "deny"
 assertions_on_result_states = "deny"
 big_endian_bytes = "deny"
