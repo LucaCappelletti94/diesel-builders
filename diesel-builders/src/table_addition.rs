@@ -1,9 +1,9 @@
 //! Extended `Table` trait with additional functionality.
 
-use tuplities::prelude::{NestTuple, TupleRefFront};
+use tuplities::prelude::NestTuple;
 
 use crate::{
-    Columns, InsertableTableModel, TableModel, TypedColumn,
+    Columns, InsertableTableModel, TableModel,
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
@@ -14,8 +14,7 @@ pub trait TableExt: diesel::Table<AllColumns: Columns> + Default {
     /// The associated insertable model for this table.
     type InsertableModel: InsertableTableModel<Table = Self>;
     /// The primary key columns of this table.
-    type PrimaryKeyColumns: NonEmptyProjection<Table = Self, Nested: NonEmptyNestedProjection<Table = Self>>
-        + TupleRefFront<Front: TypedColumn<Table = Self>>;
+    type PrimaryKeyColumns: NonEmptyProjection<Table = Self, Nested: NonEmptyNestedProjection<Table = Self>>;
 }
 
 /// Extended trait for Diesel tables with nested primary key columns.

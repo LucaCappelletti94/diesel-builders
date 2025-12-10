@@ -45,15 +45,7 @@ pub trait HorizontalSameAsColumns<
     Key: HorizontalKey<HostColumns = HostColumns, ForeignColumns = Self>,
     HostColumns: Columns,
 >:
-    NonEmptyProjection<
-        Table = Key::ReferencedTable,
-        TupleType = <HostColumns as TypedTuple>::TupleType,
-    > + TuplePopFront<
-        Front: TypedColumn<
-            Type = <<<Key as Column>::Table as Table>::PrimaryKey as Typed>::Type,
-            Table = Key::ReferencedTable,
-        >,
-    >
+    NonEmptyProjection<Table = Key::ReferencedTable, TupleType = <HostColumns as TypedTuple>::TupleType>
 {
 }
 
@@ -64,11 +56,6 @@ where
     ForeignColumns: NonEmptyProjection<
             Table = Key::ReferencedTable,
             TupleType = <HostColumns as TypedTuple>::TupleType,
-        > + TuplePopFront<
-            Front: TypedColumn<
-                Type = <<<Key as Column>::Table as Table>::PrimaryKey as Typed>::Type,
-                Table = Key::ReferencedTable,
-            >,
         >,
 {
 }
@@ -79,8 +66,7 @@ pub trait HorizontalKey:
 {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: NonEmptyProjection<Table = Self::Table>
-        + TuplePopFront<Front = <<Self as Column>::Table as Table>::PrimaryKey>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
     type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns>;

@@ -1,6 +1,6 @@
 //! Trait for fallibly setting multiple nested columns.
 use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
-use tuplities::prelude::TuplePopFront;
+use tuplities::prelude::NestedTuplePopFront;
 
 /// Trait indicating a builder can fallibly set multiple columns.
 pub trait TrySetNestedColumns<Error, CS: NestedColumns> {
@@ -40,14 +40,14 @@ where
     T: TrySetColumn<Chead> + TrySetNestedColumns<Error, CTail>,
     Error: From<<T as TrySetColumn<Chead>>::Error>,
     <(Chead, CTail) as TypedNestedTuple>::NestedTupleType:
-        TuplePopFront<Front = Chead::Type, Tail = (CTail::NestedTupleType,)>,
+        NestedTuplePopFront<Front = Chead::Type, Tail = CTail::NestedTupleType>,
 {
     #[inline]
     fn try_set_nested_columns(
         &mut self,
         values: <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
     ) -> Result<&mut Self, Error> {
-        let (head, (tail,)) = values.pop_front();
+        let (head, tail) = values.nested_pop_front();
         self.try_set_column(head)?;
         self.try_set_nested_columns(tail)?;
         Ok(self)

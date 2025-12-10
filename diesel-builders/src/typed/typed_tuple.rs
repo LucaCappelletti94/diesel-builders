@@ -1,13 +1,13 @@
 //! Submodule providing the `TypedTuple` trait.
 
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, TupleRef};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple};
 
 use crate::TypedNestedTuple;
 
 /// Trait representing a tuple of objects with associated types.
 pub trait TypedTuple: NestTuple {
     /// The Rust type associated with this tuple of objects.
-    type TupleType: TupleRef + NestTuple;
+    type TupleType: NestTuple;
 }
 
 impl<T> TypedTuple for T

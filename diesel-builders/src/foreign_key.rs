@@ -59,7 +59,7 @@ impl<C> PrimaryKeyColumn for C where
 pub trait HasPrimaryKeyColumn:
     TableExt<
         PrimaryKey: PrimaryKeyColumn<Table = Self>,
-        PrimaryKeyColumns: TuplePopFront<Front = <Self as diesel::Table>::PrimaryKey>,
+        PrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
         Model: GetColumn<<Self as diesel::Table>::PrimaryKey>,
     >
 {
@@ -67,7 +67,7 @@ pub trait HasPrimaryKeyColumn:
 impl<T> HasPrimaryKeyColumn for T where
     T: TableExt<
             PrimaryKey: PrimaryKeyColumn<Table = Self>,
-            PrimaryKeyColumns: TuplePopFront<Front = <Self as diesel::Table>::PrimaryKey>,
+            PrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
             Model: GetColumn<<Self as diesel::Table>::PrimaryKey>,
         >
 {
@@ -150,10 +150,8 @@ pub trait HostColumn<
 /// relationships to tables with a singleton primary key.
 pub trait SingletonForeignKey: TypedColumn {
     /// The referenced table.
-    type ReferencedTable: HasPrimaryKeyColumn<
-            PrimaryKey: PrimaryKeyColumn<Type = <Self as Typed>::Type>,
-            PrimaryKeyColumns: TuplePopFront<Front: PrimaryKeyColumn<Type = <Self as Typed>::Type>>,
-        > + diesel::query_source::TableNotEqual<Self::Table>;
+    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<Type = <Self as Typed>::Type>>
+        + diesel::query_source::TableNotEqual<Self::Table>;
 }
 
 impl<C>

@@ -1,6 +1,6 @@
 //! Variant of `MayGetNestedColumns` for n-uples.
 
-use tuplities::prelude::{IntoNestedTupleOption, TuplePushFront};
+use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePushFront};
 
 use crate::{MayGetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
@@ -38,7 +38,7 @@ where
     (Chead, CTail): NestedColumns,
     (Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
     T: MayGetColumn<Chead> + TupleMayGetNestedColumns<CTail>,
-    (<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,): TuplePushFront<
+    <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions: NestedTuplePushFront<
             Option<Chead::Type>,
             Output = <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
         >,
@@ -50,6 +50,6 @@ where
 	{
         let head = self.may_get_column();
         let tail = self.tuple_may_get_nested_columns();
-        (tail,).push_front(head)
+        tail.nested_push_front(head)
     }
 }

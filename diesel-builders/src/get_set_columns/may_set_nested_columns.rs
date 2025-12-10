@@ -1,6 +1,6 @@
 //! Trait indicating a builder which may set multiple columns.
 
-use tuplities::prelude::{IntoNestedTupleOption, TuplePopFront};
+use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePopFront};
 
 use crate::{MaySetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
@@ -39,9 +39,9 @@ where
     (Chead, CTail): NestedColumns,
     T: MaySetColumn<Chead> + MaySetColumns<CTail>,
     <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
-        TuplePopFront<
+        NestedTuplePopFront<
                 Front = Option<Chead::Type>,
-                Tail = (<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,),
+                Tail = <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
             >,
 {
     #[inline]
@@ -49,7 +49,7 @@ where
         &mut self,
         nested_values: <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
     ) -> &mut Self {
-        let (head, (tail,)) = nested_values.pop_front();
+        let (head, tail) = nested_values.nested_pop_front();
         self.may_set_column(head);
         self.may_set_nested_columns(tail);
         self

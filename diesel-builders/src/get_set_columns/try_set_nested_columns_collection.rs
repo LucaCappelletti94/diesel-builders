@@ -3,7 +3,7 @@
 use crate::{
     TypedNestedTupleCollection, columns::NestedColumns, get_set_columns::TrySetNestedColumns,
 };
-use tuplities::prelude::TuplePopFront;
+use tuplities::prelude::NestedTuplePopFront;
 
 /// Trait indicating a builder can fallibly set multiple columns.
 pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleCollection> {
@@ -48,9 +48,9 @@ where
     CTail: TypedNestedTupleCollection,
     (Chead, CTail): TypedNestedTupleCollection,
     T: TrySetNestedColumns<Error, Chead> + TrySetColumnsCollection<Error, CTail>,
-    <(Chead, CTail) as TypedNestedTupleCollection>::NestedCollectionType: TuplePopFront<
+    <(Chead, CTail) as TypedNestedTupleCollection>::NestedCollectionType: NestedTuplePopFront<
             Front = Chead::NestedTupleType,
-            Tail = (<CTail as TypedNestedTupleCollection>::NestedCollectionType,),
+            Tail = <CTail as TypedNestedTupleCollection>::NestedCollectionType,
         >,
 {
     #[inline]
@@ -58,7 +58,7 @@ where
         &mut self,
         nested_values: <(Chead, CTail) as TypedNestedTupleCollection>::NestedCollectionType,
     ) -> Result<&mut Self, Error> {
-        let (head, (tail,)) = nested_values.pop_front();
+        let (head, tail) = nested_values.nested_pop_front();
         self.try_set_nested_columns(head)?;
         self.try_set_nested_columns_collection(tail)?;
         Ok(self)

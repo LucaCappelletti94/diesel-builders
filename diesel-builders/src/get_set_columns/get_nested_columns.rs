@@ -1,6 +1,6 @@
 //! Submodule providing the `GetNestedColumns` trait.
 
-use tuplities::prelude::TuplePushFront;
+use tuplities::prelude::NestedTuplePushFront;
 
 use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
@@ -32,13 +32,15 @@ where
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
     T: GetColumn<Chead> + GetNestedColumns<CTail>,
-    (CTail::NestedTupleType,):
-        TuplePushFront<Chead::Type, Output = <(Chead, CTail) as TypedNestedTuple>::NestedTupleType>,
+    CTail::NestedTupleType: NestedTuplePushFront<
+            Chead::Type,
+            Output = <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
+        >,
 {
     #[inline]
     fn get_nested_columns(&self) -> <(Chead, CTail) as TypedNestedTuple>::NestedTupleType {
         let head = self.get_column();
         let tail = self.get_nested_columns();
-        (tail,).push_front(head)
+        tail.nested_push_front(head)
     }
 }

@@ -1,6 +1,6 @@
 //! Submodule defining the `Descendant` trait.
 
-use tuplities::prelude::{FlattenNestedTuple, TuplePopFront, TuplePushBack};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTuplePopFront, NestedTuplePushBack};
 use typenum::Unsigned;
 
 use crate::{NestedBundlableTables, TableExt, Tables, tables::NestedTables};
@@ -32,7 +32,7 @@ pub trait NestedAncestorsOf<T: Descendant<Ancestors = <Self as FlattenNestedTupl
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableExt {
     /// The ancestor tables of this table.
-    type Ancestors: TuplePushBack<Self> + Tables<Nested: NestedAncestorsOf<Self>>;
+    type Ancestors: Tables<Nested: NestedAncestorsOf<Self> + NestedTuplePushBack<Self>>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
     type Root: Root;
@@ -41,18 +41,18 @@ pub trait Descendant: TableExt {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
     /// The ancestor tables of this table, including itself.
-    type AncestorsWithSelf: TuplePopFront<Front = Self::Root>
-        + Tables<Nested: NestedBundlableTables>;
+    type NestedAncestorsWithSelf: NestedTuplePopFront<Front = Self::Root> + NestedBundlableTables;
 }
 
 impl<T> DescendantWithSelf for T
 where
     T: Descendant,
-    T::Ancestors: TuplePushBack<Self>,
-    <T::Ancestors as TuplePushBack<Self>>::Output:
-        Tables<Nested: NestedBundlableTables> + TuplePopFront<Front = T::Root>,
+    <T::Ancestors as NestTuple>::Nested: NestedTuplePushBack<Self>,
+    <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output:
+        NestedBundlableTables + NestedTuplePopFront<Front = T::Root>,
 {
-    type AncestorsWithSelf = <T::Ancestors as TuplePushBack<Self>>::Output;
+    type NestedAncestorsWithSelf =
+        <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output;
 }
 
 impl<T> NestedAncestorsOf<T> for () where T: Descendant<Ancestors = ()> {}

@@ -1,5 +1,5 @@
 //! Trait for builders which may get multiple nested columns.
-use tuplities::prelude::{IntoNestedTupleOption, TuplePushFront};
+use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePushFront};
 
 use crate::{MayGetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
@@ -35,7 +35,7 @@ where
 	(Chead, CTail): NestedColumns,
 	(Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
 	T: MayGetColumn<Chead> + MayGetNestedColumns<CTail>,
-	(<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,): tuplities::prelude::TuplePushFront<
+	<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions: NestedTuplePushFront<
 		Option<Chead::Type>,
 		Output = <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
 	>,
@@ -47,6 +47,6 @@ where
 	{
 		let head = self.may_get_column();
 		let tail = self.may_get_nested_columns();
-		(tail,).push_front(head)
+		tail.nested_push_front(head)
 	}
 }

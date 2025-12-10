@@ -4,7 +4,7 @@ use crate::{
     Columns, HorizontalKeys, HorizontalSameAsNestedKeys, TypedColumn, TypedTuple,
     columns::{HomogeneouslyTypedColumns, HomogeneouslyTypedNestedColumns},
 };
-use tuplities::prelude::{NestTuple, TupleReplicate, TupleRow};
+use tuplities::prelude::{NestTuple, TupleRow};
 use typenum::Unsigned;
 
 /// A trait for Diesel columns that are associated with a group of horizontal
@@ -17,27 +17,15 @@ pub trait HorizontalSameAsGroup: TypedColumn {
     /// column.
     type MandatoryHorizontalKeys: HorizontalKeys<
             Self::Table,
-            HostColumnsMatrix: TupleRow<
-                Self::Idx,
-                RowType: Columns<TupleType: TupleReplicate<Self::Type>>,
-            >,
-            ForeignColumnsMatrix: TupleRow<
-                Self::Idx,
-                RowType: Columns + TypedTuple<TupleType: TupleReplicate<Self::Type>>,
-            >,
+            HostColumnsMatrix: TupleRow<Self::Idx, RowType: Columns>,
+            ForeignColumnsMatrix: TupleRow<Self::Idx, RowType: Columns + TypedTuple>,
         >;
     /// The group of discretionary horizontal same-as keys associated with this
     /// column.
     type DiscretionaryHorizontalKeys: HorizontalKeys<
             Self::Table,
-            HostColumnsMatrix: TupleRow<
-                Self::Idx,
-                RowType: Columns<TupleType: TupleReplicate<Self::Type>>,
-            >,
-            ForeignColumnsMatrix: TupleRow<
-                Self::Idx,
-                RowType: Columns + TypedTuple<TupleType: TupleReplicate<Self::Type>>,
-            >,
+            HostColumnsMatrix: TupleRow<Self::Idx, RowType: Columns>,
+            ForeignColumnsMatrix: TupleRow<Self::Idx, RowType: Columns + TypedTuple>,
         >;
 }
 

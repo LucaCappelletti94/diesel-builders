@@ -1,6 +1,6 @@
 //! Submodule providing the `TryMaySetColumns` trait.
 
-use tuplities::prelude::{IntoNestedTupleOption, TuplePopFront};
+use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePopFront};
 
 use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
@@ -50,9 +50,9 @@ where
     T: TrySetColumn<Chead> + TryMaySetNestedColumns<Error, CTail>,
     Error: From<<T as TrySetColumn<Chead>>::Error>,
     <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
-        TuplePopFront<
+        NestedTuplePopFront<
                 Front = Option<Chead::Type>,
-                Tail = (<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,),
+                Tail = <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
             >,
 {
     #[inline]
@@ -60,7 +60,7 @@ where
         &mut self,
         nested_values: <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
     ) -> Result<&mut Self, Error> {
-        let (head, (tail,)) = nested_values.pop_front();
+        let (head, tail) = nested_values.nested_pop_front();
         if let Some(value) = head {
             self.try_set_column(value)?;
         }

@@ -28,7 +28,7 @@ readme = "../README.md"
 rust-version = "1.85"
 
 [workspace.dependencies]
-diesel = {git = "https://github.com/LucaCappelletti94/diesel", branch = "future2"}
+diesel = { git = "https://github.com/LucaCappelletti94/diesel", branch = "future2" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 diesel-builders = { path = "diesel-builders" }
@@ -37,11 +37,6 @@ thiserror = "2.0"
 typenum = "1"
 tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
 	"flatten-nest",
-	"pop-front",
-	"push-back",
-	"push-front",
-	"ref",
-	"replicate",
 	"row",
 ] }
 
