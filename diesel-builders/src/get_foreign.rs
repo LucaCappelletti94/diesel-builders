@@ -59,10 +59,10 @@ impl<
     T: GetNestedColumns<<HostColumns as NestTuple>::Nested> + HasTable<Table = HostColumns::Table>,
 > GetForeign<Conn, ForeignColumns, HostColumns> for T
 where
-    <ForeignColumns as NonEmptyProjection>::Table: TableExt,
-    Conn: diesel::connection::LoadConnection,
     <ForeignColumns as NonEmptyProjection>::Table:
-        SelectDsl<<<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns>,
+        TableExt + SelectDsl<<<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns>,
+    Conn: diesel::connection::LoadConnection,
+    // `SelectDsl` bound moved up into the combined `<ForeignColumns as NonEmptyProjection>::Table` bound
     <<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
         <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
     >>::Output:

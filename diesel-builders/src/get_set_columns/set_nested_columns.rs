@@ -33,8 +33,7 @@ where
     Chead: TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
-    T: SetColumn<Chead>,
-    T: SetNestedColumns<CTail>,
+    T: SetColumn<Chead> + SetNestedColumns<CTail>,
     <(Chead, CTail) as TypedNestedTuple>::NestedTupleType:
         TuplePopFront<Front = Chead::Type, Tail = (CTail::NestedTupleType,)>,
 {

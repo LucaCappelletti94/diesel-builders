@@ -145,10 +145,10 @@ where
     T: TableExt2,
     Conn: diesel::connection::LoadConnection,
     Head: RecursiveBundleInsert<Error, Conn> + HasTable,
-    Tail: FlattenNestedTuple,
+    Tail: FlattenNestedTuple + HasNestedTables,
     <Head::Table as TableExt>::Model:
         GetNestedColumns<<Head::Table as TableExt2>::NestedPrimaryKeyColumns>,
-    Tail: HasNestedTables,
+    // Tail: HasNestedTables (moved into the combined bound above)
     Depth: core::ops::Add<typenum::U1>,
     RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>:
         RecursiveBuilderInsert<Error, Conn, Table = T>

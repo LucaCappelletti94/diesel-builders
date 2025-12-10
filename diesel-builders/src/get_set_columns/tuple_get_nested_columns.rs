@@ -12,7 +12,7 @@ pub trait TupleGetNestedColumns<CS: NestedColumns> {
 
 impl TupleGetNestedColumns<()> for () {
     #[inline]
-    fn tuple_get_nested_columns(&self) -> () {}
+    fn tuple_get_nested_columns(&self) {}
 }
 
 impl<T1, C1> TupleGetNestedColumns<(C1,)> for (T1,)
@@ -32,8 +32,7 @@ where
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
     (Chead::Type, CTail::NestedTupleType): FlattenNestedTuple,
-    T: GetColumn<Chead>,
-    T: TupleGetNestedColumns<CTail>,
+    T: GetColumn<Chead> + TupleGetNestedColumns<CTail>,
     (CTail::NestedTupleType,):
         TuplePushFront<Chead::Type, Output = <(Chead, CTail) as TypedNestedTuple>::NestedTupleType>,
 {

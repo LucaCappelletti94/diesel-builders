@@ -108,10 +108,8 @@ pub trait NestedForeignKeyTail<
 
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
-    H1: TypedColumn,
-    F1: TypedColumn<Type = <H1 as Typed>::Type>,
-    F1: IndexedColumn<typenum::U0, (F1,)>,
-    H1: HostColumn<typenum::U0, (H1,), (F1,)>,
+    H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
+    F1: TypedColumn<Type = <H1 as Typed>::Type> + IndexedColumn<typenum::U0, (F1,)>,
 {
 }
 

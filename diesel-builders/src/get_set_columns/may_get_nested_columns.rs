@@ -12,7 +12,7 @@ pub trait MayGetNestedColumns<CS: NestedColumns> {
 
 impl<T> MayGetNestedColumns<()> for T {
     #[inline]
-    fn may_get_nested_columns(&self) -> () {}
+    fn may_get_nested_columns(&self) {}
 }
 
 impl<C1, T> MayGetNestedColumns<(C1,)> for T
@@ -34,8 +34,7 @@ where
 	CTail: NestedColumns,
 	(Chead, CTail): NestedColumns,
 	(Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
-	T: MayGetColumn<Chead>,
-	T: MayGetNestedColumns<CTail>,
+	T: MayGetColumn<Chead> + MayGetNestedColumns<CTail>,
 	(<CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,): tuplities::prelude::TuplePushFront<
 		Option<Chead::Type>,
 		Output = <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,

@@ -12,9 +12,8 @@ pub trait HomogeneouslyTypedTuple<CT>:
 {
 }
 
-impl<T, CT> HomogeneouslyTypedTuple<CT> for T
-where
-    T: NestTuple<Nested: HomogeneouslyTypedNestedTuple<CT>>,
-    T: TypedTuple<TupleType: TupleReplicate<CT>>,
+impl<T, CT> HomogeneouslyTypedTuple<CT> for T where
+    T: NestTuple<Nested: HomogeneouslyTypedNestedTuple<CT>>
+        + TypedTuple<TupleType: TupleReplicate<CT>>
 {
 }

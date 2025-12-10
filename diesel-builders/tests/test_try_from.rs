@@ -43,13 +43,13 @@ impl InsertableTableModel for NewDog {
 #[test]
 fn test_try_from_table_builder() {
     // Add test code here
-    let builder: TableBuilder<dogs::table> = dogs::table::builder();
-
     type Target = RecursiveTableBuilder<
         dogs::table,
         U0,
         <dogs::table as BuildableTable>::NestedCompletedAncestorBuilders,
     >;
+
+    let builder: TableBuilder<dogs::table> = dogs::table::builder();
 
     let _recursive_builder: Result<Target, IncompleteBuilderError> = Target::try_from(builder);
 }

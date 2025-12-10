@@ -59,19 +59,17 @@ impl<T> NestedAncestorsOf<T> for () where T: Descendant<Ancestors = ()> {}
 
 impl<T, A> NestedAncestorsOf<T> for (A,)
 where
-    T: Descendant<Ancestors = (A,)>,
     A: AncestorOfIndex<T>,
-    T: DescendantOf<A>,
-    T: diesel::query_source::TableNotEqual<A>,
+    T: Descendant<Ancestors = (A,)> + DescendantOf<A> + diesel::query_source::TableNotEqual<A>,
 {
 }
 
 impl<T, Head, Tail> NestedAncestorsOf<T> for (Head, Tail)
 where
     (Head, Tail): NestedTables,
-    T: Descendant<Ancestors = <(Head, Tail) as FlattenNestedTuple>::Flattened>,
     Head: AncestorOfIndex<T>,
-    T: DescendantOf<Head>,
-    T: diesel::query_source::TableNotEqual<Head>,
+    T: Descendant<Ancestors = <(Head, Tail) as FlattenNestedTuple>::Flattened>
+        + DescendantOf<Head>
+        + diesel::query_source::TableNotEqual<Head>,
 {
 }

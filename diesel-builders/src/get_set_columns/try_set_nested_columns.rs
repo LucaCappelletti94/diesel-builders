@@ -37,9 +37,8 @@ where
     Chead: crate::TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
-    T: TrySetColumn<Chead>,
+    T: TrySetColumn<Chead> + TrySetNestedColumns<Error, CTail>,
     Error: From<<T as TrySetColumn<Chead>>::Error>,
-    T: TrySetNestedColumns<Error, CTail>,
     <(Chead, CTail) as TypedNestedTuple>::NestedTupleType:
         TuplePopFront<Front = Chead::Type, Tail = (CTail::NestedTupleType,)>,
 {

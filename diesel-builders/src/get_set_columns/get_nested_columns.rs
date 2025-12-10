@@ -12,7 +12,7 @@ pub trait GetNestedColumns<CS: NestedColumns> {
 
 impl<T> GetNestedColumns<()> for T {
     #[inline]
-    fn get_nested_columns(&self) -> () {}
+    fn get_nested_columns(&self) {}
 }
 
 impl<C1, T> GetNestedColumns<(C1,)> for T

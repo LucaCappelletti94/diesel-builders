@@ -37,8 +37,7 @@ where
     Chead: TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
-    T: MaySetColumn<Chead>,
-    T: MaySetColumns<CTail>,
+    T: MaySetColumn<Chead> + MaySetColumns<CTail>,
     <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
         TuplePopFront<
                 Front = Option<Chead::Type>,

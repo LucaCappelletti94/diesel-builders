@@ -6,7 +6,7 @@ use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns}
 
 /// Trait indicating a builder which may try to set multiple columns.
 pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
-    /// Attempt to set the nested_values of the specified columns.
+    /// Attempt to set the `nested_values` of the specified columns.
     ///
     /// # Errors
     ///
@@ -47,9 +47,8 @@ where
     Chead: TypedColumn,
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
-    T: TrySetColumn<Chead>,
+    T: TrySetColumn<Chead> + TryMaySetNestedColumns<Error, CTail>,
     Error: From<<T as TrySetColumn<Chead>>::Error>,
-    T: TryMaySetNestedColumns<Error, CTail>,
     <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
         TuplePopFront<
                 Front = Option<Chead::Type>,
