@@ -293,6 +293,33 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = common::establish_test_connection()?;
+    create_tables(&mut conn)?;
+
+    let b = table_b::table::builder()
+        .column_a("Value A for B")
+        .column_b("Value B")
+        .c(table_c::table::builder().column_c("Value C".to_owned()))
+        .d(table_d::table::builder().column_d("Value D".to_owned()))
+        .insert(&mut conn)?;
+
+    // Use GetForeignExt directly for primary-key based foreign key
+    let c_pk: TableC = b.get_foreign::<(table_b::c_id,), (table_c::id,)>(&mut conn)?;
+    assert_eq!(c_pk.id, b.c_id);
+    assert_eq!(c_pk.column_c.as_deref(), Some("Value C"));
+
+    // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
+    let c_horizontal: TableC =
+        b.get_foreign::<(table_b::c_id, table_b::id), (table_c::id, table_c::a_id)>(&mut conn)?;
+    assert_eq!(c_horizontal.id, b.c_id);
+    assert_eq!(c_horizontal.a_id, b.id);
+    assert_eq!(c_horizontal.column_c.as_deref(), Some("Value C"));
+
+    Ok(())
+}
+
+#[test]
 fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = common::establish_test_connection()?;
     create_tables(&mut conn)?;
