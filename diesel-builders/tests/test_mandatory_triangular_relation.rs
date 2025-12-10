@@ -249,8 +249,8 @@ impl diesel_builders::SingletonForeignKey for table_b::c_id {
 }
 
 // Define table indices that can be referenced by foreign keys
-index!((table_c::id, table_c::a_id));
-index!((table_c::id, table_c::column_c));
+index!(table_c::id, table_c::a_id);
+index!(table_c::id, table_c::column_c);
 
 // Define foreign key relationships using SQL-like syntax
 // B's (c_id, id) references C's (id, a_id) - ensures triangular consistency

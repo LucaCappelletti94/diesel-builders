@@ -210,8 +210,8 @@ impl diesel_builders::SingletonForeignKey for table_b::c_id {
 }
 
 // Define table index that can be referenced by foreign keys
-index!((table_c::id, table_c::column_c));
-index!((table_c::id, table_c::a_id));
+index!(table_c::id, table_c::column_c);
+index!(table_c::id, table_c::a_id);
 
 // Define foreign key relationship using SQL-like syntax
 // B's (c_id, remote_column_c) references C's (id, column_c)

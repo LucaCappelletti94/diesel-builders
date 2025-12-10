@@ -1,7 +1,7 @@
 //! Column which is associated to a group of horizontal same-as columns.
 
 use crate::{
-    Columns, HorizontalNestedKeys, TypedColumn, TypedNestedTuple,
+    Columns, HorizontalNestedKeys, TypedColumn,
     columns::{HomogeneouslyTypedNestedColumns, NestedColumns},
 };
 use tuplities::prelude::{NestTuple, NestedTupleRow};
@@ -19,10 +19,7 @@ pub trait HorizontalSameAsGroup: TypedColumn {
         Nested: HorizontalNestedKeys<
             Self::Table,
             NestedHostColumnsMatrix: NestedTupleRow<Self::Idx, RowType: NestedColumns>,
-            NestedForeignColumnsMatrix: NestedTupleRow<
-                Self::Idx,
-                RowType: NestedColumns + TypedNestedTuple,
-            >,
+            NestedForeignColumnsMatrix: NestedTupleRow<Self::Idx, RowType: NestedColumns>,
         >,
     >;
     /// The group of discretionary horizontal same-as keys associated with this
@@ -31,10 +28,7 @@ pub trait HorizontalSameAsGroup: TypedColumn {
         Nested: HorizontalNestedKeys<
             Self::Table,
             NestedHostColumnsMatrix: NestedTupleRow<Self::Idx, RowType: NestedColumns>,
-            NestedForeignColumnsMatrix: NestedTupleRow<
-                Self::Idx,
-                RowType: NestedColumns + TypedNestedTuple,
-            >,
+            NestedForeignColumnsMatrix: NestedTupleRow<Self::Idx, RowType: NestedColumns>,
         >,
     >;
 }

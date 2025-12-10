@@ -241,9 +241,9 @@ impl diesel_builders::SingletonForeignKey for child_table::m3_id {
     type ReferencedTable = mandatory_table::table;
 }
 
-index!((mandatory_table::id, mandatory_table::col));
-index!((mandatory_table::id, mandatory_table::a_id));
-index!((discretionary_table::id, discretionary_table::col));
+index!(mandatory_table::id, mandatory_table::col);
+index!(mandatory_table::id, mandatory_table::a_id);
+index!(discretionary_table::id, discretionary_table::col);
 
 /// Child's `d1_id` column references the `discretionary_table` table; this
 /// indicates the referenced table so the builder can assemble nested inserts.

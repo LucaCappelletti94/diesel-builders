@@ -187,10 +187,10 @@ impl diesel_builders::SingletonForeignKey for table_b::d_id {
 }
 
 // Define indexes
-index!((table_c::id, table_c::column_c));
-index!((table_c::id, table_c::a_id));
-index!((table_d::id, table_d::column_d));
-index!((table_d::id, table_d::a_id));
+index!(table_c::id, table_c::column_c);
+index!(table_c::id, table_c::a_id);
+index!(table_d::id, table_d::column_d);
+index!(table_d::id, table_d::a_id);
 
 // Define foreign key relationships
 fk!((table_b::c_id, table_b::remote_column_c) REFERENCES (table_c::id, table_c::column_c));

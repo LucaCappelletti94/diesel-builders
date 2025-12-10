@@ -20,7 +20,7 @@ use crate::TypedTuple;
 use tuplities::prelude::*;
 
 /// A trait representing a collection of Diesel columns.
-pub trait Columns: TypedTuple + NestTuple {
+pub trait Columns: TypedTuple {
     /// Tables to which these columns belong.
     type Tables: NestTuple;
 }

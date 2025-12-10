@@ -816,12 +816,16 @@ pub fn index(input: TokenStream) -> TokenStream {
 
     impl Parse for TableIndex {
         fn parse(input: ParseStream) -> syn::Result<Self> {
-            // Parse: ( cols )
-            let content;
-            syn::parenthesized!(content in input);
-            let columns = Punctuated::parse_terminated(&content)?;
-
-            Ok(TableIndex { columns })
+            // Accept either: a parenthesized tuple `(col1, col2)` or a bare list `col1, col2`.
+            if input.peek(syn::token::Paren) {
+                let content;
+                syn::parenthesized!(content in input);
+                let columns = Punctuated::parse_terminated(&content)?;
+                Ok(TableIndex { columns })
+            } else {
+                let columns = Punctuated::parse_terminated(input)?;
+                Ok(TableIndex { columns })
+            }
         }
     }
 
