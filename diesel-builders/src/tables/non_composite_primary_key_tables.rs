@@ -8,20 +8,6 @@ use tuplities::prelude::*;
 
 use super::{NestedTables, Tables};
 
-/// Trait for tables that have non-composite primary keys.
-pub trait NonCompositePrimaryKeyTables: Tables<Nested: NonCompositePrimaryKeyNestedTables> {
-    /// Tuple with the primary key column of each table.
-    type PrimaryKeyColumns: Columns;
-}
-
-impl<T> NonCompositePrimaryKeyTables for T
-where
-    T: Tables<Nested: NonCompositePrimaryKeyNestedTables>,
-{
-    type PrimaryKeyColumns =
-        <<T::Nested as NonCompositePrimaryKeyNestedTables>::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened;
-}
-
 /// Trait for nested tables that have non-composite primary keys.
 pub trait NonCompositePrimaryKeyNestedTables:
     NestedTables<

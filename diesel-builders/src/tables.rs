@@ -6,9 +6,7 @@ mod non_composite_primary_key_tables;
 
 pub use has_nested_tables::HasNestedTables;
 pub use nested_tables::NestedTables;
-pub use non_composite_primary_key_tables::{
-    NonCompositePrimaryKeyNestedTables, NonCompositePrimaryKeyTables,
-};
+pub use non_composite_primary_key_tables::NonCompositePrimaryKeyNestedTables;
 use tuplities::prelude::NestTuple;
 
 /// A trait representing a collection of Diesel tables.

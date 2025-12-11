@@ -8,7 +8,7 @@ pub use builder_error::{BuilderError, BuilderResult, IncompleteBuilderError};
 
 // Re-exported modules from diesel-additions
 pub mod tables;
-pub use tables::{HasNestedTables, NestedTables, NonCompositePrimaryKeyTables, Tables};
+pub use tables::{HasNestedTables, NestedTables, Tables};
 pub mod table_model;
 pub use table_model::TableModel;
 pub mod table_models;
