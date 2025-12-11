@@ -12,7 +12,6 @@ use tuplities::prelude::*;
 
 use crate::ForeignKey;
 use crate::TableIndex;
-use crate::TypedTuple;
 use crate::columns::NonEmptyNestedProjection;
 use crate::columns::NonEmptyProjection;
 use crate::{GetNestedColumns, TableExt};
@@ -21,10 +20,7 @@ use crate::{GetNestedColumns, TableExt};
 /// model curresponding to specified foreign columns from a host table model.
 pub trait GetForeign<
     Conn,
-    HostColumns: NonEmptyProjection<
-            TupleType = <ForeignColumns as TypedTuple>::TupleType,
-            Nested: NonEmptyNestedProjection,
-        >,
+    HostColumns: NonEmptyProjection<TupleType = ForeignColumns::TupleType, Nested: NonEmptyNestedProjection>,
     ForeignColumns: TableIndex,
 >: GetNestedColumns<HostColumns::Nested> where
     ForeignColumns::Table: TableExt,
@@ -48,52 +44,52 @@ pub trait GetForeign<
 
 impl<
     Conn,
-    ForeignColumns: TableIndex + EqAll<<ForeignColumns as TypedTuple>::TupleType>,
+    ForeignColumns: TableIndex + EqAll<ForeignColumns::TupleType>,
     HostColumns,
     T: GetNestedColumns<<HostColumns as NestTuple>::Nested> + HasTable<Table = HostColumns::Table>,
 > GetForeign<Conn, HostColumns, ForeignColumns> for T
 where
     HostColumns: NonEmptyProjection<
-            TupleType = <ForeignColumns as TypedTuple>::TupleType,
+            TupleType = ForeignColumns::TupleType,
             Nested: NonEmptyNestedProjection<
                 NestedTupleType: FlattenNestedTuple<
-                    Flattened = <ForeignColumns as TypedTuple>::TupleType,
+                    Flattened = ForeignColumns::TupleType,
                 >,
             >,
         > + ForeignKey<ForeignColumns>,
-    <ForeignColumns as NonEmptyProjection>::Table:
-        TableExt + SelectDsl<<<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns>,
+    ForeignColumns::Table:
+        TableExt + SelectDsl<<ForeignColumns::Table as Table>::AllColumns>,
     Conn: diesel::connection::LoadConnection,
-    // `SelectDsl` bound moved up into the combined `<ForeignColumns as NonEmptyProjection>::Table` bound
-    <<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
-        <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
+    // `SelectDsl` bound moved up into the combined `ForeignColumns::Table` bound
+    <ForeignColumns::Table as SelectDsl<
+        <ForeignColumns::Table as Table>::AllColumns,
     >>::Output:
-        FilterDsl<<ForeignColumns as EqAll<<ForeignColumns as TypedTuple>::TupleType>>::Output>,
-    <<<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
-        <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
+        FilterDsl<<ForeignColumns as EqAll<ForeignColumns::TupleType>>::Output>,
+    <<ForeignColumns::Table as SelectDsl<
+        <ForeignColumns::Table as Table>::AllColumns,
     >>::Output as FilterDsl<
-        <ForeignColumns as EqAll<<ForeignColumns as TypedTuple>::TupleType>>::Output,
+        <ForeignColumns as EqAll<ForeignColumns::TupleType>>::Output,
     >>::Output: LimitDsl + RunQueryDsl<Conn>,
-    for<'query> <<<<ForeignColumns as NonEmptyProjection>::Table as SelectDsl<
-        <<ForeignColumns as NonEmptyProjection>::Table as Table>::AllColumns,
+    for<'query> <<<ForeignColumns::Table as SelectDsl<
+        <ForeignColumns::Table as Table>::AllColumns,
     >>::Output as FilterDsl<
-        <ForeignColumns as EqAll<<ForeignColumns as TypedTuple>::TupleType>>::Output,
+        <ForeignColumns as EqAll<ForeignColumns::TupleType>>::Output,
     >>::Output as LimitDsl>::Output:
-        LoadQuery<'query, Conn, <<ForeignColumns as NonEmptyProjection>::Table as TableExt>::Model>,
+        LoadQuery<'query, Conn, <ForeignColumns::Table as TableExt>::Model>,
 {
     fn get_foreign(
         &self,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<<<ForeignColumns as NonEmptyProjection>::Table as TableExt>::Model>
+    ) -> diesel::QueryResult<<ForeignColumns::Table as TableExt>::Model>
     {
-        let foreign_table: <ForeignColumns as NonEmptyProjection>::Table = Default::default();
+        let foreign_table: ForeignColumns::Table = Default::default();
         let foreign_columns = <ForeignColumns as NestTuple>::Nested::default().flatten();
         let foreign_key_values = self.get_nested_columns().flatten();
         RunQueryDsl::first(
             FilterDsl::filter(
                 SelectDsl::select(
                     foreign_table,
-                    <<ForeignColumns as NonEmptyProjection>::Table as Table>::all_columns(),
+                    <ForeignColumns::Table as Table>::all_columns(),
                 ),
                 foreign_columns.eq_all(foreign_key_values),
             ),
@@ -122,7 +118,7 @@ pub trait GetForeignExt<Conn> {
     where
         Self: GetForeign<Conn, HostColumns, ForeignColumns>,
         HostColumns: NonEmptyProjection<
-                TupleType = <ForeignColumns as TypedTuple>::TupleType,
+                TupleType = ForeignColumns::TupleType,
                 Nested: NonEmptyNestedProjection,
             >,
         ForeignColumns: TableIndex<Table: TableExt>,

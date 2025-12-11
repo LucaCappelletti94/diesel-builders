@@ -36,7 +36,7 @@ where
     type NestedModels = (T::Model,);
     type OptionalNestedModels = (Option<T::Model>,);
     type NestedInsertableModels = (T::InsertableModel,);
-    type NestedPrimaryKeyColumnsCollection = (<T::PrimaryKeyColumns as NestTuple>::Nested,);
+    type NestedPrimaryKeyColumnsCollection = (T::NestedPrimaryKeyColumns,);
 }
 
 impl<Head, Tail> NestedTables for (Head, Tail)
@@ -50,7 +50,7 @@ where
         FlattenNestedTuple + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
     (Head::InsertableModel, Tail::NestedInsertableModels): FlattenNestedTuple,
     (
-        <Head::PrimaryKeyColumns as NestTuple>::Nested,
+        Head::NestedPrimaryKeyColumns,
         Tail::NestedPrimaryKeyColumnsCollection,
     ): NestedColumnsCollection,
 {
@@ -58,7 +58,7 @@ where
     type OptionalNestedModels = (Option<Head::Model>, Tail::OptionalNestedModels);
     type NestedInsertableModels = (Head::InsertableModel, Tail::NestedInsertableModels);
     type NestedPrimaryKeyColumnsCollection = (
-        <Head::PrimaryKeyColumns as NestTuple>::Nested,
+        Head::NestedPrimaryKeyColumns,
         Tail::NestedPrimaryKeyColumnsCollection,
     );
 }

@@ -1,5 +1,7 @@
 //! Submodule with utilities for the diesel-builders macros.
 
+use quote::ToTokens;
+
 /// Convert a `snake_case` string to `CamelCase`.
 ///
 /// This helper is used by the procedural macros to derive Rust identifiers
@@ -24,4 +26,18 @@ pub(crate) fn snake_to_camel_case(s: &str) -> String {
     }
 
     result
+}
+
+/// Formats the provided iterator of tokenizable items as a nested tuple.
+pub(crate) fn format_as_nested_tuple<I: DoubleEndedIterator<Item: ToTokens>>(
+    items: I,
+) -> proc_macro2::TokenStream {
+    let mut rev_items = items.rev();
+    if let Some(first) = rev_items.next() {
+        rev_items.fold(quote::quote! { (#first,) }, |acc, item| {
+            quote::quote! { (#item, #acc) }
+        })
+    } else {
+        quote::quote! { () }
+    }
 }

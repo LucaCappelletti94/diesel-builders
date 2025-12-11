@@ -59,7 +59,7 @@ impl<C> PrimaryKeyColumn for C where
 pub trait HasPrimaryKeyColumn:
     TableExt<
         PrimaryKey: PrimaryKeyColumn<Table = Self>,
-        PrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
+        NestedPrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
         Model: GetColumn<<Self as diesel::Table>::PrimaryKey>,
     >
 {
@@ -67,7 +67,7 @@ pub trait HasPrimaryKeyColumn:
 impl<T> HasPrimaryKeyColumn for T where
     T: TableExt<
             PrimaryKey: PrimaryKeyColumn<Table = Self>,
-            PrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
+            NestedPrimaryKeyColumns = (<Self as diesel::Table>::PrimaryKey,),
             Model: GetColumn<<Self as diesel::Table>::PrimaryKey>,
         >
 {

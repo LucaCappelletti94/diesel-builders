@@ -3,7 +3,6 @@
 use std::ops::Sub;
 
 use crate::builder_bundle::RecursiveBundleInsert;
-use crate::table_addition::TableExt2;
 use crate::{
     BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, InsertableTableModel,
     NestedTables, TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple,
@@ -146,19 +145,19 @@ where
 impl<T, Depth, Error, Conn, Head, Tail> RecursiveBuilderInsert<Error, Conn>
     for RecursiveTableBuilder<T, Depth, (Head, Tail)>
 where
-    T: TableExt2,
+    T: TableExt,
     Conn: diesel::connection::LoadConnection,
     Head: RecursiveBundleInsert<Error, Conn> + HasTable,
     Tail: FlattenNestedTuple + HasNestedTables,
     <Head::Table as TableExt>::Model:
-        GetNestedColumns<<Head::Table as TableExt2>::NestedPrimaryKeyColumns>,
+        GetNestedColumns<<Head::Table as TableExt>::NestedPrimaryKeyColumns>,
     // Tail: HasNestedTables (moved into the combined bound above)
     Depth: core::ops::Add<typenum::U1>,
     RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>:
         RecursiveBuilderInsert<Error, Conn, Table = T>
             + TrySetHomogeneousNestedColumnsCollection<
                 Error,
-                <<Head::Table as TableExt2>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType,
+                <<Head::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType,
                 <Tail::NestedTables as NestedTables>::NestedPrimaryKeyColumnsCollection,
             >,
 {
