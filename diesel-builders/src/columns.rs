@@ -2,7 +2,6 @@
 
 mod columns_collection;
 mod homogeneously_typed_nested_columns;
-mod maybe_nullable;
 mod nested_columns;
 mod nested_columns_collection;
 mod non_empty_nested_projection;
@@ -11,7 +10,6 @@ mod tuple_eq_all;
 
 pub use columns_collection::ColumnsCollection;
 pub use homogeneously_typed_nested_columns::HomogeneouslyTypedNestedColumns;
-pub use maybe_nullable::MaybeNullable;
 pub use nested_columns::NestedColumns;
 pub use nested_columns_collection::NestedColumnsCollection;
 pub use non_empty_nested_projection::NonEmptyNestedProjection;

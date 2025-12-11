@@ -1,4 +1,3 @@
-use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
 diesel::table! {

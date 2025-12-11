@@ -13,11 +13,6 @@ pub trait TupleEqAll: TypedNestedTuple {
     fn eq_all(self, rhs: Self::NestedTupleType) -> Self::EqAll;
 }
 
-impl TupleEqAll for () {
-    type EqAll = ();
-    fn eq_all(self, _rhs: ()) -> Self::EqAll {}
-}
-
 impl<Head> TupleEqAll for (Head,)
 where
     Head: TypedColumn<Type: AsExpression<<Head as diesel::Expression>::SqlType>>

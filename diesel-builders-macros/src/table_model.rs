@@ -6,8 +6,6 @@
 mod attribute_parsing;
 mod get_column;
 mod may_get_columns;
-/// Module for generating `MaybeNullable` implementations.
-mod maybe_nullable;
 mod primary_key;
 mod set_columns;
 mod typed_column;
@@ -21,7 +19,6 @@ use attribute_parsing::{
     extract_table_path, is_field_infallible, validate_field_attributes,
 };
 use get_column::generate_get_column_impls;
-use maybe_nullable::generate_maybe_nullable_impls;
 use primary_key::generate_indexed_column_impls;
 use typed_column::generate_typed_column_impls;
 
@@ -182,8 +179,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let set_column_unchecked_impls =
         set_columns::generate_set_column_unchecked_traits(&fallible_records, &table_path);
 
-    let maybe_nullable_impls = generate_maybe_nullable_impls(fields, &table_path);
-
     let error_type = attributes
         .error
         .map(|t| quote::quote! { #t })
@@ -197,7 +192,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #may_get_column_impls
         #set_column_impls
         #set_column_unchecked_impls
-        #maybe_nullable_impls
 
         // Auto-implement TableExt for the table associated with this model.
         impl diesel_builders::TableExt for #table_path::table {
