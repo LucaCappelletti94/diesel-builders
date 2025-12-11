@@ -25,7 +25,7 @@ where
 
 /// Trait providing an unchecked setter for a specific Diesel column.
 ///
-/// This method is solely meant to be used in [`TableExt::NewValues`] impls
+/// This method is solely meant to be used in [`TableExt::NewValues`](crate::TableExt) impls
 /// when writing a `TrySetColumn` impl. It allows to avoid the overhead of
 /// accessing the i-th element of a nested tuple via typenum at each call site.
 pub trait SetColumnUnchecked<Column: TypedColumn> {
