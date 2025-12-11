@@ -1,13 +1,12 @@
 //! Submodule defining an `HorizontalSameAs` trait for Diesel columns.
 
-use diesel::{Column, Table};
 use typenum::Unsigned;
 
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, ForeignKey, ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TableIndex,
-    Typed, TypedColumn, TypedNestedTuple, TypedTuple,
+    Columns, ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TypedNestedTuple,
+    TypedTuple,
     ancestors::DescendantWithSelf,
     columns::{
         ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyNestedProjection,
@@ -15,32 +14,6 @@ use crate::{
     },
     tables::NonCompositePrimaryKeyNestedTables,
 };
-
-/// A trait for Diesel columns that define horizontal same-as relationships.
-pub trait HorizontalSameAsColumn<
-    KeyColumn: ForeignPrimaryKey<ReferencedTable = Self::Table>,
-    HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as Typed>::Type>,
->: TypedColumn<Table: HasPrimaryKeyColumn>
-{
-}
-
-impl<KeyColumn, HostColumn, ForeignColumn> HorizontalSameAsColumn<KeyColumn, HostColumn>
-    for ForeignColumn
-where
-    KeyColumn: ForeignPrimaryKey,
-    HostColumn: TypedColumn<Table = KeyColumn::Table, Type = <Self as Typed>::Type>,
-    ForeignColumn: TypedColumn<Table = KeyColumn::ReferencedTable>,
-    (
-        <<ForeignColumn as Column>::Table as Table>::PrimaryKey,
-        ForeignColumn,
-    ): TableIndex,
-    (KeyColumn, HostColumn): ForeignKey<(
-        <<ForeignColumn as Column>::Table as Table>::PrimaryKey,
-        ForeignColumn,
-    )>,
-    (KeyColumn,): ForeignKey<(<<ForeignColumn as Column>::Table as Table>::PrimaryKey,)>,
-{
-}
 
 /// A trait for Diesel columns collections that define horizontal same-as
 /// relationships.
