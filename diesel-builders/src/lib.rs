@@ -55,8 +55,6 @@ pub use table_builder::RecursiveBuilderInsert;
 pub use table_builder::TableBuilder;
 pub mod set_builder;
 pub use set_builder::*;
-pub mod get_builder;
-pub use get_builder::{GetBuilder, MayGetBuilder};
 pub mod nested_insert;
 pub use nested_insert::Insert;
 pub mod builder_bundle;
