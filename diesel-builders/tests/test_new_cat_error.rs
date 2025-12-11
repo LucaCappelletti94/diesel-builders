@@ -2,7 +2,8 @@
 
 mod common;
 
-use common::{NewCat, NewCatError, cats};
+use common::{NewCatError, cats};
+use diesel_builders::TableExt;
 
 #[test]
 fn new_cat_error_display() {
@@ -14,20 +15,18 @@ fn new_cat_error_display() {
 
 #[test]
 fn new_cat_try_set_column_empty_color() {
-    let mut nc = NewCat::default();
+    let mut nc = <cats::table as TableExt>::NewValues::default();
 
-    let res = <NewCat as diesel_builders::TrySetColumn<cats::color>>::try_set_column(
-        &mut nc,
-        String::new(),
-    );
+    let res = <<cats::table as TableExt>::NewValues as diesel_builders::TrySetColumn<
+        cats::color,
+    >>::try_set_column(&mut nc, String::new());
 
     assert_eq!(res.unwrap_err(), NewCatError::ColorEmpty);
 
     // whitespace-only should also fail
-    let mut nc2 = NewCat::default();
-    let res2 = <NewCat as diesel_builders::TrySetColumn<cats::color>>::try_set_column(
-        &mut nc2,
-        "  \t \n".to_string(),
-    );
+    let mut nc2 = <cats::table as TableExt>::NewValues::default();
+    let res2 = <<cats::table as TableExt>::NewValues as diesel_builders::TrySetColumn<
+        cats::color,
+    >>::try_set_column(&mut nc2, "  \t \n".to_string());
     assert_eq!(res2.unwrap_err(), NewCatError::ColorEmpty);
 }

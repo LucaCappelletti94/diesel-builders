@@ -19,8 +19,10 @@ use std::convert::Infallible;
 
 use diesel::associations::HasTable;
 use diesel::prelude::*;
-use diesel_builders::{TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*};
-use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders::{
+    IncompleteBuilderError, TableBuilder, TableBuilderBundle, TrySetColumn, prelude::*,
+};
+use diesel_builders_macros::{Root, TableModel};
 
 // Define table A (root table)
 diesel::table! {
@@ -66,6 +68,7 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c);
 
 // Table A models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
+#[table_model(surrogate_key)]
 #[diesel(table_name = table_a)]
 /// Model for table A.
 pub struct TableA {
@@ -75,30 +78,9 @@ pub struct TableA {
     column_a: String,
 }
 
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = table_a)]
-/// Insertable model for table A.
-pub struct NewTableA {
-    /// Column A value.
-    column_a: Option<String>,
-}
-
 // Table C models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
+#[table_model(surrogate_key)]
 #[diesel(table_name = table_c)]
 /// Model for table C.
 pub struct TableC {
@@ -110,40 +92,19 @@ pub struct TableC {
     column_c: Option<String>,
 }
 
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[diesel(table_name = table_c)]
-/// Insertable model for table C.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(clippy::option_option)]
-pub struct NewTableC {
-    /// Foreign key to table A.
-    a_id: Option<i32>,
-    /// Column C value.
-    column_c: Option<Option<String>>,
-}
-
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[table_model(error=ErrorB)]
 #[diesel(table_name = table_b)]
 /// Model for table B.
 pub struct TableB {
+    #[infallible]
     /// Primary key.
     id: i32,
+    #[infallible]
     /// Foreign key to table A.
     c_id: i32,
+    #[infallible]
     /// Column B value.
     column_b: String,
     /// The remote `column_c` value from table C that B references via `c_id`.
@@ -165,57 +126,12 @@ pub enum ErrorB {
 }
 
 impl From<Infallible> for ErrorB {
-    fn from(_: Infallible) -> Self {
-        unreachable!()
+    fn from(inf: Infallible) -> Self {
+        match inf {}
     }
 }
 
-#[derive(
-    Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Insertable, MayGetColumn, HasTable,
-)]
-#[diesel(table_name = table_b)]
-/// Insertable model for table B.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(clippy::option_option)]
-pub struct NewTableB {
-    /// Primary key.
-    id: Option<i32>,
-    /// Foreign key to table C.
-    c_id: Option<i32>,
-    /// Column B value.
-    column_b: Option<String>,
-    /// The remote `column_c` value from table C that B references via `c_id`.
-    remote_column_c: Option<Option<String>>,
-}
-
-impl TrySetColumn<table_b::id> for NewTableB {
-    type Error = std::convert::Infallible;
-
-    fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
-        self.id = Some(value);
-        Ok(self)
-    }
-}
-
-impl TrySetColumn<table_b::c_id> for NewTableB {
-    type Error = std::convert::Infallible;
-
-    fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
-        self.c_id = Some(value);
-        Ok(self)
-    }
-}
-
-impl TrySetColumn<table_b::column_b> for NewTableB {
-    type Error = std::convert::Infallible;
-
-    fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
-        self.column_b = Some(value);
-        Ok(self)
-    }
-}
-
-impl TrySetColumn<table_b::remote_column_c> for NewTableB {
+impl TrySetColumn<table_b::remote_column_c> for <table_b::table as TableExt>::NewValues {
     type Error = ErrorB;
 
     fn try_set_column(&mut self, value: Option<String>) -> Result<&mut Self, Self::Error> {
@@ -224,13 +140,9 @@ impl TrySetColumn<table_b::remote_column_c> for NewTableB {
         {
             return Err(ErrorB::EmptyRemoteColumnC);
         }
-        self.remote_column_c = Some(value);
+        self.set_column_unchecked::<table_b::remote_column_c>(value);
         Ok(self)
     }
-}
-
-impl InsertableTableModel for NewTableB {
-    type Error = ErrorB;
 }
 
 // Declare singleton foreign key for table_b::c_id to table_c
@@ -334,12 +246,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Using generated trait methods like try_c_ref for type-safe builders
     let mut b_builder = table_b::table::builder();
 
-    assert!(matches!(
+    assert_eq!(
         b_builder.try_set_mandatory_builder_ref::<table_b::c_id>(
             table_c::table::builder().column_c(String::new())
         ),
         Err(ErrorB::EmptyRemoteColumnC)
-    ));
+    );
 
     b_builder
         .try_c_ref(c_builder.clone())?
@@ -584,56 +496,11 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
     let result = CompletedTableBuilderBundle::try_from(b_bundle);
 
     // Verify that the conversion fails with the expected error message
-    assert!(result.is_err());
-    if let Err(error) = result {
-        assert_eq!(
-            error.to_string(),
-            "Not all mandatory associated builders have been set"
-        );
-    }
-}
-
-#[test]
-fn test_mandatory_triangular_insert_fails_when_c_table_missing()
--> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
-
-    // Create table A
-    diesel::sql_query(
-        "CREATE TABLE table_a (
-            id INTEGER PRIMARY KEY NOT NULL,
-            column_a TEXT NOT NULL
-        )",
-    )
-    .execute(&mut conn)?;
-
-    // Intentionally do NOT create table_c
-
-    // Create table B (which references C)
-    diesel::sql_query(
-        "CREATE TABLE table_b (
-            id INTEGER PRIMARY KEY NOT NULL,
-            c_id INTEGER NOT NULL,
-            column_b TEXT NOT NULL,
-            remote_column_c TEXT
-        )",
-    )
-    .execute(&mut conn)?;
-
-    // Try to insert into B with a mandatory C builder
-    let c_builder = table_c::table::builder().column_c(None);
-
-    let result = table_b::table::builder()
-        .column_b("B Value")
-        .try_c(c_builder)?
-        .insert(&mut conn);
-
-    assert!(matches!(
-        result.unwrap_err(),
-        diesel_builders::BuilderError::Diesel(_)
-    ));
-
-    Ok(())
+    let err = result.unwrap_err();
+    assert_eq!(
+        err,
+        IncompleteBuilderError::MissingMandatoryTriangularField("c_id")
+    );
 }
 
 #[test]

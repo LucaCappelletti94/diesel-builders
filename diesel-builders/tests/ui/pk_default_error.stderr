@@ -1,0 +1,6 @@
+error: Primary key cannot have a default value
+  --> tests/ui/pk_default_error.rs:13:5
+   |
+13 | /     #[table_model(default = 1)]
+14 | |     pub id: i32,
+   | |_______________^

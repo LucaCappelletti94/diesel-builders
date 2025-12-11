@@ -22,17 +22,15 @@ pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
 pub mod get_set_columns;
 pub use get_set_columns::*;
 pub mod columns;
-pub use columns::Columns;
+pub use columns::{Columns, NestedColumns};
 pub mod table_addition;
 pub use table_addition::{HasTableExt, TableExt};
 pub mod set_column;
-pub use set_column::{MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt};
-pub mod insertable_table_model;
-pub use insertable_table_model::InsertableTableModel;
+pub use set_column::{
+    MaySetColumn, SetColumn, SetColumnExt, SetColumnUnchecked, TrySetColumn, TrySetColumnExt,
+};
 pub mod foreign_key;
 pub use foreign_key::*;
-pub mod flat_insert;
-pub use flat_insert::FlatInsert;
 
 // Re-exported modules from diesel-relations
 pub mod ancestors;
@@ -55,8 +53,9 @@ pub use set_builder::*;
 pub mod nested_insert;
 pub use nested_insert::Insert;
 pub mod builder_bundle;
-pub use builder_bundle::CompletedTableBuilderBundle;
-pub use builder_bundle::{BundlableTable, TableBuilderBundle};
+pub use builder_bundle::{
+    BundlableTable, CompletedTableBuilderBundle, RecursiveBundleInsert, TableBuilderBundle,
+};
 pub mod nested_bundlable_tables;
 pub use nested_bundlable_tables::*;
 pub mod get_foreign;
@@ -65,6 +64,11 @@ pub use get_foreign::{GetForeign, GetForeignExt};
 /// Re-export typenum for convenience
 pub mod typenum {
     pub use typenum::*;
+}
+
+/// Re-export tuplities for convenience
+pub mod tuplities {
+    pub use tuplities::prelude::*;
 }
 
 pub mod prelude {
@@ -86,12 +90,7 @@ pub mod prelude {
 
     // Re-export commonly used macros from diesel_builders_macros
     // Note: GetColumn is now automatically implemented by TableModel derive
-    pub use diesel_builders_macros::{
-        Decoupled, HasTable, MayGetColumn, Root, SetColumn, TableModel, descendant_of, fk, fpk,
-        index,
-    };
-
-    pub use crate::insertable_table_model::InsertableTableModel;
+    pub use diesel_builders_macros::{Decoupled, Root, TableModel, descendant_of, fk, fpk, index};
 
     pub use crate::get_foreign::GetForeignExt;
 
@@ -112,7 +111,7 @@ pub mod prelude {
     pub use crate::{
         builder_bundle::BundlableTable,
         nested_insert::Insert,
-        set_column::{SetColumnExt, TrySetColumn, TrySetColumnExt},
+        set_column::{SetColumnExt, SetColumnUncheckedExt, TrySetColumn, TrySetColumnExt},
         table_addition::TableExt,
     };
 }

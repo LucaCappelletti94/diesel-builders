@@ -11,12 +11,14 @@ pub enum BuilderError<E> {
     Validation(E),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 /// Specific error indicating that not all mandatory triangular builder fields
 /// have been set.
 pub enum IncompleteBuilderError {
     /// Not all mandatory associated builders have been set.
-    MissingMandatoryTriangularFields,
+    MissingMandatoryTriangularField(&'static str),
+    /// A field required for insertion is missing.
+    MissingMandatoryField(&'static str),
 }
 
 /// A specialized `Result` type for builder operations.
@@ -25,8 +27,14 @@ pub type BuilderResult<T, E> = Result<T, BuilderError<E>>;
 impl core::fmt::Display for IncompleteBuilderError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            IncompleteBuilderError::MissingMandatoryTriangularFields => {
-                write!(f, "Not all mandatory associated builders have been set")
+            IncompleteBuilderError::MissingMandatoryTriangularField(horizontal_key_name) => {
+                write!(
+                    f,
+                    "Missing mandatory triangular builder field: {horizontal_key_name}"
+                )
+            }
+            IncompleteBuilderError::MissingMandatoryField(field_name) => {
+                write!(f, "Missing mandatory field: {field_name}")
             }
         }
     }

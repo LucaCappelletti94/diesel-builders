@@ -1,11 +1,13 @@
 //! Submodule for the completed table builder bundle and related impls.
 
-use diesel::{Column, associations::HasTable};
+use diesel::{Column, Insertable, RunQueryDsl, associations::HasTable};
 use tuplities::prelude::*;
 
+use crate::TypedNestedTuple;
+use crate::columns::TupleEqAll;
 use crate::{
     BuildableTable, BuilderError, BuilderResult, BundlableTable, DiscretionarySameAsIndex,
-    FlatInsert, HasNestedTables, HasTableExt, IncompleteBuilderError, MandatorySameAsIndex,
+    HasNestedTables, HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns,
     NestedTables, RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
     TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsNestedColumns,
     TryMaySetNestedColumns, TrySetColumn, TrySetMandatorySameAsColumn,
@@ -14,10 +16,11 @@ use crate::{
     horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
 
+#[derive(Debug)]
 /// The build-ready variant of a table builder bundle.
 pub struct CompletedTableBuilderBundle<T: BundlableTableExt + TableExt> {
     /// The insertable model for the table.
-    insertable_model: T::InsertableModel,
+    insertable_model: T::NewValues,
     /// The mandatory associated builders relative to triangular same-as.
     nested_mandatory_associated_builders: T::MandatoryNestedBuilders,
     /// The discretionary associated builders relative to triangular same-as.
@@ -42,18 +45,18 @@ where
     C: HorizontalSameAsGroupExt,
     Self: TryMaySetDiscretionarySameAsNestedColumns<
             C::Type,
-            <T::InsertableModel as TrySetColumn<C>>::Error,
+            <T::NewValues as TrySetColumn<C>>::Error,
             C::NestedDiscretionaryHorizontalKeys,
             C::NestedDiscretionaryForeignColumns,
         > + TrySetMandatorySameAsNestedColumns<
             C::Type,
-            <T::InsertableModel as TrySetColumn<C>>::Error,
+            <T::NewValues as TrySetColumn<C>>::Error,
             C::NestedMandatoryHorizontalKeys,
             C::NestedMandatoryForeignColumns,
         >,
-    T::InsertableModel: TrySetColumn<C>,
+    T::NewValues: TrySetColumn<C>,
 {
-    type Error = <T::InsertableModel as TrySetColumn<C>>::Error;
+    type Error = <T::NewValues as TrySetColumn<C>>::Error;
 
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
@@ -118,7 +121,7 @@ where
 
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTable + TableExt + BundlableTableExt,
 {
     type Error = IncompleteBuilderError;
 
@@ -127,13 +130,12 @@ where
     ) -> Result<CompletedTableBuilderBundle<T>, Self::Error> {
         Ok(CompletedTableBuilderBundle {
             insertable_model: value.insertable_model,
-            nested_mandatory_associated_builders: if let Some(mandatory_associated_builders) =
-                value.nested_mandatory_associated_builders.transpose()
-            {
-                mandatory_associated_builders
-            } else {
-                return Err(IncompleteBuilderError::MissingMandatoryTriangularFields);
-            },
+            nested_mandatory_associated_builders: value
+                .nested_mandatory_associated_builders
+                .transpose_or(T::NestedMandatoryTriangularColumns::NESTED_COLUMN_NAMES)
+                .map_err(|column_name| {
+                    IncompleteBuilderError::MissingMandatoryTriangularField(column_name)
+                })?,
             nested_discretionary_associated_builders: value
                 .nested_discretionary_associated_builders,
         })
@@ -163,11 +165,15 @@ impl<T, Error, Conn> RecursiveBundleInsert<Error, Conn> for CompletedTableBuilde
 where
     Conn: diesel::connection::LoadConnection,
     T: BundlableTableExt + TableExt,
-    T::InsertableModel: FlatInsert<Conn>
-        + TrySetNestedColumns<Error, T::NestedMandatoryTriangularColumns>
-        + TryMaySetNestedColumns<Error, T::NestedDiscretionaryTriangularColumns>,
+    T::NewValues: TrySetNestedColumns<Error, T::NestedMandatoryTriangularColumns>
+        + TryMaySetNestedColumns<Error, T::NestedDiscretionaryTriangularColumns> ,
     T::MandatoryNestedBuilders: InsertTuple<Error, Conn>,
     T::OptionalDiscretionaryNestedBuilders: InsertOptionTuple<Error, Conn>,
+    T::NewRecord: TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<T>>> + TypedNestedTuple<NestedTupleType=T::CompletedNewValues>,
+    diesel::query_builder::InsertStatement<
+        Self::Table,
+        <<<T::NewRecord as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<T>>::Values,
+    >: for<'query> diesel::query_dsl::LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn recursive_bundle_insert(
         mut self,
@@ -189,7 +195,18 @@ where
         self.insertable_model
             .try_may_set_nested_columns(discretionary_primary_keys)
             .map_err(BuilderError::Validation)?;
-        Ok(self.insertable_model.flat_insert(conn)?)
+
+        let columns = T::NewRecord::default();
+        let values: T::CompletedNewValues = self
+            .insertable_model
+            .transpose_or(T::NewRecord::NESTED_COLUMN_NAMES)
+            .map_err(|column_name| {
+                BuilderError::Incomplete(IncompleteBuilderError::MissingMandatoryField(column_name))
+            })?;
+
+        Ok(diesel::insert_into(T::default())
+            .values(columns.eq_all(values).flatten())
+            .get_result(conn)?)
     }
 }
 

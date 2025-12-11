@@ -340,19 +340,48 @@ let b = table_b::table::builder()
     .insert(conn)?;
 ```
 
+## Default Values
+
+Columns can have default values specified in the `TableModel` derive. These defaults are used when the user does not explicitly set a value for the column. The default values must implement `Into<ColumnType>`.
+
+```rust,ignore
+#[derive(TableModel)]
+#[diesel(table_name = users)]
+pub struct NewUser {
+    #[diesel(default = "Guest")]
+    pub name: String,
+    #[diesel(default = true)]
+    pub active: bool,
+    pub email: String,
+}
+
+// "Guest" and true are used automatically
+let user = users::table::builder()
+    .email("user@example.com")
+    .insert(&mut conn)?;
+```
+
+## Compile-time Validation
+
+The `TableModel` derive macro performs several compile-time checks to ensure correctness:
+
+- **Primary Keys**: Default values are not allowed on primary key columns (except for surrogate keys which are handled automatically).
+- **Surrogate Keys**: The `surrogate_key` attribute must be present if the table uses a surrogate primary key (e.g., auto-incrementing integer).
+- **Unsupported Attributes**: The macro validates that only supported `diesel` attributes are used, preventing silent failures or unexpected behavior.
+
 ## Performance
 
 Compile times by tuple size (using `cargo clean && time cargo build --features size-{tuple_size}`):
 
 | Max Tuple Size | Compile Time |
 |----------------|--------------|
-| 8 (default)    | ~8.4s        |
-| 16             | ~8.4s        |
-| 32             | ~8.4s        |
-| 48             | ~8.4s        |
-| 64             | ~8.6s        |
-| 96             | ~13s         |
-| 128            | ~25s         |
+| 8 (default)    | ~8.16s       |
+| 16             | ~8.19s       |
+| 32             | ~8.24s       |
+| 48             | ~8.40s       |
+| 64             | ~8.52s       |
+| 96             | ~12.88s      |
+| 128            | ~25.60s      |
 
 ## Macro Reference
 

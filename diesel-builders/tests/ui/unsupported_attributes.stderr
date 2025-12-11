@@ -1,0 +1,25 @@
+error: TableModel does not support #[diesel(column_name = ...)]
+  --> tests/ui/unsupported_attributes.rs:15:5
+   |
+15 |     #[diesel(column_name = real_name)]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: TableModel does not support #[diesel(embed = ...)]
+  --> tests/ui/unsupported_attributes.rs:23:5
+   |
+23 |     #[diesel(embed)]
+   |     ^^^^^^^^^^^^^^^^
+
+error: TableModel does not support #[diesel(serialize_as = ...)]
+  --> tests/ui/unsupported_attributes.rs:31:5
+   |
+31 |     #[diesel(serialize_as = "SomeType")]
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: Multiple default values specified for the same field
+  --> tests/ui/unsupported_attributes.rs:39:5
+   |
+39 | /     #[table_model(default = "A")]
+40 | |     #[table_model(default = "B")]
+41 | |     pub name: String,
+   | |____________________^

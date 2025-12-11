@@ -9,7 +9,7 @@ mod common;
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{Root, TableModel};
 
 diesel::table! {
     /// Root table A.
@@ -68,6 +68,7 @@ diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d
 // Table A models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_a)]
+#[table_model(surrogate_key)]
 /// Model for table A.
 pub struct TableA {
     /// Primary key.
@@ -76,18 +77,10 @@ pub struct TableA {
     column_a: String,
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = table_a)]
-/// Insertable model for table A.
-pub struct NewTableA {
-    /// Column A value.
-    column_a: Option<String>,
-}
-
 // Table C models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_c)]
+#[table_model(surrogate_key)]
 /// Model for table C.
 pub struct TableC {
     /// Primary key.
@@ -98,21 +91,10 @@ pub struct TableC {
     column_c: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_c)]
-/// Insertable model for table C.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(clippy::option_option)]
-pub struct NewTableC {
-    /// Foreign key to table A.
-    a_id: Option<i32>,
-    /// Column C value.
-    column_c: Option<Option<String>>,
-}
-
 // Table D models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = table_d)]
+#[table_model(surrogate_key)]
 /// Model for table D.
 pub struct TableD {
     /// Primary key.
@@ -121,18 +103,6 @@ pub struct TableD {
     a_id: i32,
     /// Column D value.
     column_d: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_d)]
-/// Insertable model for table D.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(clippy::option_option)]
-pub struct NewTableD {
-    /// Foreign key to table A.
-    a_id: Option<i32>,
-    /// Column D value.
-    column_d: Option<Option<String>>,
 }
 
 // Table B models
@@ -158,26 +128,6 @@ pub struct TableB {
 impl Descendant for table_b::table {
     type Ancestors = (table_a::table,);
     type Root = table_a::table;
-}
-
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = table_b)]
-/// Insertable model for table B.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[allow(clippy::option_option)]
-pub struct NewTableB {
-    /// Primary key.
-    id: Option<i32>,
-    /// Foreign key to table C.
-    c_id: Option<i32>,
-    /// Foreign key to table D.
-    d_id: Option<i32>,
-    /// Column B value.
-    column_b: Option<String>,
-    /// Remote column C value.
-    remote_column_c: Option<Option<String>>,
-    /// Remote column D value.
-    remote_column_d: Option<Option<String>>,
 }
 
 // Declare singleton foreign keys

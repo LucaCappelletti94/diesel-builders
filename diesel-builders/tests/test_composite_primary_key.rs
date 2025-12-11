@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{HasTable, MayGetColumn, Root, SetColumn, TableModel};
+use diesel_builders_macros::{Root, TableModel};
 use std::collections::HashMap;
 
 diesel::table! {
@@ -33,32 +33,6 @@ pub struct UserRole {
     role_id: i32,
     /// When the role was assigned.
     assigned_at: String,
-}
-
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = user_roles)]
-/// A new user role model for insertions.
-pub struct NewUserRole {
-    /// The ID of the user.
-    user_id: Option<i32>,
-    /// The ID of the role.
-    role_id: Option<i32>,
-    /// When the role was assigned.
-    assigned_at: Option<String>,
 }
 
 #[test]

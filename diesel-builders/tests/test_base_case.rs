@@ -20,7 +20,10 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test MayGetColumn derive - optional fields start as None
     assert_eq!(builder.may_get_column_ref::<animals::name>(), None);
-    assert_eq!(builder.may_get_column_ref::<animals::description>(), None);
+    assert_eq!(
+        builder.may_get_column_ref::<animals::description>(),
+        Some(&None)
+    );
 
     // Test generated TrySetAnimalsName helper trait - fallible setter by reference
     builder.try_name_ref("Max")?;
@@ -32,7 +35,10 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
             .map(String::as_str),
         Some("Max")
     );
-    assert_eq!(builder.may_get_column_ref::<animals::description>(), None);
+    assert_eq!(
+        builder.may_get_column_ref::<animals::description>(),
+        Some(&None)
+    );
 
     let animal = builder.insert(&mut conn)?;
 
@@ -144,10 +150,12 @@ fn test_insert_fails_when_table_does_not_exist() -> Result<(), Box<dyn std::erro
 
     let result = animals::table::builder().try_name("Max")?.insert(&mut conn);
 
-    assert!(matches!(
-        result.unwrap_err(),
-        diesel_builders::BuilderError::Diesel(_)
-    ));
+    let error = result.unwrap_err();
+
+    assert!(
+        matches!(error, diesel_builders::BuilderError::Diesel(_)),
+        "Expected Diesel error due to missing table: {error:?}",
+    );
 
     Ok(())
 }

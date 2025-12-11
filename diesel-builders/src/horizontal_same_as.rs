@@ -87,7 +87,12 @@ pub trait HorizontalNestedKeys<T>: NestedColumns {
             NestedPrimaryKeyColumns: NestedColumns<
                 NestedTupleType = <Self as TypedNestedTuple>::NestedTupleType,
             >,
-        > + NestedBuildableTables;
+        > + NestedBuildableTables<
+            NestedOptionalBuilders: NestedTupleOptionWith<
+                &'static str,
+                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+            >,
+        >;
     /// Tuple of tuples of host columns associated to each horizontal same-as key.
     type NestedHostColumnsMatrix: NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>;
     /// Tuple of tuples of foreign columns associated to each horizontal same-as key.
@@ -109,7 +114,12 @@ where
             NestedPrimaryKeyColumns: NestedColumns<
                 NestedTupleType = <(Head,) as TypedNestedTuple>::NestedTupleType,
             >,
-        > + NestedBuildableTables,
+        > + NestedBuildableTables<
+            NestedOptionalBuilders: NestedTupleOptionWith<
+                &'static str,
+                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+            >,
+        >,
     (Head::NestedHostColumns,): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
     (Head::NestedForeignColumns,): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
 {
@@ -128,7 +138,12 @@ where
             NestedPrimaryKeyColumns: NestedColumns<
                 NestedTupleType = (Head::Type, Tail::NestedTupleType),
             >,
-        > + NestedBuildableTables,
+        > + NestedBuildableTables<
+            NestedOptionalBuilders: NestedTupleOptionWith<
+                &'static str,
+                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+            >,
+        >,
     (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix):
         NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
     (Head::NestedForeignColumns, Tail::NestedForeignColumnsMatrix):

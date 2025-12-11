@@ -5,7 +5,7 @@ use crate::{TableBuilderBundle, TableExt, builder_bundle::BundlableTableExt};
 
 impl<T: BundlableTableExt + TableExt> serde::Serialize for TableBuilderBundle<T>
 where
-    T::InsertableModel: serde::Serialize,
+    T::NewValues: serde::Serialize,
     T::OptionalMandatoryNestedBuilders: serde::Serialize,
     T::OptionalDiscretionaryNestedBuilders: serde::Serialize,
 {
@@ -38,7 +38,7 @@ where
 
 impl<'de, T: BundlableTableExt + TableExt> serde::Deserialize<'de> for TableBuilderBundle<T>
 where
-    T::InsertableModel: serde::Deserialize<'de>,
+    T::NewValues: serde::Deserialize<'de>,
     T::OptionalMandatoryNestedBuilders: serde::Deserialize<'de>,
     T::OptionalDiscretionaryNestedBuilders: serde::Deserialize<'de>,
 {

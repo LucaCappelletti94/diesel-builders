@@ -17,14 +17,14 @@ fn test_builder_error_diesel_display() {
 
 #[test]
 fn test_builder_error_incomplete_display() {
-    let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularFields;
+    let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularField("c_id");
     let builder_error: BuilderError<IncompleteBuilderError> =
         BuilderError::Incomplete(incomplete_error);
 
     let display_string = format!("{builder_error}");
     assert_eq!(
         display_string,
-        "Incomplete builder error: Not all mandatory associated builders have been set"
+        "Incomplete builder error: Missing mandatory triangular builder field: c_id"
     );
 }
 
@@ -52,14 +52,14 @@ fn test_builder_error_diesel_source() {
 
 #[test]
 fn test_builder_error_incomplete_source() {
-    let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularFields;
+    let incomplete_error = IncompleteBuilderError::MissingMandatoryTriangularField("c_id");
     let builder_error: BuilderError<NewAnimalError> = BuilderError::Incomplete(incomplete_error);
 
     let source = builder_error.source();
     assert!(source.is_some());
     assert_eq!(
         source.unwrap().to_string(),
-        "Not all mandatory associated builders have been set"
+        "Missing mandatory triangular builder field: c_id"
     );
 }
 
@@ -78,10 +78,10 @@ fn test_builder_error_validation_source() {
 
 #[test]
 fn test_incomplete_builder_error_display() {
-    let error = IncompleteBuilderError::MissingMandatoryTriangularFields;
+    let error = IncompleteBuilderError::MissingMandatoryTriangularField("c_id");
     let display_string = format!("{error}");
     assert_eq!(
         display_string,
-        "Not all mandatory associated builders have been set"
+        "Missing mandatory triangular builder field: c_id"
     );
 }

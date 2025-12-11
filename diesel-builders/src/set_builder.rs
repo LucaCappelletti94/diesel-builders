@@ -4,9 +4,9 @@ use diesel::Table;
 
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
-    HasTableExt, InsertableTableModel, MandatorySameAsIndex, SetColumn, SetNestedColumns,
-    TableBuilder, TableExt, TrySetColumn, TrySetNestedColumns, Typed, TypedColumn,
-    TypedNestedTuple, columns::NonEmptyNestedProjection,
+    HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
+    TrySetColumn, TrySetNestedColumns, Typed, TypedColumn, TypedNestedTuple,
+    columns::NonEmptyNestedProjection,
 };
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -69,10 +69,7 @@ pub trait TrySetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: Buil
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >;
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>;
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
@@ -87,10 +84,7 @@ pub trait TrySetDiscretionaryBuilder<Key: DiscretionarySameAsIndex<ReferencedTab
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >;
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>;
 }
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
@@ -104,10 +98,7 @@ pub trait TrySetDiscretionaryModel<Key: DiscretionarySameAsIndex>: HasTableExt {
     fn try_set_discretionary_model(
         &mut self,
         model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >;
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>;
 }
 
 impl<C, T> TrySetDiscretionaryModel<C> for T
@@ -117,12 +108,9 @@ where
     C::NestedForeignColumns: NonEmptyNestedProjection<
         NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
     >,
-    Self: TrySetNestedColumns<
-            <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-            C::NestedHostColumns,
-        > + TrySetColumn<C>,
-    <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error:
-        From<<Self as TrySetColumn<C>>::Error>,
+    Self: TrySetNestedColumns<<Self::Table as TableExt>::Error, C::NestedHostColumns>
+        + TrySetColumn<C>,
+    <Self::Table as TableExt>::Error: From<<Self as TrySetColumn<C>>::Error>,
     <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,
 {
@@ -130,10 +118,7 @@ where
     fn try_set_discretionary_model(
         &mut self,
         model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    > {
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
         let primary_key: C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
         let columns = model.get_nested_columns();
@@ -225,10 +210,7 @@ pub trait TrySetMandatoryBuilderExt: HasTableExt {
     fn try_set_mandatory_builder_ref<Key>(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
     where
         Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetMandatoryBuilder<Key>,
@@ -246,7 +228,7 @@ pub trait TrySetMandatoryBuilderExt: HasTableExt {
     fn try_set_mandatory_builder<Key>(
         mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<Self, <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>
+    ) -> Result<Self, <Self::Table as TableExt>::Error>
     where
         Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetMandatoryBuilder<Key> + Sized,
@@ -274,10 +256,7 @@ pub trait TrySetDiscretionaryBuilderExt: HasTableExt {
     fn try_set_discretionary_builder_ref<Key>(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
     where
         Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Key>,
@@ -295,7 +274,7 @@ pub trait TrySetDiscretionaryBuilderExt: HasTableExt {
     fn try_set_discretionary_builder<Key>(
         mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<Self, <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>
+    ) -> Result<Self, <Self::Table as TableExt>::Error>
     where
         Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
         Self: TrySetDiscretionaryBuilder<Key> + Sized,
@@ -360,10 +339,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model_ref<Key>(
         &mut self,
         model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Result<
-        &mut Self,
-        <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    >
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
     where
         Key: DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Key>,
@@ -381,7 +357,7 @@ pub trait TrySetDiscretionaryModelExt: Sized {
     fn try_set_discretionary_model<Key>(
         mut self,
         model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Result<Self, <<Self::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>
+    ) -> Result<Self, <Self::Table as TableExt>::Error>
     where
         Key: DiscretionarySameAsIndex,
         Self: TrySetDiscretionaryModel<Key>,

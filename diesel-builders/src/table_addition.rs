@@ -1,15 +1,43 @@
 //! Extended `Table` trait with additional functionality.
 
-use crate::{InsertableTableModel, TableModel, columns::NonEmptyNestedProjection};
+use tuplities::prelude::{FlattenNestedTuple, IntoNestedTupleOption, NestedTupleOptionWith};
+
+use crate::{
+    NestedColumns, TableModel, TypedNestedTuple,
+    columns::{NonEmptyNestedProjection, NonEmptyProjection},
+};
 
 /// Extended trait for Diesel tables.
 pub trait TableExt: diesel::Table + Default {
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
-    /// The associated insertable model for this table.
-    type InsertableModel: InsertableTableModel<Table = Self>;
-    /// The primary key columns of this table.
+    /// The nested columns necessary to execute insert operations for this table.
+    type NewRecord: NonEmptyNestedProjection<
+            Table = Self,
+            NestedTupleType: IntoNestedTupleOption<IntoOptions = Self::NewValues>,
+            Flattened: NonEmptyProjection<Table = Self>,
+        >;
+    /// The nested types representing a `Self::NewColumns` for this table.
+    /// TODO! Replace this `Default` bound with something which allows
+    /// for custom default values lyfted from the schema.
+    type NewValues: Default
+        + FlattenNestedTuple
+        + NestedTupleOptionWith<
+            &'static str,
+            Transposed = <Self::NewRecord as TypedNestedTuple>::NestedTupleType,
+            SameDepth = <Self::NewRecord as NestedColumns>::NestedColumnNames,
+        >;
+    /// The nested primary key columns of this table.
     type NestedPrimaryKeyColumns: NonEmptyNestedProjection<Table = Self>;
+    /// Error type associated with this table, such as for the validation
+    /// of values before insertion.
+    type Error;
+
+    /// Returns the default values for the new record.
+    #[must_use]
+    fn default_new_values() -> Self::NewValues {
+        Self::NewValues::default()
+    }
 }
 
 /// Extended trait for Diesel models associated with a table.

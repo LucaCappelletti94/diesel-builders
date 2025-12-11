@@ -89,18 +89,10 @@ diesel::allow_tables_to_appear_in_same_query!(
 /// depending on the relation type.
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
 #[diesel(table_name = parent_table)]
+#[table_model(surrogate_key)]
 pub struct Parent {
     id: i32,
     name: String,
-}
-
-/// Insertable type used to construct `Parent` rows via the builder API in
-/// the test. Fields are `Option` to allow the builder to set them in a
-/// fluent, partial manner.
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = parent_table)]
-pub struct NewParent {
-    name: Option<String>,
 }
 
 /// An intermediate table representing a mandatory triangular relation.
@@ -108,20 +100,11 @@ pub struct NewParent {
 /// The `col` column participates in composite FKs with `child_table`.
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel, Root)]
 #[diesel(table_name = mandatory_table)]
+#[table_model(surrogate_key)]
 pub struct Mandatory {
     id: i32,
     a_id: i32,
     col: String,
-}
-
-/// Insertable form for `Mandatory` used by the test builder. The `a_id` is
-/// optional in the insertable to support nested builders that set it via the
-/// parent reference.
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = mandatory_table)]
-pub struct NewMandatory {
-    a_id: Option<i32>,
-    col: Option<String>,
 }
 
 // Discretionary intermediate d1
@@ -130,21 +113,11 @@ pub struct NewMandatory {
 /// column and the relation becomes optional from the child side.
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel, Root)]
 #[diesel(table_name = discretionary_table)]
+#[table_model(surrogate_key)]
 pub struct Discretionary {
     id: i32,
     a_id: i32,
     col: Option<String>,
-}
-
-/// Insertable variant for `Discretionary` used by the tests. The `col`
-/// field is `Option<Option<String>>` to represent a nullable database column
-/// while staying builder-friendly.
-#[derive(Debug, Default, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = discretionary_table)]
-#[allow(clippy::option_option)]
-pub struct NewDiscretionary {
-    a_id: Option<i32>,
-    col: Option<Option<String>>,
 }
 
 // Implement Descendant and BundlableTable for `child_table`. These trait
@@ -199,28 +172,6 @@ pub struct Child {
     /// The payload establishes a simple observable column for test
     /// assertions after insert.
     payload: String,
-}
-
-/// Insertable form for `Child` designed for use with the table builder.
-/// Each optional field corresponds to a builder-settable column.
-#[derive(Default, Debug, Clone, Insertable, MayGetColumn, SetColumn, HasTable)]
-#[diesel(table_name = child_table)]
-#[allow(clippy::option_option)]
-pub struct NewChild {
-    id: Option<i32>,
-    m1_id: Option<i32>,
-    m1_col: Option<String>,
-    m2_id: Option<i32>,
-    m2_col: Option<String>,
-    m3_id: Option<i32>,
-    m3_col: Option<String>,
-    d1_id: Option<i32>,
-    d1_col: Option<Option<String>>,
-    d2_id: Option<i32>,
-    d2_col: Option<Option<String>>,
-    d3_id: Option<i32>,
-    d3_col: Option<Option<String>>,
-    payload: Option<String>,
 }
 
 // Declare singleton foreign keys for mandatory relationships

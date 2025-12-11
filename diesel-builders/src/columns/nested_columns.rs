@@ -10,14 +10,22 @@ use tuplities::prelude::FlattenNestedTuple;
 pub trait NestedColumns: TypedNestedTuple + Default {
     /// Associated type representing a set of nested tables.
     type NestedTables: FlattenNestedTuple;
+    /// The of the columns as a nested tuple of strings.
+    type NestedColumnNames: FlattenNestedTuple;
+    /// Const representing the names of the columns as a nested tuple of strings.
+    const NESTED_COLUMN_NAMES: Self::NestedColumnNames;
 }
 
 impl NestedColumns for () {
     type NestedTables = ();
+    type NestedColumnNames = ();
+    const NESTED_COLUMN_NAMES: Self::NestedColumnNames = ();
 }
 
 impl<C1: TypedColumn> NestedColumns for (C1,) {
     type NestedTables = (C1::Table,);
+    type NestedColumnNames = (&'static str,);
+    const NESTED_COLUMN_NAMES: Self::NestedColumnNames = (C1::NAME,);
 }
 
 impl<Head, Tail> NestedColumns for (Head, Tail)
@@ -26,6 +34,9 @@ where
     Tail: NestedColumns,
     (Head, Tail): TypedNestedTuple,
     (Head::Table, Tail::NestedTables): FlattenNestedTuple,
+    (&'static str, Tail::NestedColumnNames): FlattenNestedTuple,
 {
     type NestedTables = (Head::Table, Tail::NestedTables);
+    type NestedColumnNames = (&'static str, Tail::NestedColumnNames);
+    const NESTED_COLUMN_NAMES: Self::NestedColumnNames = (Head::NAME, Tail::NESTED_COLUMN_NAMES);
 }

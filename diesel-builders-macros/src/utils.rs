@@ -29,10 +29,12 @@ pub(crate) fn snake_to_camel_case(s: &str) -> String {
 }
 
 /// Formats the provided iterator of tokenizable items as a nested tuple.
-pub(crate) fn format_as_nested_tuple<I: DoubleEndedIterator<Item: ToTokens>>(
+pub(crate) fn format_as_nested_tuple<
+    I: IntoIterator<Item: ToTokens, IntoIter: DoubleEndedIterator>,
+>(
     items: I,
 ) -> proc_macro2::TokenStream {
-    let mut rev_items = items.rev();
+    let mut rev_items = items.into_iter().rev();
     if let Some(first) = rev_items.next() {
         rev_items.fold(quote::quote! { (#first,) }, |acc, item| {
             quote::quote! { (#item, #acc) }
@@ -40,4 +42,14 @@ pub(crate) fn format_as_nested_tuple<I: DoubleEndedIterator<Item: ToTokens>>(
     } else {
         quote::quote! { () }
     }
+}
+
+/// Checks if the given type is an `Option`.
+pub(crate) fn is_option(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(segment) = type_path.path.segments.last() {
+            return segment.ident == "Option";
+        }
+    }
+    false
 }

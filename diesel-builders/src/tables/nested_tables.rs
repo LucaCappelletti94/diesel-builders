@@ -15,7 +15,7 @@ pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
         + HasNestedTables<NestedTables = Self>
         + Default;
     /// The associated nested insertable models.
-    type NestedInsertableModels: FlattenNestedTuple;
+    type NestedNewValues: FlattenNestedTuple;
     /// The associated nested primary key columns collection.
     type NestedPrimaryKeyColumnsCollection: NestedColumnsCollection;
 }
@@ -23,7 +23,7 @@ pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
 impl NestedTables for () {
     type NestedModels = ();
     type OptionalNestedModels = ();
-    type NestedInsertableModels = ();
+    type NestedNewValues = ();
     type NestedPrimaryKeyColumnsCollection = ();
 }
 
@@ -35,7 +35,7 @@ where
 {
     type NestedModels = (T::Model,);
     type OptionalNestedModels = (Option<T::Model>,);
-    type NestedInsertableModels = (T::InsertableModel,);
+    type NestedNewValues = (T::NewValues,);
     type NestedPrimaryKeyColumnsCollection = (T::NestedPrimaryKeyColumns,);
 }
 
@@ -48,7 +48,7 @@ where
         + IntoNestedTupleOption<IntoOptions = (Option<Head::Model>, Tail::OptionalNestedModels)>,
     (Option<Head::Model>, Tail::OptionalNestedModels):
         FlattenNestedTuple + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
-    (Head::InsertableModel, Tail::NestedInsertableModels): FlattenNestedTuple,
+    (Head::NewValues, Tail::NestedNewValues): FlattenNestedTuple,
     (
         Head::NestedPrimaryKeyColumns,
         Tail::NestedPrimaryKeyColumnsCollection,
@@ -56,7 +56,7 @@ where
 {
     type NestedModels = (Head::Model, Tail::NestedModels);
     type OptionalNestedModels = (Option<Head::Model>, Tail::OptionalNestedModels);
-    type NestedInsertableModels = (Head::InsertableModel, Tail::NestedInsertableModels);
+    type NestedNewValues = (Head::NewValues, Tail::NestedNewValues);
     type NestedPrimaryKeyColumnsCollection = (
         Head::NestedPrimaryKeyColumns,
         Tail::NestedPrimaryKeyColumnsCollection,

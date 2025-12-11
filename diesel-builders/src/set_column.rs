@@ -23,6 +23,46 @@ where
 {
 }
 
+/// Trait providing an unchecked setter for a specific Diesel column.
+///
+/// This method is solely meant to be used in [`TableExt::NewValues`] impls
+/// when writing a `TrySetColumn` impl. It allows to avoid the overhead of
+/// accessing the i-th element of a nested tuple via typenum at each call site.
+pub trait SetColumnUnchecked<Column: TypedColumn> {
+    /// Set the value of the specified column.
+    fn set_column_unchecked(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self;
+}
+
+impl<T, Column> SetColumnUnchecked<Column> for T
+where
+    T: SetColumn<Column>,
+    Column: TypedColumn,
+{
+    #[inline]
+    fn set_column_unchecked(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self {
+        <Self as SetColumn<Column>>::set_column(self, value)
+    }
+}
+
+/// Extension trait for `SetColumnUnchecked` that allows specifying the column at the
+/// method level.
+pub trait SetColumnUncheckedExt: Sized {
+    #[inline]
+    /// Set the value of the specified column.
+    fn set_column_unchecked<Column>(
+        &mut self,
+        value: impl Into<<Column as Typed>::Type>,
+    ) -> &mut Self
+    where
+        Column: TypedColumn,
+        Self: SetColumnUnchecked<Column>,
+    {
+        <Self as SetColumnUnchecked<Column>>::set_column_unchecked(self, value)
+    }
+}
+
+impl<T> SetColumnUncheckedExt for T {}
+
 /// Trait providing a failable setter for a specific Diesel column.
 pub trait MaySetColumn<Column: TypedColumn>: SetColumn<Column> {
     #[inline]

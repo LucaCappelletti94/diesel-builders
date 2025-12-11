@@ -1,0 +1,6 @@
+error: Surrogate primary key cannot be marked as infallible
+  --> tests/ui/pk_infallible_surrogate_error.rs:14:5
+   |
+14 | /     #[table_model(infallible)]
+15 | |     pub id: i32,
+   | |_______________^

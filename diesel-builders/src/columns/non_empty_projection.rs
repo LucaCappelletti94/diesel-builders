@@ -1,9 +1,9 @@
 //! Submodule defining and implementing the `NonEmptyProjection` trait.
 
-use super::{Columns, NestedColumns, NonEmptyNestedProjection};
+use super::{Columns, NonEmptyNestedProjection};
 
 /// A trait representing a non-empty projection of Diesel columns.
-pub trait NonEmptyProjection: Columns<Nested: NestedColumns> {
+pub trait NonEmptyProjection: Columns {
     /// The table associated to this projection.
     type Table: diesel::Table + Default;
 }

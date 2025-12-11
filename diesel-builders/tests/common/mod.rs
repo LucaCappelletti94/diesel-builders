@@ -48,6 +48,7 @@ diesel::table! {
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, Root, TableModel,
 )]
 #[diesel(table_name = animals)]
+#[table_model(error = NewAnimalError, surrogate_key)]
 /// Model for the animals table.
 pub struct Animal {
     /// Primary key.
@@ -56,20 +57,6 @@ pub struct Animal {
     name: String,
     /// Optional description.
     description: Option<String>,
-}
-
-#[derive(
-    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Insertable, MayGetColumn, HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = animals)]
-#[allow(clippy::option_option)]
-/// Insertable model for the animals table.
-pub struct NewAnimal {
-    /// The name of the animal.
-    name: Option<String>,
-    /// Optional description (nullable column uses Option<Option<T>>).
-    description: Option<Option<String>>,
 }
 
 /// Error variants for `NewAnimal` validation.
@@ -96,7 +83,9 @@ impl From<std::convert::Infallible> for NewAnimalError {
 }
 
 /// Validation for animal name - non-empty, max 100 chars.
-impl diesel_builders::TrySetColumn<animals::name> for NewAnimal {
+impl diesel_builders::TrySetColumn<animals::name>
+    for <animals::table as diesel_builders::TableExt>::NewValues
+{
     type Error = NewAnimalError;
 
     fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
@@ -106,13 +95,15 @@ impl diesel_builders::TrySetColumn<animals::name> for NewAnimal {
         if value.len() > 100 {
             return Err(NewAnimalError::NameTooLong);
         }
-        self.name = Some(value);
+        self.set_column_unchecked::<animals::name>(value);
         Ok(self)
     }
 }
 
 /// Validation for animal description - when Some, must be non-empty, max 500 chars.
-impl diesel_builders::TrySetColumn<animals::description> for NewAnimal {
+impl diesel_builders::TrySetColumn<animals::description>
+    for <animals::table as diesel_builders::TableExt>::NewValues
+{
     type Error = NewAnimalError;
 
     fn try_set_column(&mut self, value: Option<String>) -> Result<&mut Self, Self::Error> {
@@ -124,13 +115,9 @@ impl diesel_builders::TrySetColumn<animals::description> for NewAnimal {
                 return Err(NewAnimalError::DescriptionTooLong);
             }
         }
-        self.description = Some(value);
+        self.set_column_unchecked::<animals::description>(value);
         Ok(self)
     }
-}
-
-impl InsertableTableModel for NewAnimal {
-    type Error = NewAnimalError;
 }
 
 /// SQL to create the animals table.
@@ -173,30 +160,6 @@ impl Descendant for dogs::table {
     type Root = animals::table;
 }
 
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = dogs)]
-/// Insertable model for the dogs table.
-pub struct NewDog {
-    /// Primary key.
-    id: Option<i32>,
-    /// The breed of the dog.
-    breed: Option<String>,
-}
-
 /// SQL to create the dogs table.
 #[allow(dead_code)]
 pub const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
@@ -224,9 +187,11 @@ diesel::table! {
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
+#[table_model(error = NewCatError)]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
 pub struct Cat {
+    #[infallible]
     /// Primary key.
     id: i32,
     /// The color of the cat.
@@ -239,19 +204,6 @@ impl Descendant for cats::table {
     type Root = animals::table;
 }
 
-#[derive(
-    Debug, Default, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Insertable, MayGetColumn, HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = cats)]
-/// Insertable model for the cats table.
-pub struct NewCat {
-    /// Primary key.
-    id: Option<i32>,
-    /// The color of the cat.
-    color: Option<String>,
-}
-
 #[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
 pub enum NewCatError {
     /// Color cannot be empty.
@@ -260,34 +212,23 @@ pub enum NewCatError {
 }
 
 impl From<Infallible> for NewCatError {
-    fn from(_: Infallible) -> Self {
-        unreachable!()
+    fn from(inf: Infallible) -> Self {
+        match inf {}
     }
 }
 
-impl diesel_builders::TrySetColumn<cats::id> for NewCat {
-    type Error = Infallible;
-
-    fn try_set_column(&mut self, value: i32) -> Result<&mut Self, Self::Error> {
-        self.id = Some(value);
-        Ok(self)
-    }
-}
-
-impl diesel_builders::TrySetColumn<cats::color> for NewCat {
+impl diesel_builders::TrySetColumn<cats::color>
+    for <cats::table as diesel_builders::TableExt>::NewValues
+{
     type Error = NewCatError;
 
     fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
         if value.trim().is_empty() {
             return Err(NewCatError::ColorEmpty);
         }
-        self.color = Some(value);
+        self.set_column_unchecked::<cats::color>(value);
         Ok(self)
     }
-}
-
-impl InsertableTableModel for NewCat {
-    type Error = NewCatError;
 }
 
 /// SQL to create the cats table.
@@ -332,30 +273,6 @@ impl Descendant for puppies::table {
     type Root = animals::table;
 }
 
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = puppies)]
-/// Insertable model for the puppies table.
-pub struct NewPuppy {
-    /// Primary key.
-    id: Option<i32>,
-    /// The age in months of the puppy.
-    age_months: Option<i32>,
-}
-
 /// SQL to create the puppies table.
 #[allow(dead_code)]
 pub const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
@@ -393,30 +310,6 @@ pub struct Pet {
 impl Descendant for pets::table {
     type Ancestors = (animals::table, dogs::table, cats::table);
     type Root = animals::table;
-}
-
-#[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Ord,
-    Hash,
-    Insertable,
-    MayGetColumn,
-    SetColumn,
-    HasTable,
-)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[diesel(table_name = pets)]
-/// Insertable model for the pets table.
-pub struct NewPet {
-    /// Primary key.
-    id: Option<i32>,
-    /// The owner name of the pet.
-    owner_name: Option<String>,
 }
 
 /// SQL to create the pets table (for DAG tests).

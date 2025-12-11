@@ -4,8 +4,8 @@ use std::ops::Sub;
 
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::{
-    BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, InsertableTableModel,
-    NestedTables, TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple,
+    BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
+    TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple,
 };
 use diesel::Table;
 use diesel::associations::HasTable;
@@ -54,7 +54,7 @@ pub trait RecursiveBuilderInsert<Error, Conn>: HasTableExt {
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, Error>;
+    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error>;
 }
 
 impl<T, Error, Conn> RecursiveBuilderInsert<Error, Conn> for TableBuilder<T>
@@ -71,7 +71,7 @@ where
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, Error> {
+    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
         let completed_builder: RecursiveTableBuilder<
             T,
             typenum::U0,
@@ -83,10 +83,13 @@ where
 
 impl<T: BuildableTable, Conn> Insert<Conn> for TableBuilder<T>
 where
-    Self: RecursiveBuilderInsert<<<<Self as HasTable>::Table as TableExt>::InsertableModel as InsertableTableModel>::Error, Conn>
+    Self: RecursiveBuilderInsert<<Self::Table as TableExt>::Error, Conn>,
 {
     #[inline]
-    fn insert(self, conn: &mut Conn) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, <<<Self as HasTable>::Table as TableExt>::InsertableModel as InsertableTableModel>::Error>{
+    fn insert(
+        self,
+        conn: &mut Conn,
+    ) -> BuilderResult<<Self::Table as TableExt>::Model, <Self::Table as TableExt>::Error> {
         self.recursive_insert(conn)
     }
 }
@@ -136,7 +139,7 @@ where
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, Error> {
+    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
         self.nested_bundles.0.recursive_bundle_insert(conn)
     }
 }
@@ -165,7 +168,7 @@ where
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<<Self as HasTable>::Table as TableExt>::Model, Error> {
+    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
         // Insert the first table and get its model (with primary keys)
         let first = self.nested_bundles.0;
         let model: <Head::Table as TableExt>::Model =

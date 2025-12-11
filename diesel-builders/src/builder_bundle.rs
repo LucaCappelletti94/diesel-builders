@@ -1,5 +1,5 @@
 //! Submodule defining the `TableBuilderBundle` struct, which bundles
-//! a table `InsertableModel` and its mandatory and discretionary associated
+//! a table record new values and its mandatory and discretionary associated
 //! builders.
 
 use diesel::associations::HasTable;
@@ -7,16 +7,15 @@ use diesel::associations::HasTable;
 mod completed_table_builder_bundle;
 mod serde;
 pub use completed_table_builder_bundle::CompletedTableBuilderBundle;
-pub(crate) use completed_table_builder_bundle::RecursiveBundleInsert;
+pub use completed_table_builder_bundle::RecursiveBundleInsert;
 
 use crate::columns::NestedColumns;
 use crate::tables::NonCompositePrimaryKeyNestedTables;
 use crate::{
     BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
-    InsertableTableModel, MandatorySameAsIndex, NestedBuildableTables, NestedTableModels,
-    NestedTables, SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder,
-    TrySetDiscretionaryBuilder, TrySetMandatoryBuilder, TupleMayGetNestedColumns, Typed,
-    TypedNestedTuple,
+    MandatorySameAsIndex, NestedBuildableTables, NestedTableModels, NestedTables,
+    SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder, TrySetDiscretionaryBuilder,
+    TrySetMandatoryBuilder, TupleMayGetNestedColumns, Typed, TypedNestedTuple,
 };
 use crate::{MayGetColumn, TableExt, TrySetColumn, TupleGetNestedColumns, TypedColumn};
 use tuplities::prelude::*;
@@ -31,7 +30,12 @@ pub trait BundlableTable: Sized {
 }
 
 /// Extension trait for `BundlableTable`.
-pub trait BundlableTableExt: BundlableTable {
+pub trait BundlableTableExt:
+    BundlableTable + TableExt<NewValues: NestedTupleOption<Transposed = Self::CompletedNewValues>>
+{
+    /// The completed new values ready to be inserted for the table.
+    type CompletedNewValues: FlattenNestedTuple
+        + IntoNestedTupleOption<IntoOptions = Self::NewValues>;
     /// Nested mandatory triangular same-as columns.
     type NestedMandatoryTriangularColumns: NestedColumns<
         NestedTupleType = Self::NestedMandatoryPrimaryKeyTypes,
@@ -71,7 +75,11 @@ pub trait BundlableTableExt: BundlableTable {
     type MandatoryNestedBuilders: IntoNestedTupleOption<IntoOptions = Self::OptionalMandatoryNestedBuilders>
         + HasNestedTables<NestedTables = Self::NestedMandatoryTables>;
     /// Optional builders for the mandatory associated tables.
-    type OptionalMandatoryNestedBuilders: NestedTupleOption<Transposed = Self::MandatoryNestedBuilders>
+    type OptionalMandatoryNestedBuilders: NestedTupleOptionWith<
+        &'static str,
+        SameDepth = <Self::NestedMandatoryTriangularColumns as NestedColumns>::NestedColumnNames,
+        Transposed = Self::MandatoryNestedBuilders
+    >
         + HasNestedTables<NestedTables = Self::NestedMandatoryTables>;
     /// Builders for the discretionary associated tables.
     type DiscretionaryNestedBuilders: IntoNestedTupleOption<IntoOptions = Self::OptionalDiscretionaryNestedBuilders>
@@ -95,8 +103,9 @@ pub trait BundlableTableExt: BundlableTable {
 
 impl<T> BundlableTableExt for T
 where
-    T: BundlableTable,
+    T: BundlableTable + TableExt,
 {
+    type CompletedNewValues = <T::NewRecord as TypedNestedTuple>::NestedTupleType;
     type NestedMandatoryTriangularColumns = <T::MandatoryTriangularColumns as NestTuple>::Nested;
     type NestedMandatoryTables =
         <Self::NestedMandatoryTriangularColumns as HorizontalNestedKeys<T>>::NestedReferencedTables;
@@ -131,15 +140,30 @@ where
         <Self::NestedDiscretionaryModels as IntoNestedTupleOption>::IntoOptions;
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 /// A bundle of a table's insertable model and its associated builders.
 pub struct TableBuilderBundle<T: BundlableTableExt + TableExt> {
     /// The insertable model for the table.
-    insertable_model: T::InsertableModel,
+    insertable_model: T::NewValues,
     /// The mandatory associated builders relative to triangular same-as.
     nested_mandatory_associated_builders: T::OptionalMandatoryNestedBuilders,
     /// The discretionary associated builders relative to triangular same-as.
     nested_discretionary_associated_builders: T::OptionalDiscretionaryNestedBuilders,
+}
+
+impl<T> Default for TableBuilderBundle<T>
+where
+    T: BundlableTableExt + TableExt,
+    T::OptionalMandatoryNestedBuilders: Default,
+    T::OptionalDiscretionaryNestedBuilders: Default,
+{
+    fn default() -> Self {
+        Self {
+            insertable_model: T::default_new_values(),
+            nested_mandatory_associated_builders: Default::default(),
+            nested_discretionary_associated_builders: Default::default(),
+        }
+    }
 }
 
 impl<T> HasTable for TableBuilderBundle<T>
@@ -158,7 +182,7 @@ impl<T, C> MayGetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable + TableExt,
     C: TypedColumn,
-    T::InsertableModel: MayGetColumn<C>,
+    T::NewValues: MayGetColumn<C>,
 {
     #[inline]
     fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::Type>
@@ -173,9 +197,9 @@ impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable + TableExt,
     C: TypedColumn<Table = T>,
-    T::InsertableModel: TrySetColumn<C>,
+    T::NewValues: TrySetColumn<C>,
 {
-    type Error = <T::InsertableModel as TrySetColumn<C>>::Error;
+    type Error = <T::NewValues as TrySetColumn<C>>::Error;
 
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
@@ -215,10 +239,7 @@ where
     fn try_set_mandatory_builder(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<<Self as HasTable>::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    > {
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
         *self.nested_mandatory_associated_builders.nested_index_mut() = Some(builder);
         Ok(self)
     }
@@ -260,10 +281,7 @@ where
     fn try_set_discretionary_builder(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<
-        &mut Self,
-        <<<Self as HasTable>::Table as TableExt>::InsertableModel as InsertableTableModel>::Error,
-    > {
+    ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
         *self
             .nested_discretionary_associated_builders
             .nested_index_mut() = Some(builder);

@@ -1,6 +1,4 @@
 //! Test verifying the correct functioning of the `TryFrom` between `RecursiveTableBuilder` and `TableBuilder`
-use std::convert::Infallible;
-
 use diesel_builders::{
     IncompleteBuilderError, TableBuilder, prelude::*, table_builder::RecursiveTableBuilder,
 };
@@ -24,20 +22,6 @@ diesel::table! {
 pub struct Dog {
     id: i32,
     breed: String,
-}
-
-#[derive(
-    Debug, Clone, Default, diesel::Selectable, diesel::Insertable, PartialEq, PartialOrd, HasTable,
-)]
-#[diesel(table_name = dogs)]
-/// Model struct associated to the `dogs` table.
-pub struct NewDog {
-    id: Option<i32>,
-    breed: Option<String>,
-}
-
-impl InsertableTableModel for NewDog {
-    type Error = Infallible;
 }
 
 #[test]

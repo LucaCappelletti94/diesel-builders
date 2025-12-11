@@ -18,6 +18,7 @@ diesel = { workspace = true, features = [
 ] }
 serde_json.workspace = true
 thiserror.workspace = true
+trybuild = "1.0.114"
 
 [lints]
 workspace = true
