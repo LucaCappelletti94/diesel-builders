@@ -43,12 +43,9 @@ pub use horizontal_same_as::*;
 pub mod horizontal_same_as_group;
 pub use horizontal_same_as_group::HorizontalSameAsGroup;
 
-// Original diesel-builders modules
-pub mod buildable_columns;
 pub mod buildable_table;
 pub mod nested_buildable_tables;
 pub mod table_builder;
-pub use buildable_columns::BuildableColumn;
 pub use buildable_table::*;
 pub use nested_buildable_tables::*;
 pub use table_builder::RecursiveBuilderInsert;
