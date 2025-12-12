@@ -21,7 +21,7 @@ fn test_builder_error_incomplete_display() {
     let display_string = format!("{builder_error}");
     assert_eq!(
         display_string,
-        "Incomplete builder error: Missing mandatory triangular builder field: c_id"
+        "Missing mandatory triangular builder field: `c_id`"
     );
 }
 
@@ -56,7 +56,7 @@ fn test_builder_error_incomplete_source() {
     assert!(source.is_some());
     assert_eq!(
         source.unwrap().to_string(),
-        "Missing mandatory triangular builder field: c_id"
+        "Missing mandatory triangular builder field: `c_id`"
     );
 }
 
@@ -76,6 +76,6 @@ fn test_incomplete_builder_error_display() {
     let display_string = format!("{error}");
     assert_eq!(
         display_string,
-        "Missing mandatory triangular builder field: c_id"
+        "Missing mandatory triangular builder field: `c_id`"
     );
 }

@@ -30,7 +30,7 @@ pub fn setup_animal_tables(
 
     const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
         id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id),
-        age_months INTEGER NOT NULL
+        age_months INTEGER NOT NULL CHECK (age_months >= 0)
     )";
 
     const CREATE_PETS_TABLE: &str = "CREATE TABLE pets (
@@ -86,31 +86,31 @@ impl From<std::convert::Infallible> for NewAnimalError {
 }
 
 /// Validation for animal name - non-empty, max 100 chars.
-impl diesel_builders::TrySetColumn<animals::name>
+impl diesel_builders::ValidateColumn<animals::name>
     for <animals::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewAnimalError;
 
-    fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
+    fn validate_column(value: &String) -> Result<(), Self::Error> {
         if value.trim().is_empty() {
             return Err(NewAnimalError::NameEmpty);
         }
         if value.len() > 100 {
             return Err(NewAnimalError::NameTooLong);
         }
-        self.set_column_unchecked::<animals::name>(value);
-        Ok(self)
+
+        Ok(())
     }
 }
 
 /// Validation for animal description - when Some, must be non-empty, max 500 chars.
-impl diesel_builders::TrySetColumn<animals::description>
+impl diesel_builders::ValidateColumn<animals::description>
     for <animals::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewAnimalError;
 
-    fn try_set_column(&mut self, value: Option<String>) -> Result<&mut Self, Self::Error> {
-        if let Some(ref desc) = value {
+    fn validate_column(value: &Option<String>) -> Result<(), Self::Error> {
+        if let Some(desc) = value {
             if desc.trim().is_empty() {
                 return Err(NewAnimalError::DescriptionEmpty);
             }
@@ -118,8 +118,8 @@ impl diesel_builders::TrySetColumn<animals::description>
                 return Err(NewAnimalError::DescriptionTooLong);
             }
         }
-        self.set_column_unchecked::<animals::description>(value);
-        Ok(self)
+
+        Ok(())
     }
 }
 
@@ -131,6 +131,7 @@ pub struct Dog {
     /// Primary key.
     id: i32,
     /// The breed of the dog.
+    #[table_model(default = "Unknown")]
     breed: String,
 }
 
@@ -160,28 +161,58 @@ impl From<Infallible> for NewCatError {
     }
 }
 
-impl diesel_builders::TrySetColumn<cats::color>
+impl diesel_builders::ValidateColumn<cats::color>
     for <cats::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewCatError;
 
-    fn try_set_column(&mut self, value: String) -> Result<&mut Self, Self::Error> {
+    fn validate_column(value: &String) -> Result<(), Self::Error> {
         if value.trim().is_empty() {
             return Err(NewCatError::ColorEmpty);
         }
-        self.set_column_unchecked::<cats::color>(value);
-        Ok(self)
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
+/// Errors for `NewPuppy` validation.
+pub enum NewPuppyError {
+    /// Age cannot be negative.
+    #[error("Age cannot be negative")]
+    NegativeAge,
+}
+
+impl From<Infallible> for NewPuppyError {
+    fn from(inf: Infallible) -> Self {
+        match inf {}
+    }
+}
+
+#[diesel_builders_macros::const_validator]
+impl diesel_builders::ValidateColumn<puppies::age_months>
+    for <puppies::table as diesel_builders::TableExt>::NewValues
+{
+    type Error = NewPuppyError;
+
+    fn validate_column(value: &i32) -> Result<(), Self::Error> {
+        if *value < 0 {
+            return Err(NewPuppyError::NegativeAge);
+        }
+        Ok(())
     }
 }
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = puppies)]
+#[table_model(error = NewPuppyError)]
 #[table_model(ancestors(animals, dogs))]
 /// Model for the puppies table.
 pub struct Puppy {
+    #[infallible]
     /// Primary key.
     id: i32,
     /// The age in months of the puppy.
+    #[table_model(default = 6)]
     age_months: i32,
 }
 
@@ -195,6 +226,3 @@ pub struct Pet {
     /// The owner name of the pet.
     owner_name: String,
 }
-
-// Allow all tables to appear together in queries
-diesel::allow_tables_to_appear_in_same_query!(animals, dogs, cats, puppies, pets);

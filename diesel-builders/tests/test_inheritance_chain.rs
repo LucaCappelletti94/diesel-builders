@@ -36,7 +36,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     let puppy = puppies::table::builder()
         .try_name("Buddy")?
         .breed("Labrador")
-        .age_months(3)
+        .try_age_months(3)?
         .insert(&mut conn)?;
 
     assert_eq!(puppy.get_column::<puppies::age_months>(), 3);
@@ -90,7 +90,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     let builder = puppies::table::builder()
         .try_name("Serialized Puppy")?
         .breed("Beagle")
-        .age_months(6);
+        .try_age_months(6)?;
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;

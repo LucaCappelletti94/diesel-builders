@@ -10,10 +10,10 @@ pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder}
 
 use crate::{
     AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
-    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
+    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns, SetColumn,
     SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilderBundle, TableExt,
     TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder, TrySetMandatoryBuilder,
-    Typed, TypedColumn, TypedNestedTuple, buildable_table::BuildableTable,
+    Typed, TypedColumn, TypedNestedTuple, ValidateColumn, buildable_table::BuildableTable,
     columns::NonEmptyNestedProjection,
 };
 
@@ -62,6 +62,50 @@ where
     }
 }
 
+impl<C, T> ValidateColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
+    TableBuilderBundle<C::Table>: ValidateColumn<C>,
+    T::NestedAncestorBuilders: NestedTupleIndex<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
+{
+    type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
+
+    #[inline]
+    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        TableBuilderBundle::<C::Table>::validate_column(value)
+    }
+
+    #[inline]
+    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        self.bundles
+            .nested_index()
+            .validate_column_in_context(value)
+    }
+}
+
+impl<C, T> SetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<T> + BundlableTable,
+    TableBuilderBundle<C::Table>: SetColumn<C>,
+    T::NestedAncestorBuilders: NestedTupleIndexMut<
+            <C::Table as AncestorOfIndex<T>>::Idx,
+            Element = TableBuilderBundle<C::Table>,
+        >,
+{
+    #[inline]
+    fn set_column(&mut self, value: impl Into<<C as Typed>::Type>) -> &mut Self {
+        self.bundles.nested_index_mut().set_column(value);
+        self
+    }
+}
+
 impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
@@ -73,8 +117,6 @@ where
             Element = TableBuilderBundle<C::Table>,
         >,
 {
-    type Error = <TableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
-
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
         self.bundles.nested_index_mut().try_set_column(value)?;

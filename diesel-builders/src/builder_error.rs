@@ -30,11 +30,11 @@ impl core::fmt::Display for IncompleteBuilderError {
             IncompleteBuilderError::MissingMandatoryTriangularField(horizontal_key_name) => {
                 write!(
                     f,
-                    "Missing mandatory triangular builder field: {horizontal_key_name}"
+                    "Missing mandatory triangular builder field: `{horizontal_key_name}`"
                 )
             }
             IncompleteBuilderError::MissingMandatoryField(field_name) => {
-                write!(f, "Missing mandatory field: {field_name}")
+                write!(f, "Missing mandatory field: `{field_name}`")
             }
         }
     }
@@ -44,7 +44,7 @@ impl<E: core::fmt::Display> core::fmt::Display for BuilderError<E> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             BuilderError::Diesel(e) => write!(f, "Diesel error: {e}"),
-            BuilderError::Incomplete(e) => write!(f, "Incomplete builder error: {e}"),
+            BuilderError::Incomplete(e) => write!(f, "{e}"),
             BuilderError::Validation(e) => write!(f, "Validation error: {e}"),
         }
     }

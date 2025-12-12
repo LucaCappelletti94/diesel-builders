@@ -5,53 +5,10 @@ use core::convert::Infallible;
 use crate::{Typed, TypedColumn};
 
 /// Trait providing a setter for a specific Diesel column.
-pub trait SetColumn<Column: TypedColumn>:
-    TrySetColumn<Column, Error = core::convert::Infallible>
-{
-    #[inline]
+pub trait SetColumn<Column: TypedColumn> {
     /// Set the value of the specified column.
-    fn set_column(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self {
-        // Safe to ignore the error because Error = Infallible
-        let _ = <Self as TrySetColumn<Column>>::try_set_column(self, value.into());
-        self
-    }
+    fn set_column(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self;
 }
-
-impl<T, Column> SetColumn<Column> for T
-where
-    T: TrySetColumn<Column, Error = core::convert::Infallible>,
-    Column: TypedColumn,
-{
-}
-
-/// Trait providing an unchecked setter for a specific Diesel column.
-///
-/// This method is solely meant to be used in [`TableExt::NewValues`](crate::TableExt) impls
-/// when writing a `TrySetColumn` impl. It allows to avoid the overhead of
-/// accessing the i-th element of a nested tuple via typenum at each call site.
-pub trait SetColumnUnchecked<Column: TypedColumn> {
-    /// Set the value of the specified column.
-    fn set_column_unchecked(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self;
-}
-
-/// Extension trait for `SetColumnUnchecked` that allows specifying the column at the
-/// method level.
-pub trait SetColumnUncheckedExt: Sized {
-    #[inline]
-    /// Set the value of the specified column.
-    fn set_column_unchecked<Column>(
-        &mut self,
-        value: impl Into<<Column as Typed>::Type>,
-    ) -> &mut Self
-    where
-        Column: TypedColumn,
-        Self: SetColumnUnchecked<Column>,
-    {
-        <Self as SetColumnUnchecked<Column>>::set_column_unchecked(self, value)
-    }
-}
-
-impl<T> SetColumnUncheckedExt for T {}
 
 /// Trait providing a failable setter for a specific Diesel column.
 pub trait MaySetColumn<Column: TypedColumn>: SetColumn<Column> {
@@ -72,17 +29,63 @@ where
 {
 }
 
-/// Trait attempting to set a specific Diesel column, which may fail.
-pub trait TrySetColumn<C: Typed> {
+/// Trait validating a specific Diesel column.
+pub trait ValidateColumn<C: Typed> {
     /// The associated error type for the operation.
     type Error: From<Infallible>;
 
+    /// Validate the value of the specified column.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the column value is invalid.
+    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error>;
+
+    /// Validate the value of the specified column, given the context of the entire
+    /// new record being built.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the column value is invalid.
+    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        Self::validate_column(value)
+    }
+}
+
+/// Trait attempting to set a specific Diesel column, which may fail.
+pub trait TrySetColumn<C: Typed>: ValidateColumn<C> {
     /// Attempt to set the value of the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the column cannot be set.
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error>;
+}
+
+impl<G, T, C> TrySetColumn<C> for (T,)
+where
+    Self: SetColumn<C> + ValidateColumn<C>,
+    C: TypedColumn<Type = Option<G>>,
+{
+    #[inline]
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        <Self as ValidateColumn<C>>::validate_column_in_context(self, &value)?;
+        <Self as SetColumn<C>>::set_column(self, value);
+        Ok(self)
+    }
+}
+
+impl<Head, Tail, C> TrySetColumn<C> for (Head, Tail)
+where
+    Self: SetColumn<C> + ValidateColumn<C>,
+    C: TypedColumn,
+{
+    #[inline]
+    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        <Self as ValidateColumn<C>>::validate_column_in_context(self, &value)?;
+        <Self as SetColumn<C>>::set_column(self, value);
+        Ok(self)
+    }
 }
 
 /// Extension trait for `SetColumn` that allows specifying the column at the
@@ -130,8 +133,11 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column_ref<Column>(
         &mut self,
-        value: impl TryInto<<Column as Typed>::Type, Error: Into<<Self as TrySetColumn<Column>>::Error>>,
-    ) -> Result<&mut Self, <Self as TrySetColumn<Column>>::Error>
+        value: impl TryInto<
+            <Column as Typed>::Type,
+            Error: Into<<Self as ValidateColumn<Column>>::Error>,
+        >,
+    ) -> Result<&mut Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,
@@ -147,8 +153,11 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         mut self,
-        value: impl TryInto<<Column as Typed>::Type, Error: Into<<Self as TrySetColumn<Column>>::Error>>,
-    ) -> Result<Self, <Self as TrySetColumn<Column>>::Error>
+        value: impl TryInto<
+            <Column as Typed>::Type,
+            Error: Into<<Self as ValidateColumn<Column>>::Error>,
+        >,
+    ) -> Result<Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,

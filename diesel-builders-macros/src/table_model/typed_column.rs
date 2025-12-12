@@ -140,11 +140,12 @@ fn generate_set_trait(
         syn::Ident::new(&format!("{field_name}_ref"), proc_macro2::Span::call_site());
 
     let set_trait_doc_comment =
-        format!("Trait to set the `{field_name}` column on a `{table_module}` table builder.");
-    let field_name_ref_method_doc_comment =
-        format!("Sets the `{field_name}` column on a `{table_module}` table builder by reference.");
+        format!("Trait to set the `{field_name}` column on a [`{table_module}`] table builder.");
+    let field_name_ref_method_doc_comment = format!(
+        "Sets the `{field_name}` column on a [`{table_module}`] table builder by reference."
+    );
     let field_name_method_doc_comment =
-        format!("Sets the `{field_name}` column on a `{table_module}` table builder.");
+        format!("Sets the `{field_name}` column on a [`{table_module}`] table builder.");
 
     quote! {
         #[doc = #set_trait_doc_comment]

@@ -23,13 +23,6 @@ use std::convert::Infallible;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
-// Allow tables to appear together in queries
-diesel::allow_tables_to_appear_in_same_query!(
-    child_with_discretionary_table,
-    parent_table,
-    discretionary_table
-);
-
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = ErrorB, ancestors = parent_table)]
@@ -64,26 +57,20 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-impl TrySetColumn<child_with_discretionary_table::remote_discretionary_field>
+impl ValidateColumn<child_with_discretionary_table::remote_discretionary_field>
     for <child_with_discretionary_table::table as TableExt>::NewValues
 {
     type Error = ErrorB;
 
-    fn try_set_column(&mut self, value: Option<String>) -> Result<&mut Self, Self::Error> {
-        if let Some(ref v) = value
-            && v.trim().is_empty()
+    fn validate_column(value: &Option<String>) -> Result<(), Self::Error> {
+        if let Some(v) = value
+            && v.is_empty()
         {
             return Err(ErrorB::EmptyRemoteColumnC);
         }
-        self.set_column_unchecked::<child_with_discretionary_table::remote_discretionary_field>(
-            value,
-        );
-        Ok(self)
+        Ok(())
     }
 }
-
-// Declare singleton foreign key for child_with_discretionary_table::discretionary_id to discretionary_table
-fpk!(child_with_discretionary_table::discretionary_id -> discretionary_table);
 
 // Define foreign key relationship using SQL-like syntax
 // B's (discretionary_id, remote_discretionary_field) references C's (id, discretionary_field)

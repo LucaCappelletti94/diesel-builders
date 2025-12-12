@@ -12,13 +12,6 @@ use diesel_builders::prelude::*;
 use diesel_builders_macros::TableModel;
 use shared_triangular::*;
 
-diesel::allow_tables_to_appear_in_same_query!(
-    parent_table,
-    child_with_mixed_table,
-    mandatory_table,
-    discretionary_table
-);
-
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_with_mixed_table)]
@@ -40,10 +33,6 @@ pub struct ChildWithMixed {
     /// Remote column D value.
     remote_discretionary_field: Option<String>,
 }
-
-// Declare singleton foreign keys
-fpk!(child_with_mixed_table::mandatory_id -> mandatory_table);
-fpk!(child_with_mixed_table::discretionary_id -> discretionary_table);
 
 // Define foreign key relationships
 fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));

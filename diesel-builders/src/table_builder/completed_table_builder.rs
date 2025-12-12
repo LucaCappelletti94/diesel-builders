@@ -5,11 +5,13 @@ use std::ops::Sub;
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::{
     BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
-    TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple,
+    TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple, ValidateColumn,
 };
 use diesel::Table;
 use diesel::associations::HasTable;
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleIndexMut, NestedTupleTryFrom};
+use tuplities::prelude::{
+    FlattenNestedTuple, NestTuple, NestedTupleIndex, NestedTupleIndexMut, NestedTupleTryFrom,
+};
 
 use crate::{
     AncestorOfIndex, BuildableTable, BuilderResult, BundlableTable, CompletedTableBuilderBundle,
@@ -103,6 +105,33 @@ impl<T: Table + Default, Depth, Bundles> HasTable for RecursiveTableBuilder<T, D
     }
 }
 
+impl<T, C, Depth, Bundles> ValidateColumn<C> for RecursiveTableBuilder<T, Depth, Bundles>
+where
+    Bundles: NestedTupleIndex<
+            <<C::Table as AncestorOfIndex<T>>::Idx as Sub<Depth>>::Output,
+            Element = CompletedTableBuilderBundle<C::Table>,
+        >,
+    T: BuildableTable + DescendantOf<C::Table>,
+    C: TypedColumn,
+    C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
+    CompletedTableBuilderBundle<C::Table>: ValidateColumn<C>,
+    TableBuilder<T>: ValidateColumn<C>,
+{
+    type Error = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
+
+    #[inline]
+    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        CompletedTableBuilderBundle::<C::Table>::validate_column(value)
+    }
+
+    #[inline]
+    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        self.nested_bundles
+            .nested_index()
+            .validate_column_in_context(value)
+    }
+}
+
 impl<T, C, Depth, Bundles> TrySetColumn<C> for RecursiveTableBuilder<T, Depth, Bundles>
 where
     Bundles: NestedTupleIndexMut<
@@ -115,8 +144,6 @@ where
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
 {
-    type Error = <CompletedTableBuilderBundle<C::Table> as TrySetColumn<C>>::Error;
-
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
         self.nested_bundles

@@ -6,13 +6,6 @@ use diesel_builders::prelude::*;
 use diesel_builders_macros::TableModel;
 use shared_triangular::*;
 
-diesel::allow_tables_to_appear_in_same_query!(
-    parent_table,
-    mandatory_table,
-    discretionary_table,
-    child_table,
-);
-
 /// The `Child` table ties together multiple intermediate rows using
 /// composite foreign keys. The `payload` field verifies the builder's
 /// insertion logic while several `m*` and `d*` columns test mandatory and
@@ -23,33 +16,33 @@ diesel::allow_tables_to_appear_in_same_query!(
 pub struct Child {
     /// The primary key of the child, also a foreign key to `parent_table`.
     id: i32,
-    #[mandatory]
+    #[mandatory(table = mandatory_table)]
     /// Mandatory relation 1 ID.
     m1_id: i32,
     /// Secondary column used by composite FKs for `Mandatory` intermediates.
     m1_mandatory_field: Option<String>,
-    #[mandatory]
+    #[mandatory(table = mandatory_table)]
     /// Mandatory relation 2 ID.
     m2_id: i32,
     /// Mandatory relation 2 column.
     m2_mandatory_field: Option<String>,
-    #[mandatory]
+    #[mandatory(table = mandatory_table)]
     /// Mandatory relation 3 ID.
     m3_id: i32,
     /// Mandatory relation 3 column.
     m3_mandatory_field: Option<String>,
-    #[discretionary]
+    #[discretionary(table = discretionary_table)]
     /// Discretionary relation 1 ID.
     d1_id: i32,
     /// Optional secondary column used by composite FKs for discretionary
     /// intermediates; `None` denotes an unset optional value.
     d1_discretionary_field: Option<String>,
-    #[discretionary]
+    #[discretionary(table = discretionary_table)]
     /// Discretionary relation 2 ID.
     d2_id: i32,
     /// Discretionary relation 2 column.
     d2_discretionary_field: Option<String>,
-    #[discretionary]
+    #[discretionary(table = discretionary_table)]
     /// Discretionary relation 3 ID.
     d3_id: i32,
     /// Discretionary relation 3 column.
@@ -58,16 +51,6 @@ pub struct Child {
     /// assertions after insert.
     payload: String,
 }
-
-// Declare singleton foreign keys for mandatory relationships
-fpk!(child_table::m1_id -> mandatory_table);
-fpk!(child_table::m2_id -> mandatory_table);
-fpk!(child_table::m3_id -> mandatory_table);
-
-// Declare singleton foreign keys for discretionary relationships
-fpk!(child_table::d1_id -> discretionary_table);
-fpk!(child_table::d2_id -> discretionary_table);
-fpk!(child_table::d3_id -> discretionary_table);
 
 // FKs from child to intermediates — these macros define the same composite
 // foreign keys that are present in the SQL test DDL and allow the builder

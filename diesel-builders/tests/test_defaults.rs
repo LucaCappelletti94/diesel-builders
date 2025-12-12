@@ -68,6 +68,9 @@ fn test_defaults() -> Result<(), Box<dyn std::error::Error>> {
     // Insert should fail because email is missing
     let res = builder.clone().insert(&mut conn);
     let err = res.unwrap_err();
+
+    assert_eq!(err.to_string(), "Missing mandatory field: `email`");
+
     assert!(
         matches!(
             err,

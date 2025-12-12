@@ -7,7 +7,7 @@
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles complex table relationships including arbitrary inheritance (e.g. chains, DAG dependencies), foreign keys, and both mandatory and optional triangular dependencies. Diesel Builders provides compile-time guarantees for proper insertion order and referential integrity in databases with complex schemas.
 
-It additionally offers ergonomic APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
+It additionally offers fluent APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
 
 This library is transparent in terms of backends and should work for any Diesel backend. In the README and tests, we use `SQLite` for simplicity.
 
@@ -57,104 +57,210 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 2. Table Inheritance
 
-[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship. Insertion order: Animals → Dogs.
+[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship.
 
-```mermaid
-classDiagram
-    direction BT
-    class Animals {
-        +Integer id PK
-        +Text name «CHECK: not empty, max 100»
-        +Text description? «CHECK: not empty, max 500»
-    }
-    class Dogs {
-        +Integer id PK,FK
-        +Text breed
-    }
-    Dogs --|> Animals : extends
-```
+```rust
+use diesel_builders::prelude::*;
 
-```rust,ignore
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = animals)]
+#[table_model(surrogate_key)]
+pub struct Animal {
+    id: i32,
+    name: String,
+    description: Option<String>,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = dogs)]
+#[table_model(ancestors(animals))]
+pub struct Dog {
+    id: i32,
+    breed: String,
+}
+
+let mut conn = SqliteConnection::establish(":memory:")?;
+
+diesel::sql_query(
+    "CREATE TABLE animals (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE dogs (
+        id INTEGER PRIMARY KEY REFERENCES animals(id),
+        breed TEXT NOT NULL
+    );"
+).execute(&mut conn)?;
+
 let dog = dogs::table::builder()
-    .try_name("Max")?
+    .name("Max")
+    .description("A playful puppy".to_owned())
     .breed("Golden Retriever")
     .insert(&mut conn)?;
+
+Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 3. Directed Acyclic Graph (DAG)
-
-[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
-
-```mermaid
-classDiagram
-    direction BT
-    class Animals {
-        +Integer id PK
-        +Text name «CHECK: not empty, max 100»
-        +Text description? «CHECK: not empty, max 500»
-    }
-    class Dogs {
-        +Integer id PK,FK
-        +Text breed
-    }
-    class Cats {
-        +Integer id PK,FK
-        +Text color «CHECK: not empty»
-    }
-    class Pets {
-        +Integer id PK,FK
-        +Text owner_name
-    }
-    Dogs --|> Animals : extends
-    Cats --|> Animals : extends
-    Pets --|> Dogs : extends
-    Pets --|> Cats : extends
-```
-
-```rust,ignore
-let pet = pets::table::builder()
-    .try_name("Buddy")?  
-    .breed("Labrador")
-    .try_color("Black")?
-    .owner_name("Alice Smith")
-    .insert(&mut conn)?;
-```
-
-### 4. Inheritance Chain
+### 3. Inheritance Chain
 
 [A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
 
-```mermaid
-classDiagram
-    direction BT
-    class Animals {
-        +Integer id PK
-        +Text name «CHECK: not empty, max 100»
-        +Text description? «CHECK: not empty, max 500»
-    }
-    class Dogs {
-        +Integer id PK,FK
-        +Text breed
-    }
-    class Puppies {
-        +Integer id PK,FK
-        +Integer age_months
-    }
-    Dogs --|> Animals : extends
-    Puppies --|> Dogs : extends
-```
+```rust
+use diesel_builders::prelude::*;
 
-```rust,ignore
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = animals)]
+#[table_model(surrogate_key)]
+pub struct Animal {
+    id: i32,
+    name: String,
+    #[table_model(default = "A really good boy")]
+    description: Option<String>,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = dogs)]
+#[table_model(ancestors(animals))]
+pub struct Dog {
+    id: i32,
+    breed: String,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = puppies)]
+#[table_model(ancestors(animals, dogs))]
+pub struct Puppy {
+    id: i32,
+    #[table_model(default = 6)]
+    age_months: i32,
+}
+
+let mut conn = SqliteConnection::establish(":memory:")?;
+
+diesel::sql_query(
+    "CREATE TABLE animals (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE dogs (
+        id INTEGER PRIMARY KEY REFERENCES animals(id),
+        breed TEXT NOT NULL
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE puppies (
+        id INTEGER PRIMARY KEY REFERENCES dogs(id),
+        age_months INTEGER NOT NULL
+    );"
+).execute(&mut conn)?;
+
 let puppy = puppies::table::builder()
-    .try_name("Buddy")?
+    .name("Buddy")
+    .description("A cute little puppy".to_owned())
     .breed("Labrador")
     .age_months(3)
     .insert(&mut conn)?;
+
+Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+### 4. Directed Acyclic Graph (DAG)
+
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
+
+```rust
+use diesel_builders::prelude::*;
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = animals)]
+#[table_model(surrogate_key)]
+pub struct Animal {
+    id: i32,
+    name: String,
+    #[table_model(default = "No description")]
+    description: String,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = dogs)]
+#[table_model(ancestors(animals))]
+pub struct Dog {
+    id: i32,
+    breed: String,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = cats)]
+#[table_model(ancestors(animals))]
+pub struct Cat {
+    id: i32,
+    #[table_model(default = "All cats are orange")]
+    color: String,
+}
+
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = pets)]
+#[table_model(ancestors(animals, dogs, cats))]
+pub struct Pet {
+    id: i32,
+    owner_name: String,
+}
+
+let mut conn = SqliteConnection::establish(":memory:")?;
+
+diesel::sql_query(
+    "CREATE TABLE animals (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE dogs (
+        id INTEGER PRIMARY KEY REFERENCES animals(id),
+        breed TEXT NOT NULL
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE cats (
+        id INTEGER PRIMARY KEY REFERENCES animals(id),
+        color TEXT NOT NULL
+    );"
+).execute(&mut conn)?;
+
+diesel::sql_query(
+    "CREATE TABLE pets (
+        id INTEGER PRIMARY KEY,
+        owner_name TEXT NOT NULL,
+        FOREIGN KEY (id) REFERENCES dogs(id),
+        FOREIGN KEY (id) REFERENCES cats(id)
+    );"
+).execute(&mut conn)?;
+
+let pet = pets::table::builder()
+    .try_name("Buddy")?  
+    .breed("Labrador")
+    .color("Black")
+    .owner_name("Alice Smith")
+    .insert(&mut conn)?;
+
+Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ### 5. Mandatory Triangular Relation
 
-[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency. Foreign key relationships are declared using the `fk!` macro for type-safe multi-column constraints, with composite indices declared via `index!` macro (e.g., `index!(table_c::id, table_c::a_id);`). Insertion order: A → C → B.
+[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Table B extends A and also references Table C, with the constraint that the C record must also reference the same A record (enforcing `B.c_id == C.a_id == A.id`). The builder uses `set_mandatory_builder` to create both B and its related C record atomically, ensuring referential consistency. Foreign key relationships are automatically generated by `TableModel` for the `#[mandatory]` attribute, with composite indices declared via `index!` macro (e.g., `index!(table_c::id, table_c::a_id);`). Insertion order: A → C → B.
 
 ```mermaid
 classDiagram
@@ -190,7 +296,7 @@ let b = table_b::table::builder()
 
 ### 6. Discretionary Triangular Relation
 
-[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed. Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones. Foreign key relationships are declared using the `fk!` macro, with composite indices declared via `index!` macro where needed. Insertion order: A → C (independent) → B (where B references the independent C).
+[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed. Table B can reference any C record, not necessarily one that shares the same A parent. The builder provides `set_discretionary_builder` for creating new related records or `set_discretionary_model` for referencing existing ones. Foreign key relationships are automatically generated by `TableModel` for the `#[discretionary]` attribute, with composite indices declared via `index!` macro where needed. Insertion order: A → C (independent) → B (where B references the independent C).
 
 ```mermaid
 classDiagram
@@ -241,244 +347,38 @@ let b = table_b::table::builder()
 
 [Tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with composite keys, allowing type-safe construction and insertion.
 
-```mermaid
-classDiagram
-    class UserRoles {
-        +Integer user_id PK
-        +Integer role_id PK
-        +Text assigned_at
-    }
-```
+```rust
+use diesel_builders::prelude::*;
 
-## `TableModel` Derive Macro
-
-The `#[derive(TableModel)]` macro is the primary code generation tool in diesel-builders. It automatically generates all the necessary trait implementations and helper methods for your table model.
-
-### What `TableModel` Generates
-
-For each field in your struct, `TableModel` generates:
-
-1. **Core Column Traits:**
-   - `Typed` - type information for the column
-   - `GetColumn` - column value access from model instances
-   - `IndexedColumn` - for primary key columns
-
-2. **Builder Value Traits:**
-   - `MayGetColumn` - optional column value access from builders
-   - `TrySetColumn` - fallible column value setting
-   - `SetColumnUnchecked` - unchecked column value setting
-
-3. **Helper Method Traits:**
-   For a column like `animals::name`, it generates:
-   - **`GetAnimalsName`** - `name(&self)` returns `&Type`
-   - **`SetAnimalsName`** - `name(self, value)` and `name_ref(&mut self, value)`
-   - **`TrySetAnimalsName`** - `try_name(self, value)` and `try_name_ref(&mut self, value)`
-
-4. **Table Relationship Traits:**
-   - `Root` or `Descendant` - based on whether ancestors are specified
-   - `BundlableTable` - for triangular relation support
-   - `HorizontalSameAsGroup` - for managing same-as relationships
-
-5. **Automatic Foreign Key (Single Ancestor):**
-   When a table has a single ancestor and single-column primary key, `TableModel` automatically generates the equivalent of `fpk!(table::id -> ancestor)`, providing:
-   - `ForeignPrimaryKey` implementation
-   - Helper method to fetch the ancestor record (e.g., `id_fk()` or method named after ancestor)
-
-### Attributes
-
-- `#[table_model(error = ErrorType)]` - Specify a custom error type for validation
-- `#[table_model(surrogate_key)]` - Mark the table as using a surrogate (auto-increment) primary key
-- `#[table_model(ancestors = parent_table)]` - Declare table inheritance
-- `#[table_model(ancestors(grandparent, parent))]` - Declare multiple inheritance
-- `#[infallible]` - Mark a field as always valid (no validation needed)
-- `#[mandatory]` - Mark a field as a mandatory triangular relation
-- `#[discretionary]` - Mark a field as a discretionary triangular relation
-- `#[table_model(default = value)]` - Provide a default value for the field
-
-### Foreign Key Helper Traits
-
-The `fpk!` (foreign primary key) macro generates helper traits for singleton foreign keys, providing convenient methods to fetch related records.
-
-**Note:** For table inheritance (single ancestor with single-column primary key), `TableModel` automatically generates the `fpk!` implementation for the `id` column. You only need to manually use `fpk!` for other foreign key columns.
-
-```rust,ignore
-// Declare a singleton foreign key relationship
-fpk!(table_b::c_id -> table_c);
-```
-
-This generates:
-
-- `ForeignPrimaryKey` implementation for `table_b::c_id`
-- A trait `FKTableBCId` with method `c(&self, conn: &mut Conn)` that fetches the related `TableC` record
-
-**Method naming convention:**
-
-- If column is `id`, the method is named after the foreign table (e.g., `table_c` → `table_c()`)
-- If column ends with `_id` (e.g., `a_id`), the method is named after the prefix (`a()`)
-- Otherwise, the method is `{column_name}_fk()`
-
-Usage example:
-
-```rust,ignore
-fpk!(table_b::c_id -> table_c);
-
-let b: TableB = /* ... */;
-let c: TableC = b.c(&mut conn)?;  // Fetches the related TableC record
-```
-
-**Automatic generation for inheritance:**
-
-```rust,ignore
-// For a table with single ancestor, fpk! is auto-generated:
-#[derive(TableModel)]
-#[table_model(ancestors = animals)]
-struct Dog { id: i32, /* ... */ }
-
-// No need for: fpk!(dogs::id -> animals);
-// The following is automatically available:
-let dog: Dog = /* inserted dog */;
-let animal: Animal = dog.id_fk(&mut conn)?; // Auto-generated method
-```
-
-### Triangular Relation Traits
-
-For columns involved in triangular relations (both mandatory and discretionary), additional builder and model setter traits are generated:
-
-- **Mandatory Builders**: `Set{Table}{Column}MandatoryBuilder` and `TrySet{Table}{Column}MandatoryBuilder`
-  - `{column}_builder(self, builder) -> Self` - sets associated builder (consumes)
-  - `{column}_builder_ref(&mut self, builder) -> &mut Self` - sets associated builder (by reference)
-  - `try_{column}_builder(self, builder) -> Result<Self, Error>` - fallible variant
-
-- **Discretionary Builders**: `Set{Table}{Column}DiscretionaryBuilder` and `TrySet{Table}{Column}DiscretionaryBuilder`
-  - `{column}_builder(self, builder) -> Self` - sets associated builder (consumes)
-  - `{column}_builder_ref(&mut self, builder) -> &mut Self` - sets associated builder (by reference)
-  - `try_{column}_builder(self, builder) -> Result<Self, Error>` - fallible variant
-
-- **Discretionary Models**: `Set{Table}{Column}DiscretionaryModel` and `TrySet{Table}{Column}DiscretionaryModel`
-  - `{column}_model(self, &model) -> Self` - references existing model (consumes)
-  - `{column}_model_ref(&mut self, &model) -> &mut Self` - references existing model (by reference)
-  - `try_{column}_model(self, &model) -> Result<Self, Error>` - fallible variant
-
-Usage examples:
-
-```rust,ignore
-// Basic column setter
-let animal: Animal = animals::table::builder()
-    .try_name("Buddy")?
-    .insert(conn)?;
-
-assert_eq!(animal.name(), "Buddy");
-
-// Mandatory triangular relation with builder
-let b = table_b::table::builder()
-    .column_b("B Value")
-    .try_c(table_c::table::builder().column_c("C Value".to_owned()))?
-    .insert(conn)?;
-
-// Discretionary triangular relation with existing model
-let c = table_c::table::builder()
-    .a_id(a.id)
-    .column_c("C Value".to_owned())
-    .insert(conn)?;
-
-let b = table_b::table::builder()
-    .column_b("B Value")
-    .c(&c)  // Reference existing model
-    .insert(conn)?;
-```
-
-## Default Values
-
-Columns can have default values specified in the `TableModel` derive using the `#[table_model(default = value)]` attribute. These defaults are used when the user does not explicitly set a value for the column. The default values must implement `Into<ColumnType>`.
-
-```rust,ignore
-#[derive(TableModel)]
-#[diesel(table_name = users)]
-pub struct User {
-    id: i32,
-    #[table_model(default = "Guest")]
-    pub name: String,
-    #[table_model(default = true)]
-    pub active: bool,
-    pub email: String,
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = user_roles)]
+#[diesel(primary_key(user_id, role_id))]
+pub struct UserRole {
+    user_id: i32,
+    role_id: i32,
+    #[table_model(default = "2025-01-01")]
+    assigned_at: String,
 }
 
-// "Guest" and true are used automatically
-let user = users::table::builder()
-    .email("user@example.com")
+let mut conn = SqliteConnection::establish(":memory:")?;
+
+diesel::sql_query(
+    "CREATE TABLE user_roles (
+        user_id INTEGER NOT NULL,
+        role_id INTEGER NOT NULL,
+        assigned_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, role_id)
+    );"
+).execute(&mut conn)?;
+
+let user_role = user_roles::table::builder()
+    .user_id(1)
+    .role_id(42)
+    .assigned_at("2025-12-12")
     .insert(&mut conn)?;
+
+Ok::<(), Box<dyn std::error::Error>>(())
 ```
-
-## Compile-time Validation
-
-The `TableModel` derive macro performs extensive compile-time checks to ensure correctness:
-
-- **Primary Keys**:
-  - Default values are not allowed on primary key columns
-  - Primary keys marked `#[infallible]` cannot be used with `surrogate_key`
-  - Primary key must be detectable (either `id` field or explicit `#[diesel(primary_key(...))]`)
-  
-- **Surrogate Keys**:
-  - Cannot be used with composite primary keys
-  - Cannot have `#[mandatory]` or `#[discretionary]` attributes (surrogate keys cannot participate in triangular relations)
-  
-- **Ancestors**:
-  - Table cannot be its own ancestor
-  - No duplicate ancestors in hierarchy
-  
-- **Attribute Validation**:
-  - Duplicate `#[mandatory]`, `#[discretionary]`, or `#[infallible]` attributes are rejected
-  - Conflicting `#[mandatory]` and `#[discretionary]` on same field are rejected
-  - Multiple `default` values are rejected
-  - Unsupported `#[diesel(...)]` attributes trigger errors
-
-## Macro Reference
-
-### `TableModel` - Derive Macro
-
-The primary macro for generating all table-related traits and implementations. See the [`TableModel` Derive Macro](#tablemodel-derive-macro) section for full details.
-
-```rust,ignore
-#[derive(TableModel)]
-#[table_model(error = MyError, ancestors = parent_table)]
-#[diesel(table_name = my_table)]
-struct MyModel { /* ... */ }
-```
-
-### `fpk!` - Foreign Primary Key
-
-Declares a singleton foreign key relationship (single column referencing a primary key).
-
-**Note:** Automatically generated by `TableModel` for inheritance relationships (single ancestor, single-column primary key).
-
-```rust,ignore
-fpk!(table_b::c_id -> table_c);
-```
-
-Generates:
-
-- `ForeignPrimaryKey` trait implementation
-- Helper trait with method to fetch the related record
-
-### `fk!` - Composite Foreign Key
-
-Declares multi-column foreign key relationships:
-
-```rust,ignore
-fk!((table_b::c_id, table_b::remote_col) -> (table_c::id, table_c::col));
-```
-
-Generates `HostColumn` implementations for type-safe foreign key constraints.
-
-### `index!` - Table Index
-
-Declares composite indices that can be referenced by foreign keys:
-
-```rust,ignore
-index!(table_c::id, table_c::a_id);
-```
-
-Generates `IndexedColumn` implementations for each column in the index.
 
 ## License
 

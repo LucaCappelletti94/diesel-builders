@@ -2,6 +2,8 @@
 //! a table record new values and its mandatory and discretionary associated
 //! builders.
 
+use std::convert::Infallible;
+
 use diesel::associations::HasTable;
 
 mod completed_table_builder_bundle;
@@ -9,6 +11,8 @@ mod serde;
 pub use completed_table_builder_bundle::CompletedTableBuilderBundle;
 pub use completed_table_builder_bundle::RecursiveBundleInsert;
 
+use crate::SetColumn;
+use crate::ValidateColumn;
 use crate::columns::NestedColumns;
 use crate::tables::NonCompositePrimaryKeyNestedTables;
 use crate::{
@@ -193,14 +197,44 @@ where
     }
 }
 
+impl<T, C> ValidateColumn<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable + TableExt,
+    C: TypedColumn<Table = T>,
+    T::NewValues: ValidateColumn<C>,
+{
+    type Error = <T::NewValues as ValidateColumn<C>>::Error;
+
+    #[inline]
+    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        T::NewValues::validate_column(value)
+    }
+
+    #[inline]
+    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        self.insertable_model.validate_column_in_context(value)
+    }
+}
+
+impl<T, C> SetColumn<C> for TableBuilderBundle<T>
+where
+    T: BundlableTable + TableExt,
+    C: TypedColumn<Table = T>,
+    T::NewValues: SetColumn<C> + ValidateColumn<C, Error = Infallible>,
+{
+    #[inline]
+    fn set_column(&mut self, value: impl Into<<C as Typed>::Type>) -> &mut Self {
+        self.insertable_model.set_column(value);
+        self
+    }
+}
+
 impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTable + TableExt,
     C: TypedColumn<Table = T>,
     T::NewValues: TrySetColumn<C>,
 {
-    type Error = <T::NewValues as TrySetColumn<C>>::Error;
-
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
         self.insertable_model.try_set_column(value)?;

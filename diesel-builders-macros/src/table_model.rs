@@ -13,6 +13,7 @@ mod typed_column;
 
 use proc_macro2::TokenStream;
 use quote::quote;
+use syn::spanned::Spanned;
 use syn::DeriveInput;
 
 use attribute_parsing::{
@@ -32,15 +33,16 @@ use crate::utils::{format_as_nested_tuple, is_option};
 struct ProcessedFields {
     /// Columns for the new record tuple.
     new_record_columns: Vec<syn::Path>,
-    /// Records that can fail validation (index, path).
-    fallible_records: Vec<(usize, syn::Path)>,
     /// Records that are infallible (index, path).
-    infallible_records: Vec<(usize, syn::Path)>,
+    infallible_records: Vec<syn::Path>,
     /// Default values for fields.
     default_values: Vec<proc_macro2::TokenStream>,
+    /// Const validation assertions for default values.
+    const_validations: Vec<proc_macro2::TokenStream>,
 }
 
 /// Process fields to extract columns, validation status, and default values.
+#[allow(clippy::too_many_lines)]
 fn process_fields(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
@@ -48,10 +50,9 @@ fn process_fields(
     attributes: &attribute_parsing::TableModelAttributes,
 ) -> syn::Result<ProcessedFields> {
     let mut new_record_columns = Vec::new();
-    let mut fallible_records = Vec::new();
     let mut infallible_records = Vec::new();
     let mut default_values = Vec::new();
-    let mut idx = 0;
+    let mut const_validations = Vec::new();
 
     for field in fields {
         validate_field_attributes(field)?;
@@ -85,10 +86,10 @@ fn process_fields(
         }
 
         new_record_columns.push(syn::parse_quote!(#table_module::#field_name));
+        let is_failable = !(is_field_infallible(field) || attributes.error.is_none());
+
         if is_field_infallible(field) || attributes.error.is_none() {
-            infallible_records.push((idx, syn::parse_quote!(#table_module::#field_name)));
-        } else {
-            fallible_records.push((idx, syn::parse_quote!(#table_module::#field_name)));
+            infallible_records.push(syn::parse_quote!(#table_module::#field_name));
         }
 
         // Default value logic
@@ -96,22 +97,107 @@ fn process_fields(
         let is_nullable = is_option(&field.ty);
 
         let default_val = if let Some(def) = user_default {
-            quote::quote! { Some((#def).into()) }
+            // For failable columns with defaults, add compile-time validation
+            if is_failable {
+                let validator_fn = syn::Ident::new(&format!("validate_{field_name}"), def.span());
+
+                // Generate a const assertion with better error reporting
+                let const_name = syn::Ident::new(
+                    &format!("_validate_default_{field_name}"),
+                    proc_macro2::Span::call_site(),
+                );
+
+                let def_string = quote::quote!(#def).to_string().replace(' ', "");
+                let error_msg = format!(
+                    concat!(
+                        "Compile-time validation failed for table `{}`, column `{}`.\n",
+                        "Invalid default value: `{}`\n",
+                        "The default value does not pass ValidateColumn::validate_column().\n",
+                        "Please ensure the default value satisfies the validation constraints."
+                    ),
+                    table_module, field_name, def_string
+                );
+
+                // Generate a helpful compile_error if the validator function doesn't exist
+                let missing_validator_help = format!(
+                    concat!(
+                        "Missing compile-time validator function `validate_{}`.\n\n",
+                        "To use default values with failable columns, you must add the #[const_validator]\n",
+                        "attribute to your ValidateColumn implementation:\n\n",
+                        "    #[diesel_builders_macros::const_validator]\n",
+                        "    impl ValidateColumn<{}::{}> for ... {{\n",
+                        "        fn validate_column(value: &T) -> Result<(), Self::Error) {{\n",
+                        "            // your validation logic\n",
+                        "        }}\n",
+                        "    }}\n\n",
+                        "The #[const_validator] attribute generates a const function that can be\n",
+                        "evaluated at compile time to validate default values."
+                    ),
+                    field_name,
+                    table_module,
+                    field_name
+                );
+
+                // Generate a macro that provides a helpful error if the validator doesn't exist
+                let helper_macro_name = syn::Ident::new(
+                    &format!("_diesel_builders_validator_help_{field_name}"),
+                    def.span(),
+                );
+
+                let helper_macro = quote::quote_spanned! { def.span() =>
+                    macro_rules! #helper_macro_name {
+                        () => {
+                            ::core::compile_error!(#missing_validator_help)
+                        };
+                        ($f:expr) => { $f };
+                    }
+                };
+
+                // Apply the span to the validation call
+                // If validate_* exists, it will be called. If not, the macro will trigger compile_error
+                let validation_assert = quote::quote_spanned! { def.span() =>
+                    #helper_macro
+
+                    #[allow(clippy::match_single_binding)]
+                    const #const_name: () = {
+                        // Try to use the validator function; if it doesn't exist, use the macro fallback
+                        #[allow(unused_macros)]
+                        match #helper_macro_name!(#validator_fn)(&#def) {
+                            Ok(()) => (),
+                            Err(_) => ::core::panic!(#error_msg),
+                        }
+                    };
+                };
+
+                const_validations.push(validation_assert);
+
+                // For Option types, use to_owned() to convert borrowed values
+                if is_nullable {
+                    quote::quote! { Some((#def).to_owned().into()) }
+                } else {
+                    quote::quote! { Some((#def).into()) }
+                }
+            } else {
+                // For Option types, use to_owned() to convert borrowed values
+                if is_nullable {
+                    quote::quote! { Some((#def).to_owned().into()) }
+                } else {
+                    quote::quote! { Some((#def).into()) }
+                }
+            }
         } else if is_nullable {
             quote::quote! { Some(None) }
         } else {
             quote::quote! { None }
         };
         default_values.push(default_val);
-
-        idx += 1;
     }
 
     Ok(ProcessedFields {
         new_record_columns,
-        fallible_records,
         infallible_records,
         default_values,
+        const_validations,
     })
 }
 
@@ -134,6 +220,93 @@ fn collect_triangular_columns(
     }
 
     (mandatory_columns, discretionary_columns)
+}
+
+/// Infer the referenced table name from a field name.
+/// If field name ends with `_id`, strips that suffix and appends `_table`.
+/// For example: `mandatory_id` -> `mandatory_table`, `m1_id` -> `m1_table`
+fn infer_table_from_field_name(field_name: &syn::Ident) -> Option<syn::Path> {
+    let name_str = field_name.to_string();
+    if let Some(base_name) = name_str.strip_suffix("_id") {
+        let table_name = format!("{base_name}_table");
+        let table_ident = syn::Ident::new(&table_name, field_name.span());
+        Some(syn::parse_quote!(#table_ident))
+    } else {
+        None
+    }
+}
+
+/// Collect tables referenced by mandatory and discretionary fields.
+/// Returns a set of unique table paths.
+fn collect_triangular_relation_tables(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
+) -> std::collections::HashSet<syn::Path> {
+    use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
+
+    let mut referenced_tables = std::collections::HashSet::new();
+
+    for field in fields {
+        if let Some(field_name) = &field.ident {
+            // Check if field is mandatory and extract its referenced table
+            if is_field_mandatory(field) {
+                if let Some(table_path) = extract_mandatory_table(field) {
+                    // Explicit table attribute provided
+                    referenced_tables.insert(table_path);
+                } else if let Some(inferred_table) = infer_table_from_field_name(field_name) {
+                    // Infer from field name
+                    referenced_tables.insert(inferred_table);
+                }
+            }
+
+            // Check if field is discretionary and extract its referenced table
+            if is_field_discretionary(field) {
+                if let Some(table_path) = extract_discretionary_table(field) {
+                    // Explicit table attribute provided
+                    referenced_tables.insert(table_path);
+                } else if let Some(inferred_table) = infer_table_from_field_name(field_name) {
+                    // Infer from field name
+                    referenced_tables.insert(inferred_table);
+                }
+            }
+        }
+    }
+
+    referenced_tables
+}
+
+/// Generate fpk! implementations for mandatory and discretionary fields.
+/// Returns a vector of `TokenStream`s, one for each field.
+fn generate_triangular_fpk_impls(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
+    table_module: &syn::Ident,
+) -> Vec<proc_macro2::TokenStream> {
+    use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
+
+    let mut fpk_impls = Vec::new();
+
+    for field in fields {
+        if let Some(field_name) = &field.ident {
+            let referenced_table = if is_field_mandatory(field) {
+                extract_mandatory_table(field).or_else(|| infer_table_from_field_name(field_name))
+            } else if is_field_discretionary(field) {
+                extract_discretionary_table(field)
+                    .or_else(|| infer_table_from_field_name(field_name))
+            } else {
+                None
+            };
+
+            if let Some(ref_table) = referenced_table {
+                // Generate fpk implementation using the fpk generation function
+                let column_path: syn::Path = syn::parse_quote!(#table_module::#field_name);
+                fpk_impls.push(crate::fpk::generate_fpk_impl_from_paths(
+                    &column_path,
+                    &ref_table,
+                ));
+            }
+        }
+    }
+
+    fpk_impls
 }
 
 /// Main entry point for the `TableModel` derive macro.
@@ -240,8 +413,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let ProcessedFields {
         new_record_columns,
-        fallible_records,
         infallible_records,
+        const_validations,
         default_values,
     } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
 
@@ -260,6 +433,33 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         ));
     }
 
+    // Collect tables referenced by triangular relations
+    let triangular_relation_tables = collect_triangular_relation_tables(fields);
+
+    // Generate fpk! implementations for triangular relation fields
+    let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module);
+
+    // Generate allow_tables_to_appear_in_same_query! macro calls for ancestors and triangular relations
+    let mut allow_same_query_calls: Vec<_> = if let Some(ancestors) = &attributes.ancestors {
+        ancestors
+            .iter()
+            .map(|ancestor| {
+                quote! {
+                    diesel::allow_tables_to_appear_in_same_query!(#table_module, #ancestor);
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+
+    // Add calls for triangular relation tables
+    for referenced_table in &triangular_relation_tables {
+        allow_same_query_calls.push(quote! {
+            diesel::allow_tables_to_appear_in_same_query!(#table_module, #referenced_table);
+        });
+    }
+
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
     let new_record_type = format_as_nested_tuple(
@@ -270,11 +470,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let may_get_column_impls =
         may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_module);
 
-    let set_column_impls =
-        set_columns::generate_set_column_impls(&infallible_records, &table_module);
+    let infallible_validate_column_impls =
+        set_columns::generate_infallible_validate_column_impls(&infallible_records, &table_module);
 
-    let set_column_unchecked_impls =
-        set_columns::generate_set_column_unchecked_traits(&fallible_records, &table_module);
+    let set_column_impls =
+        set_columns::generate_set_column_impls(&new_record_columns, &table_module);
 
     let error_type = attributes
         .error
@@ -339,16 +539,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             let ancestor = &ancestors[0];
             let pk_column = &primary_key_columns[0];
 
-            // Use the fpk! macro to generate the implementation
+            // Use the fpk generation function to generate the implementation
             // ancestors are stored as module paths (e.g., parent_table) without ::table suffix
-            let fpk_tokens: proc_macro::TokenStream = crate::fpk(
-                quote! {
-                    #table_module::#pk_column -> #ancestor
-                }
-                .into(),
-            );
-
-            proc_macro2::TokenStream::from(fpk_tokens)
+            let column_path: syn::Path = syn::parse_quote!(#table_module::#pk_column);
+            crate::fpk::generate_fpk_impl(&column_path, ancestor)
         } else {
             quote! {}
         }
@@ -446,7 +640,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#indexed_column_impls)*
         #may_get_column_impls
         #set_column_impls
-        #set_column_unchecked_impls
+        #infallible_validate_column_impls
         #descendant_impls
         #foreign_primary_key_impl
         #bundlable_table_impl
@@ -454,6 +648,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#discretionary_same_as_impls)*
         #(#column_horizontal_impls)*
         #horizontal_same_as_group_impl
+
+        // Foreign primary key implementations for triangular relations
+        #(#triangular_fpk_impls)*
+
+        // Allow tables to appear in same query with ancestors
+        #(#allow_same_query_calls)*
+
+        // Const validations for default values
+        #(#const_validations)*
 
         // Auto-implement TableExt for the table associated with this model.
         impl diesel_builders::TableExt for #table_module::table {

@@ -172,6 +172,56 @@ pub fn is_field_discretionary(field: &syn::Field) -> bool {
         .any(|attr| attr.path().is_ident("discretionary"))
 }
 
+/// Extract the referenced table from `#[mandatory(table = table_name)]` attribute.
+/// Returns None if no table is specified (will use default inference).
+pub fn extract_mandatory_table(field: &syn::Field) -> Option<syn::Path> {
+    for attr in &field.attrs {
+        if !attr.path().is_ident("mandatory") {
+            continue;
+        }
+
+        let mut table_path = None;
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("table") {
+                let value = meta.value()?;
+                let path: syn::Path = value.parse()?;
+                table_path = Some(path);
+            }
+            Ok(())
+        });
+
+        if table_path.is_some() {
+            return table_path;
+        }
+    }
+    None
+}
+
+/// Extract the referenced table from `#[discretionary(table = table_name)]` attribute.
+/// Returns None if no table is specified (will use default inference).
+pub fn extract_discretionary_table(field: &syn::Field) -> Option<syn::Path> {
+    for attr in &field.attrs {
+        if !attr.path().is_ident("discretionary") {
+            continue;
+        }
+
+        let mut table_path = None;
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("table") {
+                let value = meta.value()?;
+                let path: syn::Path = value.parse()?;
+                table_path = Some(path);
+            }
+            Ok(())
+        });
+
+        if table_path.is_some() {
+            return table_path;
+        }
+    }
+    None
+}
+
 /// Extract default value from `#[table_model(default = ...)]` attribute on a field.
 pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
     let mut default_values = Vec::new();

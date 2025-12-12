@@ -2,7 +2,7 @@
 
 use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePopFront};
 
-use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
+use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, ValidateColumn, columns::NestedColumns};
 
 /// Trait indicating a builder which may try to set multiple columns.
 pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
@@ -28,7 +28,7 @@ impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where
     T: crate::TrySetColumn<C1>,
     C1: crate::TypedColumn,
-    Error: From<<T as crate::TrySetColumn<C1>>::Error>,
+    Error: From<<T as crate::ValidateColumn<C1>>::Error>,
 {
     #[inline]
     fn try_may_set_nested_columns(
@@ -48,7 +48,7 @@ where
     CTail: NestedColumns,
     (Chead, CTail): NestedColumns,
     T: TrySetColumn<Chead> + TryMaySetNestedColumns<Error, CTail>,
-    Error: From<<T as TrySetColumn<Chead>>::Error>,
+    Error: From<<T as ValidateColumn<Chead>>::Error>,
     <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
         NestedTuplePopFront<
                 Front = Option<Chead::Type>,

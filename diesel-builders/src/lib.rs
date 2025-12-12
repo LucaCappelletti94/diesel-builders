@@ -27,7 +27,7 @@ pub mod table_addition;
 pub use table_addition::{HasTableExt, TableExt};
 pub mod set_column;
 pub use set_column::{
-    MaySetColumn, SetColumn, SetColumnExt, SetColumnUnchecked, TrySetColumn, TrySetColumnExt,
+    MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt, ValidateColumn,
 };
 pub mod foreign_key;
 pub use foreign_key::*;
@@ -90,7 +90,7 @@ pub mod prelude {
 
     // Re-export commonly used macros from diesel_builders_macros
     // Note: GetColumn is now automatically implemented by TableModel derive
-    pub use diesel_builders_macros::{TableModel, fk, fpk, index};
+    pub use diesel_builders_macros::{TableModel, fk, index};
 
     pub use crate::get_foreign::GetForeignExt;
 
@@ -111,7 +111,7 @@ pub mod prelude {
     pub use crate::{
         builder_bundle::BundlableTable,
         nested_insert::Insert,
-        set_column::{SetColumnExt, SetColumnUncheckedExt, TrySetColumn, TrySetColumnExt},
+        set_column::{SetColumnExt, TrySetColumnExt, ValidateColumn},
         table_addition::TableExt,
     };
 }

@@ -5,7 +5,7 @@ use diesel::Table;
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
     HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
-    TrySetColumn, TrySetNestedColumns, Typed, TypedColumn, TypedNestedTuple,
+    TrySetColumn, TrySetNestedColumns, Typed, TypedColumn, TypedNestedTuple, ValidateColumn,
     columns::NonEmptyNestedProjection,
 };
 
@@ -110,7 +110,7 @@ where
     >,
     Self: TrySetNestedColumns<<Self::Table as TableExt>::Error, C::NestedHostColumns>
         + TrySetColumn<C>,
-    <Self::Table as TableExt>::Error: From<<Self as TrySetColumn<C>>::Error>,
+    <Self::Table as TableExt>::Error: From<<Self as ValidateColumn<C>>::Error>,
     <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,
 {

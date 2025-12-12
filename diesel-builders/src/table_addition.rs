@@ -35,9 +35,7 @@ pub trait TableExt: diesel::Table + Default {
 
     /// Returns the default values for the new record.
     #[must_use]
-    fn default_new_values() -> Self::NewValues {
-        Self::NewValues::default()
-    }
+    fn default_new_values() -> Self::NewValues;
 }
 
 /// Extended trait for Diesel models associated with a table.
