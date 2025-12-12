@@ -250,11 +250,11 @@ classDiagram
     }
 ```
 
-## TableModel Derive Macro
+## `TableModel` Derive Macro
 
 The `#[derive(TableModel)]` macro is the primary code generation tool in diesel-builders. It automatically generates all the necessary trait implementations and helper methods for your table model.
 
-### What TableModel Generates
+### What `TableModel` Generates
 
 For each field in your struct, `TableModel` generates:
 
@@ -436,7 +436,7 @@ The `TableModel` derive macro performs extensive compile-time checks to ensure c
 
 ### `TableModel` - Derive Macro
 
-The primary macro for generating all table-related traits and implementations. See the [TableModel Derive Macro](#tablemodel-derive-macro) section for full details.
+The primary macro for generating all table-related traits and implementations. See the [`TableModel` Derive Macro](#tablemodel-derive-macro) section for full details.
 
 ```rust,ignore
 #[derive(TableModel)]
