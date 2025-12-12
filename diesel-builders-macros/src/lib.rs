@@ -4,6 +4,7 @@
 //! for tuples, replacing the complex `macro_rules!` patterns with cleaner
 //! procedural macros.
 
+mod descendant;
 mod table_model;
 mod utils;
 use proc_macro::TokenStream;
@@ -79,14 +80,22 @@ pub fn derive_root(input: TokenStream) -> TokenStream {
         })
     });
 
+    let table_type: syn::Type = syn::parse_quote!(#table_name::table);
+    let ancestors = vec![];
+    let root_type = table_type.clone();
+
+    let aux_impls =
+        descendant::generate_auxiliary_descendant_impls(&table_type, &ancestors, &root_type);
+
     quote::quote! {
         impl diesel_builders::Root for #table_name::table {}
 
-        #[diesel_builders_macros::descendant_of]
         impl diesel_builders::Descendant for #table_name::table {
             type Ancestors = ();
             type Root = Self;
         }
+
+        #aux_impls
 
         #[diesel_builders_macros::bundlable_table]
         impl BundlableTable for #table_name::table {
@@ -120,152 +129,6 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
         Ok(tokens) => tokens.into(),
         Err(err) => err.to_compile_error().into(),
     }
-}
-
-/// Generate `Descendant` and related trait implementations for a table.
-#[proc_macro_attribute]
-pub fn descendant_of(attr: TokenStream, item: TokenStream) -> TokenStream {
-    match descendant_of_impl(attr, item) {
-        Ok(tokens) => tokens,
-        Err(err) => err.to_compile_error().into(),
-    }
-}
-
-#[allow(clippy::too_many_lines)]
-/// Implementation for the `#[descendant_of]` attribute macro.
-///
-/// This function parses a `impl` block for a table type and generates
-/// the `Descendant`, `DescendantOf`, `AncestorOfIndex` and `GetColumn`
-/// implementations required by the `diesel-builders` runtime. It inspects the
-/// `Ancestors` and `Root` associated types defined in the `impl` block, and
-/// emits the boilerplate implementations that allow composition of nested
-/// builder operations.
-fn descendant_of_impl(_attr: TokenStream, item: TokenStream) -> syn::Result<TokenStream> {
-    use quote::quote;
-
-    let item_impl: syn::ItemImpl = syn::parse(item)?;
-
-    // Extract the table type from the impl block
-    let table_type = &item_impl.self_ty;
-
-    // Find the Ancestors associated type
-    let mut ancestors_type: Option<&syn::Type> = None;
-    let mut root_type: Option<&syn::Type> = None;
-
-    for item in &item_impl.items {
-        if let syn::ImplItem::Type(type_item) = item {
-            if type_item.ident == "Ancestors" {
-                ancestors_type = Some(&type_item.ty);
-            } else if type_item.ident == "Root" {
-                root_type = Some(&type_item.ty);
-            }
-        }
-    }
-
-    let ancestors_type = ancestors_type
-        .ok_or_else(|| syn::Error::new_spanned(&item_impl, "Missing Ancestors associated type"))?;
-
-    let root_type = root_type
-        .ok_or_else(|| syn::Error::new_spanned(&item_impl, "Missing Root associated type"))?;
-
-    // Parse the ancestors from the type - it should be a tuple like (T1, T2, T3) or
-    // ()
-    let ancestors = extract_tuple_types(ancestors_type)?;
-
-    let num_ancestors = ancestors.len();
-
-    // Generate TupleIndex for self (last position in ancestors + self)
-    let self_idx = syn::Ident::new(&format!("U{num_ancestors}"), proc_macro2::Span::call_site());
-
-    // Generate DescendantOf implementations for each direct ancestor
-    let descendant_of_impls: Vec<_> = ancestors
-        .iter()
-        .map(|ancestor| {
-            quote! {
-                impl diesel_builders::DescendantOf<#ancestor> for #table_type {}
-            }
-        })
-        .collect();
-
-    // Generate `GetColumn` implementation for each ancestor's primary key
-    // for the descendant table model
-    let descendant_table_model = quote! {
-        <#table_type as diesel_builders::TableExt>::Model
-    };
-    let get_column_impls : Vec<_> = ancestors
-        .iter()
-        .map(|ancestor| {
-            quote! {
-                impl diesel_builders::GetColumn<<#ancestor as diesel::Table>::PrimaryKey>
-                    for #descendant_table_model
-                {
-                    fn get_column_ref(
-                        &self,
-                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::Type {
-                        use diesel::Identifiable;
-                        self.id()
-                    }
-                }
-            }
-        })
-        .collect();
-
-    // Generate DescendantOf implementation for the root (if it's not already in
-    // ancestors) We need to check if root_type is different from all ancestors
-    let root_descendant_of_impl = if ancestors.is_empty() {
-        quote! {}
-    } else {
-        // Check if the root is already in the ancestors list by comparing token streams
-        let root_tokens = quote! { #root_type }.to_string();
-        let is_root_in_ancestors = ancestors.iter().any(|ancestor| {
-            let ancestor_tokens = quote! { #ancestor }.to_string();
-            ancestor_tokens == root_tokens
-        });
-
-        if is_root_in_ancestors {
-            quote! {}
-        } else {
-            quote! {
-                impl diesel_builders::DescendantOf<#root_type> for #table_type {}
-            }
-        }
-    };
-
-    // Generate AncestorOfIndex implementations for each ancestor
-    let ancestor_of_index_impls: Vec<_> = ancestors
-        .iter()
-        .enumerate()
-        .map(|(i, ancestor)| {
-            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
-            quote! {
-                impl diesel_builders::AncestorOfIndex<#table_type> for #ancestor {
-                    type Idx = diesel_builders::typenum::#idx;
-                }
-            }
-        })
-        .collect();
-
-    // Generate AncestorOfIndex for self
-    let self_ancestor_of_index = quote! {
-        impl diesel_builders::AncestorOfIndex<#table_type> for #table_type {
-            type Idx = diesel_builders::typenum::#self_idx;
-        }
-    };
-
-    Ok(quote! {
-        #item_impl
-
-        #(#descendant_of_impls)*
-
-        #root_descendant_of_impl
-
-        #self_ancestor_of_index
-
-        #(#get_column_impls)*
-
-        #(#ancestor_of_index_impls)*
-    }
-    .into())
 }
 
 /// Helper function to extract types from a tuple type

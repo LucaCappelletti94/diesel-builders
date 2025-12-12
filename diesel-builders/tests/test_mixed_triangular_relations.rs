@@ -1,212 +1,94 @@
 //! Test case for a table with both mandatory and discretionary triangular relations.
 //!
-//! This test sets up four tables: A (root), C (references A), D (references A),
-//! and B which:
-//! - Has a mandatory triangular relation with C (via `c_id`)
-//! - Has a discretionary triangular relation with D (via `d_id`)
+//! This test sets up four tables: Parent (root), Mandatory (references Parent), Discretionary (references Parent),
+//! and `ChildWithMixed` which:
+//! - Has a mandatory triangular relation with Mandatory (via `mandatory_id`)
+//! - Has a discretionary triangular relation with Discretionary (via `discretionary_id`)
 
-mod common;
-
+mod shared;
+mod shared_triangular;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{Root, TableModel};
+use diesel_builders_macros::TableModel;
+use shared_triangular::*;
 
-diesel::table! {
-    /// Root table A.
-    table_a (id) {
-        /// Primary key of table A.
-        id -> Integer,
-        /// Column A value.
-        column_a -> Text,
-    }
-}
-
-diesel::table! {
-    /// Table C with a foreign key to A.
-    table_c (id) {
-        /// Primary key of table C.
-        id -> Integer,
-        /// Foreign key to table A.
-        a_id -> Integer,
-        /// Column C value.
-        column_c -> Nullable<Text>,
-    }
-}
-
-diesel::table! {
-    /// Table D with a foreign key to A.
-    table_d (id) {
-        /// Primary key of table D.
-        id -> Integer,
-        /// Foreign key to table A.
-        a_id -> Integer,
-        /// Column D value.
-        column_d -> Nullable<Text>,
-    }
-}
-
-diesel::table! {
-    /// Table B with both mandatory and discretionary triangular relations.
-    table_b (id) {
-        /// Primary key of table B.
-        id -> Integer,
-        /// Foreign key to table C (mandatory triangular relation).
-        c_id -> Integer,
-        /// Foreign key to table D (discretionary triangular relation).
-        d_id -> Integer,
-        /// Column B value.
-        column_b -> Text,
-        /// The remote `column_c` value from table C.
-        remote_column_c -> Nullable<Text>,
-        /// The remote `column_d` value from table D.
-        remote_column_d -> Nullable<Text>,
-    }
-}
-
-diesel::allow_tables_to_appear_in_same_query!(table_a, table_b, table_c, table_d);
-
-// Table A models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
-#[diesel(table_name = table_a)]
-#[table_model(surrogate_key)]
-/// Model for table A.
-pub struct TableA {
-    /// Primary key.
-    id: i32,
-    /// Column A value.
-    column_a: String,
-}
-
-// Table C models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
-#[diesel(table_name = table_c)]
-#[table_model(surrogate_key)]
-/// Model for table C.
-pub struct TableC {
-    /// Primary key.
-    id: i32,
-    /// Foreign key to table A.
-    a_id: i32,
-    /// Column C value.
-    column_c: Option<String>,
-}
-
-// Table D models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
-#[diesel(table_name = table_d)]
-#[table_model(surrogate_key)]
-/// Model for table D.
-pub struct TableD {
-    /// Primary key.
-    id: i32,
-    /// Foreign key to table A.
-    a_id: i32,
-    /// Column D value.
-    column_d: Option<String>,
-}
+diesel::allow_tables_to_appear_in_same_query!(
+    parent_table,
+    child_with_mixed_table,
+    mandatory_table,
+    discretionary_table
+);
 
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
-#[diesel(table_name = table_b)]
+#[diesel(table_name = child_with_mixed_table)]
+#[table_model(ancestors = parent_table::table)]
 /// Model for table B.
-pub struct TableB {
+pub struct ChildWithMixed {
     /// Primary key.
     id: i32,
     /// Foreign key to table C.
-    c_id: i32,
+    mandatory_id: i32,
     /// Foreign key to table D.
-    d_id: i32,
+    discretionary_id: i32,
     /// Column B value.
-    column_b: String,
+    child_field: String,
     /// Remote column C value.
-    remote_column_c: Option<String>,
+    remote_mandatory_field: Option<String>,
     /// Remote column D value.
-    remote_column_d: Option<String>,
-}
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for table_b::table {
-    type Ancestors = (table_a::table,);
-    type Root = table_a::table;
+    remote_discretionary_field: Option<String>,
 }
 
 // Declare singleton foreign keys
-fpk!(table_b::c_id -> table_c);
-fpk!(table_b::d_id -> table_d);
-fpk!(table_b::id -> table_a);
-
-// Define indexes
-index!(table_c::id, table_c::column_c);
-index!(table_c::id, table_c::a_id);
-index!(table_d::id, table_d::column_d);
-index!(table_d::id, table_d::a_id);
+fpk!(child_with_mixed_table::mandatory_id -> mandatory_table);
+fpk!(child_with_mixed_table::discretionary_id -> discretionary_table);
+fpk!(child_with_mixed_table::id -> parent_table);
 
 // Define foreign key relationships
-fk!((table_b::c_id, table_b::remote_column_c) -> (table_c::id, table_c::column_c));
-fk!((table_b::c_id, table_b::id) -> (table_c::id, table_c::a_id));
-fk!((table_b::d_id, table_b::remote_column_d) -> (table_d::id, table_d::column_d));
-fk!((table_b::d_id, table_b::id) -> (table_d::id, table_d::a_id));
+fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
+fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
+fk!((child_with_mixed_table::discretionary_id, child_with_mixed_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
 
 // Define horizontal same-as relationships
-impl diesel_builders::HorizontalKey for table_b::c_id {
-    type HostColumns = (table_b::id, table_b::remote_column_c);
-    type ForeignColumns = (table_c::a_id, table_c::column_c);
+impl diesel_builders::HorizontalKey for child_with_mixed_table::mandatory_id {
+    type HostColumns = (
+        child_with_mixed_table::id,
+        child_with_mixed_table::remote_mandatory_field,
+    );
+    type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
 }
 
-impl diesel_builders::HorizontalKey for table_b::d_id {
-    type HostColumns = (table_b::id, table_b::remote_column_d);
-    type ForeignColumns = (table_d::a_id, table_d::column_d);
+impl diesel_builders::HorizontalKey for child_with_mixed_table::discretionary_id {
+    type HostColumns = (
+        child_with_mixed_table::id,
+        child_with_mixed_table::remote_discretionary_field,
+    );
+    type ForeignColumns = (
+        discretionary_table::parent_id,
+        discretionary_table::discretionary_field,
+    );
 }
 
 #[diesel_builders_macros::bundlable_table]
-impl BundlableTable for table_b::table {
-    type MandatoryTriangularColumns = (table_b::c_id,);
-    type DiscretionaryTriangularColumns = (table_b::d_id,);
+impl BundlableTable for child_with_mixed_table::table {
+    type MandatoryTriangularColumns = (child_with_mixed_table::mandatory_id,);
+    type DiscretionaryTriangularColumns = (child_with_mixed_table::discretionary_id,);
 }
 
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
-    diesel::sql_query(
-        "CREATE TABLE table_a (
-            id INTEGER PRIMARY KEY NOT NULL,
-            column_a TEXT NOT NULL
-        )",
-    )
-    .execute(conn)?;
+    setup_triangular_tables(conn)?;
 
     diesel::sql_query(
-        "CREATE TABLE table_c (
-            id INTEGER PRIMARY KEY NOT NULL,
-            a_id INTEGER NOT NULL REFERENCES table_a(id),
-            column_c TEXT,
-            UNIQUE(id, a_id),
-            UNIQUE(id, column_c)
-        )",
-    )
-    .execute(conn)?;
-
-    diesel::sql_query(
-        "CREATE TABLE table_d (
-            id INTEGER PRIMARY KEY NOT NULL,
-            a_id INTEGER NOT NULL REFERENCES table_a(id),
-            column_d TEXT,
-            UNIQUE(id, a_id),
-            UNIQUE(id, column_d)
-        )",
-    )
-    .execute(conn)?;
-
-    diesel::sql_query(
-        "CREATE TABLE table_b (
-            id INTEGER PRIMARY KEY NOT NULL REFERENCES table_a(id),
-            c_id INTEGER NOT NULL REFERENCES table_c(id),
-            d_id INTEGER NOT NULL REFERENCES table_d(id),
-            column_b TEXT NOT NULL,
-            remote_column_c TEXT,
-            remote_column_d TEXT,
-            FOREIGN KEY (c_id, id) REFERENCES table_c(id, a_id),
-            FOREIGN KEY (c_id, remote_column_c) REFERENCES table_c(id, column_c),
-            FOREIGN KEY (d_id, id) REFERENCES table_d(id, a_id),
-            FOREIGN KEY (d_id, remote_column_d) REFERENCES table_d(id, column_d)
+        "CREATE TABLE child_with_mixed_table (
+            id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
+            mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id),
+            discretionary_id INTEGER NOT NULL REFERENCES discretionary_table(id),
+            child_field TEXT NOT NULL,
+            remote_mandatory_field TEXT,
+            remote_discretionary_field TEXT,
+            FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id),
+            FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field),
+            FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field)
         )",
     )
     .execute(conn)?;
@@ -216,47 +98,56 @@ fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::
 
 #[test]
 fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
+    let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
     // Insert B with both mandatory C and discretionary D
     // Using generated trait methods for ergonomic builder setup
-    let b = table_b::table::builder()
-        .column_a("Value A for B")
-        .column_b("Value B")
-        .c(table_c::table::builder().column_c("Value C".to_owned()))
-        .d(table_d::table::builder().column_d("Value D".to_owned()))
+    let b = child_with_mixed_table::table::builder()
+        .parent_field("Value A for B")
+        .child_field("Value B")
+        .mandatory(mandatory_table::table::builder().mandatory_field(Some("Value C".to_owned())))
+        .discretionary(
+            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
+        )
         .insert(&mut conn)?;
 
-    assert_eq!(b.get_column::<table_b::column_b>(), "Value B");
     assert_eq!(
-        b.get_column::<table_b::remote_column_c>().as_deref(),
+        b.get_column::<child_with_mixed_table::child_field>(),
+        "Value B"
+    );
+    assert_eq!(
+        b.get_column::<child_with_mixed_table::remote_mandatory_field>()
+            .as_deref(),
         Some("Value C")
     );
     assert_eq!(
-        b.get_column::<table_b::remote_column_d>().as_deref(),
+        b.get_column::<child_with_mixed_table::remote_discretionary_field>()
+            .as_deref(),
         Some("Value D")
     );
 
     // Verify associated C
-    let c: TableC = b.c(&mut conn)?;
+    let c: Mandatory = b.mandatory(&mut conn)?;
     assert_eq!(
-        c.get_column::<table_c::a_id>(),
-        b.get_column::<table_b::id>()
+        c.get_column::<mandatory_table::parent_id>(),
+        b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        c.get_column::<table_c::column_c>().as_deref(),
+        c.get_column::<mandatory_table::mandatory_field>()
+            .as_deref(),
         Some("Value C")
     );
 
     // Verify associated D
-    let d: TableD = b.d(&mut conn)?;
+    let d: Discretionary = b.discretionary(&mut conn)?;
     assert_eq!(
-        d.get_column::<table_d::a_id>(),
-        b.get_column::<table_b::id>()
+        d.get_column::<discretionary_table::parent_id>(),
+        b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        d.get_column::<table_d::column_d>().as_deref(),
+        d.get_column::<discretionary_table::discretionary_field>()
+            .as_deref(),
         Some("Value D")
     );
 
@@ -265,40 +156,51 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
+    let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
-    let b = table_b::table::builder()
-        .column_a("Value A for B")
-        .column_b("Value B")
-        .c(table_c::table::builder().column_c("Value C".to_owned()))
-        .d(table_d::table::builder().column_d("Value D".to_owned()))
+    let b = child_with_mixed_table::table::builder()
+        .parent_field("Value A for B")
+        .child_field("Value B")
+        .mandatory(mandatory_table::table::builder().mandatory_field(Some("Value C".to_owned())))
+        .discretionary(
+            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
+        )
         .insert(&mut conn)?;
 
     // Use GetForeignExt directly for primary-key based foreign key
-    let c_pk: TableC = b.get_foreign::<(table_b::c_id,), (table_c::id,)>(&mut conn)?;
+    let c_pk: Mandatory = b
+        .get_foreign::<(child_with_mixed_table::mandatory_id,), (mandatory_table::id,)>(
+            &mut conn,
+        )?;
     assert_eq!(
-        c_pk.get_column::<table_c::id>(),
-        b.get_column::<table_b::c_id>()
+        c_pk.get_column::<mandatory_table::id>(),
+        b.get_column::<child_with_mixed_table::mandatory_id>()
     );
     assert_eq!(
-        c_pk.get_column::<table_c::column_c>().as_deref(),
+        c_pk.get_column::<mandatory_table::mandatory_field>()
+            .as_deref(),
         Some("Value C")
     );
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
-    let c_horizontal: TableC =
-        b.get_foreign::<(table_b::c_id, table_b::id), (table_c::id, table_c::a_id)>(&mut conn)?;
+    let c_horizontal: Mandatory =
+        b.get_foreign::<(
+            child_with_mixed_table::mandatory_id,
+            child_with_mixed_table::id,
+        ), (mandatory_table::id, mandatory_table::parent_id)>(&mut conn)?;
     assert_eq!(
-        c_horizontal.get_column::<table_c::id>(),
-        b.get_column::<table_b::c_id>()
+        c_horizontal.get_column::<mandatory_table::id>(),
+        b.get_column::<child_with_mixed_table::mandatory_id>()
     );
     assert_eq!(
-        c_horizontal.get_column::<table_c::a_id>(),
-        b.get_column::<table_b::id>()
+        c_horizontal.get_column::<mandatory_table::parent_id>(),
+        b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        c_horizontal.get_column::<table_c::column_c>().as_deref(),
+        c_horizontal
+            .get_column::<mandatory_table::mandatory_field>()
+            .as_deref(),
         Some("Value C")
     );
 
@@ -307,25 +209,27 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
+    let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
-    let table_a = table_a::table::builder()
-        .column_a("Value A")
+    let parent_table = parent_table::table::builder()
+        .parent_field("Value A")
         .insert(&mut conn)?;
 
-    let table_d = table_d::table::builder()
-        .a_id(table_a.get_column::<table_a::id>())
-        .column_d("Value D".to_owned())
+    let discretionary_table = discretionary_table::table::builder()
+        .parent_id(parent_table.get_column::<parent_table::id>())
+        .discretionary_field(Some("Value D".to_owned()))
         .insert(&mut conn)?;
 
     // Try to create without mandatory C builder
     // Note: d_id_model references an existing model instead of creating a new one
-    let result = table_b::table::builder()
-        .column_a("Value A")
-        .column_b("Value B")
-        .d(table_d::table::builder().column_d("Value D".to_owned()))
-        .d_model(&table_d)
+    let result = child_with_mixed_table::table::builder()
+        .parent_field("Value A")
+        .child_field("Value B")
+        .discretionary(
+            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
+        )
+        .discretionary_model(&discretionary_table)
         .insert(&mut conn);
 
     assert!(matches!(
@@ -340,31 +244,31 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder with mixed mandatory and discretionary triangular relations
-    let builder = table_b::table::builder()
-        .column_b("Serialized B")
-        .try_remote_column_c(Some("Serialized C".to_string()))?
-        .try_remote_column_d(Some("Serialized D".to_string()))?;
+    let builder = child_with_mixed_table::table::builder()
+        .child_field("Serialized B")
+        .try_remote_mandatory_field(Some("Serialized C".to_string()))?
+        .try_remote_discretionary_field(Some("Serialized D".to_string()))?;
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;
 
     // Deserialize back from JSON
-    let deserialized: diesel_builders::TableBuilder<table_b::table> =
+    let deserialized: diesel_builders::TableBuilder<child_with_mixed_table::table> =
         serde_json::from_str(&serialized)?;
 
     // Verify the values match
     assert_eq!(
         deserialized
-            .may_get_column_ref::<table_b::column_b>()
+            .may_get_column_ref::<child_with_mixed_table::child_field>()
             .map(String::as_str),
         Some("Serialized B")
     );
     assert_eq!(
-        deserialized.may_get_column_ref::<table_b::remote_column_c>(),
+        deserialized.may_get_column_ref::<child_with_mixed_table::remote_mandatory_field>(),
         Some(&Some("Serialized C".to_string()))
     );
     assert_eq!(
-        deserialized.may_get_column_ref::<table_b::remote_column_d>(),
+        deserialized.may_get_column_ref::<child_with_mixed_table::remote_discretionary_field>(),
         Some(&Some("Serialized D".to_string()))
     );
 

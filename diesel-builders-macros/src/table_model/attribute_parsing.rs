@@ -8,11 +8,15 @@ pub struct TableModelAttributes {
     pub error: Option<Type>,
     /// Whether the primary key is a surrogate key.
     pub surrogate_key: bool,
+    /// The ancestors of the table.
+    pub ancestors: Option<Vec<Type>>,
+    /// The root of the ancestor hierarchy.
+    pub root: Option<Type>,
 }
 
 /// Extract the table name from the `#[diesel(table_name = ...)]` attribute.
-pub fn extract_table_path(input: &DeriveInput) -> syn::Result<syn::Path> {
-    let table_path = input.attrs.iter().find_map(|attr| {
+pub fn extract_table_path(input: &DeriveInput) -> Option<syn::Path> {
+    input.attrs.iter().find_map(|attr| {
         if !attr.path().is_ident("diesel") {
             return None;
         }
@@ -29,13 +33,6 @@ pub fn extract_table_path(input: &DeriveInput) -> syn::Result<syn::Path> {
             }
         });
         table_path
-    });
-
-    table_path.ok_or_else(|| {
-        syn::Error::new_spanned(
-            input,
-            "TableModel derive requires a #[diesel(table_name = ...)] attribute",
-        )
     })
 }
 
@@ -86,6 +83,8 @@ pub fn extract_primary_key_columns(input: &DeriveInput) -> Vec<Ident> {
 pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttributes {
     let mut error = None;
     let mut surrogate_key = false;
+    let mut ancestors = None;
+    let mut root = None;
 
     for attr in &input.attrs {
         if !attr.path().is_ident("table_model") {
@@ -99,6 +98,22 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
                 error = Some(ty);
             } else if meta.path.is_ident("surrogate_key") {
                 surrogate_key = true;
+            } else if meta.path.is_ident("ancestors") {
+                if meta.input.peek(syn::token::Paren) {
+                    let content;
+                    syn::parenthesized!(content in meta.input);
+                    let punct: syn::punctuated::Punctuated<syn::Type, syn::Token![,]> =
+                        syn::punctuated::Punctuated::parse_terminated(&content)?;
+                    ancestors = Some(punct.into_iter().collect());
+                } else {
+                    let value = meta.value()?;
+                    let ty: syn::Type = value.parse()?;
+                    ancestors = Some(vec![ty]);
+                }
+            } else if meta.path.is_ident("root") {
+                let value = meta.value()?;
+                let ty: syn::Type = value.parse()?;
+                root = Some(ty);
             }
             Ok(())
         });
@@ -107,6 +122,8 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
     TableModelAttributes {
         error,
         surrogate_key,
+        ancestors,
+        root,
     }
 }
 

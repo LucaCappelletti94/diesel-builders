@@ -1,26 +1,8 @@
 //! Test defaults
 
-mod common;
+mod shared;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-
-diesel::table! {
-    /// Users table
-    users (id) {
-        /// Id column
-        id -> Integer,
-        /// Name column
-        name -> Text,
-        /// Role column
-        role -> Text,
-        /// Active column
-        active -> Bool,
-        /// Bio column
-        bio -> Nullable<Text>,
-        /// Email column
-        email -> Text,
-    }
-}
 
 /// User model
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
@@ -48,7 +30,7 @@ pub struct User {
 
 #[test]
 fn test_defaults() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
+    let mut conn = shared::establish_connection()?;
 
     diesel::sql_query(
         "CREATE TABLE users (

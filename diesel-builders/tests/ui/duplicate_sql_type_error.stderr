@@ -1,0 +1,5 @@
+error: Duplicate sql_type attribute
+ --> tests/ui/duplicate_sql_type_error.rs:8:14
+  |
+8 |     #[diesel(sql_type = diesel::sql_types::Text)]
+  |              ^^^^^^^^

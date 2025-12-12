@@ -26,25 +26,38 @@ diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.g
 
 [A single table with no relationships](diesel-builders/tests/test_base_case.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters. Optional validation through `TrySetColumn` trait implementations enables Rust-side check constraints that mirror [SQL CHECK CONSTRAINT](https://www.postgresql.org/docs/current/ddl-constraints.html), providing fail-fast validation before database insertion.
 
-```mermaid
-classDiagram
-    class Animals {
-        +Integer id PK
-        +Text name «CHECK: not empty, max 100»
-        +Text description? «CHECK: not empty, max 500»
-    }
-```
+```rust
+use diesel_builders::prelude::*;
 
-```rust,ignore
+#[derive(Queryable, Selectable, Identifiable, Root, TableModel)]
+#[diesel(table_name = animals)]
+#[table_model(surrogate_key)]
+pub struct Animal {
+    pub id: i32,
+    pub name: String,
+    pub description: Option<String>,
+}
+
+let mut conn = SqliteConnection::establish(":memory:")?;
+diesel::sql_query(
+    "CREATE TABLE animals (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT
+    );",
+).execute(&mut conn)?;
+
 let animal = animals::table::builder()
-    .try_name("Buddy")?
-    .try_description("A friendly dog".to_owned())?
+    .name("Buddy")
+    .description("A friendly dog".to_owned())
     .insert(&mut conn)?;
+
+Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ### 2. Table Inheritance
 
-[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `#[descendant_of]` macro declares the inheritance relationship. Insertion order: Animals → Dogs.
+[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship. Insertion order: Animals → Dogs.
 
 ```mermaid
 classDiagram
@@ -368,20 +381,6 @@ The `TableModel` derive macro performs several compile-time checks to ensure cor
 - **Primary Keys**: Default values are not allowed on primary key columns (except for surrogate keys which are handled automatically).
 - **Surrogate Keys**: The `surrogate_key` attribute must be present if the table uses a surrogate primary key (e.g., auto-incrementing integer).
 - **Unsupported Attributes**: The macro validates that only supported `diesel` attributes are used, preventing silent failures or unexpected behavior.
-
-## Performance
-
-Compile times by tuple size (using `cargo clean && time cargo build --features size-{tuple_size}`):
-
-| Max Tuple Size | Compile Time |
-|----------------|--------------|
-| 8 (default)    | ~8.16s       |
-| 16             | ~8.19s       |
-| 32             | ~8.24s       |
-| 48             | ~8.40s       |
-| 64             | ~8.52s       |
-| 96             | ~12.88s      |
-| 128            | ~25.60s      |
 
 ## Macro Reference
 

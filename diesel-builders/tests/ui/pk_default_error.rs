@@ -1,12 +1,5 @@
 use diesel_builders::prelude::*;
 
-diesel::table! {
-    users (id) {
-        id -> Integer,
-        name -> Text,
-    }
-}
-
 #[derive(TableModel)]
 #[diesel(table_name = users)]
 pub struct User {

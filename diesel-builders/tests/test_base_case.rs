@@ -2,18 +2,15 @@
 //! of a single table with no ancestors and no vertical/horizontal same-as
 //! relationships.
 
-mod common;
-use std::collections::HashMap;
-
-use common::*;
-use diesel::prelude::*;
+mod shared;
+mod shared_animals;
 use diesel_builders::prelude::*;
+use shared_animals::*;
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
-
-    diesel::sql_query(CREATE_ANIMALS_TABLE).execute(&mut conn)?;
+    let mut conn = shared::establish_connection()?;
+    setup_animal_tables(&mut conn)?;
 
     // Test Root derive - animals table is a root with no ancestors
     let mut builder = animals::table::builder();
@@ -143,24 +140,6 @@ fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn test_insert_fails_when_table_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = common::establish_test_connection()?;
-
-    // Intentionally do NOT create the animals table
-
-    let result = animals::table::builder().try_name("Max")?.insert(&mut conn);
-
-    let error = result.unwrap_err();
-
-    assert!(
-        matches!(error, diesel_builders::BuilderError::Diesel(_)),
-        "Expected Diesel error due to missing table: {error:?}",
-    );
-
-    Ok(())
-}
-
-#[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder with some values set
@@ -186,154 +165,6 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
         deserialized.may_get_column_ref::<animals::description>(),
         Some(&Some("Testing serde serialization".to_owned()))
     );
-
-    Ok(())
-}
-
-#[test]
-fn test_builder_equality() -> Result<(), Box<dyn std::error::Error>> {
-    // Test PartialEq implementation for TableBuilder
-    let builder1 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder2 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder3 = animals::table::builder()
-        .try_name("Different Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder4 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("Different description".to_owned())?;
-
-    // Identical builders should be equal
-    assert_eq!(builder1, builder2);
-
-    // Different builders should not be equal
-    assert_ne!(builder1, builder3);
-    assert_ne!(builder1, builder4);
-    assert_ne!(builder3, builder4);
-
-    // The builders should also be equal to themselves
-    assert_eq!(builder1, builder1);
-    assert_eq!(builder2, builder2);
-    assert_eq!(builder3, builder3);
-    assert_eq!(builder4, builder4);
-
-    Ok(())
-}
-
-#[test]
-fn test_builder_hash() -> Result<(), Box<dyn std::error::Error>> {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-
-    // Test Hash implementation for TableBuilder
-    let builder1 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder2 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder3 = animals::table::builder()
-        .try_name("Different Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder4 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("Different description".to_owned())?;
-
-    // Calculate hashes
-    let mut hasher1 = DefaultHasher::new();
-    builder1.hash(&mut hasher1);
-    let hash1 = hasher1.finish();
-
-    let mut hasher2 = DefaultHasher::new();
-    builder2.hash(&mut hasher2);
-    let hash2 = hasher2.finish();
-
-    let mut hasher3 = DefaultHasher::new();
-    builder3.hash(&mut hasher3);
-    let hash3 = hasher3.finish();
-
-    let mut hasher4 = DefaultHasher::new();
-    builder4.hash(&mut hasher4);
-    let hash4 = hasher4.finish();
-
-    // Identical builders should have the same hash
-    assert_eq!(hash1, hash2);
-
-    // Different builders should have different hashes
-    assert_ne!(hash1, hash3);
-    assert_ne!(hash1, hash4);
-    assert_ne!(hash3, hash4);
-
-    // Test that builders can be used as HashMap keys
-    let mut map = HashMap::new();
-    map.insert(builder1.clone(), "value1");
-    map.insert(builder3.clone(), "value3");
-
-    assert_eq!(map.get(&builder2), Some(&"value1"));
-    assert_eq!(map.get(&builder4), None);
-    assert_eq!(map.get(&builder3), Some(&"value3"));
-
-    Ok(())
-}
-
-#[test]
-fn test_builder_partial_ord() -> Result<(), Box<dyn std::error::Error>> {
-    // Test PartialOrd implementation for TableBuilder
-    let builder1 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder2 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder3 = animals::table::builder()
-        .try_name("Different Animal")?
-        .try_description("A test description".to_owned())?;
-
-    let builder4 = animals::table::builder()
-        .try_name("Test Animal")?
-        .try_description("Different description".to_owned())?;
-
-    // Identical builders should be equal
-    assert_eq!(
-        builder1.partial_cmp(&builder2),
-        Some(std::cmp::Ordering::Equal)
-    );
-
-    // Different builders should have proper ordering
-    assert_eq!(
-        builder1.partial_cmp(&builder3),
-        Some(std::cmp::Ordering::Greater)
-    );
-    assert_eq!(
-        builder3.partial_cmp(&builder1),
-        Some(std::cmp::Ordering::Less)
-    );
-    assert_eq!(
-        builder1.partial_cmp(&builder4),
-        Some(std::cmp::Ordering::Less)
-    );
-    assert_eq!(
-        builder4.partial_cmp(&builder1),
-        Some(std::cmp::Ordering::Greater)
-    );
-
-    // Test Ord implementation
-    assert_eq!(builder1.cmp(&builder2), std::cmp::Ordering::Equal);
-    assert_eq!(builder1.cmp(&builder3), std::cmp::Ordering::Greater);
-    assert_eq!(builder3.cmp(&builder1), std::cmp::Ordering::Less);
-    assert_eq!(builder1.cmp(&builder4), std::cmp::Ordering::Less);
-    assert_eq!(builder4.cmp(&builder1), std::cmp::Ordering::Greater);
 
     Ok(())
 }

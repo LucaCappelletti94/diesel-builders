@@ -8,6 +8,7 @@ mod get_column;
 mod may_get_columns;
 mod primary_key;
 mod set_columns;
+mod table_generation;
 mod typed_column;
 
 use proc_macro2::TokenStream;
@@ -20,6 +21,7 @@ use attribute_parsing::{
 };
 use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
+use table_generation::generate_table_macro;
 use typed_column::generate_typed_column_impls;
 
 use crate::utils::{format_as_nested_tuple, is_option};
@@ -112,13 +114,47 @@ fn process_fields(
 }
 
 /// Main entry point for the `TableModel` derive macro.
+#[allow(clippy::too_many_lines)]
 pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
     let struct_ident = &input.ident;
 
     // Parse attributes
-    let table_path = extract_table_path(input)?;
+    let table_path_opt = extract_table_path(input);
     let primary_key_columns = extract_primary_key_columns(input);
     let attributes = extract_table_model_attributes(input);
+
+    let table_path = if let Some(path) = table_path_opt {
+        path
+    } else {
+        let struct_name = struct_ident.to_string();
+        let table_name_str = format!("{}s", crate::utils::camel_to_snake_case(&struct_name));
+        let table_ident = syn::Ident::new(&table_name_str, struct_ident.span());
+        syn::parse_quote!(#table_ident)
+    };
+
+    if let Some(ancestors) = &attributes.ancestors {
+        let table_type: syn::Type = syn::parse_quote!(#table_path::table);
+        let table_type_str = quote::quote!(#table_type).to_string().replace(' ', "");
+
+        let mut seen = std::collections::HashSet::new();
+        for ancestor in ancestors {
+            let ancestor_str = quote::quote!(#ancestor).to_string().replace(' ', "");
+
+            if ancestor_str == table_type_str {
+                return Err(syn::Error::new_spanned(
+                    ancestor,
+                    "Table cannot be its own ancestor",
+                ));
+            }
+
+            if !seen.insert(ancestor_str) {
+                return Err(syn::Error::new_spanned(
+                    ancestor,
+                    "Duplicate ancestor in hierarchy",
+                ));
+            }
+        }
+    }
 
     if attributes.surrogate_key && primary_key_columns.len() > 1 {
         return Err(syn::Error::new_spanned(
@@ -146,7 +182,13 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
+    // Validate fields before generation to ensure unsupported attributes are reported correctly
+    for field in fields {
+        validate_field_attributes(field)?;
+    }
+
     // Generate all components
+    let table_macro = generate_table_macro(input, &table_path, &primary_key_columns)?;
     let typed_column_impls =
         generate_typed_column_impls(fields, &table_path, struct_ident, &primary_key_columns);
     let get_column_impls = generate_get_column_impls(fields, &table_path, struct_ident);
@@ -184,14 +226,50 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         .map(|t| quote::quote! { #t })
         .unwrap_or(quote::quote! { std::convert::Infallible });
 
+    let descendant_impls = if let Some(ancestors) = attributes.ancestors {
+        let root = attributes.root.or_else(|| ancestors.first().cloned());
+
+        if let Some(root) = root {
+            let table_type: syn::Type = syn::parse_quote!(#table_path::table);
+            let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(
+                &table_type,
+                &ancestors,
+                &root,
+            );
+
+            quote! {
+                impl diesel_builders::Descendant for #table_type {
+                    type Ancestors = (#(#ancestors,)*);
+                    type Root = #root;
+                }
+                #aux_impls
+            }
+        } else {
+            // If ancestors list is empty and no root specified, we can't generate Descendant.
+            // But usually ancestors list shouldn't be empty if the attribute is present.
+            // If it is empty, maybe it's a root table? But then they should use derive(Root).
+            // For now, let's just ignore or maybe error?
+            // Let's assume if they put ancestors, they mean it.
+            syn::Error::new_spanned(
+                input,
+                "ancestors attribute provided but no root could be inferred (ancestors list is empty and no root specified)",
+            )
+            .to_compile_error()
+        }
+    } else {
+        quote! {}
+    };
+
     // Generate final output
     Ok(quote! {
+        #table_macro
         #typed_column_impls
         #get_column_impls
         #(#indexed_column_impls)*
         #may_get_column_impls
         #set_column_impls
         #set_column_unchecked_impls
+        #descendant_impls
 
         // Auto-implement TableExt for the table associated with this model.
         impl diesel_builders::TableExt for #table_path::table {

@@ -1,47 +1,52 @@
 //! Common utilities and shared table definitions for tests.
 
+use diesel_builders::prelude::*;
 use std::convert::Infallible;
 
-use diesel::{prelude::*, sqlite::SqliteConnection};
-use diesel_builders::prelude::*;
-
-/// Establish a `SQLite` connection with all necessary PRAGMAs enabled.
+/// Setups the animal hierarchy tables in the given `SQLite` connection.
 ///
-/// This function creates an in-memory `SQLite` database connection and enables
-/// important PRAGMAs for testing:
-/// - `foreign_keys = ON`: Enforces foreign key constraints
-/// - `recursive_triggers = ON`: Allows triggers to be recursive
-/// - `journal_mode = WAL`: Uses Write-Ahead Logging for better concurrency
-#[allow(dead_code)]
-pub fn establish_test_connection() -> Result<SqliteConnection, Box<dyn std::error::Error>> {
-    let mut conn = SqliteConnection::establish(":memory:")?;
+/// # Errors
+///
+/// Returns an `Err` if any of the SQL DDL statements fail.
+pub fn setup_animal_tables(
+    conn: &mut diesel::SqliteConnection,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use diesel::RunQueryDsl;
+    const CREATE_ANIMALS_TABLE: &str = "CREATE TABLE animals (
+        id INTEGER PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL CHECK (name <> '' AND length(name) <= 100),
+        description TEXT CHECK (description <> '' AND length(description) <= 500)
+    )";
 
-    // Enable foreign key constraints
-    diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut conn)?;
+    const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
+        breed TEXT NOT NULL
+    )";
 
-    // Enable recursive triggers
-    diesel::sql_query("PRAGMA recursive_triggers = ON").execute(&mut conn)?;
+    const CREATE_CATS_TABLE: &str = "CREATE TABLE cats (
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
+        color TEXT NOT NULL CHECK (color <> '')
+    )";
 
-    // Set journal mode to WAL for better performance
-    diesel::sql_query("PRAGMA journal_mode = WAL").execute(&mut conn)?;
+    const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id),
+        age_months INTEGER NOT NULL
+    )";
 
-    Ok(conn)
-}
+    const CREATE_PETS_TABLE: &str = "CREATE TABLE pets (
+        id INTEGER PRIMARY KEY NOT NULL,
+        owner_name TEXT NOT NULL,
+        FOREIGN KEY (id) REFERENCES dogs(id),
+        FOREIGN KEY (id) REFERENCES cats(id)
+    )";
 
-// ============================================================================
-// Animals Table - Root table for all tests
-// ============================================================================
+    diesel::sql_query(CREATE_ANIMALS_TABLE).execute(conn)?;
+    diesel::sql_query(CREATE_DOGS_TABLE).execute(conn)?;
+    diesel::sql_query(CREATE_CATS_TABLE).execute(conn)?;
+    diesel::sql_query(CREATE_PUPPIES_TABLE).execute(conn)?;
+    diesel::sql_query(CREATE_PETS_TABLE).execute(conn)?;
 
-diesel::table! {
-    /// Animals table - root table representing all animals.
-    animals (id) {
-        /// Primary key of the animal.
-        id -> Integer,
-        /// The name of the animal.
-        name -> Text,
-        /// Optional description of the animal.
-        description -> Nullable<Text>,
-    }
+    Ok(())
 }
 
 #[derive(
@@ -120,32 +125,11 @@ impl diesel_builders::TrySetColumn<animals::description>
     }
 }
 
-/// SQL to create the animals table.
-#[allow(dead_code)]
-pub const CREATE_ANIMALS_TABLE: &str = "CREATE TABLE animals (
-    id INTEGER PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL CHECK (name <> '' AND length(name) <= 100),
-    description TEXT CHECK (description <> '' AND length(description) <= 500)
-)";
-
-// ============================================================================
-// Dogs Table - Extends animals (left branch of DAG)
-// ============================================================================
-
-diesel::table! {
-    /// Dogs table - extends animals via foreign key.
-    dogs (id) {
-        /// Primary key of the dog, foreign key to animals.id.
-        id -> Integer,
-        /// The breed of the dog.
-        breed -> Text,
-    }
-}
-
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = dogs)]
+#[table_model(ancestors(animals::table))]
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.
@@ -154,19 +138,6 @@ pub struct Dog {
     breed: String,
 }
 
-#[diesel_builders_macros::descendant_of]
-impl Descendant for dogs::table {
-    type Ancestors = (animals::table,);
-    type Root = animals::table;
-}
-
-/// SQL to create the dogs table.
-#[allow(dead_code)]
-pub const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
-    id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
-    breed TEXT NOT NULL
-)";
-
 // Declare singleton foreign key helper for `dogs.id` -> `animals` (single inheritance)
 fpk!(dogs::id -> animals);
 
@@ -174,20 +145,10 @@ fpk!(dogs::id -> animals);
 // Cats Table - Extends animals (right branch of DAG)
 // ============================================================================
 
-diesel::table! {
-    /// Cats table - extends animals via foreign key.
-    cats (id) {
-        /// Primary key of the cat, foreign key to animals.id.
-        id -> Integer,
-        /// The color of the cat.
-        color -> Text,
-    }
-}
-
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
-#[table_model(error = NewCatError)]
+#[table_model(error = NewCatError, ancestors(animals::table))]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
 pub struct Cat {
@@ -198,13 +159,8 @@ pub struct Cat {
     color: String,
 }
 
-#[diesel_builders_macros::descendant_of]
-impl Descendant for cats::table {
-    type Ancestors = (animals::table,);
-    type Root = animals::table;
-}
-
 #[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
+/// Errors for `NewCat` validation.
 pub enum NewCatError {
     /// Color cannot be empty.
     #[error("Color cannot be empty")]
@@ -231,13 +187,6 @@ impl diesel_builders::TrySetColumn<cats::color>
     }
 }
 
-/// SQL to create the cats table.
-#[allow(dead_code)]
-pub const CREATE_CATS_TABLE: &str = "CREATE TABLE cats (
-    id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
-    color TEXT NOT NULL CHECK (color <> '')
-)";
-
 // Declare singleton foreign key helper for `cats.id` -> `animals` (single inheritance)
 fpk!(cats::id -> animals);
 
@@ -245,20 +194,11 @@ fpk!(cats::id -> animals);
 // Puppies Table - Extends dogs (for inheritance chain: animals -> dogs -> puppies)
 // ============================================================================
 
-diesel::table! {
-    /// Puppies table - extends dogs via foreign key.
-    puppies (id) {
-        /// Primary key of the puppy, foreign key to dogs.id.
-        id -> Integer,
-        /// The age in months of the puppy.
-        age_months -> Integer,
-    }
-}
-
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = puppies)]
+#[table_model(ancestors(animals::table, dogs::table))]
 /// Model for the puppies table.
 pub struct Puppy {
     /// Primary key.
@@ -267,37 +207,15 @@ pub struct Puppy {
     age_months: i32,
 }
 
-#[diesel_builders_macros::descendant_of]
-impl Descendant for puppies::table {
-    type Ancestors = (animals::table, dogs::table);
-    type Root = animals::table;
-}
-
-/// SQL to create the puppies table.
-#[allow(dead_code)]
-pub const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
-    id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id),
-    age_months INTEGER NOT NULL
-)";
-
 // ============================================================================
 // Pets Table - Extends both dogs and cats (diamond inheritance for DAG tests)
 // ============================================================================
-
-diesel::table! {
-    /// Pets table - extends both dogs and cats via foreign keys (diamond pattern).
-    pets (id) {
-        /// Primary key of the pet.
-        id -> Integer,
-        /// The owner name of the pet.
-        owner_name -> Text,
-    }
-}
 
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = pets)]
+#[table_model(ancestors(animals::table, dogs::table, cats::table))]
 /// Model for the pets table.
 pub struct Pet {
     /// Primary key.
@@ -305,21 +223,6 @@ pub struct Pet {
     /// The owner name of the pet.
     owner_name: String,
 }
-
-#[diesel_builders_macros::descendant_of]
-impl Descendant for pets::table {
-    type Ancestors = (animals::table, dogs::table, cats::table);
-    type Root = animals::table;
-}
-
-/// SQL to create the pets table (for DAG tests).
-#[allow(dead_code)]
-pub const CREATE_PETS_TABLE: &str = "CREATE TABLE pets (
-    id INTEGER PRIMARY KEY NOT NULL,
-    owner_name TEXT NOT NULL,
-    FOREIGN KEY (id) REFERENCES dogs(id),
-    FOREIGN KEY (id) REFERENCES cats(id)
-)";
 
 // Allow all tables to appear together in queries
 diesel::allow_tables_to_appear_in_same_query!(animals, dogs, cats, puppies, pets);

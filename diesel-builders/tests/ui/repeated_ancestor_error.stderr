@@ -1,0 +1,13 @@
+error: Duplicate ancestor in hierarchy
+  --> tests/ui/repeated_ancestor_error.rs:13:41
+   |
+13 | #[table_model(ancestors(animals::table, animals::table))]
+   |                                         ^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
+  --> tests/ui/repeated_ancestor_error.rs:12:23
+   |
+12 | #[diesel(table_name = dogs)]
+   |                       ^^^^ use of unresolved module or unlinked crate `dogs`
+   |
+   = help: if you wanted to use a crate named `dogs`, use `cargo add dogs` to add it to your `Cargo.toml`

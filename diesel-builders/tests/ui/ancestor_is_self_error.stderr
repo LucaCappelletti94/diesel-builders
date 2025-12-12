@@ -1,0 +1,13 @@
+error: Table cannot be its own ancestor
+ --> tests/ui/ancestor_is_self_error.rs:6:25
+  |
+6 | #[table_model(ancestors(dogs::table))]
+  |                         ^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
+ --> tests/ui/ancestor_is_self_error.rs:5:23
+  |
+5 | #[diesel(table_name = dogs)]
+  |                       ^^^^ use of unresolved module or unlinked crate `dogs`
+  |
+  = help: if you wanted to use a crate named `dogs`, use `cargo add dogs` to add it to your `Cargo.toml`

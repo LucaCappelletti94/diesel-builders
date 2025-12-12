@@ -4,23 +4,15 @@ use diesel_builders::{
 };
 use typenum::U0;
 
-diesel::table! {
-    /// Dogs table - extends animals via foreign key.
-    dogs (id) {
-        /// Primary key of the dog, foreign key to animals.id.
-        id -> Integer,
-        /// The breed of the dog.
-        breed -> Text,
-    }
-}
-
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Root,
 )]
 #[diesel(table_name = dogs)]
 /// Model struct associated to the `dogs` table.
 pub struct Dog {
+    /// The ID of the dog.
     id: i32,
+    /// The breed of the dog.
     breed: String,
 }
 
