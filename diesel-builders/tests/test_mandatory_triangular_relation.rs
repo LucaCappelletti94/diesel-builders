@@ -34,7 +34,7 @@ diesel::allow_tables_to_appear_in_same_query!(
 
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
-#[table_model(error=ErrorChildWithMandatory, ancestors = parent_table::table)]
+#[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
 #[diesel(table_name = child_with_mandatory_table)]
 /// Model for table B.
 pub struct ChildWithMandatory {

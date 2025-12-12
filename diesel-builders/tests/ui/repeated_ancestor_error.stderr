@@ -1,8 +1,10 @@
 error: Duplicate ancestor in hierarchy
-  --> tests/ui/repeated_ancestor_error.rs:13:41
+  --> tests/ui/repeated_ancestor_error.rs:11:84
    |
-13 | #[table_model(ancestors(animals::table, animals::table))]
-   |                                         ^^^^^^^^^^^^^^
+11 | #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+   |                                                                                    ^^^^^^^^^^
+   |
+   = note: this error originates in the derive macro `TableModel` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
   --> tests/ui/repeated_ancestor_error.rs:12:23

@@ -6,12 +6,12 @@ use syn::Ident;
 
 /// Generate `IndexedColumn` implementations for primary key columns.
 pub fn generate_indexed_column_impls(
-    table_path: &syn::Path,
+    table_module: &syn::Ident,
     primary_key_columns: &[Ident],
 ) -> Vec<TokenStream> {
     let pk_column_types: Vec<_> = primary_key_columns
         .iter()
-        .map(|col| quote! { #table_path::#col })
+        .map(|col| quote! { #table_module::#col })
         .collect();
 
     primary_key_columns
@@ -23,7 +23,7 @@ pub fn generate_indexed_column_impls(
                 impl diesel_builders::IndexedColumn<
                     diesel_builders::typenum::#idx_type,
                     ( #(#pk_column_types,)* )
-                > for #table_path::#col {}
+                > for #table_module::#col {}
             }
         })
         .collect()

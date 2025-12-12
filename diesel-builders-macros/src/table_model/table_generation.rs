@@ -2,7 +2,7 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, Field, Ident, Path, Type};
+use syn::{DeriveInput, Field, Ident, Type};
 
 use crate::utils::is_option;
 
@@ -107,7 +107,7 @@ fn get_column_sql_type(field: &Field) -> syn::Result<TokenStream> {
 /// Generates the `diesel::table!` macro call.
 pub fn generate_table_macro(
     input: &DeriveInput,
-    table_path: &Path,
+    table_module: &Ident,
     primary_key_columns: &[Ident],
 ) -> syn::Result<TokenStream> {
     let fields = match &input.data {
@@ -158,13 +158,11 @@ pub fn generate_table_macro(
         quote! { #(#primary_key_columns),* }
     };
 
-    // Use the last segment of the path as the table name for definition
-    let table_name_ident = &table_path.segments.last().unwrap().ident;
-
+    // Use the module identifier as the table name for definition
     Ok(quote! {
         diesel::table! {
             #(#struct_doc_attrs)*
-            #table_name_ident (#pk_tuple) {
+            #table_module (#pk_tuple) {
                 #(#column_defs)*
             }
         }

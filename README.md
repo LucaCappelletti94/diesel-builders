@@ -9,7 +9,7 @@ A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles
 
 It additionally offers ergonomic APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
 
-This library is transparent in terms of backends and should work for any Diesel backend.
+This library is transparent in terms of backends and should work for any Diesel backend. In the README and tests, we use `SQLite` for simplicity.
 
 ## Installation
 
@@ -33,9 +33,9 @@ use diesel_builders::prelude::*;
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
-    pub id: i32,
-    pub name: String,
-    pub description: Option<String>,
+    id: i32,
+    name: String,
+    description: Option<String>,
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;

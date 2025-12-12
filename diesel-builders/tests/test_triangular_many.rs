@@ -19,7 +19,7 @@ diesel::allow_tables_to_appear_in_same_query!(
 /// discretionary triangular relationships.
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_table)]
-#[table_model(ancestors = parent_table::table)]
+#[table_model(ancestors = parent_table)]
 pub struct Child {
     /// The primary key of the child, also a foreign key to `parent_table`.
     id: i32,

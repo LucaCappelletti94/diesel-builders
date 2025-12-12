@@ -129,7 +129,7 @@ impl diesel_builders::TrySetColumn<animals::description>
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = dogs)]
-#[table_model(ancestors(animals::table))]
+#[table_model(ancestors(animals))]
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.
@@ -148,7 +148,7 @@ fpk!(dogs::id -> animals);
 #[derive(
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
-#[table_model(error = NewCatError, ancestors(animals::table))]
+#[table_model(error = NewCatError, ancestors(animals))]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
 pub struct Cat {
@@ -198,7 +198,7 @@ fpk!(cats::id -> animals);
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = puppies)]
-#[table_model(ancestors(animals::table, dogs::table))]
+#[table_model(ancestors(animals, dogs))]
 /// Model for the puppies table.
 pub struct Puppy {
     /// Primary key.
@@ -215,7 +215,7 @@ pub struct Puppy {
     Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
 )]
 #[diesel(table_name = pets)]
-#[table_model(ancestors(animals::table, dogs::table, cats::table))]
+#[table_model(ancestors(animals, dogs, cats))]
 /// Model for the pets table.
 pub struct Pet {
     /// Primary key.

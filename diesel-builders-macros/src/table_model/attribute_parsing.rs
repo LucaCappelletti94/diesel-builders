@@ -14,25 +14,25 @@ pub struct TableModelAttributes {
     pub root: Option<Type>,
 }
 
-/// Extract the table name from the `#[diesel(table_name = ...)]` attribute.
-pub fn extract_table_path(input: &DeriveInput) -> Option<syn::Path> {
+/// Extract the table module name from the `#[diesel(table_name = ...)]` attribute.
+pub fn extract_table_module(input: &DeriveInput) -> Option<syn::Ident> {
     input.attrs.iter().find_map(|attr| {
         if !attr.path().is_ident("diesel") {
             return None;
         }
 
-        let mut table_path = None;
+        let mut table_module = None;
         let _ = attr.parse_nested_meta(|meta| {
             if meta.path.is_ident("table_name") {
                 let value = meta.value()?;
-                let lit: syn::Path = value.parse()?;
-                table_path = Some(lit);
+                let module_ident: syn::Ident = value.parse()?;
+                table_module = Some(module_ident);
                 Ok(())
             } else {
                 Ok(())
             }
         });
-        table_path
+        table_module
     })
 }
 
@@ -102,13 +102,20 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
                 if meta.input.peek(syn::token::Paren) {
                     let content;
                     syn::parenthesized!(content in meta.input);
-                    let punct: syn::punctuated::Punctuated<syn::Type, syn::Token![,]> =
+                    let punct: syn::punctuated::Punctuated<syn::Ident, syn::Token![,]> =
                         syn::punctuated::Punctuated::parse_terminated(&content)?;
-                    ancestors = Some(punct.into_iter().collect());
+                    // Convert module identifiers to table types by appending ::table
+                    ancestors = Some(
+                        punct
+                            .into_iter()
+                            .map(|module_ident| syn::parse_quote!(#module_ident::table))
+                            .collect(),
+                    );
                 } else {
                     let value = meta.value()?;
-                    let ty: syn::Type = value.parse()?;
-                    ancestors = Some(vec![ty]);
+                    let module_ident: syn::Ident = value.parse()?;
+                    // Append ::table to the module identifier to get the table type
+                    ancestors = Some(vec![syn::parse_quote!(#module_ident::table)]);
                 }
             } else if meta.path.is_ident("root") {
                 let value = meta.value()?;

@@ -22,7 +22,7 @@ diesel::allow_tables_to_appear_in_same_query!(
 // Table B models
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_with_mixed_table)]
-#[table_model(ancestors = parent_table::table)]
+#[table_model(ancestors = parent_table)]
 /// Model for table B.
 pub struct ChildWithMixed {
     /// Primary key.

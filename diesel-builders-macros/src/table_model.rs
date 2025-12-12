@@ -17,8 +17,9 @@ use syn::DeriveInput;
 
 use attribute_parsing::{
     extract_field_default_value, extract_primary_key_columns, extract_table_model_attributes,
-    extract_table_path, is_field_infallible, validate_field_attributes,
+    extract_table_module, is_field_infallible, validate_field_attributes,
 };
+
 use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
 use table_generation::generate_table_macro;
@@ -41,7 +42,7 @@ struct ProcessedFields {
 /// Process fields to extract columns, validation status, and default values.
 fn process_fields(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
-    table_path: &syn::Path,
+    table_module: &syn::Ident,
     primary_key_columns: &[syn::Ident],
     attributes: &attribute_parsing::TableModelAttributes,
 ) -> syn::Result<ProcessedFields> {
@@ -82,11 +83,11 @@ fn process_fields(
             continue;
         }
 
-        new_record_columns.push(syn::parse_quote!(#table_path::#field_name));
+        new_record_columns.push(syn::parse_quote!(#table_module::#field_name));
         if is_field_infallible(field) || attributes.error.is_none() {
-            infallible_records.push((idx, syn::parse_quote!(#table_path::#field_name)));
+            infallible_records.push((idx, syn::parse_quote!(#table_module::#field_name)));
         } else {
-            fallible_records.push((idx, syn::parse_quote!(#table_path::#field_name)));
+            fallible_records.push((idx, syn::parse_quote!(#table_module::#field_name)));
         }
 
         // Default value logic
@@ -119,21 +120,20 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let struct_ident = &input.ident;
 
     // Parse attributes
-    let table_path_opt = extract_table_path(input);
+    let table_module_opt = extract_table_module(input);
     let primary_key_columns = extract_primary_key_columns(input);
     let attributes = extract_table_model_attributes(input);
 
-    let table_path = if let Some(path) = table_path_opt {
-        path
+    let table_module = if let Some(module) = table_module_opt {
+        module
     } else {
         let struct_name = struct_ident.to_string();
         let table_name_str = format!("{}s", crate::utils::camel_to_snake_case(&struct_name));
-        let table_ident = syn::Ident::new(&table_name_str, struct_ident.span());
-        syn::parse_quote!(#table_ident)
+        syn::Ident::new(&table_name_str, struct_ident.span())
     };
 
     if let Some(ancestors) = &attributes.ancestors {
-        let table_type: syn::Type = syn::parse_quote!(#table_path::table);
+        let table_type: syn::Type = syn::parse_quote!(#table_module::table);
         let table_type_str = quote::quote!(#table_type).to_string().replace(' ', "");
 
         let mut seen = std::collections::HashSet::new();
@@ -188,15 +188,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     // Generate all components
-    let table_macro = generate_table_macro(input, &table_path, &primary_key_columns)?;
+    let table_macro = generate_table_macro(input, &table_module, &primary_key_columns)?;
     let typed_column_impls =
-        generate_typed_column_impls(fields, &table_path, struct_ident, &primary_key_columns);
-    let get_column_impls = generate_get_column_impls(fields, &table_path, struct_ident);
-    let indexed_column_impls = generate_indexed_column_impls(&table_path, &primary_key_columns);
+        generate_typed_column_impls(fields, &table_module, struct_ident, &primary_key_columns);
+    let get_column_impls = generate_get_column_impls(fields, &table_module, struct_ident);
+    let indexed_column_impls = generate_indexed_column_impls(&table_module, &primary_key_columns);
     let nested_primary_keys = format_as_nested_tuple(
         primary_key_columns
             .iter()
-            .map(|col| quote::quote! { #table_path::#col }),
+            .map(|col| quote::quote! { #table_module::#col }),
     );
 
     let ProcessedFields {
@@ -204,7 +204,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         fallible_records,
         infallible_records,
         default_values,
-    } = process_fields(fields, &table_path, &primary_key_columns, &attributes)?;
+    } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
@@ -214,12 +214,13 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             .map(|col| quote::quote! { Option<<#col as diesel_builders::Typed>::Type> }),
     );
     let may_get_column_impls =
-        may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_path);
+        may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_module);
 
-    let set_column_impls = set_columns::generate_set_column_impls(&infallible_records, &table_path);
+    let set_column_impls =
+        set_columns::generate_set_column_impls(&infallible_records, &table_module);
 
     let set_column_unchecked_impls =
-        set_columns::generate_set_column_unchecked_traits(&fallible_records, &table_path);
+        set_columns::generate_set_column_unchecked_traits(&fallible_records, &table_module);
 
     let error_type = attributes
         .error
@@ -230,7 +231,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         let root = attributes.root.or_else(|| ancestors.first().cloned());
 
         if let Some(root) = root {
-            let table_type: syn::Type = syn::parse_quote!(#table_path::table);
+            let table_type: syn::Type = syn::parse_quote!(#table_module::table);
             let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(
                 &table_type,
                 &ancestors,
@@ -272,7 +273,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #descendant_impls
 
         // Auto-implement TableExt for the table associated with this model.
-        impl diesel_builders::TableExt for #table_path::table {
+        impl diesel_builders::TableExt for #table_module::table {
             type NewRecord = #new_record;
             type NewValues = #new_record_type;
             type Model = #struct_ident;

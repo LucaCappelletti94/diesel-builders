@@ -10,7 +10,7 @@ pub struct Animal {
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = dogs)]
-#[table_model(ancestors(animals::table, animals::table))]
+#[table_model(ancestors(animals, animals))]
 pub struct Dog {
     id: i32,
     breed: String,

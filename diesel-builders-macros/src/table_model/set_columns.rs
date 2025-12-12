@@ -4,7 +4,7 @@
 /// Generate `TrySetColumn` impls for each field in the struct.
 pub fn generate_set_column_impls(
     new_record_columns: &[(usize, syn::Path)],
-    table_path: &syn::Path,
+    table_module: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     new_record_columns.iter().map(|(idx, new_record_column)| {
 		let typenum_index = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
@@ -12,7 +12,7 @@ pub fn generate_set_column_impls(
 			diesel_builders::typenum::#typenum_index
 		};
         quote::quote! {
-            impl diesel_builders::TrySetColumn<#new_record_column> for <#table_path::table as diesel_builders::TableExt>::NewValues {
+            impl diesel_builders::TrySetColumn<#new_record_column> for <#table_module::table as diesel_builders::TableExt>::NewValues {
                 type Error = core::convert::Infallible;
 
                 #[inline]
@@ -29,7 +29,7 @@ pub fn generate_set_column_impls(
 /// Generate implementations of `SetColumnUnchecked` for each field in the struct.
 pub fn generate_set_column_unchecked_traits(
     new_record_columns: &[(usize, syn::Path)],
-    table_path: &syn::Path,
+    table_module: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     new_record_columns.iter().map(|(idx, new_record_column)| {
 		let typenum_index = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
@@ -37,7 +37,7 @@ pub fn generate_set_column_unchecked_traits(
 			diesel_builders::typenum::#typenum_index
 		};
         quote::quote! {
-            impl diesel_builders::SetColumnUnchecked<#new_record_column> for <#table_path::table as diesel_builders::TableExt>::NewValues {
+            impl diesel_builders::SetColumnUnchecked<#new_record_column> for <#table_module::table as diesel_builders::TableExt>::NewValues {
                 #[inline]
                 fn set_column_unchecked(&mut self, value: impl Into<<#new_record_column as diesel_builders::Typed>::Type>) -> &mut Self {
                     use diesel_builders::tuplities::NestedTupleIndexMut;
