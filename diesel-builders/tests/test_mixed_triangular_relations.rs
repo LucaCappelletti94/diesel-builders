@@ -27,8 +27,10 @@ diesel::allow_tables_to_appear_in_same_query!(
 pub struct ChildWithMixed {
     /// Primary key.
     id: i32,
+    #[mandatory]
     /// Foreign key to table C.
     mandatory_id: i32,
+    #[discretionary]
     /// Foreign key to table D.
     discretionary_id: i32,
     /// Column B value.
@@ -42,7 +44,6 @@ pub struct ChildWithMixed {
 // Declare singleton foreign keys
 fpk!(child_with_mixed_table::mandatory_id -> mandatory_table);
 fpk!(child_with_mixed_table::discretionary_id -> discretionary_table);
-fpk!(child_with_mixed_table::id -> parent_table);
 
 // Define foreign key relationships
 fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
@@ -67,12 +68,6 @@ impl diesel_builders::HorizontalKey for child_with_mixed_table::discretionary_id
         discretionary_table::parent_id,
         discretionary_table::discretionary_field,
     );
-}
-
-#[diesel_builders_macros::bundlable_table]
-impl BundlableTable for child_with_mixed_table::table {
-    type MandatoryTriangularColumns = (child_with_mixed_table::mandatory_id,);
-    type DiscretionaryTriangularColumns = (child_with_mixed_table::discretionary_id,);
 }
 
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {

@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
 /// User model
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = users)]
 #[table_model(surrogate_key)]
 pub struct User {

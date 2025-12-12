@@ -1,4 +1,4 @@
-error: Surrogate key is not supported for composite primary keys
+error: `surrogate_key` is not supported for composite primary keys
   --> tests/ui/surrogate_composite_pk_error.rs:4:1
    |
  4 | / #[diesel(table_name = users)]

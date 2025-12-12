@@ -1,0 +1,15 @@
+error: Duplicate `#[mandatory]` attribute found. Each field can only have one `#[mandatory]` attribute.
+  --> tests/ui/duplicate_mandatory_error.rs:8:5
+   |
+ 8 | /     #[mandatory]
+ 9 | |     #[mandatory]
+10 | |     field1: i32,
+   | |_______________^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `test_table`
+ --> tests/ui/duplicate_mandatory_error.rs:5:23
+  |
+5 | #[diesel(table_name = test_table)]
+  |                       ^^^^^^^^^^ use of unresolved module or unlinked crate `test_table`
+  |
+  = help: if you wanted to use a crate named `test_table`, use `cargo add test_table` to add it to your `Cargo.toml`

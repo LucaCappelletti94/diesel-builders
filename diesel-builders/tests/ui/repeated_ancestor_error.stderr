@@ -1,15 +1,13 @@
-error: Duplicate ancestor in hierarchy
-  --> tests/ui/repeated_ancestor_error.rs:11:84
+error: Duplicate `ancestor` in hierarchy
+  --> tests/ui/repeated_ancestor_error.rs:12:34
    |
-11 | #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
-   |                                                                                    ^^^^^^^^^^
-   |
-   = note: this error originates in the derive macro `TableModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+12 | #[table_model(ancestors(animals, animals))]
+   |                                  ^^^^^^^
 
 error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
-  --> tests/ui/repeated_ancestor_error.rs:12:23
+  --> tests/ui/repeated_ancestor_error.rs:11:23
    |
-12 | #[diesel(table_name = dogs)]
+11 | #[diesel(table_name = dogs)]
    |                       ^^^^ use of unresolved module or unlinked crate `dogs`
    |
    = help: if you wanted to use a crate named `dogs`, use `cargo add dogs` to add it to your `Cargo.toml`

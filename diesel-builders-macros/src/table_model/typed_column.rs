@@ -19,6 +19,7 @@ pub fn generate_typed_column_impls(
             let field_type = &field.ty;
 
             Some(generate_field_traits(
+                field,
                 field_name,
                 field_type,
                 table_module,
@@ -31,12 +32,15 @@ pub fn generate_typed_column_impls(
 
 /// Generate all trait implementations for a single field.
 fn generate_field_traits(
+    field: &Field,
     field_name: &Ident,
     field_type: &syn::Type,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     primary_key_columns: &[Ident],
 ) -> TokenStream {
+    use crate::table_model::attribute_parsing::{is_field_discretionary, is_field_mandatory};
+
     let camel_cased_field_name = snake_to_camel_case(&field_name.to_string());
 
     // Generate getter trait only for non-id fields
@@ -49,15 +53,24 @@ fn generate_field_traits(
         )
     });
 
-    // Generate triangular relation traits only for single primary key tables
-    let maybe_triangular_impls = (primary_key_columns.len() == 1).then(|| {
-        generate_triangular_relation_traits(
-            field_name,
-            table_module,
-            struct_ident,
-            &camel_cased_field_name,
-        )
-    });
+    // Determine triangular relation type
+    let is_mandatory = is_field_mandatory(field);
+    let is_discretionary = is_field_discretionary(field);
+
+    // Generate triangular relation traits only for single primary key tables and if field is marked
+    let maybe_triangular_impls =
+        if primary_key_columns.len() == 1 && (is_mandatory || is_discretionary) {
+            Some(generate_triangular_relation_traits(
+                field_name,
+                table_module,
+                struct_ident,
+                &camel_cased_field_name,
+                is_mandatory,
+                is_discretionary,
+            ))
+        } else {
+            None
+        };
 
     let set_trait = generate_set_trait(
         field_name,
@@ -236,11 +249,14 @@ fn generate_typed_impl(
 
 #[allow(clippy::too_many_lines)]
 /// Generate triangular relation traits for a field.
+/// Only generates traits relevant to the field's mandatory/discretionary status.
 fn generate_triangular_relation_traits(
     field_name: &Ident,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
+    is_mandatory: bool,
+    is_discretionary: bool,
 ) -> TokenStream {
     let set_field_name_discretionary_model_trait = syn::Ident::new(
         &format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"),
@@ -371,218 +387,217 @@ fn generate_triangular_relation_traits(
         "Tries to set the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
     );
 
+    // Generate discretionary traits only if the field is marked as discretionary
+    let discretionary_traits = if is_discretionary {
+        quote! {
+            #[doc = #set_discretionary_model_trait_doc_comment]
+            pub trait #set_field_name_discretionary_model_trait: diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #set_discretionary_model_method_doc_comment]
+                fn #set_field_name_model_method_ref(
+                    &mut self,
+                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+                ) -> &mut Self {
+                    use diesel_builders::SetDiscretionaryModelExt;
+                    self.set_discretionary_model_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[must_use]
+                #[doc = #set_discretionary_model_method_doc_comment]
+                fn #set_field_name_model_method(
+                    self,
+                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+                ) -> Self {
+                    use diesel_builders::SetDiscretionaryModelExt;
+                    self.set_discretionary_model::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #set_field_name_discretionary_model_trait for T
+                where
+                    T: diesel_builders::SetDiscretionaryModel<#table_module::#field_name>
+                {}
+
+            #[doc = #set_discretionary_builder_trait_doc_comment]
+            pub trait #set_field_name_discretionary_builder_trait: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #set_discretionary_builder_method_doc_comment]
+                fn #set_field_name_builder_method_ref(
+                    &mut self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> &mut Self {
+                    use diesel_builders::SetDiscretionaryBuilderExt;
+                    self.set_discretionary_builder_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[must_use]
+                #[doc = #set_discretionary_builder_method_doc_comment]
+                fn #set_field_name_builder_method(
+                    self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Self {
+                    use diesel_builders::SetDiscretionaryBuilderExt;
+                    self.set_discretionary_builder::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #set_field_name_discretionary_builder_trait for T
+            where
+                T: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name>
+                {}
+
+            #[doc = #try_set_discretionary_model_trait_doc_comment]
+            pub trait #try_set_field_name_discretionary_model_trait: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #try_set_discretionary_model_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the column check constraints are not respected."]
+                fn #try_set_field_name_model_method_ref(
+                    &mut self,
+                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetDiscretionaryModelExt;
+                    self.try_set_discretionary_model_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[doc = #try_set_discretionary_model_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the value cannot be converted to the column type."]
+                fn #try_set_field_name_model_method(
+                    self,
+                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetDiscretionaryModelExt;
+                    self.try_set_discretionary_model::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #try_set_field_name_discretionary_model_trait for T
+            where
+                T: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name>
+                {}
+
+            #[doc = #try_set_discretionary_builder_trait_doc_comment]
+            pub trait #try_set_field_name_discretionary_builder_trait: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #try_set_discretionary_builder_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the column check constraints are not respected."]
+                fn #try_set_field_name_builder_method_ref(
+                    &mut self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetDiscretionaryBuilderExt;
+                    self.try_set_discretionary_builder_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[doc = #try_set_discretionary_builder_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the value cannot be converted to the column type."]
+                fn #try_set_field_name_builder_method(
+                    self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetDiscretionaryBuilderExt;
+                    self.try_set_discretionary_builder::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #try_set_field_name_discretionary_builder_trait for T
+            where
+                T: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name>
+                {}
+        }
+    } else {
+        quote! {}
+    };
+
+    // Generate mandatory traits only if the field is marked as mandatory
+    let mandatory_traits = if is_mandatory {
+        quote! {
+            #[doc = #set_mandatory_builder_trait_doc_comment]
+            pub trait #set_field_name_mandatory_builder_trait: diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #set_mandatory_builder_method_doc_comment]
+                fn #set_field_name_builder_method_ref(
+                    &mut self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> &mut Self {
+                    use diesel_builders::SetMandatoryBuilderExt;
+                    self.set_mandatory_builder_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[must_use]
+                #[doc = #set_mandatory_builder_method_doc_comment]
+                fn #set_field_name_builder_method(
+                    self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Self {
+                    use diesel_builders::SetMandatoryBuilderExt;
+                    self.set_mandatory_builder::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #set_field_name_mandatory_builder_trait for T
+            where
+                T: diesel_builders::SetMandatoryBuilder<#table_module::#field_name>
+                {}
+
+            #[doc = #try_set_mandatory_builder_trait_doc_comment]
+            pub trait #try_set_field_name_mandatory_builder_trait: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized
+            {
+                #[inline]
+                #[doc = #try_set_mandatory_builder_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the column check constraints are not respected."]
+                fn #try_set_field_name_builder_method_ref(
+                    &mut self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetMandatoryBuilderExt;
+                    self.try_set_mandatory_builder_ref::<#table_module::#field_name>(value)
+                }
+                #[inline]
+                #[doc = #try_set_mandatory_builder_method_doc_comment]
+                #[doc = ""]
+                #[doc = " # Errors"]
+                #[doc = ""]
+                #[doc = "Returns an error if the value cannot be converted to the column type."]
+                fn #try_set_field_name_builder_method(
+                    self,
+                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                    use diesel_builders::TrySetMandatoryBuilderExt;
+                    self.try_set_mandatory_builder::<#table_module::#field_name>(value)
+                }
+            }
+
+            impl<T> #try_set_field_name_mandatory_builder_trait for T
+            where
+                T: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name>
+                {}
+        }
+    } else {
+        quote! {}
+    };
+
     quote! {
-        #[doc = #set_discretionary_model_trait_doc_comment]
-        pub trait #set_field_name_discretionary_model_trait: diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized
-            where
-                for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex
-        {
-            #[inline]
-            #[doc = #set_discretionary_model_method_doc_comment]
-            fn #set_field_name_model_method_ref(
-                &mut self,
-                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-            ) -> &mut Self {
-                use diesel_builders::SetDiscretionaryModelExt;
-                self.set_discretionary_model_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[must_use]
-            #[doc = #set_discretionary_model_method_doc_comment]
-            fn #set_field_name_model_method(
-                self,
-                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-            ) -> Self {
-                use diesel_builders::SetDiscretionaryModelExt;
-                self.set_discretionary_model::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #set_field_name_discretionary_model_trait for T
-            where
-                T: diesel_builders::SetDiscretionaryModel<#table_module::#field_name>,
-                for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex
-            {}
-
-        #[doc = #set_mandatory_builder_trait_doc_comment]
-        pub trait #set_field_name_mandatory_builder_trait: diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized
-            where
-                for<'a> #table_module::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        {
-            #[inline]
-            #[doc = #set_mandatory_builder_method_doc_comment]
-            fn #set_field_name_builder_method_ref(
-                &mut self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> &mut Self {
-                use diesel_builders::SetMandatoryBuilderExt;
-                self.set_mandatory_builder_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[must_use]
-            #[doc = #set_mandatory_builder_method_doc_comment]
-            fn #set_field_name_builder_method(
-                self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Self {
-                use diesel_builders::SetMandatoryBuilderExt;
-                self.set_mandatory_builder::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #set_field_name_mandatory_builder_trait for T
-        where
-            T: diesel_builders::SetMandatoryBuilder<#table_module::#field_name>,
-            for<'a> #table_module::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-            {}
-
-        #[doc = #set_discretionary_builder_trait_doc_comment]
-        pub trait #set_field_name_discretionary_builder_trait: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized
-            where
-                for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        {
-            #[inline]
-            #[doc = #set_discretionary_builder_method_doc_comment]
-            fn #set_field_name_builder_method_ref(
-                &mut self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> &mut Self {
-                use diesel_builders::SetDiscretionaryBuilderExt;
-                self.set_discretionary_builder_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[must_use]
-            #[doc = #set_discretionary_builder_method_doc_comment]
-            fn #set_field_name_builder_method(
-                self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Self {
-                use diesel_builders::SetDiscretionaryBuilderExt;
-                self.set_discretionary_builder::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #set_field_name_discretionary_builder_trait for T
-        where
-            T: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name>,
-            for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-            {}
-
-        #[doc = #try_set_discretionary_model_trait_doc_comment]
-        pub trait #try_set_field_name_discretionary_model_trait: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized
-        where
-            for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex
-        {
-            #[inline]
-            #[doc = #try_set_discretionary_model_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the column check constraints are not respected."]
-            fn #try_set_field_name_model_method_ref(
-                &mut self,
-                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetDiscretionaryModelExt;
-                self.try_set_discretionary_model_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[doc = #try_set_discretionary_model_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the value cannot be converted to the column type."]
-            fn #try_set_field_name_model_method(
-                self,
-                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetDiscretionaryModelExt;
-                self.try_set_discretionary_model::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #try_set_field_name_discretionary_model_trait for T
-        where
-            T: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name>,
-            for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex
-            {}
-
-        #[doc = #try_set_mandatory_builder_trait_doc_comment]
-        pub trait #try_set_field_name_mandatory_builder_trait: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized
-        where
-            for<'a> #table_module::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        {
-            #[inline]
-            #[doc = #try_set_mandatory_builder_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the column check constraints are not respected."]
-            fn #try_set_field_name_builder_method_ref(
-                &mut self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetMandatoryBuilderExt;
-                self.try_set_mandatory_builder_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[doc = #try_set_mandatory_builder_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the value cannot be converted to the column type."]
-            fn #try_set_field_name_builder_method(
-                self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetMandatoryBuilderExt;
-                self.try_set_mandatory_builder::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #try_set_field_name_mandatory_builder_trait for T
-        where
-            T: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name>,
-            for<'a> #table_module::#field_name: diesel_builders::MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-            {}
-
-        #[doc = #try_set_discretionary_builder_trait_doc_comment]
-        pub trait #try_set_field_name_discretionary_builder_trait: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized
-        where
-            for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        {
-            #[inline]
-            #[doc = #try_set_discretionary_builder_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the column check constraints are not respected."]
-            fn #try_set_field_name_builder_method_ref(
-                &mut self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetDiscretionaryBuilderExt;
-                self.try_set_discretionary_builder_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[doc = #try_set_discretionary_builder_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the value cannot be converted to the column type."]
-            fn #try_set_field_name_builder_method(
-                self,
-                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                use diesel_builders::TrySetDiscretionaryBuilderExt;
-                self.try_set_discretionary_builder::<#table_module::#field_name>(value)
-            }
-        }
-
-        impl<T> #try_set_field_name_discretionary_builder_trait for T
-        where
-            T: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name>,
-            for<'a> #table_module::#field_name: diesel_builders::DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-            {}
+        #discretionary_traits
+        #mandatory_traits
     }
 }

@@ -49,14 +49,7 @@ impl diesel::deserialize::FromSql<MyCustomSqlType, diesel::sqlite::Sqlite> for M
 
 /// User model
 #[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    diesel::Identifiable,
-    diesel::Queryable,
-    diesel::Selectable,
-    Root,
-    TableModel,
+    Debug, Clone, PartialEq, diesel::Identifiable, diesel::Queryable, diesel::Selectable, TableModel,
 )]
 #[diesel(table_name = users)]
 pub struct User {

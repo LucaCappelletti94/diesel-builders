@@ -23,27 +23,33 @@ diesel::allow_tables_to_appear_in_same_query!(
 pub struct Child {
     /// The primary key of the child, also a foreign key to `parent_table`.
     id: i32,
+    #[mandatory]
     /// Mandatory relation 1 ID.
     m1_id: i32,
     /// Secondary column used by composite FKs for `Mandatory` intermediates.
     m1_mandatory_field: Option<String>,
+    #[mandatory]
     /// Mandatory relation 2 ID.
     m2_id: i32,
     /// Mandatory relation 2 column.
     m2_mandatory_field: Option<String>,
+    #[mandatory]
     /// Mandatory relation 3 ID.
     m3_id: i32,
     /// Mandatory relation 3 column.
     m3_mandatory_field: Option<String>,
+    #[discretionary]
     /// Discretionary relation 1 ID.
     d1_id: i32,
     /// Optional secondary column used by composite FKs for discretionary
     /// intermediates; `None` denotes an unset optional value.
     d1_discretionary_field: Option<String>,
+    #[discretionary]
     /// Discretionary relation 2 ID.
     d2_id: i32,
     /// Discretionary relation 2 column.
     d2_discretionary_field: Option<String>,
+    #[discretionary]
     /// Discretionary relation 3 ID.
     d3_id: i32,
     /// Discretionary relation 3 column.
@@ -53,26 +59,10 @@ pub struct Child {
     payload: String,
 }
 
-/// Declare which child columns correspond to mandatory vs discretionary
-/// triangular relations. Bundling relies on these tuples to drive the
-/// builder's nested/optional behavior when inserting related records.
-#[diesel_builders_macros::bundlable_table]
-/// Bundlable trait implementation describing which columns are mandatory and
-/// which are discretionary for the test. The builder uses this to enforce
-/// and generate the correct nested insert semantics.
-impl BundlableTable for child_table::table {
-    type MandatoryTriangularColumns = (child_table::m1_id, child_table::m2_id, child_table::m3_id);
-    type DiscretionaryTriangularColumns =
-        (child_table::d1_id, child_table::d2_id, child_table::d3_id);
-}
-
 // Declare singleton foreign keys for mandatory relationships
 fpk!(child_table::m1_id -> mandatory_table);
 fpk!(child_table::m2_id -> mandatory_table);
 fpk!(child_table::m3_id -> mandatory_table);
-
-// Declare singleton foreign key for child id referencing parent
-fpk!(child_table::id -> parent_table);
 
 // Declare singleton foreign keys for discretionary relationships
 fpk!(child_table::d1_id -> discretionary_table);

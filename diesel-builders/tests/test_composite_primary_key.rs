@@ -4,9 +4,9 @@
 mod shared;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::{Root, TableModel};
+use diesel_builders_macros::TableModel;
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, Root, TableModel)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = user_roles)]
 #[diesel(primary_key(user_id, role_id))]
 /// A user role assignment model.

@@ -1,15 +1,13 @@
-error: Table cannot be its own ancestor
- --> tests/ui/ancestor_is_self_error.rs:4:84
+error: Table cannot be its own `ancestor`
+ --> tests/ui/ancestor_is_self_error.rs:5:25
   |
-4 | #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
-  |                                                                                    ^^^^^^^^^^
-  |
-  = note: this error originates in the derive macro `TableModel` (in Nightly builds, run with -Z macro-backtrace for more info)
+5 | #[table_model(ancestors(dogs))]
+  |                         ^^^^
 
 error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
- --> tests/ui/ancestor_is_self_error.rs:5:23
+ --> tests/ui/ancestor_is_self_error.rs:4:23
   |
-5 | #[diesel(table_name = dogs)]
+4 | #[diesel(table_name = dogs)]
   |                       ^^^^ use of unresolved module or unlinked crate `dogs`
   |
   = help: if you wanted to use a crate named `dogs`, use `cargo add dogs` to add it to your `Cargo.toml`

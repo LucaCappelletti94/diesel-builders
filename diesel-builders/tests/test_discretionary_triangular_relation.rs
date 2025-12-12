@@ -40,6 +40,7 @@ pub struct ChildWithDiscretionary {
     /// Primary key.
     id: i32,
     #[infallible]
+    #[discretionary]
     /// Foreign key to discretionary table.
     discretionary_id: i32,
     #[infallible]
@@ -83,8 +84,6 @@ impl TrySetColumn<child_with_discretionary_table::remote_discretionary_field>
 
 // Declare singleton foreign key for child_with_discretionary_table::discretionary_id to discretionary_table
 fpk!(child_with_discretionary_table::discretionary_id -> discretionary_table);
-// Declare singleton foreign key for child_with_discretionary_table::id to parent_table (inheritance)
-fpk!(child_with_discretionary_table::id -> parent_table);
 
 // Define foreign key relationship using SQL-like syntax
 // B's (discretionary_id, remote_discretionary_field) references C's (id, discretionary_field)
@@ -105,12 +104,6 @@ impl diesel_builders::HorizontalKey for child_with_discretionary_table::discreti
         discretionary_table::parent_id,
         discretionary_table::discretionary_field,
     );
-}
-
-#[diesel_builders_macros::bundlable_table]
-impl BundlableTable for child_with_discretionary_table::table {
-    type MandatoryTriangularColumns = ();
-    type DiscretionaryTriangularColumns = (child_with_discretionary_table::discretionary_id,);
 }
 
 #[test]

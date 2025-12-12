@@ -104,18 +104,18 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
                     syn::parenthesized!(content in meta.input);
                     let punct: syn::punctuated::Punctuated<syn::Ident, syn::Token![,]> =
                         syn::punctuated::Punctuated::parse_terminated(&content)?;
-                    // Convert module identifiers to table types by appending ::table
+                    // Store ancestor module paths directly without ::table suffix
                     ancestors = Some(
                         punct
                             .into_iter()
-                            .map(|module_ident| syn::parse_quote!(#module_ident::table))
+                            .map(|module_ident| syn::parse_quote!(#module_ident))
                             .collect(),
                     );
                 } else {
                     let value = meta.value()?;
                     let module_ident: syn::Ident = value.parse()?;
-                    // Append ::table to the module identifier to get the table type
-                    ancestors = Some(vec![syn::parse_quote!(#module_ident::table)]);
+                    // Store ancestor module path directly without ::table suffix
+                    ancestors = Some(vec![syn::parse_quote!(#module_ident)]);
                 }
             } else if meta.path.is_ident("root") {
                 let value = meta.value()?;
@@ -156,6 +156,22 @@ pub fn is_field_infallible(field: &syn::Field) -> bool {
     })
 }
 
+/// Check if a field is marked as mandatory via `#[mandatory]`.
+pub fn is_field_mandatory(field: &syn::Field) -> bool {
+    field
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("mandatory"))
+}
+
+/// Check if a field is marked as discretionary via `#[discretionary]`.
+pub fn is_field_discretionary(field: &syn::Field) -> bool {
+    field
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("discretionary"))
+}
+
 /// Extract default value from `#[table_model(default = ...)]` attribute on a field.
 pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
     let mut default_values = Vec::new();
@@ -187,6 +203,61 @@ pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
 
 /// Validate field attributes for unsupported configurations.
 pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
+    // Check for conflicting mandatory/discretionary attributes
+    if is_field_mandatory(field) && is_field_discretionary(field) {
+        return Err(syn::Error::new_spanned(
+            field,
+            "Field cannot be both `#[mandatory]` and `#[discretionary]`",
+        ));
+    }
+
+    // Check for duplicate mandatory attributes
+    let mandatory_count = field
+        .attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("mandatory"))
+        .count();
+    if mandatory_count > 1 {
+        return Err(syn::Error::new_spanned(
+            field,
+            "Duplicate `#[mandatory]` attribute found. Each field can only have one `#[mandatory]` attribute.",
+        ));
+    }
+
+    // Check for duplicate discretionary attributes
+    let discretionary_count = field
+        .attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("discretionary"))
+        .count();
+    if discretionary_count > 1 {
+        return Err(syn::Error::new_spanned(
+            field,
+            "Duplicate `#[discretionary]` attribute found. Each field can only have one `#[discretionary]` attribute.",
+        ));
+    }
+
+    // Check for duplicate infallible attributes (both standalone and nested)
+    let mut infallible_count = 0;
+    for attr in &field.attrs {
+        if attr.path().is_ident("infallible") {
+            infallible_count += 1;
+        } else if attr.path().is_ident("table_model") {
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("infallible") {
+                    infallible_count += 1;
+                }
+                Ok(())
+            });
+        }
+    }
+    if infallible_count > 1 {
+        return Err(syn::Error::new_spanned(
+            field,
+            "Duplicate `#[infallible]` or `#[table_model(infallible)]` attribute found. Each field can only have one infallible marker.",
+        ));
+    }
+
     // Check for multiple default values
     let mut default_count = 0;
     for attr in &field.attrs {
@@ -202,7 +273,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     if default_count > 1 {
         return Err(syn::Error::new_spanned(
             field,
-            "Multiple default values specified for the same field",
+            "Multiple `default` values specified for the same field",
         ));
     }
 
@@ -226,7 +297,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
             if let Some(attr_name) = unsupported_attr {
                 return Err(syn::Error::new_spanned(
                     attr,
-                    format!("TableModel does not support #[diesel({attr_name} = ...)]"),
+                    format!("`TableModel` does not support `#[diesel({attr_name} = ...)]`"),
                 ));
             }
         }

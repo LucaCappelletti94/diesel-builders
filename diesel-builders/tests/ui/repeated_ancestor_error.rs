@@ -1,7 +1,6 @@
-use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, Root, TableModel)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = animals)]
 pub struct Animal {
     id: i32,

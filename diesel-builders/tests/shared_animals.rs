@@ -49,9 +49,7 @@ pub fn setup_animal_tables(
     Ok(())
 }
 
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, Root, TableModel,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(error = NewAnimalError, surrogate_key)]
 /// Model for the animals table.
@@ -125,9 +123,7 @@ impl diesel_builders::TrySetColumn<animals::description>
     }
 }
 
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 /// Model for the dogs table.
@@ -138,16 +134,7 @@ pub struct Dog {
     breed: String,
 }
 
-// Declare singleton foreign key helper for `dogs.id` -> `animals` (single inheritance)
-fpk!(dogs::id -> animals);
-
-// ============================================================================
-// Cats Table - Extends animals (right branch of DAG)
-// ============================================================================
-
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[table_model(error = NewCatError, ancestors(animals))]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
@@ -187,16 +174,7 @@ impl diesel_builders::TrySetColumn<cats::color>
     }
 }
 
-// Declare singleton foreign key helper for `cats.id` -> `animals` (single inheritance)
-fpk!(cats::id -> animals);
-
-// ============================================================================
-// Puppies Table - Extends dogs (for inheritance chain: animals -> dogs -> puppies)
-// ============================================================================
-
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = puppies)]
 #[table_model(ancestors(animals, dogs))]
 /// Model for the puppies table.
@@ -207,13 +185,7 @@ pub struct Puppy {
     age_months: i32,
 }
 
-// ============================================================================
-// Pets Table - Extends both dogs and cats (diamond inheritance for DAG tests)
-// ============================================================================
-
-#[derive(
-    Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel, Decoupled,
-)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = pets)]
 #[table_model(ancestors(animals, dogs, cats))]
 /// Model for the pets table.

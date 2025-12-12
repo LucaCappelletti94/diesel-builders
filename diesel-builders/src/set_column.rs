@@ -11,8 +11,9 @@ pub trait SetColumn<Column: TypedColumn>:
     #[inline]
     /// Set the value of the specified column.
     fn set_column(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self {
-        // Safe to unwrap because the Error type is Infallible
-        <Self as TrySetColumn<Column>>::try_set_column(self, value.into()).unwrap()
+        // Safe to ignore the error because Error = Infallible
+        let _ = <Self as TrySetColumn<Column>>::try_set_column(self, value.into());
+        self
     }
 }
 
@@ -31,17 +32,6 @@ where
 pub trait SetColumnUnchecked<Column: TypedColumn> {
     /// Set the value of the specified column.
     fn set_column_unchecked(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self;
-}
-
-impl<T, Column> SetColumnUnchecked<Column> for T
-where
-    T: SetColumn<Column>,
-    Column: TypedColumn,
-{
-    #[inline]
-    fn set_column_unchecked(&mut self, value: impl Into<<Column as Typed>::Type>) -> &mut Self {
-        <Self as SetColumn<Column>>::set_column(self, value)
-    }
 }
 
 /// Extension trait for `SetColumnUnchecked` that allows specifying the column at the

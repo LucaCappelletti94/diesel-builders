@@ -29,7 +29,7 @@ diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.g
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, Root, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
@@ -250,26 +250,56 @@ classDiagram
     }
 ```
 
-## Helper Method Traits
+## TableModel Derive Macro
 
-The `TableModel` derive automatically generates helper traits for each column, providing a fluent API for models and builders. For a column like `animals::name`, it generates:
+The `#[derive(TableModel)]` macro is the primary code generation tool in diesel-builders. It automatically generates all the necessary trait implementations and helper methods for your table model.
 
-- **`GetAnimalsName`** trait with methods:
-  - `name(&self)` - returns `&Type` for the column value
+### What TableModel Generates
 
-- **`SetAnimalsName`** trait with methods:
-  - `name(self, value)` - consumes and returns self
-  - `name_ref(&mut self, value)` - mutates self by reference
+For each field in your struct, `TableModel` generates:
 
-- **`TrySetAnimalsName`** trait with fallible methods:
-  - `try_name(self, value) -> Result<Self, Error>` - consumes and returns Result
-  - `try_name_ref(&mut self, value) -> Result<&mut Self, Error>` - mutates by reference
+1. **Core Column Traits:**
+   - `Typed` - type information for the column
+   - `GetColumn` - column value access from model instances
+   - `IndexedColumn` - for primary key columns
 
-These traits are automatically implemented for any type that implements `GetColumn<column>`, `SetColumn<column>`, or `TrySetColumn<column>`.
+2. **Builder Value Traits:**
+   - `MayGetColumn` - optional column value access from builders
+   - `TrySetColumn` - fallible column value setting
+   - `SetColumnUnchecked` - unchecked column value setting
+
+3. **Helper Method Traits:**
+   For a column like `animals::name`, it generates:
+   - **`GetAnimalsName`** - `name(&self)` returns `&Type`
+   - **`SetAnimalsName`** - `name(self, value)` and `name_ref(&mut self, value)`
+   - **`TrySetAnimalsName`** - `try_name(self, value)` and `try_name_ref(&mut self, value)`
+
+4. **Table Relationship Traits:**
+   - `Root` or `Descendant` - based on whether ancestors are specified
+   - `BundlableTable` - for triangular relation support
+   - `HorizontalSameAsGroup` - for managing same-as relationships
+
+5. **Automatic Foreign Key (Single Ancestor):**
+   When a table has a single ancestor and single-column primary key, `TableModel` automatically generates the equivalent of `fpk!(table::id -> ancestor)`, providing:
+   - `ForeignPrimaryKey` implementation
+   - Helper method to fetch the ancestor record (e.g., `id_fk()` or method named after ancestor)
+
+### Attributes
+
+- `#[table_model(error = ErrorType)]` - Specify a custom error type for validation
+- `#[table_model(surrogate_key)]` - Mark the table as using a surrogate (auto-increment) primary key
+- `#[table_model(ancestors = parent_table)]` - Declare table inheritance
+- `#[table_model(ancestors(grandparent, parent))]` - Declare multiple inheritance
+- `#[infallible]` - Mark a field as always valid (no validation needed)
+- `#[mandatory]` - Mark a field as a mandatory triangular relation
+- `#[discretionary]` - Mark a field as a discretionary triangular relation
+- `#[table_model(default = value)]` - Provide a default value for the field
 
 ### Foreign Key Helper Traits
 
-The `fpk!` (foreign primary key) macro generates helper traits for singleton foreign keys, providing convenient methods to fetch related records:
+The `fpk!` (foreign primary key) macro generates helper traits for singleton foreign keys, providing convenient methods to fetch related records.
+
+**Note:** For table inheritance (single ancestor with single-column primary key), `TableModel` automatically generates the `fpk!` implementation for the `id` column. You only need to manually use `fpk!` for other foreign key columns.
 
 ```rust,ignore
 // Declare a singleton foreign key relationship
@@ -278,7 +308,7 @@ fpk!(table_b::c_id -> table_c);
 
 This generates:
 
-- `SingletonForeignKey` implementation for `table_b::c_id`
+- `ForeignPrimaryKey` implementation for `table_b::c_id`
 - A trait `FKTableBCId` with method `c(&self, conn: &mut Conn)` that fetches the related `TableC` record
 
 **Method naming convention:**
@@ -296,14 +326,18 @@ let b: TableB = /* ... */;
 let c: TableC = b.c(&mut conn)?;  // Fetches the related TableC record
 ```
 
-Additional example for inheritance (`id` column):
+**Automatic generation for inheritance:**
 
 ```rust,ignore
-// Declare fpk for dogs.id -> animals
-fpk!(dogs::id -> animals);
+// For a table with single ancestor, fpk! is auto-generated:
+#[derive(TableModel)]
+#[table_model(ancestors = animals)]
+struct Dog { id: i32, /* ... */ }
 
+// No need for: fpk!(dogs::id -> animals);
+// The following is automatically available:
 let dog: Dog = /* inserted dog */;
-let owner: Animal = dog.id_fk(&mut conn)?; // Fetch the associated Animal record
+let animal: Animal = dog.id_fk(&mut conn)?; // Auto-generated method
 ```
 
 ### Triangular Relation Traits
@@ -355,15 +389,16 @@ let b = table_b::table::builder()
 
 ## Default Values
 
-Columns can have default values specified in the `TableModel` derive. These defaults are used when the user does not explicitly set a value for the column. The default values must implement `Into<ColumnType>`.
+Columns can have default values specified in the `TableModel` derive using the `#[table_model(default = value)]` attribute. These defaults are used when the user does not explicitly set a value for the column. The default values must implement `Into<ColumnType>`.
 
 ```rust,ignore
 #[derive(TableModel)]
 #[diesel(table_name = users)]
-pub struct NewUser {
-    #[diesel(default = "Guest")]
+pub struct User {
+    id: i32,
+    #[table_model(default = "Guest")]
     pub name: String,
-    #[diesel(default = true)]
+    #[table_model(default = true)]
     pub active: bool,
     pub email: String,
 }
@@ -376,17 +411,45 @@ let user = users::table::builder()
 
 ## Compile-time Validation
 
-The `TableModel` derive macro performs several compile-time checks to ensure correctness:
+The `TableModel` derive macro performs extensive compile-time checks to ensure correctness:
 
-- **Primary Keys**: Default values are not allowed on primary key columns (except for surrogate keys which are handled automatically).
-- **Surrogate Keys**: The `surrogate_key` attribute must be present if the table uses a surrogate primary key (e.g., auto-incrementing integer).
-- **Unsupported Attributes**: The macro validates that only supported `diesel` attributes are used, preventing silent failures or unexpected behavior.
+- **Primary Keys**:
+  - Default values are not allowed on primary key columns
+  - Primary keys marked `#[infallible]` cannot be used with `surrogate_key`
+  - Primary key must be detectable (either `id` field or explicit `#[diesel(primary_key(...))]`)
+  
+- **Surrogate Keys**:
+  - Cannot be used with composite primary keys
+  - Cannot have `#[mandatory]` or `#[discretionary]` attributes (surrogate keys cannot participate in triangular relations)
+  
+- **Ancestors**:
+  - Table cannot be its own ancestor
+  - No duplicate ancestors in hierarchy
+  
+- **Attribute Validation**:
+  - Duplicate `#[mandatory]`, `#[discretionary]`, or `#[infallible]` attributes are rejected
+  - Conflicting `#[mandatory]` and `#[discretionary]` on same field are rejected
+  - Multiple `default` values are rejected
+  - Unsupported `#[diesel(...)]` attributes trigger errors
 
 ## Macro Reference
 
+### `TableModel` - Derive Macro
+
+The primary macro for generating all table-related traits and implementations. See the [TableModel Derive Macro](#tablemodel-derive-macro) section for full details.
+
+```rust,ignore
+#[derive(TableModel)]
+#[table_model(error = MyError, ancestors = parent_table)]
+#[diesel(table_name = my_table)]
+struct MyModel { /* ... */ }
+```
+
 ### `fpk!` - Foreign Primary Key
 
-Declares a singleton foreign key relationship (single column referencing a primary key):
+Declares a singleton foreign key relationship (single column referencing a primary key).
+
+**Note:** Automatically generated by `TableModel` for inheritance relationships (single ancestor, single-column primary key).
 
 ```rust,ignore
 fpk!(table_b::c_id -> table_c);
@@ -394,7 +457,7 @@ fpk!(table_b::c_id -> table_c);
 
 Generates:
 
-- `SingletonForeignKey` trait implementation
+- `ForeignPrimaryKey` trait implementation
 - Helper trait with method to fetch the related record
 
 ### `fk!` - Composite Foreign Key
