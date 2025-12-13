@@ -1,8 +1,8 @@
 //! Variant of `MayGetNestedColumns` for n-uples.
 
-use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePushFront};
+use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{MayGetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
+use crate::{MayGetColumn, TypedColumn, columns::NestedColumns};
 
 /// Variant of `MayGetNestedColumns` for n-uples.
 pub trait TupleMayGetNestedColumns<CS: NestedColumns> {
@@ -23,10 +23,7 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn tuple_may_get_nested_columns(
-        &self,
-    ) -> <<(C1,) as crate::TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
-    {
+    fn tuple_may_get_nested_columns(&self) -> (Option<C1::Type>,) {
         (self.0.may_get_column(),)
     }
 }
@@ -35,22 +32,20 @@ impl<Chead, CTail, THead, TTail> TupleMayGetNestedColumns<(Chead, CTail)> for (T
 where
     Chead: TypedColumn,
     CTail: NestedColumns,
-    (Chead, CTail): NestedColumns,
-    (Chead::Type, CTail::NestedTupleType): IntoNestedTupleOption,
+    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     THead: MayGetColumn<Chead>,
     TTail: TupleMayGetNestedColumns<CTail>,
-    <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions: NestedTuplePushFront<
-            Option<Chead::Type>,
-            Output = <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
-        >,
 {
     #[inline]
-	fn tuple_may_get_nested_columns(
-		&self,
-	) -> <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions
-	{
-        let head = self.0.may_get_column();
-        let tail = self.1.tuple_may_get_nested_columns();
-        tail.nested_push_front(head)
+    fn tuple_may_get_nested_columns(
+        &self,
+    ) -> (
+        Option<Chead::Type>,
+        <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+    ) {
+        (
+            self.0.may_get_column(),
+            self.1.tuple_may_get_nested_columns(),
+        )
     }
 }

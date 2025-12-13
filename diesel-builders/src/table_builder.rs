@@ -10,11 +10,11 @@ pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder}
 
 use crate::{
     AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
-    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns, NestedColumns,
-    SetColumn, SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilderBundle, TableExt,
-    TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder, TrySetMandatoryBuilder,
-    Typed, TypedColumn, TypedNestedTuple, ValidateColumn, buildable_table::BuildableTable,
-    columns::NonEmptyNestedProjection,
+    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
+    MayValidateNestedColumns, NestedColumns, SetColumn, SetDiscretionaryBuilder,
+    SetMandatoryBuilder, TableBuilderBundle, TableExt, TryMaySetNestedColumns, TrySetColumn,
+    TrySetDiscretionaryBuilder, TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple,
+    ValidateColumn, buildable_table::BuildableTable, columns::NonEmptyNestedProjection,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -154,10 +154,13 @@ where
         builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
-        self.try_may_set_nested_columns(columns)?;
+        MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
+            self, &columns,
+        )?;
         self.bundles
             .nested_index_mut()
             .try_set_mandatory_builder(builder)?;
+        self.try_may_set_nested_columns(columns)?;
         Ok(self)
     }
 }
@@ -218,10 +221,13 @@ where
         builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
-        self.try_may_set_nested_columns(columns)?;
+        MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
+            self, &columns,
+        )?;
         self.bundles
             .nested_index_mut()
             .try_set_discretionary_builder(builder)?;
+        self.try_may_set_nested_columns(columns)?;
         Ok(self)
     }
 }

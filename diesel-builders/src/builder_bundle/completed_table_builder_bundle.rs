@@ -54,6 +54,7 @@ where
 
     #[inline]
     fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        Self::validate_column(value)?;
         self.insertable_model.validate_column_in_context(value)
     }
 }
@@ -77,6 +78,7 @@ where
 {
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        self.validate_column_in_context(&value)?;
         self.try_may_set_discretionary_same_as_nested_columns(&value)?;
         self.try_set_mandatory_same_as_columns(&value)?;
         self.insertable_model.try_set_column(value)?;

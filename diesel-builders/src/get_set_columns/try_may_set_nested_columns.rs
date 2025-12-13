@@ -1,11 +1,15 @@
 //! Submodule providing the `TryMaySetColumns` trait.
 
-use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePopFront};
+use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, ValidateColumn, columns::NestedColumns};
+use crate::{
+    MayValidateNestedColumns, TrySetColumn, TypedColumn, ValidateColumn, columns::NestedColumns,
+};
 
 /// Trait indicating a builder which may try to set multiple columns.
-pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
+pub trait TryMaySetNestedColumns<Error, CS: NestedColumns>:
+    MayValidateNestedColumns<Error, CS>
+{
     /// Attempt to set the `nested_values` of the specified columns.
     ///
     /// # Errors
@@ -26,14 +30,14 @@ impl<T, Error> TryMaySetNestedColumns<Error, ()> for T {
 
 impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where
-    T: crate::TrySetColumn<C1>,
-    C1: crate::TypedColumn,
-    Error: From<<T as crate::ValidateColumn<C1>>::Error>,
+    T: TrySetColumn<C1>,
+    C1: TypedColumn,
+    Error: From<<T as ValidateColumn<C1>>::Error>,
 {
     #[inline]
     fn try_may_set_nested_columns(
         &mut self,
-        nested_values: <<(C1,) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        nested_values: (Option<C1::Type>,),
     ) -> Result<&mut Self, Error> {
         if let Some(value) = nested_values.0 {
             self.try_set_column(value)?;
@@ -46,21 +50,18 @@ impl<Chead, CTail, T, Error> TryMaySetNestedColumns<Error, (Chead, CTail)> for T
 where
     Chead: TypedColumn,
     CTail: NestedColumns,
-    (Chead, CTail): NestedColumns,
+    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     T: TrySetColumn<Chead> + TryMaySetNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<Chead>>::Error>,
-    <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
-        NestedTuplePopFront<
-                Front = Option<Chead::Type>,
-                Tail = <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
-            >,
 {
     #[inline]
     fn try_may_set_nested_columns(
         &mut self,
-        nested_values: <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        (head, tail): (
+            Option<Chead::Type>,
+            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        ),
     ) -> Result<&mut Self, Error> {
-        let (head, tail) = nested_values.nested_pop_front();
         if let Some(value) = head {
             self.try_set_column(value)?;
         }

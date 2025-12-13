@@ -41,6 +41,9 @@ pub struct ChildWithDiscretionary {
     child_field: String,
     /// The remote `discretionary_field` value from discretionary table that B references via `discretionary_id`.
     remote_discretionary_field: Option<String>,
+    #[infallible]
+    /// Another remote column from `discretionary_table`.
+    another_remote_column: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
@@ -75,6 +78,7 @@ impl ValidateColumn<child_with_discretionary_table::remote_discretionary_field>
 // Define foreign key relationship using SQL-like syntax
 // B's (discretionary_id, remote_discretionary_field) references C's (id, discretionary_field)
 fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
+fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::another_remote_column) -> (discretionary_table::id, discretionary_table::discretionary_field));
 
 // This is the key part: B's discretionary_id must match C's id, and C's parent_id must match A's
 // id. We express that B's discretionary_id is horizontally the same as C's parent_id, which in
@@ -85,10 +89,12 @@ impl diesel_builders::HorizontalKey for child_with_discretionary_table::discreti
     // Actually, we need to think about this differently...
     type HostColumns = (
         child_with_discretionary_table::id,
+        child_with_discretionary_table::another_remote_column,
         child_with_discretionary_table::remote_discretionary_field,
     );
     type ForeignColumns = (
         discretionary_table::parent_id,
+        discretionary_table::discretionary_field,
         discretionary_table::discretionary_field,
     );
 }
@@ -105,7 +111,9 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
             discretionary_id INTEGER NOT NULL REFERENCES discretionary_table(id),
             child_field TEXT NOT NULL,
             remote_discretionary_field TEXT CHECK (remote_discretionary_field <> ''),
-			FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field)
+            another_remote_column TEXT,
+			FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field),
+            FOREIGN KEY (discretionary_id, another_remote_column) REFERENCES discretionary_table(id, discretionary_field)
         )",
     )
     .execute(&mut conn)?;
@@ -113,8 +121,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Insert into table A
     let parent = parent_table::table::builder()
         .parent_field("Value A")
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     assert_eq!(parent.get_column::<parent_table::parent_field>(), "Value A");
 
@@ -122,8 +129,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let discretionary = discretionary_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
         .discretionary_field(Some("Value C".to_owned()))
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     assert_eq!(
         discretionary
@@ -142,7 +148,10 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means we can set the C builder or reference an existing C model
     // Using generated trait methods like try_discretionary_ref for type-safe builders
-    let mut child_builder = child_with_discretionary_table::table::builder();
+    let mut child_builder =
+        child_with_discretionary_table::table::builder().parent_field("Value A for B");
+
+    let saved_child_builder = child_builder.clone();
 
     assert!(matches!(
         child_builder.try_discretionary_ref(
@@ -151,8 +160,11 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         Err(ErrorB::EmptyRemoteColumnC)
     ));
 
+    // Since the operation has failed, the preliminary state of the builder should
+    // have remained unchanged.
+    assert_eq!(child_builder, saved_child_builder);
+
     child_builder
-        .parent_field_ref("Value A for B")
         .child_field_ref("Value B")
         .try_discretionary_ref(discretionary_builder.clone())?;
 
@@ -192,8 +204,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .parent_field("Independent A for B")
         .child_field("Independent B")
         .try_discretionary_model(&discretionary)?
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     assert_eq!(
         independent_child.get_column::<child_with_discretionary_table::child_field>(),

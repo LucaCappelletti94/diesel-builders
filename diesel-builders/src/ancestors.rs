@@ -4,7 +4,7 @@ use diesel::associations::HasTable;
 use diesel::expression_methods::EqAll;
 use diesel::query_dsl::methods::{FilterDsl, LimitDsl, LoadQuery, SelectDsl};
 use diesel::{RunQueryDsl, Table};
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTuplePopFront, NestedTuplePushBack};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTuplePushBack};
 use typenum::Unsigned;
 
 use crate::columns::NonEmptyNestedProjection;
@@ -137,7 +137,7 @@ pub trait Descendant: TableExt {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant {
     /// The ancestor tables of this table, including itself.
-    type NestedAncestorsWithSelf: NestedTuplePopFront<Front = Self::Root> + NestedBundlableTables;
+    type NestedAncestorsWithSelf: NestedBundlableTables;
 }
 
 impl<T> DescendantWithSelf for T
@@ -145,7 +145,7 @@ where
     T: Descendant,
     <T::Ancestors as NestTuple>::Nested: NestedTuplePushBack<Self>,
     <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output:
-        NestedBundlableTables + NestedTuplePopFront<Front = T::Root>,
+        NestedBundlableTables,
 {
     type NestedAncestorsWithSelf =
         <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output;

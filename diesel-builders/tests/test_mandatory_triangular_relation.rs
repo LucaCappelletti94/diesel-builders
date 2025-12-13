@@ -41,6 +41,9 @@ pub struct ChildWithMandatory {
     child_field: String,
     /// The remote `mandatory_field` value from table C that B references via `mandatory_id`.
     remote_mandatory_field: Option<String>,
+    /// Another remote column from `mandatory_table`.
+    #[infallible]
+    another_remote_column: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash, thiserror::Error)]
@@ -72,12 +75,9 @@ impl ValidateColumn<child_with_mandatory_table::remote_mandatory_field>
     }
 }
 
-// Define foreign key relationships using SQL-like syntax
-// B's (mandatory_id, id) references C's (id, parent_id) - ensures triangular consistency
 fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
-
-// B's (mandatory_id, remote_mandatory_field) references C's (id, mandatory_field)
 fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
+fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::another_remote_column) -> (mandatory_table::id, mandatory_table::mandatory_field));
 
 // This is the key part: B's mandatory_id must match C's id, and C's parent_id must match A's
 // id. We express that B's mandatory_id is horizontally the same as C's parent_id, which in
@@ -88,9 +88,14 @@ impl diesel_builders::HorizontalKey for child_with_mandatory_table::mandatory_id
     // Actually, we need to think about this differently...
     type HostColumns = (
         child_with_mandatory_table::id,
+        child_with_mandatory_table::another_remote_column,
         child_with_mandatory_table::remote_mandatory_field,
     );
-    type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
+    type ForeignColumns = (
+        mandatory_table::parent_id,
+        mandatory_table::mandatory_field,
+        mandatory_table::mandatory_field,
+    );
 }
 
 #[test]
@@ -106,8 +111,10 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
             mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id),
             child_field TEXT NOT NULL,
             remote_mandatory_field TEXT CHECK (remote_mandatory_field <> ''),
+            another_remote_column TEXT,
 			FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id),
-            FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field)
+            FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field),
+            FOREIGN KEY (mandatory_id, another_remote_column) REFERENCES mandatory_table(id, mandatory_field)
         )",
     )
     .execute(&mut conn)?;
@@ -143,7 +150,10 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // The mandatory triangular relation means B's parent_id should automatically
     // match C's parent_id when we only set C's columns
     // Using generated trait methods like try_mandatory_ref for type-safe builders
-    let mut child_builder = child_with_mandatory_table::table::builder();
+    let mut child_builder =
+        child_with_mandatory_table::table::builder().parent_field("Value A for B");
+
+    let saved_child_builder = child_builder.clone();
 
     assert_eq!(
         child_builder.try_set_mandatory_builder_ref::<child_with_mandatory_table::mandatory_id>(
@@ -152,9 +162,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         Err(ErrorChildWithMandatory::EmptyRemoteColumnC)
     );
 
+    // Since the operation has failed, the preliminary state of the builder should
+    // have remained unchanged.
+    assert_eq!(child_builder, saved_child_builder);
+
     child_builder
         .try_mandatory_ref(mandatory_builder.clone())?
-        .parent_field_ref("Value A for B")
         .child_field_ref("Value B");
 
     // Using the generated trait method for more ergonomic code

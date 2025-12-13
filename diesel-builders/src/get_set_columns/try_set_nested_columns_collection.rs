@@ -4,7 +4,6 @@ use crate::{
     TypedNestedTupleCollection, columns::NonEmptyNestedProjection,
     get_set_columns::TrySetNestedColumns,
 };
-use tuplities::prelude::NestedTuplePopFront;
 
 /// Trait indicating a builder can fallibly set multiple columns.
 pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleCollection> {
@@ -27,7 +26,7 @@ where
     #[inline]
     fn try_set_nested_columns_collection(
         &mut self,
-        nested_values: <(C1,) as TypedNestedTupleCollection>::NestedCollectionType,
+        nested_values: (C1::NestedTupleType,),
     ) -> Result<&mut Self, Error> {
         self.try_set_nested_columns(nested_values.0)
     }
@@ -37,19 +36,22 @@ impl<T, Chead, CTail, Error> TrySetColumnsCollection<Error, (Chead, CTail)> for 
 where
     Chead: NonEmptyNestedProjection,
     CTail: TypedNestedTupleCollection,
-    (Chead, CTail): TypedNestedTupleCollection,
+    (Chead, CTail): TypedNestedTupleCollection<
+        NestedCollectionType = (
+            Chead::NestedTupleType,
+            <CTail as TypedNestedTupleCollection>::NestedCollectionType,
+        ),
+    >,
     T: TrySetNestedColumns<Error, Chead> + TrySetColumnsCollection<Error, CTail>,
-    <(Chead, CTail) as TypedNestedTupleCollection>::NestedCollectionType: NestedTuplePopFront<
-            Front = Chead::NestedTupleType,
-            Tail = <CTail as TypedNestedTupleCollection>::NestedCollectionType,
-        >,
 {
     #[inline]
     fn try_set_nested_columns_collection(
         &mut self,
-        nested_values: <(Chead, CTail) as TypedNestedTupleCollection>::NestedCollectionType,
+        (head, tail): (
+            Chead::NestedTupleType,
+            <CTail as TypedNestedTupleCollection>::NestedCollectionType,
+        ),
     ) -> Result<&mut Self, Error> {
-        let (head, tail) = nested_values.nested_pop_front();
         self.try_set_nested_columns(head)?;
         self.try_set_nested_columns_collection(tail)?;
         Ok(self)

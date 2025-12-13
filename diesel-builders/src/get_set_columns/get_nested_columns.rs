@@ -1,8 +1,6 @@
 //! Submodule providing the `GetNestedColumns` trait.
 
-use tuplities::prelude::NestedTuplePushFront;
-
-use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NonEmptyNestedProjection};
+use crate::{GetColumn, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can get multiple columns.
 pub trait GetNestedColumns<CS: NonEmptyNestedProjection> {
@@ -25,17 +23,12 @@ impl<Chead, CTail, T> GetNestedColumns<(Chead, CTail)> for T
 where
     Chead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail): NonEmptyNestedProjection,
+    (Chead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     T: GetColumn<Chead> + GetNestedColumns<CTail>,
-    CTail::NestedTupleType: NestedTuplePushFront<
-            Chead::Type,
-            Output = <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
-        >,
 {
     #[inline]
-    fn get_nested_columns(&self) -> <(Chead, CTail) as TypedNestedTuple>::NestedTupleType {
-        let head = self.get_column();
-        let tail = self.get_nested_columns();
-        tail.nested_push_front(head)
+    fn get_nested_columns(&self) -> (Chead::Type, CTail::NestedTupleType) {
+        (self.get_column(), self.get_nested_columns())
     }
 }

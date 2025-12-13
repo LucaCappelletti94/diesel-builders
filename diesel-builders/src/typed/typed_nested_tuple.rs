@@ -1,13 +1,13 @@
 //! Submodule defining and implementing the `TypedNestedTuple` trait.
 
-use tuplities::prelude::{FlattenNestedTuple, IntoNestedTupleOption};
+use tuplities::prelude::{FlattenNestedTuple, IntoNestedTupleOption, NestedTupleRef};
 
 use crate::{Typed, TypedTuple};
 
 /// Trait for recursive definition of the `Typed` trait.
 pub trait TypedNestedTuple: FlattenNestedTuple<Flattened: TypedTuple> {
     /// The associated nested type.
-    type NestedTupleType: FlattenNestedTuple + IntoNestedTupleOption;
+    type NestedTupleType: FlattenNestedTuple + IntoNestedTupleOption + NestedTupleRef;
 }
 
 impl TypedNestedTuple for () {

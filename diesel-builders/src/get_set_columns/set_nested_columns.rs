@@ -1,8 +1,6 @@
 //! Trait indicating a builder can set multiple columns.
 
-use tuplities::prelude::NestedTuplePopFront;
-
-use crate::{SetColumn, TypedColumn, TypedNestedTuple, columns::NonEmptyNestedProjection};
+use crate::{SetColumn, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can set multiple columns.
 pub trait SetNestedColumns<CS: NonEmptyNestedProjection> {
@@ -25,17 +23,15 @@ impl<Chead, CTail, T> SetNestedColumns<(Chead, CTail)> for T
 where
     Chead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail): NonEmptyNestedProjection,
+    (Chead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     T: SetColumn<Chead> + SetNestedColumns<CTail>,
-    <(Chead, CTail) as TypedNestedTuple>::NestedTupleType:
-        NestedTuplePopFront<Front = Chead::Type, Tail = CTail::NestedTupleType>,
 {
     #[inline]
     fn set_nested_columns(
         &mut self,
-        nested_values: <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
+        (head, tail): (Chead::Type, CTail::NestedTupleType),
     ) -> &mut Self {
-        let (head, tail) = nested_values.nested_pop_front();
         self.set_column(head);
         self.set_nested_columns(tail);
         self

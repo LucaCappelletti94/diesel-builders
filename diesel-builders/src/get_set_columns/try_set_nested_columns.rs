@@ -1,9 +1,117 @@
 //! Trait for fallibly setting multiple nested columns.
+use tuplities::prelude::IntoNestedTupleOption;
+
 use crate::{TrySetColumn, TypedColumn, TypedNestedTuple, ValidateColumn, columns::NestedColumns};
-use tuplities::prelude::NestedTuplePopFront;
+
+/// Trait indicating a builder can validate multiple nested columns.
+pub trait ValidateNestedColumns<Error, CS: NestedColumns> {
+    /// Validate the values of the specified columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any column fails validation.
+    fn validate_nested_columns(&self, values: &CS::NestedTupleType) -> Result<(), Error>;
+}
+
+impl<T, Error> ValidateNestedColumns<Error, ()> for T {
+    #[inline]
+    fn validate_nested_columns(&self, _values: &()) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+impl<C1, T, Error> ValidateNestedColumns<Error, (C1,)> for T
+where
+    Error: From<<T as ValidateColumn<C1>>::Error>,
+    T: ValidateColumn<C1>,
+    C1: TypedColumn,
+{
+    #[inline]
+    fn validate_nested_columns(&self, values: &(C1::Type,)) -> Result<(), Error> {
+        Ok(self.validate_column_in_context(&values.0)?)
+    }
+}
+
+impl<Chead, CTail, T, Error> ValidateNestedColumns<Error, (Chead, CTail)> for T
+where
+    Chead: TypedColumn,
+    CTail: NestedColumns,
+    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
+    T: ValidateColumn<Chead> + ValidateNestedColumns<Error, CTail>,
+    Error: From<<T as ValidateColumn<Chead>>::Error>,
+{
+    #[inline]
+    fn validate_nested_columns(
+        &self,
+        (head, tail): &(Chead::Type, CTail::NestedTupleType),
+    ) -> Result<(), Error> {
+        self.validate_column_in_context(head)?;
+        self.validate_nested_columns(tail)?;
+        Ok(())
+    }
+}
+
+/// Trait indicating a builder can validate multiple optional nested columns.
+pub trait MayValidateNestedColumns<Error, CS: NestedColumns> {
+    /// Validate the values of the specified columns.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any column fails validation.
+    fn may_validate_nested_columns(
+        &self,
+        values: &<CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+    ) -> Result<(), Error>;
+}
+
+impl<T, Error> MayValidateNestedColumns<Error, ()> for T {
+    #[inline]
+    fn may_validate_nested_columns(&self, _values: &()) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+impl<C1, T, Error> MayValidateNestedColumns<Error, (C1,)> for T
+where
+    Error: From<<T as ValidateColumn<C1>>::Error>,
+    T: ValidateColumn<C1>,
+    C1: TypedColumn,
+{
+    #[inline]
+    fn may_validate_nested_columns(&self, values: &(Option<C1::Type>,)) -> Result<(), Error> {
+        if let Some(ref v1) = values.0 {
+            self.validate_column_in_context(v1)?;
+        }
+        Ok(())
+    }
+}
+
+impl<Chead, CTail, T, Error> MayValidateNestedColumns<Error, (Chead, CTail)> for T
+where
+    Chead: TypedColumn,
+    CTail: NestedColumns,
+    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
+    T: ValidateColumn<Chead> + MayValidateNestedColumns<Error, CTail>,
+    Error: From<<T as ValidateColumn<Chead>>::Error>,
+{
+    #[inline]
+    fn may_validate_nested_columns(
+        &self,
+        values: &(
+            Option<Chead::Type>,
+            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        ),
+    ) -> Result<(), Error> {
+        if let Some(ref head) = values.0 {
+            self.validate_column_in_context(head)?;
+        }
+        self.may_validate_nested_columns(&values.1)?;
+        Ok(())
+    }
+}
 
 /// Trait indicating a builder can fallibly set multiple columns.
-pub trait TrySetNestedColumns<Error, CS: NestedColumns> {
+pub trait TrySetNestedColumns<Error, CS: NestedColumns>: ValidateNestedColumns<Error, CS> {
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors
@@ -34,20 +142,17 @@ where
 
 impl<Chead, CTail, T, Error> TrySetNestedColumns<Error, (Chead, CTail)> for T
 where
-    Chead: crate::TypedColumn,
+    Chead: TypedColumn,
     CTail: NestedColumns,
-    (Chead, CTail): NestedColumns,
+    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     T: TrySetColumn<Chead> + TrySetNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<Chead>>::Error>,
-    <(Chead, CTail) as TypedNestedTuple>::NestedTupleType:
-        NestedTuplePopFront<Front = Chead::Type, Tail = CTail::NestedTupleType>,
 {
     #[inline]
     fn try_set_nested_columns(
         &mut self,
-        values: <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
+        (head, tail): <(Chead, CTail) as TypedNestedTuple>::NestedTupleType,
     ) -> Result<&mut Self, Error> {
-        let (head, tail) = values.nested_pop_front();
         self.try_set_column(head)?;
         self.try_set_nested_columns(tail)?;
         Ok(self)

@@ -1,8 +1,8 @@
 //! Trait indicating a builder which may set multiple columns.
 
-use tuplities::prelude::{IntoNestedTupleOption, NestedTuplePopFront};
+use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{MaySetColumn, TypedColumn, TypedNestedTuple, columns::NonEmptyNestedProjection};
+use crate::{MaySetColumn, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder which may set multiple columns.
 pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
@@ -29,20 +29,18 @@ impl<Chead, CTail, T> MaySetColumns<(Chead, CTail)> for T
 where
     Chead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail): NonEmptyNestedProjection,
+    (Chead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
     T: MaySetColumn<Chead> + MaySetColumns<CTail>,
-    <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions:
-        NestedTuplePopFront<
-                Front = Option<Chead::Type>,
-                Tail = <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
-            >,
 {
     #[inline]
     fn may_set_nested_columns(
         &mut self,
-        nested_values: <<(Chead, CTail) as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        (head, tail): (
+            Option<Chead::Type>,
+            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        ),
     ) -> &mut Self {
-        let (head, tail) = nested_values.nested_pop_front();
         self.may_set_column(head);
         self.may_set_nested_columns(tail);
         self

@@ -120,8 +120,9 @@ where
         model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
         let primary_key: C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
         let columns = model.get_nested_columns();
+        self.validate_nested_columns(&columns)?;
+        <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
         self.try_set_nested_columns(columns)
     }
 }
