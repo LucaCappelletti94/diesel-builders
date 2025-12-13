@@ -39,7 +39,9 @@ pub trait ValidateColumn<C: Typed> {
     /// # Errors
     ///
     /// Returns an error if the column value is invalid.
-    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error>;
+    fn validate_column(_value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+        Ok(())
+    }
 
     /// Validate the value of the specified column, given the context of the entire
     /// new record being built.
@@ -62,10 +64,10 @@ pub trait TrySetColumn<C: Typed>: ValidateColumn<C> {
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error>;
 }
 
-impl<G, T, C> TrySetColumn<C> for (T,)
+impl<T, C> TrySetColumn<C> for (T,)
 where
     Self: SetColumn<C> + ValidateColumn<C>,
-    C: TypedColumn<Type = Option<G>>,
+    C: TypedColumn,
 {
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {

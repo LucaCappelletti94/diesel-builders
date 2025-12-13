@@ -76,11 +76,6 @@ where
     type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error> {
-        TableBuilderBundle::<C::Table>::validate_column(value)
-    }
-
-    #[inline]
     fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
         self.bundles
             .nested_index()
