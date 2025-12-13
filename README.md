@@ -345,7 +345,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 erDiagram
     PARENT_TABLE ||--o{ MANDATORY_TABLE : references
     PARENT_TABLE ||--o| CHILD_TABLE : extends
-    MANDATORY_TABLE ||--|| CHILD_TABLE : "mandatory for"
+    MANDATORY_TABLE ||--|| CHILD_TABLE : "references"
     PARENT_TABLE {
         int id PK
         string parent_field
@@ -472,7 +472,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 erDiagram
     PARENT_TABLE ||--o{ DISCRETIONARY_TABLE : references
     PARENT_TABLE ||--o| CHILD_WITH_DISCRETIONARY_TABLE : extends
-    DISCRETIONARY_TABLE ||--o{ CHILD_WITH_DISCRETIONARY_TABLE : "optional for"
+    DISCRETIONARY_TABLE ||--o{ CHILD_WITH_DISCRETIONARY_TABLE : "references"
     PARENT_TABLE {
         int id PK
         string parent_field
