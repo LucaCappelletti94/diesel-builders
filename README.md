@@ -187,7 +187,9 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 4. Directed Acyclic Graph (DAG)
 
-[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets. Of course, in this scenario, your pet is a dog-cat hybrid! Everything is possible with CRISPR-Cas9 these days.
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
+
+Of course, in this scenario, your pet is a dog-cat hybrid! Everything is possible with CRISPR-Cas9 these days.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -285,7 +287,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 use diesel_builders::prelude::*;
 use std::convert::Infallible;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 pub struct Parent {
@@ -303,6 +305,8 @@ pub struct Mandatory {
     mandatory_field: Option<String>,
 }
 
+diesel::allow_tables_to_appear_in_same_query!(parent_table, mandatory_table);
+fpk!(mandatory_table::parent_id -> parent_table);
 index!(mandatory_table::id, mandatory_table::mandatory_field);
 index!(mandatory_table::id, mandatory_table::parent_id);
 
@@ -317,10 +321,7 @@ pub struct Child {
     remote_mandatory_field: Option<String>,
 }
 
-// Enforce triangular constraint: Child's mandatory_id references Mandatory,
-// and Mandatory's parent_id must equal Child's id (inherited from Parent)
 fk!((child_table::mandatory_id, child_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
-
 fk!((child_table::mandatory_id, child_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
 
 impl diesel_builders::HorizontalKey for child_table::mandatory_id {
@@ -371,6 +372,15 @@ let child = child_table::table::builder()
     )
     .insert(&mut conn)?;
 
+// Access the associated Mandatory record
+let mandatory: Mandatory = child.mandatory(&mut conn)?;
+assert_eq!(mandatory.mandatory_field.as_deref(), Some("Mandatory value"));
+let mandatory_parent: Parent = mandatory.parent(&mut conn)?;
+// Access the associated Parent record
+let parent: Parent = child.ancestor(&mut conn)?;
+assert_eq!(parent.parent_field(), "Parent value");
+assert_eq!(parent, mandatory_parent);
+
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
@@ -382,7 +392,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 use diesel_builders::prelude::*;
 use std::convert::Infallible;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 pub struct Parent {
@@ -390,7 +400,7 @@ pub struct Parent {
     parent_field: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = discretionary_table)]
 #[table_model(surrogate_key)]
 pub struct Discretionary {
@@ -399,6 +409,8 @@ pub struct Discretionary {
     discretionary_field: Option<String>,
 }
 
+diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table);
+fpk!(discretionary_table::parent_id -> parent_table);
 index!(discretionary_table::id, discretionary_table::discretionary_field);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
@@ -465,17 +477,20 @@ let child = child_with_discretionary_table::table::builder()
     )
     .insert(&mut conn)?;
 
-// Example 2: Using an existing Discretionary model
-let existing_discretionary = discretionary_table::table::builder()
-    .parent_id(999) // Different parent!
-    .discretionary_field(Some("Existing discretionary".to_owned()))
-    .insert(&mut conn)?;
+let discretionary = child.discretionary(&mut conn)?;
+let parent: Parent = child.ancestor(&mut conn)?;
+let discretionary_parent: Parent = discretionary.parent(&mut conn)?;
+assert_eq!(parent, discretionary_parent);
 
+// Example 2: Using an existing Discretionary model
 let child2 = child_with_discretionary_table::table::builder()
     .parent_field("Different parent")
     .child_field("Child 2 value")
-    .discretionary_model(&existing_discretionary)
+    .discretionary_model(&discretionary)
     .insert(&mut conn)?;
+
+let discretionary2: Discretionary = child2.discretionary(&mut conn)?;
+assert_eq!(discretionary2, discretionary);
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```

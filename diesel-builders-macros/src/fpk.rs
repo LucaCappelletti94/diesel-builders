@@ -28,13 +28,17 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
     let column_name = column
         .segments
         .last()
-        .map_or_else(|| "column".to_string(), |seg| seg.ident.to_string());
+        .expect("Column path must have at least one segment")
+        .ident
+        .to_string();
 
     // Extract referenced table name for method generation
     let referenced_table_name = referenced_table_path
         .segments
         .last()
-        .map_or_else(|| "table".to_string(), |seg| seg.ident.to_string());
+        .expect("Referenced table path must have at least one segment")
+        .ident
+        .to_string();
 
     // Generate method name based on column name
     let method_name = if let Some(stripped) = column_name.strip_suffix("_id") {
@@ -46,11 +50,11 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
 
     // Generate trait name
     // Extract table name from column path (second-to-last segment)
-    let table_name_segment = if column.segments.len() >= 2 {
-        column.segments[column.segments.len() - 2].ident.to_string()
-    } else {
-        "table".to_string()
-    };
+    assert!(
+        column.segments.len() >= 2,
+        "Column path must have at least 2 segments (table::column)"
+    );
+    let table_name_segment = column.segments[column.segments.len() - 2].ident.to_string();
 
     // Convert table_name to CamelCase for trait name
     let trait_name = format!(

@@ -152,6 +152,60 @@ pub fn fk(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// Define a foreign primary key relationship using SQL-like syntax.
+///
+/// This macro generates a `ForeignPrimaryKey` implementation for a single column
+/// that references a table's primary key, along with a helper trait method to
+/// fetch the foreign record.
+///
+/// # Syntax
+///
+/// ```ignore
+/// fpk!(column_path -> referenced_table);
+/// ```
+///
+/// # Example
+///
+/// ```ignore
+/// fpk!(discretionary_table::parent_id -> parent_table);
+/// ```
+#[proc_macro]
+pub fn fpk(input: TokenStream) -> TokenStream {
+    use syn::{
+        parse::{Parse, ParseStream},
+        Path, Token,
+    };
+
+    /// Parsed representation of a foreign primary key specification.
+    struct ForeignPrimaryKey {
+        /// The column that is the foreign key.
+        column: Path,
+        /// The referenced table.
+        referenced_table: Path,
+    }
+
+    impl Parse for ForeignPrimaryKey {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            // Parse: column_path -> referenced_table
+            let column: Path = input.parse()?;
+            input.parse::<Token![->]>()?;
+            let referenced_table: Path = input.parse()?;
+
+            Ok(ForeignPrimaryKey {
+                column,
+                referenced_table,
+            })
+        }
+    }
+
+    let fpk_def = syn::parse_macro_input!(input as ForeignPrimaryKey);
+    let column = &fpk_def.column;
+    let referenced_table = &fpk_def.referenced_table;
+    let referenced_type: syn::Type = syn::parse_quote!(#referenced_table);
+
+    fpk::generate_fpk_impl(column, &referenced_type).into()
+}
+
 /// Define a table index using SQL-like syntax.
 ///
 /// This macro generates `IndexedColumn` implementations for each column in the index.
