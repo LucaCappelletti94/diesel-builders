@@ -206,11 +206,6 @@ where
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column(value: &<C as Typed>::Type) -> Result<(), Self::Error> {
-        T::NewValues::validate_column(value)
-    }
-
-    #[inline]
     fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
         self.insertable_model.validate_column_in_context(value)
     }

@@ -34,6 +34,7 @@ pub trait ValidateColumn<C: Typed> {
     /// The associated error type for the operation.
     type Error: From<Infallible>;
 
+    #[inline]
     /// Validate the value of the specified column.
     ///
     /// # Errors
@@ -43,6 +44,7 @@ pub trait ValidateColumn<C: Typed> {
         Ok(())
     }
 
+    #[inline]
     /// Validate the value of the specified column, given the context of the entire
     /// new record being built.
     ///

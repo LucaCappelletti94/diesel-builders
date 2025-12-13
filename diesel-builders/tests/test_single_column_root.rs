@@ -55,9 +55,12 @@ fn test_single_column_root() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&mut conn)?;
 
     // Test Root derive - animals table is a root with no ancestors
-    let _row = single_column_root_table::table::builder()
-        .try_name("Buddy")?
-        .insert(&mut conn)?;
+    let mut builder = single_column_root_table::table::builder();
+
+    let err = builder.try_name_ref("  ").unwrap_err();
+    assert_eq!(err, SingleColumnRootError::EmptyName);
+
+    let _row = builder.try_name("Buddy")?.insert(&mut conn)?;
 
     Ok(())
 }
