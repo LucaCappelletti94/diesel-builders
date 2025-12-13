@@ -10,7 +10,7 @@ mod shared_animals;
 use shared_animals::*;
 
 use diesel::prelude::*;
-use diesel_builders::prelude::*;
+use diesel_builders::{BuilderError, prelude::*};
 
 #[test]
 fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
@@ -91,6 +91,41 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_cat.color(), "Black");
     let queried_pet: Pet = pets::table.filter(pets::id.eq(pet.id())).first(&mut conn)?;
     assert_eq!(queried_pet, pet);
+
+    Ok(())
+}
+
+#[test]
+fn test_cat_color_empty_validation() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Attempting to create a cat with an empty color should fail validation
+    let result = cats::table::builder().try_name("Whiskers")?.try_color("");
+
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), NewCatError::ColorEmpty);
+
+    // Also test with whitespace-only color (should also fail)
+    let result = cats::table::builder().try_name("Mittens")?.try_color("   ");
+
+    assert!(result.is_err());
+    assert_eq!(result.unwrap_err(), NewCatError::ColorEmpty);
+
+    Ok(())
+}
+
+#[test]
+fn test_diesel_error() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+
+    // Attempting to create a cat with an empty color should fail validation
+    let result = cats::table::builder()
+        .try_name("Whiskers")?
+        .insert(&mut conn);
+
+    let err = result.unwrap_err();
+    assert!(matches!(err, BuilderError::Diesel(_)));
 
     Ok(())
 }
