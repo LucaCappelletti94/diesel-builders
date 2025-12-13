@@ -184,7 +184,7 @@ diesel::sql_query(
     "CREATE TABLE animals (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        description TEXT
+        description TEXT DEFAULT 'A really good boy'
     );"
 ).execute(&mut conn)?;
 
@@ -198,7 +198,7 @@ diesel::sql_query(
 diesel::sql_query(
     "CREATE TABLE puppies (
         id INTEGER PRIMARY KEY REFERENCES dogs(id),
-        age_months INTEGER NOT NULL
+        age_months INTEGER NOT NULL DEFAULT 6
     );"
 ).execute(&mut conn)?;
 
@@ -293,7 +293,7 @@ diesel::sql_query(
     "CREATE TABLE animals (
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
-        description TEXT NOT NULL
+        description TEXT NOT NULL DEFAULT 'No description'
     );"
 ).execute(&mut conn)?;
 
@@ -307,7 +307,7 @@ diesel::sql_query(
 diesel::sql_query(
     "CREATE TABLE cats (
         id INTEGER PRIMARY KEY REFERENCES animals(id),
-        color TEXT NOT NULL
+        color TEXT NOT NULL DEFAULT 'All cats are orange'
     );"
 ).execute(&mut conn)?;
 
@@ -425,7 +425,7 @@ diesel::sql_query(
     "CREATE TABLE mandatory_table (
         id INTEGER PRIMARY KEY NOT NULL,
         parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-        mandatory_field TEXT,
+        mandatory_field TEXT DEFAULT 'Default mandatory',
         UNIQUE(id, mandatory_field),
         UNIQUE(id, parent_id)
     );"
@@ -679,7 +679,7 @@ diesel::sql_query(
         id INTEGER PRIMARY KEY,
         username TEXT NOT NULL CHECK (username <> '' AND length(username) <= 50),
         email TEXT NOT NULL CHECK (email LIKE '%@%'),
-        age INTEGER NOT NULL CHECK (age >= 18)
+        age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18)
     );"
 ).execute(&mut conn)?;
 
@@ -749,7 +749,7 @@ diesel::sql_query(
     "CREATE TABLE user_roles (
         user_id INTEGER NOT NULL,
         role_id INTEGER NOT NULL,
-        assigned_at TEXT NOT NULL,
+        assigned_at TEXT NOT NULL DEFAULT '2025-01-01',
         PRIMARY KEY (user_id, role_id)
     );"
 ).execute(&mut conn)?;
