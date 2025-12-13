@@ -61,6 +61,20 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 [Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship.
 
+```mermaid
+erDiagram
+    ANIMALS ||--o| DOGS : extends
+    ANIMALS {
+        int id PK
+        string name
+        string description
+    }
+    DOGS {
+        int id PK,FK
+        string breed
+    }
+```
+
 ```rust
 use diesel_builders::prelude::*;
 
@@ -114,6 +128,25 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ### 3. Inheritance Chain
 
 [A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
+
+```mermaid
+erDiagram
+    ANIMALS ||--o| DOGS : extends
+    DOGS ||--o| PUPPIES : extends
+    ANIMALS {
+        int id PK
+        string name
+        string description
+    }
+    DOGS {
+        int id PK,FK
+        string breed
+    }
+    PUPPIES {
+        int id PK,FK
+        int age_months
+    }
+```
 
 ```rust
 use diesel_builders::prelude::*;
@@ -190,6 +223,31 @@ Ok::<(), Box<dyn std::error::Error>>(())
 [Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
 
 Of course, in this scenario, your pet is a dog-cat hybrid! Everything is possible with CRISPR-Cas9 these days.
+
+```mermaid
+erDiagram
+    ANIMALS ||--o| DOGS : extends
+    ANIMALS ||--o| CATS : extends
+    DOGS ||--o| PETS : extends
+    CATS ||--o| PETS : extends
+    ANIMALS {
+        int id PK
+        string name
+        string description
+    }
+    DOGS {
+        int id PK,FK
+        string breed
+    }
+    CATS {
+        int id PK,FK
+        string color
+    }
+    PETS {
+        int id PK,FK
+        string owner_name
+    }
+```
 
 ```rust
 use diesel_builders::prelude::*;
@@ -282,6 +340,28 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ### 5. Mandatory Triangular Relation
 
 [A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Child extends Parent and also references Mandatory, with the constraint that the Mandatory record must also reference the same Parent record (enforcing `Child.mandatory_id == Mandatory.parent_id == Parent.id`). The builder uses the `#[mandatory]` attribute and automatically creates both Child and its related Mandatory record atomically, ensuring referential consistency. Foreign key relationships are declared via `fk!` macro, with composite indices via `index!` macro. Insertion order: Parent → Mandatory → Child.
+
+```mermaid
+erDiagram
+    PARENT_TABLE ||--o{ MANDATORY_TABLE : references
+    PARENT_TABLE ||--o| CHILD_TABLE : extends
+    MANDATORY_TABLE ||--|| CHILD_TABLE : "mandatory for"
+    PARENT_TABLE {
+        int id PK
+        string parent_field
+    }
+    MANDATORY_TABLE {
+        int id PK
+        int parent_id FK "Must match Child.id"
+        string mandatory_field
+    }
+    CHILD_TABLE {
+        int id PK,FK "Inherits from Parent"
+        int mandatory_id FK "References Mandatory"
+        string child_field
+        string remote_mandatory_field FK
+    }
+```
 
 ```rust
 use diesel_builders::prelude::*;
@@ -387,6 +467,28 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ### 6. Discretionary Triangular Relation
 
 [Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed. Child can reference any Discretionary record, not necessarily one that shares the same Parent. The builder provides `try_discretionary()` for creating new related records or `try_discretionary_model()` for referencing existing ones. Foreign key relationships are declared via `fk!` macro, with composite indices via `index!` macro. Insertion order varies: for builder - Parent → Discretionary → Child; for model - Discretionary exists independently, then Parent → Child references it.
+
+```mermaid
+erDiagram
+    PARENT_TABLE ||--o{ DISCRETIONARY_TABLE : references
+    PARENT_TABLE ||--o| CHILD_WITH_DISCRETIONARY_TABLE : extends
+    DISCRETIONARY_TABLE ||--o{ CHILD_WITH_DISCRETIONARY_TABLE : "optional for"
+    PARENT_TABLE {
+        int id PK
+        string parent_field
+    }
+    DISCRETIONARY_TABLE {
+        int id PK
+        int parent_id FK "May differ from Child.id"
+        string discretionary_field
+    }
+    CHILD_WITH_DISCRETIONARY_TABLE {
+        int id PK,FK "Inherits from Parent"
+        int discretionary_id FK "References any Discretionary"
+        string child_field
+        string remote_discretionary_field FK
+    }
+```
 
 ```rust
 use diesel_builders::prelude::*;
