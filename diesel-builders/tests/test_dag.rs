@@ -83,13 +83,11 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(pet.get_column_ref::<cats::id>(), pet.id());
 
     // Query to verify relationships
-    let queried_animal: Animal = animals::table
-        .filter(animals::id.eq(pet.id()))
-        .first(&mut conn)?;
+    let queried_animal: Animal = pet.ancestor(&mut conn)?;
     assert_eq!(queried_animal.name(), "Buddy the Pet");
-    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(pet.id())).first(&mut conn)?;
+    let queried_dog: Dog = pet.ancestor(&mut conn)?;
     assert_eq!(queried_dog.breed(), "Labrador");
-    let queried_cat: Cat = cats::table.filter(cats::id.eq(pet.id())).first(&mut conn)?;
+    let queried_cat: Cat = pet.ancestor(&mut conn)?;
     assert_eq!(queried_cat.color(), "Black");
     let queried_pet: Pet = pets::table.filter(pets::id.eq(pet.id())).first(&mut conn)?;
     assert_eq!(queried_pet, pet);

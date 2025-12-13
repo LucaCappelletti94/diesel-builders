@@ -45,7 +45,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
     assert_eq!(dog, queried_dog);
 
-    let loaded_animal: Animal = dog.id_fk(&mut conn)?;
+    let loaded_animal: Animal = dog.ancestor(&mut conn)?;
 
     let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
 
@@ -80,7 +80,7 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let queried_cat: Cat = cats::table.filter(cats::id.eq(cat.id())).first(&mut conn)?;
     assert_eq!(cat, queried_cat);
 
-    let loaded_animal: Animal = cat.id_fk(&mut conn)?;
+    let loaded_animal: Animal = cat.ancestor(&mut conn)?;
 
     let loaded_cat: Cat = cats::table.filter(cats::id.eq(cat.id())).first(&mut conn)?;
 

@@ -163,7 +163,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .try_discretionary(discretionary_builder)?
         .insert(&mut conn)?;
 
-    let associated_parent: Parent = child.id_fk(&mut conn)?;
+    let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(
         associated_parent.get_column::<parent_table::parent_field>(),
         "Value A for B"

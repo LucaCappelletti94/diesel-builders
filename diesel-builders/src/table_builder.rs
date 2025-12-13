@@ -1,7 +1,7 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
-use diesel::associations::HasTable;
+use diesel::{Table, associations::HasTable};
 use tuplities::prelude::*;
 
 mod completed_table_builder;
@@ -10,8 +10,8 @@ pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder}
 
 use crate::{
     AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
-    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns, SetColumn,
-    SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilderBundle, TableExt,
+    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns, NestedColumns,
+    SetColumn, SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilderBundle, TableExt,
     TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder, TrySetMandatoryBuilder,
     Typed, TypedColumn, TypedNestedTuple, ValidateColumn, buildable_table::BuildableTable,
     columns::NonEmptyNestedProjection,
@@ -126,7 +126,13 @@ where
 
 impl<Key, T> TrySetMandatoryBuilder<Key> for TableBuilder<T>
 where
-    T: BuildableTable + DescendantOf<Key::Table>,
+    T: BuildableTable
+        + DescendantOf<
+            Key::Table,
+            NestedPrimaryKeyColumns: NestedColumns<
+                NestedTupleType = (<<Key::Table as Table>::PrimaryKey as Typed>::Type,),
+            >,
+        >,
     Key: MandatorySameAsIndex,
     Key::NestedForeignColumns: TypedNestedTuple<
         NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,

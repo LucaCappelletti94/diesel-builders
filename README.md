@@ -104,6 +104,10 @@ let dog = dogs::table::builder()
     .breed("Golden Retriever")
     .insert(&mut conn)?;
 
+let animal: Animal = dog.ancestor(&mut conn)?;
+assert_eq!(animal.name(), "Max");
+assert_eq!(animal.description().as_deref(), Some("A playful puppy"));
+
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
@@ -172,12 +176,18 @@ let puppy = puppies::table::builder()
     .age_months(3)
     .insert(&mut conn)?;
 
+let animal: Animal = puppy.ancestor(&mut conn)?;
+assert_eq!(animal.name(), "Buddy");
+let dog: Dog = puppy.ancestor(&mut conn)?;
+assert_eq!(dog.breed(), "Labrador");
+assert_eq!(*puppy.age_months(), 3);
+
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ### 4. Directed Acyclic Graph (DAG)
 
-[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets. Of course, in this scenario, your pet is a dog-cat hybrid! Everything is possible with CRISPR-Cas9 these days.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -251,11 +261,18 @@ diesel::sql_query(
 ).execute(&mut conn)?;
 
 let pet = pets::table::builder()
-    .name("Buddy")
-    .breed("Labrador")
-    .color("Black")
+    .name("Bellerophon")
+    .breed("Hybrid Orange-Labrador")
+    .color("Orange")
     .owner_name("Alice Smith")
     .insert(&mut conn)?;
+
+let animal: Animal = pet.ancestor(&mut conn)?;
+assert_eq!(animal.name(), "Bellerophon");
+let dog: Dog = pet.ancestor(&mut conn)?;
+assert_eq!(dog.breed(), "Hybrid Orange-Labrador");
+let cat: Cat = pet.ancestor(&mut conn)?;
+assert_eq!(cat.color(), "Orange");
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```

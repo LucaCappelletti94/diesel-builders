@@ -48,16 +48,14 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_puppy, puppy);
 
     // Verify we can join through the chain: animals -> dogs
-    let loaded_animal: Animal = dog.id_fk(&mut conn)?;
+    let loaded_animal: Animal = dog.ancestor(&mut conn)?;
     let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
 
     assert_eq!(loaded_animal.id(), loaded_dog.id());
     assert_eq!(loaded_dog, dog);
 
     // Verify we can join through the chain: dogs -> puppies
-    let loaded_dog2: Dog = dogs::table
-        .filter(dogs::id.eq(puppy.id()))
-        .first(&mut conn)?;
+    let loaded_dog2: Dog = puppy.ancestor(&mut conn)?;
     let loaded_puppy: Puppy = puppies::table
         .filter(puppies::id.eq(puppy.id()))
         .first(&mut conn)?;
@@ -66,19 +64,11 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_puppy, puppy);
 
     // Verify we can join through the full chain: animals -> dogs -> puppies
-    let full_chain_animal: Animal = animals::table
-        .filter(animals::id.eq(puppy.id()))
-        .first(&mut conn)?;
-    let full_chain_dog: Dog = dogs::table
-        .filter(dogs::id.eq(puppy.id()))
-        .first(&mut conn)?;
-    let full_chain_puppy: Puppy = puppies::table
-        .filter(puppies::id.eq(puppy.id()))
-        .first(&mut conn)?;
+    let full_chain_animal: Animal = puppy.ancestor(&mut conn)?;
+    let full_chain_dog: Dog = puppy.ancestor(&mut conn)?;
 
     assert_eq!(full_chain_animal.id(), full_chain_dog.id());
-    assert_eq!(full_chain_dog.id(), full_chain_puppy.id());
-    assert_eq!(full_chain_puppy, puppy);
+    assert_eq!(full_chain_dog.id(), puppy.id());
 
     Ok(())
 }

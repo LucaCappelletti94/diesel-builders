@@ -529,7 +529,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             // Use the fpk generation function to generate the implementation
             // ancestors are stored as module paths (e.g., parent_table) without ::table suffix
             let column_path: syn::Path = syn::parse_quote!(#table_module::#pk_column);
-            crate::fpk::generate_fpk_impl(&column_path, ancestor)
+            quote! {
+                impl diesel_builders::ForeignPrimaryKey for #column_path {
+                    type ReferencedTable = #ancestor::table;
+                }
+            }
         } else {
             quote! {}
         }
