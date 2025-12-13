@@ -58,7 +58,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     // Insert into pets table (extends both dogs and cats)
     let pet_builder = pets::table::builder()
         .try_name("Buddy the Pet")?
-        .breed("Labrador")
+        .try_breed("Labrador")?
         .try_color("Black")?
         .owner_name("Alice");
 

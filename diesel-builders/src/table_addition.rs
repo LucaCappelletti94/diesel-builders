@@ -18,10 +18,7 @@ pub trait TableExt: diesel::Table + Default {
             Flattened: NonEmptyProjection<Table = Self>,
         >;
     /// The nested types representing a `Self::NewColumns` for this table.
-    /// TODO! Replace this `Default` bound with something which allows
-    /// for custom default values lyfted from the schema.
-    type NewValues: Default
-        + FlattenNestedTuple
+    type NewValues: FlattenNestedTuple
         + NestedTupleOptionWith<
             &'static str,
             Transposed = <Self::NewRecord as TypedNestedTuple>::NestedTupleType,
