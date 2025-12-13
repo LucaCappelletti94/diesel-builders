@@ -38,6 +38,7 @@ pub mod horizontal_same_as;
 pub mod vertical_same_as_group;
 pub use ancestors::{AncestorOfIndex, Descendant, DescendantOf, ModelDescendantExt, Root};
 pub use horizontal_same_as::*;
+pub use vertical_same_as_group::VerticalSameAsGroup;
 pub mod horizontal_same_as_group;
 pub use horizontal_same_as_group::HorizontalSameAsGroup;
 

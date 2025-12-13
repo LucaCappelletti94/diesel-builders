@@ -1,9 +1,9 @@
 //! Trait indicating a builder can set multiple columns.
 
-use crate::{SetColumn, TypedColumn, columns::NonEmptyNestedProjection};
+use crate::{NestedColumns, SetColumn, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can set multiple columns.
-pub trait SetNestedColumns<CS: NonEmptyNestedProjection> {
+pub trait SetNestedColumns<CS: NestedColumns> {
     /// Set the `nested_values` of the specified columns.
     fn set_nested_columns(&mut self, nested_values: CS::NestedTupleType) -> &mut Self;
 }

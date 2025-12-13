@@ -10,6 +10,7 @@ mod primary_key;
 mod set_columns;
 mod table_generation;
 mod typed_column;
+mod vertical_same_as;
 
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -26,6 +27,7 @@ use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
 use table_generation::generate_table_macro;
 use typed_column::generate_typed_column_impls;
+use vertical_same_as::generate_vertical_same_as_impls;
 
 use crate::utils::{format_as_nested_tuple, is_option};
 
@@ -465,6 +467,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let error_type = attributes
         .error
+        .as_ref()
         .map(|t| quote::quote! { #t })
         .unwrap_or(quote::quote! { std::convert::Infallible });
 
@@ -473,6 +476,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let descendant_impls = if let Some(ref ancestors) = attributes.ancestors {
         let root = attributes
             .root
+            .clone()
             .or_else(|| ancestors.first().map(|a| syn::parse_quote!(#a::table)));
 
         if let Some(root) = root {
@@ -623,6 +627,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         quote! {}
     };
 
+    // Generate VerticalSameAsGroup implementations for all columns
+    let vertical_same_as_impls =
+        generate_vertical_same_as_impls(fields, &table_module, &attributes)?;
+
     // Generate final output
     Ok(quote! {
         #table_macro
@@ -639,6 +647,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#discretionary_same_as_impls)*
         #(#column_horizontal_impls)*
         #horizontal_same_as_group_impl
+        #(#vertical_same_as_impls)*
 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*

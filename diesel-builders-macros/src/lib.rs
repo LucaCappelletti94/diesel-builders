@@ -28,7 +28,7 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro_derive(
     TableModel,
-    attributes(table_model, infallible, mandatory, discretionary, diesel)
+    attributes(table_model, infallible, mandatory, discretionary, diesel, same_as)
 )]
 pub fn derive_table_model(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);

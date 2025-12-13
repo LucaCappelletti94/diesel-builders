@@ -5,7 +5,8 @@ use std::ops::Sub;
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::{
     BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
-    TrySetHomogeneousNestedColumnsCollection, Typed, TypedNestedTuple, ValidateColumn,
+    TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection, Typed,
+    TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
 };
 use diesel::Table;
 use diesel::associations::HasTable;
@@ -134,17 +135,17 @@ where
             Element = CompletedTableBuilderBundle<C::Table>,
         >,
     T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
+    C: VerticalSameAsGroup,
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
 {
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        self.try_set_homogeneous_nested_columns(value.clone())?;
         self.nested_bundles
             .nested_index_mut()
             .try_set_column(value)?;
-        // TODO: set vertical same-as columns in associated builders here.
         Ok(self)
     }
 }

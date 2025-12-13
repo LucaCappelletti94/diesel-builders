@@ -61,6 +61,8 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 [Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship.
 
+**Vertical Same-As (Column Propagation)**: Child table columns can use the `#[same_as(...)]` attribute to automatically propagate their values to ancestor table columns during insertion. In the example below, setting `doggo_description` on the Dog also sets `description` on the Animal. This enables a child column to populate one or more parent columns with the same value. Multiple ancestor columns can be specified in a comma-separated list (e.g., `#[same_as(animals::description, animals::notes)]`).
+
 ```mermaid
 erDiagram
     ANIMALS ||--o| DOGS : extends
@@ -93,6 +95,8 @@ pub struct Animal {
 pub struct Dog {
     id: i32,
     breed: String,
+    #[same_as(animals::description)]
+    doggo_description: Option<String>,
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
@@ -108,13 +112,14 @@ diesel::sql_query(
 diesel::sql_query(
     "CREATE TABLE dogs (
         id INTEGER PRIMARY KEY REFERENCES animals(id),
+        doggo_description TEXT,
         breed TEXT NOT NULL
     );"
 ).execute(&mut conn)?;
 
 let dog = dogs::table::builder()
     .name("Max")
-    .description("A playful puppy".to_owned())
+    .doggo_description("A playful puppy".to_owned())
     .breed("Golden Retriever")
     .insert(&mut conn)?;
 
@@ -128,6 +133,8 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ### 3. Inheritance Chain
 
 [A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
+
+In this example, the `dog_notes` field in Dog uses `#[same_as(animals::description)]` to propagate its value up to the Animal's `description` field, demonstrating how vertical same-as works across inheritance hierarchies.
 
 ```mermaid
 erDiagram
@@ -167,6 +174,8 @@ pub struct Animal {
 pub struct Dog {
     id: i32,
     breed: String,
+    #[same_as(animals::description)]
+    dog_notes: Option<String>,
 }
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
@@ -191,7 +200,8 @@ diesel::sql_query(
 diesel::sql_query(
     "CREATE TABLE dogs (
         id INTEGER PRIMARY KEY REFERENCES animals(id),
-        breed TEXT NOT NULL
+        breed TEXT NOT NULL,
+        dog_notes TEXT
     );"
 ).execute(&mut conn)?;
 
@@ -204,15 +214,17 @@ diesel::sql_query(
 
 let puppy = puppies::table::builder()
     .name("Buddy")
-    .description("A cute little puppy".to_owned())
     .breed("Labrador")
+    .dog_notes("A cute little puppy".to_owned())
     .age_months(3)
     .insert(&mut conn)?;
 
 let animal: Animal = puppy.ancestor(&mut conn)?;
 assert_eq!(animal.name(), "Buddy");
+assert_eq!(animal.description().as_deref(), Some("A cute little puppy"));
 let dog: Dog = puppy.ancestor(&mut conn)?;
 assert_eq!(dog.breed(), "Labrador");
+assert_eq!(dog.dog_notes().as_deref(), Some("A cute little puppy"));
 assert_eq!(*puppy.age_months(), 3);
 
 Ok::<(), Box<dyn std::error::Error>>(())

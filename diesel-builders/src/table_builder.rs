@@ -12,9 +12,11 @@ use crate::{
     AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
     MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
     MayValidateNestedColumns, NestedColumns, SetColumn, SetDiscretionaryBuilder,
-    SetMandatoryBuilder, TableBuilderBundle, TableExt, TryMaySetNestedColumns, TrySetColumn,
-    TrySetDiscretionaryBuilder, TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple,
+    SetHomogeneousNestedColumns, SetMandatoryBuilder, TableBuilderBundle, TableExt,
+    TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
+    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple,
     ValidateColumn, buildable_table::BuildableTable, columns::NonEmptyNestedProjection,
+    vertical_same_as_group::VerticalSameAsGroup,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -86,7 +88,8 @@ where
 impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
+    C: VerticalSameAsGroup,
+    Self: SetHomogeneousNestedColumns<C::Type, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -96,6 +99,8 @@ where
 {
     #[inline]
     fn set_column(&mut self, value: impl Into<<C as Typed>::Type>) -> &mut Self {
+        let value = value.into();
+        self.set_homogeneous_nested_columns(value.clone());
         self.bundles.nested_index_mut().set_column(value);
         self
     }
@@ -104,7 +109,8 @@ where
 impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
+    C: VerticalSameAsGroup,
+    Self: TrySetHomogeneousNestedColumns<C::Type, Self::Error, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -114,6 +120,7 @@ where
 {
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+        self.try_set_homogeneous_nested_columns(value.clone())?;
         self.bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)
     }

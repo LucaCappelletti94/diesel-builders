@@ -72,15 +72,3 @@ where
     type NestedDiscretionaryHorizontalKeys = <T::DiscretionaryHorizontalKeys as NestTuple>::Nested;
     type NestedMandatoryHorizontalKeys = <T::MandatoryHorizontalKeys as NestTuple>::Nested;
 }
-
-/// A marker trait for Diesel columns that are not associated with any group
-/// of horizontal same-as columns.
-pub trait NoHorizontalSameAsGroup:
-    HorizontalSameAsGroup<MandatoryHorizontalKeys = (), DiscretionaryHorizontalKeys = ()>
-{
-}
-
-impl<T> NoHorizontalSameAsGroup for T where
-    T: HorizontalSameAsGroup<MandatoryHorizontalKeys = (), DiscretionaryHorizontalKeys = ()>
-{
-}

@@ -339,5 +339,42 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
         }
     }
 
+    // Validate same_as attributes
+    // Check that each same_as attribute has proper parentheses and contains valid paths
+    for attr in &field.attrs {
+        if attr.path().is_ident("same_as") {
+            // Ensure the attribute is in the form #[same_as(...)]
+            if !matches!(attr.meta, syn::Meta::List(_)) {
+                return Err(syn::Error::new_spanned(
+                    attr,
+                    "Expected `#[same_as(ancestor::column)]` with parentheses",
+                ));
+            }
+        }
+    }
+
     Ok(())
+}
+
+/// Extract the `same_as` columns from a field's attributes.
+/// Returns a vector of column paths (e.g., `ancestor_table::column_name`).
+/// Multiple `#[same_as(...)]` attributes can be specified on a field.
+/// Each attribute can contain comma-separated column paths.
+pub fn extract_same_as_columns(field: &syn::Field) -> syn::Result<Vec<syn::Path>> {
+    let mut same_as_columns = Vec::new();
+
+    for attr in &field.attrs {
+        if !attr.path().is_ident("same_as") {
+            continue;
+        }
+
+        // Parse the column paths from the attribute
+        // Format: #[same_as(ancestor_table::column_name, another_table::column)]
+        let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
+            attr.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
+
+        same_as_columns.extend(punct);
+    }
+
+    Ok(same_as_columns)
 }

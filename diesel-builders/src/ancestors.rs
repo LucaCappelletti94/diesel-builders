@@ -11,6 +11,7 @@ use crate::columns::NonEmptyNestedProjection;
 use crate::{
     GetNestedColumns, NestedBundlableTables, TableExt, TableIndex, Tables, tables::NestedTables,
 };
+use crate::{NestedColumns, TypedColumn, TypedNestedTuple, TypedTuple};
 
 /// Marker trait for root table models (tables with no ancestors).
 ///
@@ -31,6 +32,39 @@ pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableExt + Descendant {
 pub trait DescendantOf<T: TableExt + Descendant>: Descendant<Root = T::Root> {}
 
 impl<T> DescendantOf<T> for T where T: Descendant {}
+
+/// A column from an ancestor table.
+pub trait AncestorColumnOf<T: DescendantOf<Self::Table>>: TypedColumn<Table: Descendant> {}
+impl<T, C> AncestorColumnOf<T> for C
+where
+    T: DescendantOf<C::Table>,
+    C: TypedColumn<Table: Descendant>,
+{
+}
+
+/// A collection of columns from ancestors of the provided descendant table.
+pub trait AncestorColumnsOf<T>: TypedTuple {}
+
+impl<T, A: TypedTuple> AncestorColumnsOf<T> for A where A::Nested: NestedAncestorColumnsOf<T> {}
+
+/// A nested collection of columns from ancestors of the provided descendant table.
+pub trait NestedAncestorColumnsOf<T>: TypedNestedTuple {}
+
+impl<T> NestedAncestorColumnsOf<T> for () {}
+impl<T, A> NestedAncestorColumnsOf<T> for (A,)
+where
+    A: AncestorColumnOf<T>,
+    T: DescendantOf<A::Table>,
+{
+}
+impl<T, CHead, CTail> NestedAncestorColumnsOf<T> for (CHead, CTail)
+where
+    T: DescendantOf<CHead::Table>,
+    CHead: AncestorColumnOf<T>,
+    CTail: NestedAncestorColumnsOf<T>,
+    (CHead, CTail): NestedColumns,
+{
+}
 
 /// A trait for a model associated to a diesel table which is descended from
 /// another table.

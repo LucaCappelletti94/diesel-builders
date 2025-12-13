@@ -1,12 +1,13 @@
 //! Column which is associated to a group of vertical same-as columns.
 
-use crate::{AncestorOfIndex, Columns, DescendantOf, TypedColumn};
+use crate::{
+    TypedColumn, ancestors::NestedAncestorColumnsOf, columns::HomogeneouslyTypedNestedColumns,
+};
 
 /// A trait for Diesel columns that are associated with a group of vertical
 /// same-as columns.
-pub trait VerticalSameAsGroup<T: DescendantOf<Self::Table>>:
-    TypedColumn<Table: AncestorOfIndex<T>>
-{
+pub trait VerticalSameAsGroup: TypedColumn {
     /// The group of vertical same-as columns associated with this column.
-    type VerticalSameAsColumns: Columns;
+    type VerticalSameAsNestedColumns: HomogeneouslyTypedNestedColumns<Self::Type>
+        + NestedAncestorColumnsOf<Self::Table>;
 }

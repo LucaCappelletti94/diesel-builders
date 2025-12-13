@@ -24,3 +24,7 @@ mod try_may_set_discretionary_same_as_nested_columns;
 pub use try_may_set_discretionary_same_as_nested_columns::*;
 mod try_set_mandatory_same_as_nested_columns;
 pub use try_set_mandatory_same_as_nested_columns::*;
+mod set_homogeneous_nested_columns;
+pub use set_homogeneous_nested_columns::*;
+mod try_set_homogeneous_nested_columns;
+pub use try_set_homogeneous_nested_columns::*;
