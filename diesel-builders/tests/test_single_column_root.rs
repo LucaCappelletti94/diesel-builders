@@ -8,7 +8,7 @@ use diesel_builders::prelude::*;
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
 #[diesel(table_name = single_column_root_table)]
 #[table_model(surrogate_key, error = SingleColumnRootError)]
-/// Model for the single_column_root_table.
+/// Model for the `single_column_root_table`.
 pub struct SingleColumnRoot {
     /// Primary key.
     id: i32,
