@@ -74,6 +74,7 @@ erDiagram
     DOGS {
         int id PK,FK
         string breed
+        string doggo_description "→ animals::description"
     }
 ```
 
@@ -148,6 +149,7 @@ erDiagram
     DOGS {
         int id PK,FK
         string breed
+        string dog_notes "→ animals::description"
     }
     PUPPIES {
         int id PK,FK
