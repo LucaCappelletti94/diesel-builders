@@ -156,7 +156,7 @@ pub fn is_field_infallible(field: &syn::Field) -> bool {
     })
 }
 
-/// Check if a field is marked as mandatory via `#[mandatory]`.
+/// Check if a field is marked as mandatory via `#[mandatory(...)]`.
 pub fn is_field_mandatory(field: &syn::Field) -> bool {
     field
         .attrs
@@ -164,7 +164,7 @@ pub fn is_field_mandatory(field: &syn::Field) -> bool {
         .any(|attr| attr.path().is_ident("mandatory"))
 }
 
-/// Check if a field is marked as discretionary via `#[discretionary]`.
+/// Check if a field is marked as discretionary via `#[discretionary(...)]`.
 pub fn is_field_discretionary(field: &syn::Field) -> bool {
     field
         .attrs
@@ -172,54 +172,40 @@ pub fn is_field_discretionary(field: &syn::Field) -> bool {
         .any(|attr| attr.path().is_ident("discretionary"))
 }
 
-/// Extract the referenced table from `#[mandatory(table = table_name)]` attribute.
-/// Returns None if no table is specified (will use default inference).
-pub fn extract_mandatory_table(field: &syn::Field) -> Option<syn::Path> {
+/// Extract the referenced table from `#[mandatory(table_name)]` attribute.
+/// The table name is now required and must be specified.
+pub fn extract_mandatory_table(field: &syn::Field) -> syn::Result<Option<syn::Path>> {
     for attr in &field.attrs {
         if !attr.path().is_ident("mandatory") {
             continue;
         }
 
-        let mut table_path = None;
-        let _ = attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("table") {
-                let value = meta.value()?;
-                let path: syn::Path = value.parse()?;
-                table_path = Some(path);
-            }
-            Ok(())
-        });
+        // Parse the table path from the attribute
+        let table_path: syn::Path = attr.parse_args().map_err(|_| {
+            syn::Error::new_spanned(attr, "Expected table name: #[mandatory(table_name)]")
+        })?;
 
-        if table_path.is_some() {
-            return table_path;
-        }
+        return Ok(Some(table_path));
     }
-    None
+    Ok(None)
 }
 
-/// Extract the referenced table from `#[discretionary(table = table_name)]` attribute.
-/// Returns None if no table is specified (will use default inference).
-pub fn extract_discretionary_table(field: &syn::Field) -> Option<syn::Path> {
+/// Extract the referenced table from `#[discretionary(table_name)]` attribute.
+/// The table name is now required and must be specified.
+pub fn extract_discretionary_table(field: &syn::Field) -> syn::Result<Option<syn::Path>> {
     for attr in &field.attrs {
         if !attr.path().is_ident("discretionary") {
             continue;
         }
 
-        let mut table_path = None;
-        let _ = attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("table") {
-                let value = meta.value()?;
-                let path: syn::Path = value.parse()?;
-                table_path = Some(path);
-            }
-            Ok(())
-        });
+        // Parse the table path from the attribute
+        let table_path: syn::Path = attr.parse_args().map_err(|_| {
+            syn::Error::new_spanned(attr, "Expected table name: #[discretionary(table_name)]")
+        })?;
 
-        if table_path.is_some() {
-            return table_path;
-        }
+        return Ok(Some(table_path));
     }
-    None
+    Ok(None)
 }
 
 /// Extract default value from `#[table_model(default = ...)]` attribute on a field.

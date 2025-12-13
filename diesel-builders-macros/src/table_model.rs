@@ -222,25 +222,11 @@ fn collect_triangular_columns(
     (mandatory_columns, discretionary_columns)
 }
 
-/// Infer the referenced table name from a field name.
-/// If field name ends with `_id`, strips that suffix and appends `_table`.
-/// For example: `mandatory_id` -> `mandatory_table`, `m1_id` -> `m1_table`
-fn infer_table_from_field_name(field_name: &syn::Ident) -> Option<syn::Path> {
-    let name_str = field_name.to_string();
-    if let Some(base_name) = name_str.strip_suffix("_id") {
-        let table_name = format!("{base_name}_table");
-        let table_ident = syn::Ident::new(&table_name, field_name.span());
-        Some(syn::parse_quote!(#table_ident))
-    } else {
-        None
-    }
-}
-
 /// Collect tables referenced by mandatory and discretionary fields.
 /// Returns a set of unique table paths.
 fn collect_triangular_relation_tables(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
-) -> std::collections::HashSet<syn::Path> {
+) -> syn::Result<std::collections::HashSet<syn::Path>> {
     use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
 
     let mut referenced_tables = std::collections::HashSet::new();
@@ -249,29 +235,31 @@ fn collect_triangular_relation_tables(
         if let Some(field_name) = &field.ident {
             // Check if field is mandatory and extract its referenced table
             if is_field_mandatory(field) {
-                if let Some(table_path) = extract_mandatory_table(field) {
-                    // Explicit table attribute provided
+                if let Some(table_path) = extract_mandatory_table(field)? {
                     referenced_tables.insert(table_path);
-                } else if let Some(inferred_table) = infer_table_from_field_name(field_name) {
-                    // Infer from field name
-                    referenced_tables.insert(inferred_table);
+                } else {
+                    return Err(syn::Error::new_spanned(
+                        field,
+                        format!("Field '{field_name}' is marked as #[mandatory] but no table name is specified. Use #[mandatory(table_name)]", )
+                    ));
                 }
             }
 
             // Check if field is discretionary and extract its referenced table
             if is_field_discretionary(field) {
-                if let Some(table_path) = extract_discretionary_table(field) {
-                    // Explicit table attribute provided
+                if let Some(table_path) = extract_discretionary_table(field)? {
                     referenced_tables.insert(table_path);
-                } else if let Some(inferred_table) = infer_table_from_field_name(field_name) {
-                    // Infer from field name
-                    referenced_tables.insert(inferred_table);
+                } else {
+                    return Err(syn::Error::new_spanned(
+                        field,
+                        format!("Field '{field_name}' is marked as #[discretionary] but no table name is specified. Use #[discretionary(table_name)]")
+                    ));
                 }
             }
         }
     }
 
-    referenced_tables
+    Ok(referenced_tables)
 }
 
 /// Generate fpk! implementations for mandatory and discretionary fields.
@@ -279,7 +267,7 @@ fn collect_triangular_relation_tables(
 fn generate_triangular_fpk_impls(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
-) -> Vec<proc_macro2::TokenStream> {
+) -> syn::Result<Vec<proc_macro2::TokenStream>> {
     use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
 
     let mut fpk_impls = Vec::new();
@@ -287,10 +275,9 @@ fn generate_triangular_fpk_impls(
     for field in fields {
         if let Some(field_name) = &field.ident {
             let referenced_table = if is_field_mandatory(field) {
-                extract_mandatory_table(field).or_else(|| infer_table_from_field_name(field_name))
+                extract_mandatory_table(field)?
             } else if is_field_discretionary(field) {
-                extract_discretionary_table(field)
-                    .or_else(|| infer_table_from_field_name(field_name))
+                extract_discretionary_table(field)?
             } else {
                 None
             };
@@ -306,7 +293,7 @@ fn generate_triangular_fpk_impls(
         }
     }
 
-    fpk_impls
+    Ok(fpk_impls)
 }
 
 /// Main entry point for the `TableModel` derive macro.
@@ -434,10 +421,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     // Collect tables referenced by triangular relations
-    let triangular_relation_tables = collect_triangular_relation_tables(fields);
+    let triangular_relation_tables = collect_triangular_relation_tables(fields)?;
 
     // Generate fpk! implementations for triangular relation fields
-    let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module);
+    let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
     // Generate allow_tables_to_appear_in_same_query! macro calls for ancestors and triangular relations
     let mut allow_same_query_calls: Vec<_> = if let Some(ancestors) = &attributes.ancestors {

@@ -33,7 +33,7 @@ pub struct ChildWithDiscretionary {
     /// Primary key.
     id: i32,
     #[infallible]
-    #[discretionary]
+    #[discretionary(discretionary_table)]
     /// Foreign key to discretionary table.
     discretionary_id: i32,
     #[infallible]

@@ -16,33 +16,33 @@ use shared_triangular::*;
 pub struct Child {
     /// The primary key of the child, also a foreign key to `parent_table`.
     id: i32,
-    #[mandatory(table = mandatory_table)]
+    #[mandatory(mandatory_table)]
     /// Mandatory relation 1 ID.
     m1_id: i32,
     /// Secondary column used by composite FKs for `Mandatory` intermediates.
     m1_mandatory_field: Option<String>,
-    #[mandatory(table = mandatory_table)]
+    #[mandatory(mandatory_table)]
     /// Mandatory relation 2 ID.
     m2_id: i32,
     /// Mandatory relation 2 column.
     m2_mandatory_field: Option<String>,
-    #[mandatory(table = mandatory_table)]
+    #[mandatory(mandatory_table)]
     /// Mandatory relation 3 ID.
     m3_id: i32,
     /// Mandatory relation 3 column.
     m3_mandatory_field: Option<String>,
-    #[discretionary(table = discretionary_table)]
+    #[discretionary(discretionary_table)]
     /// Discretionary relation 1 ID.
     d1_id: i32,
     /// Optional secondary column used by composite FKs for discretionary
     /// intermediates; `None` denotes an unset optional value.
     d1_discretionary_field: Option<String>,
-    #[discretionary(table = discretionary_table)]
+    #[discretionary(discretionary_table)]
     /// Discretionary relation 2 ID.
     d2_id: i32,
     /// Discretionary relation 2 column.
     d2_discretionary_field: Option<String>,
-    #[discretionary(table = discretionary_table)]
+    #[discretionary(discretionary_table)]
     /// Discretionary relation 3 ID.
     d3_id: i32,
     /// Discretionary relation 3 column.

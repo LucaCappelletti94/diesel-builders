@@ -20,10 +20,10 @@ use shared_triangular::*;
 pub struct ChildWithMixed {
     /// Primary key.
     id: i32,
-    #[mandatory]
+    #[mandatory(mandatory_table)]
     /// Foreign key to table C.
     mandatory_id: i32,
-    #[discretionary]
+    #[discretionary(discretionary_table)]
     /// Foreign key to table D.
     discretionary_id: i32,
     /// Column B value.

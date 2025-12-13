@@ -33,7 +33,7 @@ pub struct ChildWithMandatory {
     /// Primary key.
     id: i32,
     #[infallible]
-    #[mandatory]
+    #[mandatory(mandatory_table)]
     /// Foreign key to table A.
     mandatory_id: i32,
     #[infallible]
