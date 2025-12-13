@@ -4,8 +4,8 @@
 use tuplities::prelude::{FlattenNestedTuple, NestedTupleTryFrom};
 
 use crate::{
-    BundlableTable, CompletedTableBuilderBundle, IncompleteBuilderError, TableBuilderBundle,
-    TableExt, tables::NestedTables,
+    CompletedTableBuilderBundle, IncompleteBuilderError, TableBuilderBundle,
+    builder_bundle::BundlableTableExt, tables::NestedTables,
 };
 
 /// A trait for collections of Diesel tables that can be used in table builder
@@ -25,7 +25,9 @@ impl NestedBundlableTables for () {
 
 impl<T1> NestedBundlableTables for (T1,)
 where
-    T1: BundlableTable + TableExt,
+    T1: BundlableTableExt,
+    <T1 as BundlableTableExt>::OptionalMandatoryNestedBuilders: Default,
+    <T1 as BundlableTableExt>::OptionalDiscretionaryNestedBuilders: Default,
 {
     type NestedBundleBuilders = (TableBuilderBundle<T1>,);
     type NestedCompletedBundleBuilders = (CompletedTableBuilderBundle<T1>,);
@@ -33,7 +35,9 @@ where
 
 impl<Thead, Ttail> NestedBundlableTables for (Thead, Ttail)
 where
-    Thead: BundlableTable + TableExt,
+    Thead: BundlableTableExt,
+    <Thead as BundlableTableExt>::OptionalMandatoryNestedBuilders: Default,
+    <Thead as BundlableTableExt>::OptionalDiscretionaryNestedBuilders: Default,
     Ttail: NestedBundlableTables,
     (Thead, Ttail): NestedTables,
     (TableBuilderBundle<Thead>, Ttail::NestedBundleBuilders): FlattenNestedTuple,

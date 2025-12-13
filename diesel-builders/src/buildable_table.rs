@@ -3,8 +3,8 @@
 use tuplities::prelude::NestedTupleTryFrom;
 
 use crate::{
-    BundlableTable, IncompleteBuilderError, NestedBundlableTables, TableBuilder,
-    ancestors::DescendantWithSelf, builder_bundle::BundlableTableExt,
+    IncompleteBuilderError, NestedBundlableTables, TableBuilder, ancestors::DescendantWithSelf,
+    builder_bundle::BundlableTableExt,
 };
 
 /// A trait for Diesel tables that can be used to build insertable models for
@@ -25,7 +25,7 @@ pub trait BuildableTable: BundlableTableExt + DescendantWithSelf {
 
 impl<T> BuildableTable for T
 where
-    T: BundlableTable + DescendantWithSelf,
+    T: BundlableTableExt + DescendantWithSelf,
 {
     type NestedAncestorBuilders =
         <T::NestedAncestorsWithSelf as NestedBundlableTables>::NestedBundleBuilders;

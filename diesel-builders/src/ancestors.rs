@@ -20,7 +20,7 @@ use crate::{NestedColumns, TypedColumn, TypedNestedTuple, TypedTuple};
 pub trait Root: crate::TableExt {}
 
 /// A trait marker for getting the ancestor index of a table.
-pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableExt + Descendant {
+pub trait AncestorOfIndex<T: DescendantOf<Self>>: Descendant {
     /// Tuple index marker of the ancestor table in the descendant's ancestor
     /// list.
     type Idx: Unsigned;
@@ -29,7 +29,7 @@ pub trait AncestorOfIndex<T: DescendantOf<Self>>: TableExt + Descendant {
 /// A trait for Diesel tables that have ancestor tables.
 /// This trait enforces that all tables in an inheritance hierarchy share the same
 /// root ancestor (and thus the same primary key type).
-pub trait DescendantOf<T: TableExt + Descendant>: Descendant<Root = T::Root> {}
+pub trait DescendantOf<T: Descendant>: Descendant<Root = T::Root> {}
 
 impl<T> DescendantOf<T> for T where T: Descendant {}
 
@@ -68,9 +68,7 @@ where
 
 /// A trait for a model associated to a diesel table which is descended from
 /// another table.
-pub trait ModelDescendantOf<Conn, T: TableExt + Descendant>:
-    HasTable<Table: DescendantOf<T>>
-{
+pub trait ModelDescendantOf<Conn, T: Descendant>: HasTable<Table: DescendantOf<T>> {
     /// Returns the ancestor model associated to this descendant model.
     ///
     /// # Arguments
@@ -110,7 +108,7 @@ impl<M, Conn> ModelDescendantExt<Conn> for M {}
 
 impl<Conn, T, M> ModelDescendantOf<Conn, T> for M
 where
-    T: TableExt + Descendant + SelectDsl<<T as Table>::AllColumns>,
+    T: Descendant + SelectDsl<<T as Table>::AllColumns>,
     M: HasTable<Table: DescendantOf<T>>
         + GetNestedColumns<<T::NestedPrimaryKeyColumns as NestTuple>::Nested>,
     T::NestedPrimaryKeyColumns: TableIndex<

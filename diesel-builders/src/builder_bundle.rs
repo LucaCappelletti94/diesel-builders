@@ -146,7 +146,7 @@ where
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 /// A bundle of a table's insertable model and its associated builders.
-pub struct TableBuilderBundle<T: BundlableTableExt + TableExt> {
+pub struct TableBuilderBundle<T: BundlableTableExt> {
     /// The insertable model for the table.
     insertable_model: T::NewValues,
     /// The mandatory associated builders relative to triangular same-as.
@@ -157,7 +157,7 @@ pub struct TableBuilderBundle<T: BundlableTableExt + TableExt> {
 
 impl<T> Default for TableBuilderBundle<T>
 where
-    T: BundlableTableExt + TableExt,
+    T: BundlableTableExt,
     T::OptionalMandatoryNestedBuilders: Default,
     T::OptionalDiscretionaryNestedBuilders: Default,
 {
@@ -172,7 +172,7 @@ where
 
 impl<T> HasTable for TableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
 {
     type Table = T;
 
@@ -184,7 +184,7 @@ where
 
 impl<T, C> MayGetColumn<C> for TableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: TypedColumn,
     T::NewValues: MayGetColumn<C>,
 {
@@ -199,7 +199,7 @@ where
 
 impl<T, C> ValidateColumn<C> for TableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: TypedColumn<Table = T>,
     T::NewValues: ValidateColumn<C>,
 {
@@ -213,7 +213,7 @@ where
 
 impl<T, C> SetColumn<C> for TableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: TypedColumn<Table = T>,
     T::NewValues: SetColumn<C> + ValidateColumn<C, Error = Infallible>,
 {
@@ -226,7 +226,7 @@ where
 
 impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: TypedColumn<Table = T>,
     T::NewValues: TrySetColumn<C>,
 {
@@ -239,7 +239,7 @@ where
 
 impl<C, T> SetMandatoryBuilder<C> for TableBuilderBundle<T>
 where
-    T: BundlableTableExt + TableExt,
+    T: BundlableTableExt,
     C: MandatorySameAsIndex,
     C::ReferencedTable: BuildableTable,
     T::OptionalMandatoryNestedBuilders: NestedTupleIndexMut<
@@ -276,7 +276,7 @@ where
 
 impl<C, T> SetDiscretionaryBuilder<C> for TableBuilderBundle<T>
 where
-    T: BundlableTableExt + TableExt,
+    T: BundlableTableExt,
     C: DiscretionarySameAsIndex,
     C::ReferencedTable: BuildableTable,
     T::OptionalDiscretionaryNestedBuilders: NestedTupleIndexMut<

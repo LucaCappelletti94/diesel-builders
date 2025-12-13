@@ -1,9 +1,9 @@
 //! Submodule implementing serde-related traits for table bundles.
 #![cfg(feature = "serde")]
 
-use crate::{TableBuilderBundle, TableExt, builder_bundle::BundlableTableExt};
+use crate::{TableBuilderBundle, builder_bundle::BundlableTableExt};
 
-impl<T: BundlableTableExt + TableExt> serde::Serialize for TableBuilderBundle<T>
+impl<T: BundlableTableExt> serde::Serialize for TableBuilderBundle<T>
 where
     T::NewValues: serde::Serialize,
     T::OptionalMandatoryNestedBuilders: serde::Serialize,
@@ -36,7 +36,7 @@ where
     }
 }
 
-impl<'de, T: BundlableTableExt + TableExt> serde::Deserialize<'de> for TableBuilderBundle<T>
+impl<'de, T: BundlableTableExt> serde::Deserialize<'de> for TableBuilderBundle<T>
 where
     T::NewValues: serde::Deserialize<'de>,
     T::OptionalMandatoryNestedBuilders: serde::Deserialize<'de>,

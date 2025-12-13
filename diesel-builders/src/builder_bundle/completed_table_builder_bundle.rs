@@ -5,9 +5,9 @@ use tuplities::prelude::*;
 
 use crate::columns::TupleEqAll;
 use crate::{
-    BuildableTable, BuilderError, BuilderResult, BundlableTable, DiscretionarySameAsIndex,
-    HasNestedTables, HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns,
-    NestedTables, RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
+    BuildableTable, BuilderError, BuilderResult, DiscretionarySameAsIndex, HasNestedTables,
+    HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns, NestedTables,
+    RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
     TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsNestedColumns,
     TryMaySetNestedColumns, TrySetColumn, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
@@ -18,7 +18,7 @@ use crate::{TypedNestedTuple, ValidateColumn};
 
 #[derive(Debug)]
 /// The build-ready variant of a table builder bundle.
-pub struct CompletedTableBuilderBundle<T: BundlableTableExt + TableExt> {
+pub struct CompletedTableBuilderBundle<T: BundlableTableExt> {
     /// The insertable model for the table.
     insertable_model: T::NewValues,
     /// The mandatory associated builders relative to triangular same-as.
@@ -29,7 +29,7 @@ pub struct CompletedTableBuilderBundle<T: BundlableTableExt + TableExt> {
 
 impl<T> HasTable for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
 {
     type Table = T;
 
@@ -41,7 +41,7 @@ where
 
 impl<T, C> ValidateColumn<C> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: HorizontalSameAsGroupExt,
     T::NewValues: ValidateColumn<C>,
 {
@@ -55,7 +55,7 @@ where
 
 impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt,
+    T: BundlableTableExt,
     C: HorizontalSameAsGroupExt,
     Self: TryMaySetDiscretionarySameAsNestedColumns<
             C::Type,
@@ -80,10 +80,8 @@ where
     }
 }
 
-impl<
-    Key: MandatorySameAsIndex<Table: BundlableTable + TableExt, ReferencedTable: BuildableTable>,
-    C,
-> TrySetMandatorySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
+impl<Key: MandatorySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
+    TrySetMandatorySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table = Key::ReferencedTable>,
     <Key::Table as BundlableTableExt>::MandatoryNestedBuilders:
@@ -104,10 +102,9 @@ where
     }
 }
 
-impl<
-    Key: DiscretionarySameAsIndex<Table: BundlableTable + TableExt, ReferencedTable: BuildableTable>,
-    C,
-> TryMaySetDiscretionarySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
+impl<Key: DiscretionarySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
+    TryMaySetDiscretionarySameAsColumn<Key, C>
+    for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table = Key::ReferencedTable>,
     <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders:
@@ -134,7 +131,7 @@ where
 
 impl<T> TryFrom<TableBuilderBundle<T>> for CompletedTableBuilderBundle<T>
 where
-    T: BundlableTable + TableExt + BundlableTableExt,
+    T: BundlableTableExt,
 {
     type Error = IncompleteBuilderError;
 
@@ -177,7 +174,7 @@ pub trait RecursiveBundleInsert<Error, Conn>: HasTableExt {
 impl<T, Error, Conn> RecursiveBundleInsert<Error, Conn> for CompletedTableBuilderBundle<T>
 where
     Conn: diesel::connection::LoadConnection,
-    T: BundlableTableExt + TableExt,
+    T: BundlableTableExt,
     T::NewValues: TrySetNestedColumns<Error, T::NestedMandatoryTriangularColumns>
         + TryMaySetNestedColumns<Error, T::NestedDiscretionaryTriangularColumns> ,
     T::MandatoryNestedBuilders: InsertTuple<Error, Conn>,

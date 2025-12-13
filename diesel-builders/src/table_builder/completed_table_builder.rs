@@ -139,6 +139,11 @@ where
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
+    Self: TrySetHomogeneousNestedColumns<
+            <C as Typed>::Type,
+            Self::Error,
+            C::VerticalSameAsNestedColumns,
+        >,
 {
     #[inline]
     fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
