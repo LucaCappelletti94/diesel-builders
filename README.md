@@ -5,9 +5,9 @@
 [![Codecov](https://codecov.io/gh/LucaCappelletti94/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/LucaCappelletti94)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A type-safe builder pattern library for [Diesel](https://diesel.rs) that handles complex table relationships including arbitrary inheritance (e.g. chains, DAG dependencies), foreign keys, and both mandatory and discretionary triangular dependencies. Diesel Builders provides compile-time guarantees for proper insertion order and referential integrity in databases with complex schemas.
+A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity.
 
-The `TableModel` derive macro automatically generates the `table!` macro invocation for Diesel, eliminating the need to manually define your table schema. This means you only need to define your struct once with the `#[diesel(table_name = ...)]` attribute, and the macro handles the rest - no duplicate `table!` declarations required.
+The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions. Define your struct once; the macro handles the rest.
 
 It additionally offers fluent APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
 
@@ -41,13 +41,7 @@ pub struct Animal {
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
-diesel::sql_query(
-    "CREATE TABLE animals (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT
-    );",
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT);").execute(&mut conn)?;
 
 let animal = animals::table::builder()
     .name("Buddy")
@@ -59,9 +53,9 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 2. Table Inheritance
 
-[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship.
+[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. The builder automatically creates the parent record. The `ancestors` attribute in `#[table_model]` declares the relationship.
 
-**Vertical Same-As (Column Propagation)**: Child table columns can use the `#[same_as(...)]` attribute to automatically propagate their values to ancestor table columns during insertion. In the example below, setting `doggo_description` on the Dog also sets `description` on the Animal. This enables a child column to populate one or more parent columns with the same (potentially optional) value. Multiple ancestor columns can be specified in a comma-separated list (e.g., `#[same_as(animals::description, animals::notes)]`).
+**Vertical Same-As**: Use `#[same_as(...)]` on child columns to propagate values to ancestor columns. Below, `doggo_description` populates `Animal`'s `description`.
 
 ```mermaid
 erDiagram
@@ -102,21 +96,8 @@ pub struct Dog {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE animals (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE dogs (
-        id INTEGER PRIMARY KEY REFERENCES animals(id),
-        doggo_description TEXT NOT NULL,
-        breed TEXT NOT NULL
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), doggo_description TEXT NOT NULL, breed TEXT NOT NULL);").execute(&mut conn)?;
 
 let dog = dogs::table::builder()
     .name("Max")
@@ -133,9 +114,9 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 3. Inheritance Chain
 
-[A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) where each table extends exactly one parent. Puppies extends Dogs, which extends Animals. The builder automatically determines and enforces the correct insertion order through the dependency graph. Insertion order: Animals → Dogs → Puppies.
+[A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) (Puppies → Dogs → Animals). The builder enforces the correct insertion order: Animals → Dogs → Puppies.
 
-In this example, the `dog_notes` field in Dog uses `#[same_as(animals::description)]` to propagate its value up to the Animal's `description` field, demonstrating how vertical same-as works across inheritance hierarchies.
+Here, `dog_notes` in `Dog` uses `#[same_as(animals::description)]` to propagate its value up to `Animal`.
 
 ```mermaid
 erDiagram
@@ -191,28 +172,9 @@ pub struct Puppy {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE animals (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT DEFAULT 'A really good boy'
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE dogs (
-        id INTEGER PRIMARY KEY REFERENCES animals(id),
-        breed TEXT NOT NULL,
-        dog_notes TEXT
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE puppies (
-        id INTEGER PRIMARY KEY REFERENCES dogs(id),
-        age_months INTEGER NOT NULL DEFAULT 6
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT 'A really good boy');").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), breed TEXT NOT NULL, dog_notes TEXT);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE puppies (id INTEGER PRIMARY KEY REFERENCES dogs(id), age_months INTEGER NOT NULL DEFAULT 6);").execute(&mut conn)?;
 
 let puppy = puppies::table::builder()
     .name("Buddy")
@@ -234,9 +196,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 4. Directed Acyclic Graph (DAG)
 
-[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child table extends multiple parent tables. Pets extends both Dogs and Cats, which both extend Animals. The builder automatically resolves the dependency graph and inserts records in the correct order, ensuring all foreign key constraints are satisfied. Insertion order: Animals → Dogs → Cats → Pets.
-
-Of course, in this scenario, your pet is a dog-cat hybrid! Everything is possible with CRISPR-Cas9 these days.
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child extends multiple parents. Pets extends Dogs and Cats, which both extend Animals. The builder resolves the graph and inserts in order: Animals → Dogs → Cats → Pets.
 
 ```mermaid
 erDiagram
@@ -303,36 +263,10 @@ pub struct Pet {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE animals (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT 'No description'
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE dogs (
-        id INTEGER PRIMARY KEY REFERENCES animals(id),
-        breed TEXT NOT NULL
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE cats (
-        id INTEGER PRIMARY KEY REFERENCES animals(id),
-        color TEXT NOT NULL DEFAULT 'All cats are orange'
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE pets (
-        id INTEGER PRIMARY KEY,
-        owner_name TEXT NOT NULL,
-        FOREIGN KEY (id) REFERENCES dogs(id),
-        FOREIGN KEY (id) REFERENCES cats(id)
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT 'No description');").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), breed TEXT NOT NULL);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE cats (id INTEGER PRIMARY KEY REFERENCES animals(id), color TEXT NOT NULL DEFAULT 'All cats are orange');").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE pets (id INTEGER PRIMARY KEY, owner_name TEXT NOT NULL, FOREIGN KEY (id) REFERENCES dogs(id), FOREIGN KEY (id) REFERENCES cats(id));").execute(&mut conn)?;
 
 let pet = pets::table::builder()
     .name("Bellerophon")
@@ -353,7 +287,9 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 5. Mandatory Triangular Relation
 
-[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Child extends Parent and also references Mandatory, with the constraint that the Mandatory record must also reference the same Parent record (enforcing `Child.mandatory_id == Mandatory.parent_id == Parent.id`). The builder uses the `#[mandatory]` attribute and automatically creates both Child and its related Mandatory record atomically, ensuring referential consistency. Foreign key relationships are declared via `fk!` macro, with composite indices via `index!` macro. Insertion order: Parent → Mandatory → Child.
+[A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Child extends Parent and references Mandatory, and Mandatory also references Parent. The `#[mandatory]` attribute ensures atomic creation. Insertion order: Parent → Mandatory → Child.
+
+**Horizontal Same-As**: Like Vertical Same-As, but propagates values from referenced tables via foreign keys. Here, `remote_mandatory_field` mirrors `mandatory_table::mandatory_field` via `HorizontalKey`.
 
 ```mermaid
 erDiagram
@@ -373,13 +309,12 @@ erDiagram
         int id PK,FK "Inherits from Parent"
         int mandatory_id FK "References Mandatory"
         string child_field
-        string remote_mandatory_field FK
+        string remote_mandatory_field "→ mandatory_table::mandatory_field"
     }
 ```
 
 ```rust
 use diesel_builders::prelude::*;
-use std::convert::Infallible;
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
@@ -419,51 +354,21 @@ fk!((child_table::mandatory_id, child_table::id) -> (mandatory_table::id, mandat
 fk!((child_table::mandatory_id, child_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
 
 impl diesel_builders::HorizontalKey for child_table::mandatory_id {
-    type HostColumns = (
-        child_table::id,
-        child_table::remote_mandatory_field,
-    );
+    type HostColumns = (child_table::id, child_table::remote_mandatory_field);
     type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE parent_table (
-        id INTEGER PRIMARY KEY NOT NULL,
-        parent_field TEXT NOT NULL
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE mandatory_table (
-        id INTEGER PRIMARY KEY NOT NULL,
-        parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-        mandatory_field TEXT NOT NULL DEFAULT 'Default mandatory',
-        UNIQUE(id, mandatory_field),
-        UNIQUE(id, parent_id)
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE child_table (
-        id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
-        mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id),
-        child_field TEXT NOT NULL,
-        remote_mandatory_field TEXT,
-        FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id),
-        FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field)
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE parent_table (id INTEGER PRIMARY KEY NOT NULL, parent_field TEXT NOT NULL);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE mandatory_table (id INTEGER PRIMARY KEY NOT NULL, parent_id INTEGER NOT NULL REFERENCES parent_table(id), mandatory_field TEXT NOT NULL DEFAULT 'Default mandatory', UNIQUE(id, mandatory_field), UNIQUE(id, parent_id));").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE child_table (id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id), mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id), child_field TEXT NOT NULL, remote_mandatory_field TEXT, FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id), FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field));").execute(&mut conn)?;
 
 // Create Child with associated Mandatory (which automatically creates Parent)
 let child = child_table::table::builder()
     .parent_field("Parent value")
     .child_field("Child value")
-    .mandatory(
-        mandatory_table::table::builder()
-            .mandatory_field("Mandatory value")
-    )
+    .mandatory(mandatory_table::table::builder().mandatory_field("Mandatory value"))
     .insert(&mut conn)?;
 
 // Access the associated Mandatory record
@@ -480,7 +385,9 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 6. Discretionary Triangular Relation
 
-[Similar to the mandatory triangular relation](diesel-builders/tests/test_discretionary_triangular_relation.rs), but the constraint is relaxed. Child can reference any Discretionary record, not necessarily one that shares the same Parent. The builder provides `try_discretionary()` for creating new related records or `try_discretionary_model()` for referencing existing ones. Foreign key relationships are declared via `fk!` macro, with composite indices via `index!` macro. Insertion order varies: for builder - Parent → Discretionary → Child; for model - Discretionary exists independently, then Parent → Child references it.
+[Similar to mandatory](diesel-builders/tests/test_discretionary_triangular_relation.rs), but Child can reference *any* Discretionary record. Use `try_discretionary()` (new record) or `try_discretionary_model()` (existing).
+
+**Horizontal Same-As**: `remote_discretionary_field` mirrors `discretionary_table::discretionary_field`.
 
 ```mermaid
 erDiagram
@@ -500,13 +407,12 @@ erDiagram
         int id PK,FK "Inherits from Parent"
         int discretionary_id FK "References any Discretionary"
         string child_field
-        string remote_discretionary_field FK
+        string remote_discretionary_field "→ discretionary_table::discretionary_field"
     }
 ```
 
 ```rust
 use diesel_builders::prelude::*;
-use std::convert::Infallible;
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
@@ -540,57 +446,24 @@ pub struct Child {
     remote_discretionary_field: Option<String>,
 }
 
-fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) 
-    -> (discretionary_table::id, discretionary_table::discretionary_field));
+fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
 
 impl diesel_builders::HorizontalKey for child_with_discretionary_table::discretionary_id {
-    type HostColumns = (
-        child_with_discretionary_table::id,
-        child_with_discretionary_table::remote_discretionary_field,
-    );
-    type ForeignColumns = (
-        discretionary_table::parent_id,
-        discretionary_table::discretionary_field,
-    );
+    type HostColumns = (child_with_discretionary_table::id, child_with_discretionary_table::remote_discretionary_field);
+    type ForeignColumns = (discretionary_table::parent_id, discretionary_table::discretionary_field);
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE parent_table (
-        id INTEGER PRIMARY KEY NOT NULL,
-        parent_field TEXT NOT NULL
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE discretionary_table (
-        id INTEGER PRIMARY KEY NOT NULL,
-        parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-        discretionary_field TEXT,
-        UNIQUE(id, discretionary_field)
-    );"
-).execute(&mut conn)?;
-
-diesel::sql_query(
-    "CREATE TABLE child_with_discretionary_table (
-        id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
-        discretionary_id INTEGER NOT NULL REFERENCES discretionary_table(id),
-        child_field TEXT NOT NULL,
-        remote_discretionary_field TEXT,
-        FOREIGN KEY (discretionary_id, remote_discretionary_field) 
-            REFERENCES discretionary_table(id, discretionary_field)
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE parent_table (id INTEGER PRIMARY KEY NOT NULL, parent_field TEXT NOT NULL);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE discretionary_table (id INTEGER PRIMARY KEY NOT NULL, parent_id INTEGER NOT NULL REFERENCES parent_table(id), discretionary_field TEXT, UNIQUE(id, discretionary_field));").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE child_with_discretionary_table (id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id), discretionary_id INTEGER NOT NULL REFERENCES discretionary_table(id), child_field TEXT NOT NULL, remote_discretionary_field TEXT, FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field));").execute(&mut conn)?;
 
 // Example 1: Using a builder to create a new Discretionary record
 let child = child_with_discretionary_table::table::builder()
     .parent_field("Parent value")
     .child_field("Child value")
-    .discretionary(
-        discretionary_table::table::builder()
-            .discretionary_field("New discretionary")
-    )
+    .discretionary(discretionary_table::table::builder().discretionary_field("New discretionary"))
     .insert(&mut conn)?;
 
 let discretionary = child.discretionary(&mut conn)?;
@@ -613,7 +486,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 7. Validation with Check Constraints
 
-[Custom validation rules](diesel-builders/tests/test_inheritance.rs) can be implemented through the `ValidateColumn` trait to mirror [SQL CHECK CONSTRAINT](https://www.postgresql.org/docs/current/ddl-constraints.html), providing fail-fast validation before database insertion. This example demonstrates runtime validation, compile-time validation of default values using the `const_validator` macro, and proper error handling.
+[Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints. Supports runtime and compile-time (via `const_validator`) checks.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -651,12 +524,8 @@ impl ValidateColumn<users::username> for <users::table as TableExt>::NewValues {
     type Error = UserError;
     
     fn validate_column(value: &String) -> Result<(), Self::Error> {
-        if value.trim().is_empty() {
-            return Err(UserError::UsernameEmpty);
-        }
-        if value.len() > 50 {
-            return Err(UserError::UsernameTooLong);
-        }
+        if value.trim().is_empty() { return Err(UserError::UsernameEmpty); }
+        if value.len() > 50 { return Err(UserError::UsernameTooLong); }
         Ok(())
     }
 }
@@ -666,9 +535,7 @@ impl ValidateColumn<users::email> for <users::table as TableExt>::NewValues {
     type Error = UserError;
     
     fn validate_column(value: &String) -> Result<(), Self::Error> {
-        if !value.contains('@') {
-            return Err(UserError::InvalidEmail);
-        }
+        if !value.contains('@') { return Err(UserError::InvalidEmail); }
         Ok(())
     }
 }
@@ -679,23 +546,14 @@ impl ValidateColumn<users::age> for <users::table as TableExt>::NewValues {
     type Error = UserError;
     
     fn validate_column(value: &i32) -> Result<(), Self::Error> {
-        if *value < 18 {
-            return Err(UserError::AgeTooYoung);
-        }
+        if *value < 18 { return Err(UserError::AgeTooYoung); }
         Ok(())
     }
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE users (
-        id INTEGER PRIMARY KEY,
-        username TEXT NOT NULL CHECK (username <> '' AND length(username) <= 50),
-        email TEXT NOT NULL CHECK (email LIKE '%@%'),
-        age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18)
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL CHECK (username <> '' AND length(username) <= 50), email TEXT NOT NULL CHECK (email LIKE '%@%'), age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18));").execute(&mut conn)?;
 
 // Valid insertion using default age
 let user = users::table::builder()
@@ -716,16 +574,11 @@ let user2 = users::table::builder()
 assert_eq!(*user2.age(), 25);
 
 // Runtime validation errors
-let result = users::table::builder()
-    .try_username("");  // Error: UsernameEmpty
-
+let result = users::table::builder().try_username("");  // Error: UsernameEmpty
 assert!(result.is_err());
 assert_eq!(result.unwrap_err(), UserError::UsernameEmpty);
 
-let result = users::table::builder()
-    .try_username("valid_user")?
-    .try_email("invalid-email");  // Error: InvalidEmail
-
+let result = users::table::builder().try_username("valid_user")?.try_email("invalid-email");  // Error: InvalidEmail
 assert!(result.is_err());
 assert_eq!(result.unwrap_err(), UserError::InvalidEmail);
 
@@ -759,14 +612,7 @@ pub struct UserRole {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query(
-    "CREATE TABLE user_roles (
-        user_id INTEGER NOT NULL,
-        role_id INTEGER NOT NULL,
-        assigned_at TEXT NOT NULL DEFAULT '2025-01-01',
-        PRIMARY KEY (user_id, role_id)
-    );"
-).execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE user_roles (user_id INTEGER NOT NULL, role_id INTEGER NOT NULL, assigned_at TEXT NOT NULL DEFAULT '2025-01-01', PRIMARY KEY (user_id, role_id));").execute(&mut conn)?;
 
 let user_role = user_roles::table::builder()
     .user_id(1)
