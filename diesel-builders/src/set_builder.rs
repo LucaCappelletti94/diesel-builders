@@ -389,7 +389,7 @@ pub trait TrySetMandatorySameAsColumn<
 }
 
 /// Trait to try set a column in a discretionary same-as relationship.
-pub trait TryMaySetDiscretionarySameAsColumn<
+pub trait TrySetDiscretionarySameAsColumn<
     Key: DiscretionarySameAsIndex,
     C: TypedColumn<Table = Key::ReferencedTable>,
 >
@@ -404,7 +404,7 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     ///
     /// Returns an error if the column value cannot be set in the discretionary
     /// same-as relationship.
-    fn try_may_set_discretionary_same_as_column(
+    fn try_set_discretionary_same_as_column(
         &mut self,
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error>;

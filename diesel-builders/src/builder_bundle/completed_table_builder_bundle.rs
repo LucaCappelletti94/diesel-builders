@@ -8,8 +8,8 @@ use crate::{
     BuildableTable, BuilderError, BuilderResult, DiscretionarySameAsIndex, HasNestedTables,
     HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns, NestedTables,
     RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
-    TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsNestedColumns,
-    TryMaySetNestedColumns, TrySetColumn, TrySetMandatorySameAsColumn,
+    TryMaySetDiscretionarySameAsNestedColumns, TryMaySetNestedColumns, TrySetColumn,
+    TrySetDiscretionarySameAsColumn, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
     TupleMayGetNestedColumns, TypedColumn, builder_bundle::BundlableTableExt,
     horizontal_same_as_group::HorizontalSameAsGroupExt,
@@ -107,8 +107,7 @@ where
 }
 
 impl<Key: DiscretionarySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
-    TryMaySetDiscretionarySameAsColumn<Key, C>
-    for CompletedTableBuilderBundle<<Key as Column>::Table>
+    TrySetDiscretionarySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
 where
     C: TypedColumn<Table = Key::ReferencedTable>,
     <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders:
@@ -118,7 +117,7 @@ where
     type Error = <TableBuilder<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn try_may_set_discretionary_same_as_column(
+    fn try_set_discretionary_same_as_column(
         &mut self,
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {

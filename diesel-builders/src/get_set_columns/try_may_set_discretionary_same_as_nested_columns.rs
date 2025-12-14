@@ -1,8 +1,7 @@
 //! Trait for attempting to set columns in a discretionary same-as relationship.
 
 use crate::{
-    DiscretionarySameAsIndex, TryMaySetDiscretionarySameAsColumn, TypedColumn,
-    columns::NestedColumns,
+    DiscretionarySameAsIndex, TrySetDiscretionarySameAsColumn, TypedColumn, columns::NestedColumns,
 };
 
 /// Trait for attempting to set columns in a discretionary same-as relationship.
@@ -39,15 +38,15 @@ impl<T, Type, Error> TryMaySetDiscretionarySameAsNestedColumns<Type, Error, (), 
 impl<T, Error, Key: DiscretionarySameAsIndex, Column: TypedColumn<Table = Key::ReferencedTable>>
     TryMaySetDiscretionarySameAsNestedColumns<Column::ColumnType, Error, (Key,), (Column,)> for T
 where
-    T: TryMaySetDiscretionarySameAsColumn<Key, Column>,
-    Error: From<<T as TryMaySetDiscretionarySameAsColumn<Key, Column>>::Error>,
+    T: TrySetDiscretionarySameAsColumn<Key, Column>,
+    Error: From<<T as TrySetDiscretionarySameAsColumn<Key, Column>>::Error>,
 {
     #[inline]
     fn try_may_set_discretionary_same_as_nested_columns(
         &mut self,
         nested_value: &Column::ColumnType,
     ) -> Result<&mut Self, Error> {
-        self.try_may_set_discretionary_same_as_column(nested_value.clone())?;
+        self.try_set_discretionary_same_as_column(nested_value.clone())?;
         Ok(self)
     }
 }
@@ -69,21 +68,21 @@ impl<
 where
     (KeysHead, KeysTail): NestedColumns,
     (ColumnsHead, ColumnsTail): NestedColumns,
-    T: TryMaySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>
+    T: TrySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>
         + TryMaySetDiscretionarySameAsNestedColumns<
             ColumnsHead::ColumnType,
             Error,
             KeysTail,
             ColumnsTail,
         >,
-    Error: From<<T as TryMaySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>>::Error>,
+    Error: From<<T as TrySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>>::Error>,
 {
     #[inline]
     fn try_may_set_discretionary_same_as_nested_columns(
         &mut self,
         nested_value: &ColumnsHead::ColumnType,
     ) -> Result<&mut Self, Error> {
-        self.try_may_set_discretionary_same_as_column(nested_value.clone())?;
+        self.try_set_discretionary_same_as_column(nested_value.clone())?;
         <T as TryMaySetDiscretionarySameAsNestedColumns<
             ColumnsHead::ColumnType,
             Error,
