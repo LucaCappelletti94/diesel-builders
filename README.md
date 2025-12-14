@@ -570,11 +570,9 @@ assert_eq!(*user2.age(), 25);
 
 // Runtime validation errors
 let result = users::table::builder().try_username("");  // Error: UsernameEmpty
-assert!(result.is_err());
 assert_eq!(result.unwrap_err(), UserError::UsernameEmpty);
 
 let result = users::table::builder().try_username("valid_user")?.try_email("invalid-email");  // Error: InvalidEmail
-assert!(result.is_err());
 assert_eq!(result.unwrap_err(), UserError::InvalidEmail);
 
 // Compile-time validated default prevents this at compile time:

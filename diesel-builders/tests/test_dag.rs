@@ -103,13 +103,11 @@ fn test_cat_color_empty_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Attempting to create a cat with an empty color should fail validation
     let result = cats::table::builder().try_name("Whiskers")?.try_color("");
 
-    assert!(result.is_err());
     assert_eq!(result.unwrap_err(), NewCatError::ColorEmpty);
 
     // Also test with whitespace-only color (should also fail)
     let result = cats::table::builder().try_name("Mittens")?.try_color("   ");
 
-    assert!(result.is_err());
     assert_eq!(result.unwrap_err(), NewCatError::ColorEmpty);
 
     Ok(())
