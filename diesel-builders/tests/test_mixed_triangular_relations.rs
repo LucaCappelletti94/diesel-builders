@@ -90,10 +90,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     let b = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
-        .mandatory(mandatory_table::table::builder().mandatory_field(Some("Value C".to_owned())))
-        .discretionary(
-            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
-        )
+        .mandatory(mandatory_table::table::builder().mandatory_field("Value C"))
+        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
         .insert(&mut conn)?;
 
     assert_eq!(
@@ -118,9 +116,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
         b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        c.get_column::<mandatory_table::mandatory_field>()
-            .as_deref(),
-        Some("Value C")
+        c.get_column::<mandatory_table::mandatory_field>(),
+        "Value C"
     );
 
     // Verify associated D
@@ -130,9 +127,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
         b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        d.get_column::<discretionary_table::discretionary_field>()
-            .as_deref(),
-        Some("Value D")
+        d.get_column::<discretionary_table::discretionary_field>(),
+        "Value D"
     );
 
     Ok(())
@@ -146,10 +142,8 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     let b = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
-        .mandatory(mandatory_table::table::builder().mandatory_field(Some("Value C".to_owned())))
-        .discretionary(
-            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
-        )
+        .mandatory(mandatory_table::table::builder().mandatory_field("Value C"))
+        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
         .insert(&mut conn)?;
 
     // Use GetForeignExt directly for primary-key based foreign key
@@ -162,9 +156,8 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
         b.get_column::<child_with_mixed_table::mandatory_id>()
     );
     assert_eq!(
-        c_pk.get_column::<mandatory_table::mandatory_field>()
-            .as_deref(),
-        Some("Value C")
+        c_pk.get_column::<mandatory_table::mandatory_field>(),
+        "Value C"
     );
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
@@ -182,10 +175,8 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
         b.get_column::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        c_horizontal
-            .get_column::<mandatory_table::mandatory_field>()
-            .as_deref(),
-        Some("Value C")
+        c_horizontal.get_column::<mandatory_table::mandatory_field>(),
+        "Value C"
     );
 
     Ok(())
@@ -202,7 +193,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
 
     let discretionary_table = discretionary_table::table::builder()
         .parent_id(parent_table.get_column::<parent_table::id>())
-        .discretionary_field(Some("Value D".to_owned()))
+        .discretionary_field("Value D")
         .insert(&mut conn)?;
 
     // Try to create without mandatory C builder
@@ -210,9 +201,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let result = child_with_mixed_table::table::builder()
         .parent_field("Value A")
         .child_field("Value B")
-        .discretionary(
-            discretionary_table::table::builder().discretionary_field(Some("Value D".to_owned())),
-        )
+        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
         .discretionary_model(&discretionary_table)
         .insert(&mut conn);
 

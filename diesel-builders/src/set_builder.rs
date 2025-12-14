@@ -1,13 +1,12 @@
 //! Submodule providing the `SetBuilder` trait.
 
-use diesel::Table;
-
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
     HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
-    TrySetColumn, TrySetNestedColumns, TypedColumn, TypedNestedTuple, ValidateColumn,
-    columns::NonEmptyNestedProjection,
+    TrySetColumn, TrySetNestedColumns, TypedColumn, ValidateColumn,
 };
+use diesel::Table;
+use tuplities::prelude::NestedTupleInto;
 
 /// Trait attempting to set a specific Diesel column, which may fail.
 pub trait SetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>> {
@@ -38,9 +37,6 @@ pub trait SetDiscretionaryModel<Key: DiscretionarySameAsIndex> {
 impl<C, T> SetDiscretionaryModel<C> for T
 where
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: NonEmptyNestedProjection<
-        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     Self: SetNestedColumns<C::NestedHostColumns> + SetColumn<C>,
     <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,
@@ -53,7 +49,8 @@ where
         let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         <Self as SetColumn<C>>::set_column(self, primary_key);
         let columns = model.get_nested_columns();
-        self.set_nested_columns(columns)
+        let converted_columns = columns.nested_tuple_into();
+        self.set_nested_columns(converted_columns)
     }
 }
 
@@ -105,9 +102,6 @@ impl<C, T> TrySetDiscretionaryModel<C> for T
 where
     T: HasTableExt,
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: NonEmptyNestedProjection<
-        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     Self: TrySetNestedColumns<<Self::Table as TableExt>::Error, C::NestedHostColumns>
         + TrySetColumn<C>,
     <Self::Table as TableExt>::Error: From<<Self as ValidateColumn<C>>::Error>,
@@ -122,9 +116,10 @@ where
         let primary_key: C::ColumnType =
             model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         let columns = model.get_nested_columns();
-        self.validate_nested_columns(&columns)?;
+        let converted_columns = columns.nested_tuple_into();
+        self.validate_nested_columns(&converted_columns)?;
         <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
-        self.try_set_nested_columns(columns)
+        self.try_set_nested_columns(converted_columns)
     }
 }
 

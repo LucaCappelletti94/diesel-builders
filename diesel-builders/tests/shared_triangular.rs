@@ -24,7 +24,7 @@ pub struct Mandatory {
     /// Foreign key to parent table.
     parent_id: i32,
     /// A column in the mandatory table.
-    mandatory_field: Option<String>,
+    mandatory_field: String,
 }
 
 #[allow(clippy::struct_field_names)]
@@ -38,7 +38,7 @@ pub struct Discretionary {
     /// Foreign key to parent table.
     parent_id: i32,
     /// A column in the discretionary table.
-    discretionary_field: Option<String>,
+    discretionary_field: String,
 }
 
 // Define table index that can be referenced by foreign keys

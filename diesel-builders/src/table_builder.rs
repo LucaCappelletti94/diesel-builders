@@ -14,9 +14,8 @@ use crate::{
     MayValidateNestedColumns, NestedColumns, SetColumn, SetDiscretionaryBuilder,
     SetHomogeneousNestedColumns, SetMandatoryBuilder, TableBuilderBundle, TableExt,
     TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
-    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, Typed, TypedColumn, TypedNestedTuple,
-    ValidateColumn, buildable_table::BuildableTable, columns::NonEmptyNestedProjection,
-    vertical_same_as_group::VerticalSameAsGroup,
+    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, Typed, TypedColumn, ValidateColumn,
+    buildable_table::BuildableTable, vertical_same_as_group::VerticalSameAsGroup,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -141,9 +140,6 @@ where
             >,
         >,
     Key: MandatorySameAsIndex,
-    Key::NestedForeignColumns: TypedNestedTuple<
-        NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>,
@@ -161,13 +157,15 @@ where
         builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
+        let converted_columns = columns.nested_tuple_option_into();
         MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
-            self, &columns,
+            self,
+            &converted_columns,
         )?;
         self.bundles
             .nested_index_mut()
             .try_set_mandatory_builder(builder)?;
-        self.try_may_set_nested_columns(columns)?;
+        self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
 }
@@ -176,9 +174,6 @@ impl<C, T> SetMandatoryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: MandatorySameAsIndex,
-    C::NestedForeignColumns: TypedNestedTuple<
-        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<C::NestedHostColumns>,
@@ -196,7 +191,8 @@ where
         builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
     ) -> &mut Self {
         let columns = builder.may_get_nested_columns();
-        self.may_set_nested_columns(columns);
+        let converted_columns = columns.nested_tuple_option_into();
+        self.may_set_nested_columns(converted_columns);
         self.bundles
             .nested_index_mut()
             .set_mandatory_builder(builder);
@@ -208,9 +204,6 @@ impl<Key, T> TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<Key::Table>,
     Key: DiscretionarySameAsIndex,
-    Key::NestedForeignColumns: NonEmptyNestedProjection<
-        NestedTupleType = <Key::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>,
@@ -228,13 +221,15 @@ where
         builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
+        let converted_columns = columns.nested_tuple_option_into();
         MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
-            self, &columns,
+            self,
+            &converted_columns,
         )?;
         self.bundles
             .nested_index_mut()
             .try_set_discretionary_builder(builder)?;
-        self.try_may_set_nested_columns(columns)?;
+        self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
 }
@@ -243,9 +238,6 @@ impl<C, T> SetDiscretionaryBuilder<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: DiscretionarySameAsIndex,
-    C::NestedForeignColumns: NonEmptyNestedProjection<
-        NestedTupleType = <C::NestedHostColumns as TypedNestedTuple>::NestedTupleType,
-    >,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
     Self: MaySetColumns<C::NestedHostColumns>,
@@ -262,7 +254,8 @@ where
         builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
     ) -> &mut Self {
         let columns = builder.may_get_nested_columns();
-        self.may_set_nested_columns(columns);
+        let converted_columns = columns.nested_tuple_option_into();
+        self.may_set_nested_columns(converted_columns);
         self.bundles
             .nested_index_mut()
             .set_discretionary_builder(builder);

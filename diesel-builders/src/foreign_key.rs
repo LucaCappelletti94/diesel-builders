@@ -3,7 +3,7 @@
 use tuplities::prelude::*;
 
 use crate::{
-    GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple, TypedTuple,
+    GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple,
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
@@ -78,14 +78,17 @@ impl<T> HasPrimaryKeyColumn for T where
 pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
 impl<ReferencedColumns, HostColumns> ForeignKey<ReferencedColumns> for HostColumns
 where
-    ReferencedColumns: TableIndex<TupleType = <HostColumns as TypedTuple>::TupleType>,
-    <ReferencedColumns as NestTuple>::Nested: NestedTableIndexTail<
-        typenum::U0,
-        ReferencedColumns,
-        NestedTupleType = <<HostColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType,
-    >,
+    ReferencedColumns: TableIndex,
+    ReferencedColumns::Nested: NestedTableIndexTail<typenum::U0, ReferencedColumns>,
     HostColumns: NonEmptyProjection<
-        Nested: NestedForeignKeyTail<typenum::U0, ReferencedColumns::Nested, ReferencedColumns>,
+        Nested: NestedForeignKeyTail<
+            typenum::U0,
+            ReferencedColumns::Nested,
+            ReferencedColumns,
+            NestedTupleType: NestedTupleFrom<
+                <ReferencedColumns::Nested as TypedNestedTuple>::NestedTupleType,
+            >,
+        >,
     >,
 {
 }
@@ -96,13 +99,12 @@ where
 /// except the first one, and so on.
 pub trait NestedForeignKeyTail<
     Idx,
-    ReferencedColumns: NestedTableIndexTail<
-            Idx,
-            FullReferencedIndex,
-            NestedTupleType = <Self as TypedNestedTuple>::NestedTupleType,
-        >,
+    ReferencedColumns: NestedTableIndexTail<Idx, FullReferencedIndex>,
     FullReferencedIndex,
->: NonEmptyNestedProjection
+>:
+    NonEmptyNestedProjection<
+    NestedTupleType: NestedTupleFrom<<ReferencedColumns as TypedNestedTuple>::NestedTupleType>,
+>
 {
 }
 
@@ -118,19 +120,14 @@ impl<Idx, Fhead, Ftail, Hhead, Htail, FullReferencedIndex>
 where
     Htail: NonEmptyNestedProjection,
     Idx: core::ops::Add<typenum::B1>,
-    Ftail: NestedTableIndexTail<
-            typenum::Add1<Idx>,
-            FullReferencedIndex,
-            NestedTupleType = <Htail as TypedNestedTuple>::NestedTupleType,
-        >,
+    Ftail: NestedTableIndexTail<typenum::Add1<Idx>, FullReferencedIndex>,
     (Hhead, Htail): NonEmptyNestedProjection<Table = Hhead::Table>,
-    (Fhead, Ftail): NestedTableIndexTail<
-            Idx,
-            FullReferencedIndex,
-            NestedTupleType = <(Hhead, Htail) as TypedNestedTuple>::NestedTupleType,
-        >,
+    (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
     Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
+    Htail::NestedTupleType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleType>,
+    <(Hhead, Htail) as TypedNestedTuple>::NestedTupleType:
+        NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleType>,
 {
 }
 

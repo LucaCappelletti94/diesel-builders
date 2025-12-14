@@ -396,7 +396,7 @@ pub struct Mandatory {
     id: i32,
     parent_id: i32,
     #[table_model(default = "Default mandatory")]
-    mandatory_field: Option<String>,
+    mandatory_field: String,
 }
 
 diesel::allow_tables_to_appear_in_same_query!(parent_table, mandatory_table);
@@ -439,7 +439,7 @@ diesel::sql_query(
     "CREATE TABLE mandatory_table (
         id INTEGER PRIMARY KEY NOT NULL,
         parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-        mandatory_field TEXT DEFAULT 'Default mandatory',
+        mandatory_field TEXT NOT NULL DEFAULT 'Default mandatory',
         UNIQUE(id, mandatory_field),
         UNIQUE(id, parent_id)
     );"
@@ -462,13 +462,13 @@ let child = child_table::table::builder()
     .child_field("Child value")
     .mandatory(
         mandatory_table::table::builder()
-            .mandatory_field(Some("Mandatory value".to_owned()))
+            .mandatory_field("Mandatory value")
     )
     .insert(&mut conn)?;
 
 // Access the associated Mandatory record
 let mandatory: Mandatory = child.mandatory(&mut conn)?;
-assert_eq!(mandatory.mandatory_field.as_deref(), Some("Mandatory value"));
+assert_eq!(mandatory.mandatory_field, "Mandatory value");
 let mandatory_parent: Parent = mandatory.parent(&mut conn)?;
 // Access the associated Parent record
 let parent: Parent = child.ancestor(&mut conn)?;
@@ -522,7 +522,7 @@ pub struct Parent {
 pub struct Discretionary {
     id: i32,
     parent_id: i32,
-    discretionary_field: Option<String>,
+    discretionary_field: String,
 }
 
 diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table);
@@ -589,7 +589,7 @@ let child = child_with_discretionary_table::table::builder()
     .child_field("Child value")
     .discretionary(
         discretionary_table::table::builder()
-            .discretionary_field(Some("New discretionary".to_owned()))
+            .discretionary_field("New discretionary")
     )
     .insert(&mut conn)?;
 

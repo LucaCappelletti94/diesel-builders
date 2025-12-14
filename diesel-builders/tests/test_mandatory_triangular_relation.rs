@@ -129,14 +129,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Insert into table C (references A)
     let mandatory = mandatory_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .mandatory_field(Some("Value C".to_owned()))
+        .mandatory_field("Value C")
         .insert(&mut conn)?;
 
     assert_eq!(
-        mandatory
-            .get_column::<mandatory_table::mandatory_field>()
-            .as_deref(),
-        Some("Value C")
+        mandatory.get_column::<mandatory_table::mandatory_field>(),
+        "Value C"
     );
     assert_eq!(
         mandatory.get_column::<mandatory_table::parent_id>(),
@@ -144,7 +142,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     );
 
     let mut mandatory_builder = mandatory_table::table::builder();
-    mandatory_builder.mandatory_field_ref(Some("Value C".to_owned()));
+    mandatory_builder.mandatory_field_ref("Value C");
 
     // Insert into table B (extends C and references A)
     // The mandatory triangular relation means B's parent_id should automatically
@@ -183,10 +181,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     let associated_mandatory: Mandatory = child.mandatory(&mut conn)?;
     assert_eq!(
-        associated_mandatory
-            .get_column::<mandatory_table::mandatory_field>()
-            .as_deref(),
-        Some("Value C")
+        associated_mandatory.get_column::<mandatory_table::mandatory_field>(),
+        "Value C"
     );
     assert_eq!(
         associated_mandatory.get_column::<mandatory_table::parent_id>(),

@@ -128,14 +128,12 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Insert into table C (references A)
     let discretionary = discretionary_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .discretionary_field(Some("Value C".to_owned()))
+        .discretionary_field("Value C")
         .insert(&mut conn)?;
 
     assert_eq!(
-        discretionary
-            .get_column::<discretionary_table::discretionary_field>()
-            .as_deref(),
-        Some("Value C")
+        discretionary.get_column::<discretionary_table::discretionary_field>(),
+        "Value C"
     );
     assert_eq!(
         discretionary.get_column::<discretionary_table::parent_id>(),
@@ -143,7 +141,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     );
 
     let mut discretionary_builder = discretionary_table::table::builder();
-    discretionary_builder.discretionary_field_ref(Some("Value C for B".to_owned()));
+    discretionary_builder.discretionary_field_ref("Value C for B");
 
     // Insert into table B (extends C and references A)
     // The discretionary triangular relation means we can set the C builder or reference an existing C model
@@ -186,10 +184,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     let associated_discretionary: Discretionary = child.discretionary(&mut conn)?;
     assert_eq!(
-        associated_discretionary
-            .get_column::<discretionary_table::discretionary_field>()
-            .as_deref(),
-        Some("Value C for B")
+        associated_discretionary.get_column::<discretionary_table::discretionary_field>(),
+        "Value C for B"
     );
     assert_eq!(
         associated_discretionary.get_column::<discretionary_table::parent_id>(),

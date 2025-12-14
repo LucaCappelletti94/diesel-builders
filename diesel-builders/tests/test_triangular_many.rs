@@ -161,17 +161,17 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
 
     let discretionary = discretionary_table::table::builder()
         .parent_id(other_parent.get_column::<parent_table::id>())
+        .discretionary_field("Discretionary for Child")
         .insert(&mut conn)
         .unwrap();
 
     // Now single fluent insert for the child
     let child = child_table::table::builder()
-        .m1(mandatory_table::table::builder().mandatory_field(Some("M1 for Child".to_owned())))
-        .m2(mandatory_table::table::builder().mandatory_field(Some("M2 for Child".to_owned())))
-        .m3(mandatory_table::table::builder().mandatory_field(Some("M3 for Child".to_owned())))
+        .m1(mandatory_table::table::builder().mandatory_field("M1 for Child"))
+        .m2(mandatory_table::table::builder().mandatory_field("M2 for Child"))
+        .m3(mandatory_table::table::builder().mandatory_field("M3 for Child"))
         .d1_model(&discretionary)
-        .d2(discretionary_table::table::builder()
-            .discretionary_field(Some("D2 for Child".to_owned())))
+        .d2(discretionary_table::table::builder().discretionary_field("D2 for Child"))
         .d3_model(&discretionary)
         .payload("payload")
         .parent_field("Parent of Child")
@@ -180,5 +180,14 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
 
     // Validate insertion
     assert_eq!(child.get_column::<child_table::payload>(), "payload");
+    let d1 = child.d1(&mut conn)?;
+    assert_eq!(d1, discretionary);
+    let d2 = child.d2(&mut conn)?;
+    assert_eq!(
+        d2.get_column::<discretionary_table::discretionary_field>(),
+        "D2 for Child"
+    );
+    let d3 = child.d3(&mut conn)?;
+    assert_eq!(d3, discretionary);
     Ok(())
 }

@@ -5,8 +5,7 @@ use typenum::Unsigned;
 use tuplities::prelude::*;
 
 use crate::{
-    Columns, ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TypedNestedTuple,
-    TypedTuple,
+    ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TypedNestedTuple,
     ancestors::DescendantWithSelf,
     columns::{
         ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyNestedProjection,
@@ -19,20 +18,16 @@ use crate::{
 /// relationships.
 pub trait HorizontalSameAsColumns<
     Key: HorizontalKey<HostColumns = HostColumns, ForeignColumns = Self>,
-    HostColumns: Columns,
->:
-    NonEmptyProjection<Table = Key::ReferencedTable, TupleType = <HostColumns as TypedTuple>::TupleType>
+    HostColumns: NonEmptyProjection,
+>: NonEmptyProjection<Table = Key::ReferencedTable>
 {
 }
 
 impl<Key, HostColumns, ForeignColumns> HorizontalSameAsColumns<Key, HostColumns> for ForeignColumns
 where
     Key: HorizontalKey<HostColumns = HostColumns, ForeignColumns = ForeignColumns>,
-    HostColumns: Columns,
-    ForeignColumns: NonEmptyProjection<
-            Table = Key::ReferencedTable,
-            TupleType = <HostColumns as TypedTuple>::TupleType,
-        >,
+    HostColumns: NonEmptyProjection,
+    ForeignColumns: NonEmptyProjection<Table = Key::ReferencedTable>,
 {
 }
 
@@ -42,7 +37,13 @@ pub trait HorizontalKey:
 {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: NonEmptyProjection<Table = Self::Table, Nested: NonEmptyNestedProjection>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table, Nested: NonEmptyNestedProjection<
+        NestedTupleType: NestedTupleFrom<<<Self::ForeignColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType> + IntoNestedTupleOption<
+            IntoOptions: NestedTupleOptionFrom<
+                <<<Self::ForeignColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+            >
+        >,
+    >>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
     type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns, Nested: NonEmptyNestedProjection>;
@@ -52,7 +53,15 @@ pub trait HorizontalKey:
 /// columns.
 pub trait HorizontalKeyExt: HorizontalKey {
     /// The nested host columns.
-    type NestedHostColumns: NonEmptyNestedProjection;
+    type NestedHostColumns: NonEmptyNestedProjection<
+        NestedTupleType: NestedTupleFrom<
+            <Self::NestedForeignColumns as TypedNestedTuple>::NestedTupleType,
+        > + IntoNestedTupleOption<
+            IntoOptions: NestedTupleOptionFrom<
+                <<Self::NestedForeignColumns as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+            >,
+        >,
+    >;
     /// The nested foreign columns.
     type NestedForeignColumns: NonEmptyNestedProjection;
 }
