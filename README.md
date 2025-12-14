@@ -490,7 +490,6 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ```rust
 use diesel_builders::prelude::*;
-use std::convert::Infallible;
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = users)]
@@ -513,10 +512,6 @@ pub enum UserError {
     InvalidEmail,
     #[error("Age must be at least 18")]
     AgeTooYoung,
-}
-
-impl From<Infallible> for UserError {
-    fn from(inf: Infallible) -> Self { match inf {} }
 }
 
 // Runtime validation for username

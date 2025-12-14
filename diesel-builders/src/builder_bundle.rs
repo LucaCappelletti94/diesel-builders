@@ -2,8 +2,6 @@
 //! a table record new values and its mandatory and discretionary associated
 //! builders.
 
-use std::convert::Infallible;
-
 use diesel::associations::HasTable;
 
 mod completed_table_builder_bundle;
@@ -215,7 +213,7 @@ impl<T, C> SetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTableExt,
     C: TypedColumn<Table = T>,
-    T::NewValues: SetColumn<C> + ValidateColumn<C, Error = Infallible>,
+    T::NewValues: SetColumn<C> + ValidateColumn<C, Error = std::convert::Infallible>,
 {
     #[inline]
     fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {

@@ -1,7 +1,5 @@
 //! Submodule providing the `SetColumn` trait.
 
-use core::convert::Infallible;
-
 use crate::{Typed, TypedColumn};
 
 /// Trait providing a setter for a specific Diesel column.
@@ -32,7 +30,7 @@ where
 /// Trait validating a specific Diesel column.
 pub trait ValidateColumn<C: Typed> {
     /// The associated error type for the operation.
-    type Error: From<Infallible>;
+    type Error;
 
     #[inline]
     /// Validate the value of the specified column.
@@ -148,13 +146,13 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column_ref<Column>(
         &mut self,
-        value: impl TryInto<Column::ColumnType, Error: Into<<Self as ValidateColumn<Column>>::Error>>,
+        value: impl Into<Column::ColumnType> + Clone,
     ) -> Result<&mut Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,
     {
-        <Self as TrySetColumn<Column>>::try_set_column(self, value.try_into().map_err(Into::into)?)
+        <Self as TrySetColumn<Column>>::try_set_column(self, value)
     }
 
     #[inline]
@@ -165,16 +163,13 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         mut self,
-        value: impl TryInto<Column::ColumnType, Error: Into<<Self as ValidateColumn<Column>>::Error>>,
+        value: impl Into<Column::ColumnType> + Clone,
     ) -> Result<Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
         Self: TrySetColumn<Column>,
     {
-        <Self as TrySetColumn<Column>>::try_set_column(
-            &mut self,
-            value.try_into().map_err(Into::into)?,
-        )?;
+        <Self as TrySetColumn<Column>>::try_set_column(&mut self, value)?;
         Ok(self)
     }
 }

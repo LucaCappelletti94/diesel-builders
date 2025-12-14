@@ -6,12 +6,6 @@ pub enum ProductError {
     NegativeStock,
 }
 
-impl From<std::convert::Infallible> for ProductError {
-    fn from(inf: std::convert::Infallible) -> Self {
-        match inf {}
-    }
-}
-
 // ValidateColumn implementation WITHOUT #[const_validator]
 // This means validate_stock() function won't be generated
 impl diesel_builders::ValidateColumn<products::stock>

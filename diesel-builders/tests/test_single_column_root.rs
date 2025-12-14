@@ -24,12 +24,6 @@ pub enum SingleColumnRootError {
     EmptyName,
 }
 
-impl From<std::convert::Infallible> for SingleColumnRootError {
-    fn from(inf: std::convert::Infallible) -> Self {
-        match inf {}
-    }
-}
-
 impl ValidateColumn<single_column_root_table::name>
     for <single_column_root_table::table as TableExt>::NewValues
 {

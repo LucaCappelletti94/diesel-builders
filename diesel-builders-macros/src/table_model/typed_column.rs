@@ -211,7 +211,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the column check constraints are not respected."]
             fn #try_field_name_ref(
                 &mut self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType> + Clone
             ) -> Result<&mut Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column_ref::<#table_module::#field_name>(value)
@@ -224,7 +224,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the value cannot be converted to the column type."]
             fn #try_field_name(
                 self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType> + Clone
             ) -> Result<Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column::<#table_module::#field_name>(value)
