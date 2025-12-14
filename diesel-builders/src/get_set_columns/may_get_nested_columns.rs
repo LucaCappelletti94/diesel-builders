@@ -16,24 +16,24 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn may_get_nested_columns(&self) -> (Option<C1::Type>,) {
+    fn may_get_nested_columns(&self) -> (Option<C1::ColumnType>,) {
         (self.may_get_column(),)
     }
 }
 
-impl<Chead, CTail, T> MayGetNestedColumns<(Chead, CTail)> for T
+impl<CHead, CTail, T> MayGetNestedColumns<(CHead, CTail)> for T
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: MayGetColumn<Chead> + MayGetNestedColumns<CTail>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: MayGetColumn<CHead> + MayGetNestedColumns<CTail>,
 {
     #[inline]
     fn may_get_nested_columns(
         &self,
     ) -> (
-        Option<Chead::Type>,
+        Option<CHead::ColumnType>,
         <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
     ) {
         (self.may_get_column(), self.may_get_nested_columns())

@@ -5,8 +5,8 @@ use std::ops::Sub;
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::{
     BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
-    TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection, Typed,
-    TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
+    TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection, TypedNestedTuple,
+    ValidateColumn, VerticalSameAsGroup,
 };
 use diesel::Table;
 use diesel::associations::HasTable;
@@ -121,7 +121,7 @@ where
     type Error = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
         self.nested_bundles
             .nested_index()
             .validate_column_in_context(value)
@@ -139,15 +139,15 @@ where
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
-    Self: TrySetHomogeneousNestedColumns<
-            <C as Typed>::Type,
-            Self::Error,
-            C::VerticalSameAsNestedColumns,
-        >,
+    Self:
+        TrySetHomogeneousNestedColumns<C::ColumnType, Self::Error, C::VerticalSameAsNestedColumns>,
 {
     #[inline]
-    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        self.try_set_homogeneous_nested_columns(value.clone())?;
+    fn try_set_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
+        self.try_set_homogeneous_nested_columns(&value)?;
         self.nested_bundles
             .nested_index_mut()
             .try_set_column(value)?;

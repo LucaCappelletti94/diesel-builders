@@ -14,21 +14,21 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn get_nested_columns(&self) -> (C1::Type,) {
+    fn get_nested_columns(&self) -> (C1::ColumnType,) {
         (self.get_column(),)
     }
 }
 
-impl<Chead, CTail, T> GetNestedColumns<(Chead, CTail)> for T
+impl<CHead, CTail, T> GetNestedColumns<(CHead, CTail)> for T
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: GetColumn<Chead> + GetNestedColumns<CTail>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: GetColumn<CHead> + GetNestedColumns<CTail>,
 {
     #[inline]
-    fn get_nested_columns(&self) -> (Chead::Type, CTail::NestedTupleType) {
+    fn get_nested_columns(&self) -> (CHead::ColumnType, CTail::NestedTupleType) {
         (self.get_column(), self.get_nested_columns())
     }
 }

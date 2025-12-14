@@ -37,7 +37,7 @@ impl<T, Type, Error> TryMaySetDiscretionarySameAsNestedColumns<Type, Error, (), 
 }
 
 impl<T, Error, Key: DiscretionarySameAsIndex, Column: TypedColumn<Table = Key::ReferencedTable>>
-    TryMaySetDiscretionarySameAsNestedColumns<Column::Type, Error, (Key,), (Column,)> for T
+    TryMaySetDiscretionarySameAsNestedColumns<Column::ColumnType, Error, (Key,), (Column,)> for T
 where
     T: TryMaySetDiscretionarySameAsColumn<Key, Column>,
     Error: From<<T as TryMaySetDiscretionarySameAsColumn<Key, Column>>::Error>,
@@ -45,7 +45,7 @@ where
     #[inline]
     fn try_may_set_discretionary_same_as_nested_columns(
         &mut self,
-        nested_value: &Column::Type,
+        nested_value: &Column::ColumnType,
     ) -> Result<&mut Self, Error> {
         self.try_may_set_discretionary_same_as_column(nested_value.clone())?;
         Ok(self)
@@ -61,7 +61,7 @@ impl<
     ColumnsTail: NestedColumns,
 >
     TryMaySetDiscretionarySameAsNestedColumns<
-        ColumnsHead::Type,
+        ColumnsHead::ColumnType,
         Error,
         (KeysHead, KeysTail),
         (ColumnsHead, ColumnsTail),
@@ -70,17 +70,22 @@ where
     (KeysHead, KeysTail): NestedColumns,
     (ColumnsHead, ColumnsTail): NestedColumns,
     T: TryMaySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>
-        + TryMaySetDiscretionarySameAsNestedColumns<ColumnsHead::Type, Error, KeysTail, ColumnsTail>,
+        + TryMaySetDiscretionarySameAsNestedColumns<
+            ColumnsHead::ColumnType,
+            Error,
+            KeysTail,
+            ColumnsTail,
+        >,
     Error: From<<T as TryMaySetDiscretionarySameAsColumn<KeysHead, ColumnsHead>>::Error>,
 {
     #[inline]
     fn try_may_set_discretionary_same_as_nested_columns(
         &mut self,
-        nested_value: &ColumnsHead::Type,
+        nested_value: &ColumnsHead::ColumnType,
     ) -> Result<&mut Self, Error> {
         self.try_may_set_discretionary_same_as_column(nested_value.clone())?;
         <T as TryMaySetDiscretionarySameAsNestedColumns<
-            ColumnsHead::Type,
+            ColumnsHead::ColumnType,
             Error,
             KeysTail,
             ColumnsTail,

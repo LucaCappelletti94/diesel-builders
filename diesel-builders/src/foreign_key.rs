@@ -28,15 +28,15 @@ where
 {
 }
 
-impl<Idx, Chead, Ctail, FullIndex> NestedTableIndexTail<Idx, FullIndex> for (Chead, Ctail)
+impl<Idx, CHead, Ctail, FullIndex> NestedTableIndexTail<Idx, FullIndex> for (CHead, Ctail)
 where
-    (Chead, Ctail): NonEmptyNestedProjection<Table = Chead::Table>
-        + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = Chead::Table>>,
-    Chead: IndexedColumn<Idx, FullIndex>,
+    (CHead, Ctail): NonEmptyNestedProjection<Table = CHead::Table>
+        + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = CHead::Table>>,
+    CHead: IndexedColumn<Idx, FullIndex>,
     Ctail: NestedTableIndexTail<typenum::Add1<Idx>, FullIndex>,
     Idx: core::ops::Add<typenum::B1>,
-    FullIndex: NonEmptyProjection<Table = Chead::Table>,
-    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = Chead>,
+    FullIndex: NonEmptyProjection<Table = CHead::Table>,
+    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = CHead>,
 {
 }
 
@@ -109,7 +109,7 @@ pub trait NestedForeignKeyTail<
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
     H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<Type = <H1 as Typed>::Type> + IndexedColumn<typenum::U0, (F1,)>,
+    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType> + IndexedColumn<typenum::U0, (F1,)>,
 {
 }
 
@@ -130,7 +130,7 @@ where
             NestedTupleType = <(Hhead, Htail) as TypedNestedTuple>::NestedTupleType,
         >,
     Hhead: TypedColumn,
-    Fhead: TypedColumn<Type = <Hhead as Typed>::Type>,
+    Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
 {
 }
 
@@ -150,7 +150,7 @@ pub trait HostColumn<
 /// relationships to tables with a singleton primary key.
 pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
-    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<Type = <Self as Typed>::Type>>
+    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<ColumnType = <Self as Typed>::ColumnType>>
         + diesel::query_source::TableNotEqual<Self::Table>;
 }
 

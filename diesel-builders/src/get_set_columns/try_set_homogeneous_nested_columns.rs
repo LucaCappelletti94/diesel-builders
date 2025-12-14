@@ -12,45 +12,58 @@ pub trait TrySetHomogeneousNestedColumns<Type, Error, CS: HomogeneouslyTypedNest
     /// # Errors
     ///
     /// Returns an error if the value fails validation for any of the columns.
-    fn try_set_homogeneous_nested_columns(&mut self, value: Type) -> Result<&mut Self, Error>;
+    fn try_set_homogeneous_nested_columns(
+        &mut self,
+        value: &(impl Into<Type> + Clone),
+    ) -> Result<&mut Self, Error>;
 }
 
 impl<Type, Error, T> TrySetHomogeneousNestedColumns<Type, Error, ()> for T {
     #[inline]
-    fn try_set_homogeneous_nested_columns(&mut self, _value: Type) -> Result<&mut Self, Error> {
+    fn try_set_homogeneous_nested_columns(
+        &mut self,
+        _value: &(impl Into<Type> + Clone),
+    ) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }
 
-impl<C1, Error, T> TrySetHomogeneousNestedColumns<C1::Type, Error, (C1,)> for T
+impl<Type: Clone, C1, Error, T> TrySetHomogeneousNestedColumns<Type, Error, (C1,)> for T
 where
     T: TrySetColumn<C1>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
     C1: TypedColumn,
-{
-    #[inline]
-    fn try_set_homogeneous_nested_columns(&mut self, value: C1::Type) -> Result<&mut Self, Error> {
-        Ok(self.try_set_column(value)?)
-    }
-}
-
-impl<Error, Chead, CTail, T> TrySetHomogeneousNestedColumns<Chead::Type, Error, (Chead, CTail)>
-    for T
-where
-    Chead: TypedColumn,
-    CTail: HomogeneouslyTypedNestedColumns<Chead::Type>,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: TrySetColumn<Chead> + TrySetHomogeneousNestedColumns<Chead::Type, Error, CTail>,
-    Error: From<<T as ValidateColumn<Chead>>::Error>,
+    C1::ColumnType: From<Type>,
 {
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: Chead::Type,
+        value: &(impl Into<Type> + Clone),
     ) -> Result<&mut Self, Error> {
-        self.try_set_column(value.clone())?;
-        self.try_set_homogeneous_nested_columns(value)?;
+        let value: Type = value.clone().into();
+        Ok(self.try_set_column(value)?)
+    }
+}
+
+impl<Error, Type: Clone, CHead, CTail, T>
+    TrySetHomogeneousNestedColumns<Type, Error, (CHead, CTail)> for T
+where
+    CHead: TypedColumn,
+    CHead::ColumnType: From<Type>,
+    CTail: HomogeneouslyTypedNestedColumns<Type>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: TrySetColumn<CHead> + TrySetHomogeneousNestedColumns<Type, Error, CTail>,
+    Error: From<<T as ValidateColumn<CHead>>::Error>,
+{
+    #[inline]
+    fn try_set_homogeneous_nested_columns(
+        &mut self,
+        value: &(impl Into<Type> + Clone),
+    ) -> Result<&mut Self, Error> {
+        let value: Type = value.clone().into();
+        self.try_set_homogeneous_nested_columns(&value)?;
+        self.try_set_column(value)?;
         Ok(self)
     }
 }

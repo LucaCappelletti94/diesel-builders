@@ -13,11 +13,13 @@ diesel::table! {
 }
 
 impl Typed for dogs::id {
-    type Type = i32;
+    type ValueType = i32;
+    type ColumnType = i32;
 }
 
 impl Typed for dogs::breed {
-    type Type = String;
+    type ValueType = String;
+    type ColumnType = String;
 }
 
 impl diesel_builders::HorizontalSameAsGroup for dogs::id {

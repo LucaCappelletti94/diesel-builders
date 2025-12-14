@@ -17,7 +17,7 @@ pub struct Parent {
     /// Primary key.
     id: i32,
     /// A field in the parent table.
-    parent_field: String,
+    parent_field: Option<String>,
     /// Another field in the parent table.
     another_field: String,
 }
@@ -65,7 +65,7 @@ fn test_inheritance_vertical_same_as() -> Result<(), Box<dyn std::error::Error>>
         .insert(&mut conn)?;
 
     let parent: Parent = child.ancestor(&mut conn)?;
-    assert_eq!(parent.parent_field(), "Child Value");
+    assert_eq!(parent.parent_field(), &Some("Child Value".to_owned()));
     assert_eq!(parent.another_field(), "Child Value");
 
     Ok(())

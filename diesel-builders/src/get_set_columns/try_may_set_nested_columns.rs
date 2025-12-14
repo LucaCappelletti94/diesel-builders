@@ -37,7 +37,7 @@ where
     #[inline]
     fn try_may_set_nested_columns(
         &mut self,
-        nested_values: (Option<C1::Type>,),
+        nested_values: (Option<C1::ColumnType>,),
     ) -> Result<&mut Self, Error> {
         if let Some(value) = nested_values.0 {
             self.try_set_column(value)?;
@@ -46,19 +46,19 @@ where
     }
 }
 
-impl<Chead, CTail, T, Error> TryMaySetNestedColumns<Error, (Chead, CTail)> for T
+impl<CHead, CTail, T, Error> TryMaySetNestedColumns<Error, (CHead, CTail)> for T
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NestedColumns,
-    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: TrySetColumn<Chead> + TryMaySetNestedColumns<Error, CTail>,
-    Error: From<<T as ValidateColumn<Chead>>::Error>,
+    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: TrySetColumn<CHead> + TryMaySetNestedColumns<Error, CTail>,
+    Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
     #[inline]
     fn try_may_set_nested_columns(
         &mut self,
         (head, tail): (
-            Option<Chead::Type>,
+            Option<CHead::ColumnType>,
             <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
         ),
     ) -> Result<&mut Self, Error> {

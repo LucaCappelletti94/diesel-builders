@@ -32,23 +32,23 @@ where
     }
 }
 
-impl<T, Chead, CTail, Error> TrySetColumnsCollection<Error, (Chead, CTail)> for T
+impl<T, CHead, CTail, Error> TrySetColumnsCollection<Error, (CHead, CTail)> for T
 where
-    Chead: NonEmptyNestedProjection,
+    CHead: NonEmptyNestedProjection,
     CTail: TypedNestedTupleCollection,
-    (Chead, CTail): TypedNestedTupleCollection<
+    (CHead, CTail): TypedNestedTupleCollection<
         NestedCollectionType = (
-            Chead::NestedTupleType,
+            CHead::NestedTupleType,
             <CTail as TypedNestedTupleCollection>::NestedCollectionType,
         ),
     >,
-    T: TrySetNestedColumns<Error, Chead> + TrySetColumnsCollection<Error, CTail>,
+    T: TrySetNestedColumns<Error, CHead> + TrySetColumnsCollection<Error, CTail>,
 {
     #[inline]
     fn try_set_nested_columns_collection(
         &mut self,
         (head, tail): (
-            Chead::NestedTupleType,
+            CHead::NestedTupleType,
             <CTail as TypedNestedTupleCollection>::NestedCollectionType,
         ),
     ) -> Result<&mut Self, Error> {

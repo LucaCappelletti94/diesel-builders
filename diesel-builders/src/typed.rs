@@ -13,6 +13,8 @@ pub use homogeneously_typed_tuple::*;
 
 /// Trait representing an object with an associated type.
 pub trait Typed {
-    /// The Rust type associated with this object, as it appears in queries.
-    type Type;
+    /// The value type associated with this object, as it appears in queries.
+    type ValueType: Clone;
+    /// The column type associated with this object, which may be an `Option` of the value type.
+    type ColumnType: Clone;
 }

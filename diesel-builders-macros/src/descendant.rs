@@ -45,7 +45,7 @@ pub fn generate_auxiliary_descendant_impls(
                 {
                     fn get_column_ref(
                         &self,
-                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::Type {
+                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::ColumnType {
                         use diesel::Identifiable;
                         self.id()
                     }

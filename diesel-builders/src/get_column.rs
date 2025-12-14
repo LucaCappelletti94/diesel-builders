@@ -1,13 +1,13 @@
 //! Submodule providing the `GetColumn` trait.
 
-use crate::{Typed, TypedColumn};
+use crate::TypedColumn;
 
 /// Trait providing a getter for a specific Diesel column.
 pub trait GetColumn<Column: TypedColumn> {
     /// Get the value of the specified column.
-    fn get_column_ref(&self) -> &<Column as Typed>::Type;
+    fn get_column_ref(&self) -> &Column::ColumnType;
     /// Get the owned value of the specified column.
-    fn get_column(&self) -> <Column as Typed>::Type {
+    fn get_column(&self) -> Column::ColumnType {
         self.get_column_ref().clone()
     }
 }
@@ -15,11 +15,11 @@ pub trait GetColumn<Column: TypedColumn> {
 /// Trait providing a failable getter for a specific Diesel column.
 pub trait MayGetColumn<C: TypedColumn> {
     /// Get the reference of the specified column, returning `None` if not present.
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a <C as Typed>::Type>
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
     where
         C::Table: 'a;
     /// Get the value of the specified column, returning `None` if not present.
-    fn may_get_column(&self) -> Option<<C as Typed>::Type> {
+    fn may_get_column(&self) -> Option<C::ColumnType> {
         self.may_get_column_ref().cloned()
     }
 }
@@ -30,7 +30,7 @@ where
     T: GetColumn<C>,
 {
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a <C as Typed>::Type>
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
     where
         C::Table: 'a,
     {
@@ -45,7 +45,7 @@ where
 /// type parameter on the method rather than on the trait itself.
 pub trait GetColumnExt {
     /// Get a reference to the specified column.
-    fn get_column_ref<Column>(&self) -> &<Column as Typed>::Type
+    fn get_column_ref<Column>(&self) -> &Column::ColumnType
     where
         Column: TypedColumn,
         Self: GetColumn<Column>,
@@ -54,7 +54,7 @@ pub trait GetColumnExt {
     }
 
     /// Get the owned value of the specified column.
-    fn get_column<Column>(&self) -> <Column as Typed>::Type
+    fn get_column<Column>(&self) -> Column::ColumnType
     where
         Column: TypedColumn,
         Self: GetColumn<Column>,
@@ -69,7 +69,7 @@ impl<T> GetColumnExt for T {}
 /// method level.
 pub trait MayGetColumnExt {
     /// Get a reference to specified column, returning `None` if not present.
-    fn may_get_column_ref<'a, Column>(&'a self) -> Option<&'a <Column as Typed>::Type>
+    fn may_get_column_ref<'a, Column>(&'a self) -> Option<&'a Column::ColumnType>
     where
         Column: TypedColumn,
         Column::Table: 'a,
@@ -79,7 +79,7 @@ pub trait MayGetColumnExt {
     }
 
     /// Get the owned value of the specified column, returning `None` if not present.
-    fn may_get_column<Column>(&self) -> Option<<Column as Typed>::Type>
+    fn may_get_column<Column>(&self) -> Option<Column::ColumnType>
     where
         Column: TypedColumn,
         Self: MayGetColumn<Column>,

@@ -19,7 +19,7 @@ use crate::{
     BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
     MandatorySameAsIndex, NestedBuildableTables, NestedTableModels, NestedTables,
     SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder, TrySetDiscretionaryBuilder,
-    TrySetMandatoryBuilder, TupleMayGetNestedColumns, Typed, TypedNestedTuple,
+    TrySetMandatoryBuilder, TupleMayGetNestedColumns, TypedNestedTuple,
 };
 use crate::{MayGetColumn, TableExt, TrySetColumn, TupleGetNestedColumns, TypedColumn};
 use tuplities::prelude::*;
@@ -189,7 +189,7 @@ where
     T::NewValues: MayGetColumn<C>,
 {
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::Type>
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
     where
         C::Table: 'a,
     {
@@ -206,7 +206,7 @@ where
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
         self.insertable_model.validate_column_in_context(value)
     }
 }
@@ -218,7 +218,7 @@ where
     T::NewValues: SetColumn<C> + ValidateColumn<C, Error = Infallible>,
 {
     #[inline]
-    fn set_column(&mut self, value: impl Into<<C as Typed>::Type>) -> &mut Self {
+    fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {
         self.insertable_model.set_column(value);
         self
     }
@@ -231,7 +231,10 @@ where
     T::NewValues: TrySetColumn<C>,
 {
     #[inline]
-    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+    fn try_set_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
         self.insertable_model.try_set_column(value)?;
         Ok(self)
     }

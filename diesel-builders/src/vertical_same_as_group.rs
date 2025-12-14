@@ -8,6 +8,6 @@ use crate::{
 /// same-as columns.
 pub trait VerticalSameAsGroup: TypedColumn {
     /// The group of vertical same-as columns associated with this column.
-    type VerticalSameAsNestedColumns: HomogeneouslyTypedNestedColumns<Self::Type>
+    type VerticalSameAsNestedColumns: HomogeneouslyTypedNestedColumns<Self::ColumnType>
         + NestedAncestorColumnsOf<Self::Table>;
 }

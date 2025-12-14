@@ -9,9 +9,7 @@ mod non_empty_projection;
 mod tuple_eq_all;
 
 pub use columns_collection::ColumnsCollection;
-pub use homogeneously_typed_nested_columns::{
-    HomogeneouslyTypedColumns, HomogeneouslyTypedNestedColumns,
-};
+pub use homogeneously_typed_nested_columns::HomogeneouslyTypedNestedColumns;
 pub use nested_columns::NestedColumns;
 pub use nested_columns_collection::NestedColumnsCollection;
 pub use non_empty_nested_projection::NonEmptyNestedProjection;

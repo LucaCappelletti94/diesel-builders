@@ -14,7 +14,7 @@ pub(super) fn generate_set_column_impls(
         quote::quote! {
             impl diesel_builders::SetColumn<#new_record_column> for <#table_module::table as diesel_builders::TableExt>::NewValues {
                 #[inline]
-                fn set_column(&mut self, value: impl Into<<#new_record_column as diesel_builders::Typed>::Type>) -> &mut Self {
+                fn set_column(&mut self, value: impl Into<<#new_record_column as diesel_builders::Typed>::ColumnType>) -> &mut Self {
                     use diesel_builders::tuplities::NestedTupleIndexMut;
                     *<Self as NestedTupleIndexMut<#index_path>>::nested_index_mut(self) = Some(value.into());
                     self
@@ -35,7 +35,7 @@ pub(super) fn generate_infallible_validate_column_impls(
                 type Error = core::convert::Infallible;
 
                 #[inline]
-                fn validate_column(value: &<#infallible_record as diesel_builders::Typed>::Type) -> Result<(), Self::Error> {
+                fn validate_column(value: &<#infallible_record as diesel_builders::Typed>::ColumnType) -> Result<(), Self::Error> {
                     Ok(())
                 }
             }

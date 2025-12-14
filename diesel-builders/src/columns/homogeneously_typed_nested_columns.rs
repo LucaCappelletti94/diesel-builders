@@ -1,11 +1,8 @@
 //! Submodule defining and implementing the `HomogeneouslyTypedNestedColumns` trait.
 
-use crate::{Columns, HomogeneouslyTypedNestedTuple, HomogeneouslyTypedTuple, TypedColumn};
+use crate::{HomogeneouslyTypedNestedTuple, TypedColumn};
 
 use super::NestedColumns;
-
-/// Trait representing columns where all columns have the same associated Type.
-pub trait HomogeneouslyTypedColumns<CT>: Columns + HomogeneouslyTypedTuple<CT> {}
 
 /// Trait representing a nested tuple of columns where all columns have the same associated Type.
 pub trait HomogeneouslyTypedNestedColumns<CT>:
@@ -13,19 +10,17 @@ pub trait HomogeneouslyTypedNestedColumns<CT>:
 {
 }
 
-impl<CT, T> HomogeneouslyTypedColumns<CT> for T where
-    T: Columns<Nested: HomogeneouslyTypedNestedColumns<CT>> + HomogeneouslyTypedTuple<CT>
+impl<CT> HomogeneouslyTypedNestedColumns<CT> for () {}
+
+impl<Type, C1: TypedColumn> HomogeneouslyTypedNestedColumns<Type> for (C1,) where
+    C1::ColumnType: From<Type>
 {
 }
 
-impl<CT> HomogeneouslyTypedNestedColumns<CT> for () {}
-
-impl<C1: TypedColumn> HomogeneouslyTypedNestedColumns<C1::Type> for (C1,) {}
-
-impl<Head, Tail> HomogeneouslyTypedNestedColumns<Head::Type> for (Head, Tail)
+impl<Type, Head, Tail> HomogeneouslyTypedNestedColumns<Type> for (Head, Tail)
 where
     Head: TypedColumn,
-    Tail: HomogeneouslyTypedNestedColumns<Head::Type>,
-    (Head, Tail): NestedColumns + HomogeneouslyTypedNestedTuple<Head::Type>,
+    Tail: HomogeneouslyTypedNestedColumns<Type>,
+    (Head, Tail): NestedColumns + HomogeneouslyTypedNestedTuple<Type>,
 {
 }

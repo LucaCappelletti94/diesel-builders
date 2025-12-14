@@ -23,24 +23,24 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn tuple_may_get_nested_columns(&self) -> (Option<C1::Type>,) {
+    fn tuple_may_get_nested_columns(&self) -> (Option<C1::ColumnType>,) {
         (self.0.may_get_column(),)
     }
 }
 
-impl<Chead, CTail, THead, TTail> TupleMayGetNestedColumns<(Chead, CTail)> for (THead, TTail)
+impl<CHead, CTail, THead, TTail> TupleMayGetNestedColumns<(CHead, CTail)> for (THead, TTail)
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NestedColumns,
-    (Chead, CTail): NestedColumns<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    THead: MayGetColumn<Chead>,
+    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    THead: MayGetColumn<CHead>,
     TTail: TupleMayGetNestedColumns<CTail>,
 {
     #[inline]
     fn tuple_may_get_nested_columns(
         &self,
     ) -> (
-        Option<Chead::Type>,
+        Option<CHead::ColumnType>,
         <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
     ) {
         (

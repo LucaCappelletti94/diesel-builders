@@ -18,9 +18,9 @@ impl<T> TypedNestedTuple for (T,)
 where
     T: Typed,
     (T,): FlattenNestedTuple,
-    (T::Type,): FlattenNestedTuple,
+    (T::ColumnType,): FlattenNestedTuple,
 {
-    type NestedTupleType = (T::Type,);
+    type NestedTupleType = (T::ColumnType,);
 }
 
 impl<Head, Tail> TypedNestedTuple for (Head, Tail)
@@ -28,7 +28,7 @@ where
     Head: Typed,
     Tail: TypedNestedTuple,
     (Head, Tail): FlattenNestedTuple,
-    (Head::Type, Tail::NestedTupleType): FlattenNestedTuple,
+    (Head::ColumnType, Tail::NestedTupleType): FlattenNestedTuple,
 {
-    type NestedTupleType = (Head::Type, Tail::NestedTupleType);
+    type NestedTupleType = (Head::ColumnType, Tail::NestedTupleType);
 }

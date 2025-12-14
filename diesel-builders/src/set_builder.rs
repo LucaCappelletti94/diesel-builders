@@ -5,7 +5,7 @@ use diesel::Table;
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
     HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
-    TrySetColumn, TrySetNestedColumns, Typed, TypedColumn, TypedNestedTuple, ValidateColumn,
+    TrySetColumn, TrySetNestedColumns, TypedColumn, TypedNestedTuple, ValidateColumn,
     columns::NonEmptyNestedProjection,
 };
 
@@ -119,7 +119,8 @@ where
         &mut self,
         model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
-        let primary_key: C::Type = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
+        let primary_key: C::ColumnType =
+            model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         let columns = model.get_nested_columns();
         self.validate_nested_columns(&columns)?;
         <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
@@ -388,7 +389,7 @@ pub trait TrySetMandatorySameAsColumn<
     /// same-as relationship.
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: <C as Typed>::Type,
+        value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error>;
 }
 
@@ -410,6 +411,6 @@ pub trait TryMaySetDiscretionarySameAsColumn<
     /// same-as relationship.
     fn try_may_set_discretionary_same_as_column(
         &mut self,
-        value: <C as Typed>::Type,
+        value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error>;
 }

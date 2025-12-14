@@ -117,7 +117,7 @@ fn generate_getter_trait(
         pub trait #get_field_name: diesel_builders::GetColumn<#table_module::#field_name> {
             #[inline]
             #[doc = #get_field_name_method_doc_comment]
-            fn #field_name(&self) -> &<#table_module::#field_name as diesel_builders::Typed>::Type {
+            fn #field_name(&self) -> &<#table_module::#field_name as diesel_builders::Typed>::ColumnType {
                 self.get_column_ref()
             }
         }
@@ -154,7 +154,7 @@ fn generate_set_trait(
             #[doc = #field_name_ref_method_doc_comment]
             fn #field_name_ref(
                 &mut self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::Type>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
             ) -> &mut Self {
                 use diesel_builders::SetColumnExt;
                 self.set_column_ref::<#table_module::#field_name>(value)
@@ -164,7 +164,7 @@ fn generate_set_trait(
             #[doc = #field_name_method_doc_comment]
             fn #field_name(
                 self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::Type>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
             ) -> Self {
                 use diesel_builders::SetColumnExt;
                 self.set_column::<#table_module::#field_name>(value)
@@ -211,7 +211,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the column check constraints are not respected."]
             fn #try_field_name_ref(
                 &mut self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::Type>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
             ) -> Result<&mut Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column_ref::<#table_module::#field_name>(value)
@@ -224,7 +224,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the value cannot be converted to the column type."]
             fn #try_field_name(
                 self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::Type>
+                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
             ) -> Result<Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column::<#table_module::#field_name>(value)
@@ -241,11 +241,38 @@ fn generate_typed_impl(
     field_type: &syn::Type,
     table_module: &syn::Ident,
 ) -> TokenStream {
+    // Determine the ValueType: if the column type is an Option<T>, ValueType = T,
+    // otherwise ValueType = the field type itself.
+    let value_type = extract_option_inner_type(field_type).unwrap_or(quote::quote! { #field_type });
+
     quote! {
         impl diesel_builders::Typed for #table_module::#field_name {
-            type Type = #field_type;
+            type ValueType = #value_type;
+            type ColumnType = #field_type;
         }
     }
+}
+
+/// Extract the inner type from `Option<T>`, returning `None` if not an Option.
+fn extract_option_inner_type(field_type: &syn::Type) -> Option<TokenStream> {
+    let syn::Type::Path(type_path) = field_type else {
+        return None;
+    };
+
+    let segment = type_path.path.segments.last()?;
+    if segment.ident != "Option" {
+        return None;
+    }
+
+    let syn::PathArguments::AngleBracketed(args) = &segment.arguments else {
+        return None;
+    };
+
+    let syn::GenericArgument::Type(inner) = args.args.first()? else {
+        return None;
+    };
+
+    Some(quote::quote! { #inner })
 }
 
 #[allow(clippy::too_many_lines)]

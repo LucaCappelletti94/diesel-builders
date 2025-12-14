@@ -15,11 +15,11 @@ pub trait TupleEqAll: TypedNestedTuple {
 
 impl<Head> TupleEqAll for (Head,)
 where
-    Head: TypedColumn<Type: AsExpression<<Head as diesel::Expression>::SqlType>>
+    Head: TypedColumn<ColumnType: AsExpression<<Head as diesel::Expression>::SqlType>>
         + Expression<SqlType: SingleValue>,
 {
-    type EqAll = (diesel::dsl::Eq<Head, Head::Type>,);
-    fn eq_all(self, rhs: (Head::Type,)) -> Self::EqAll {
+    type EqAll = (diesel::dsl::Eq<Head, Head::ColumnType>,);
+    fn eq_all(self, rhs: (Head::ColumnType,)) -> Self::EqAll {
         use diesel::ExpressionMethods;
         (self.0.eq(rhs.0),)
     }
@@ -27,14 +27,14 @@ where
 
 impl<Head, Tail> TupleEqAll for (Head, Tail)
 where
-    Head: TypedColumn<Type: AsExpression<<Head as diesel::Expression>::SqlType>>
+    Head: TypedColumn<ColumnType: AsExpression<<Head as diesel::Expression>::SqlType>>
         + Expression<SqlType: SingleValue>,
     Tail: TupleEqAll,
-    (Head, Tail): TypedNestedTuple<NestedTupleType = (Head::Type, Tail::NestedTupleType)>,
-    (diesel::dsl::Eq<Head, Head::Type>, Tail::EqAll): FlattenNestedTuple,
+    (Head, Tail): TypedNestedTuple<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
+    (diesel::dsl::Eq<Head, Head::ColumnType>, Tail::EqAll): FlattenNestedTuple,
 {
-    type EqAll = (diesel::dsl::Eq<Head, Head::Type>, Tail::EqAll);
-    fn eq_all(self, rhs: (Head::Type, Tail::NestedTupleType)) -> Self::EqAll {
+    type EqAll = (diesel::dsl::Eq<Head, Head::ColumnType>, Tail::EqAll);
+    fn eq_all(self, rhs: (Head::ColumnType, Tail::NestedTupleType)) -> Self::EqAll {
         use diesel::ExpressionMethods;
         (self.0.eq(rhs.0), self.1.eq_all(rhs.1))
     }

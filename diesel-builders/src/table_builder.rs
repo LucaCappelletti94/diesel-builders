@@ -51,12 +51,12 @@ where
         >,
 {
     #[inline]
-    fn may_get_column(&self) -> Option<<C as Typed>::Type> {
+    fn may_get_column(&self) -> Option<C::ColumnType> {
         self.bundles.nested_index().may_get_column()
     }
 
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a <C as Typed>::Type>
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
     where
         C::Table: 'a,
     {
@@ -78,7 +78,7 @@ where
     type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
         self.bundles
             .nested_index()
             .validate_column_in_context(value)
@@ -89,7 +89,7 @@ impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: SetHomogeneousNestedColumns<C::Type, C::VerticalSameAsNestedColumns>,
+    Self: SetHomogeneousNestedColumns<C::ColumnType, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -98,9 +98,9 @@ where
         >,
 {
     #[inline]
-    fn set_column(&mut self, value: impl Into<<C as Typed>::Type>) -> &mut Self {
+    fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {
         let value = value.into();
-        self.set_homogeneous_nested_columns(value.clone());
+        self.set_homogeneous_nested_columns(&value);
         self.bundles.nested_index_mut().set_column(value);
         self
     }
@@ -110,7 +110,8 @@ impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: TrySetHomogeneousNestedColumns<C::Type, Self::Error, C::VerticalSameAsNestedColumns>,
+    Self:
+        TrySetHomogeneousNestedColumns<C::ColumnType, Self::Error, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -119,8 +120,12 @@ where
         >,
 {
     #[inline]
-    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
-        self.try_set_homogeneous_nested_columns(value.clone())?;
+    fn try_set_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
+        let value = value.into();
+        self.try_set_homogeneous_nested_columns(&value)?;
         self.bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)
     }
@@ -132,7 +137,7 @@ where
         + DescendantOf<
             Key::Table,
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = (<<Key::Table as Table>::PrimaryKey as Typed>::Type,),
+                NestedTupleType = (<<Key::Table as Table>::PrimaryKey as Typed>::ColumnType,),
             >,
         >,
     Key: MandatorySameAsIndex,

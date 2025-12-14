@@ -4,16 +4,22 @@ use crate::{Typed, TypedNestedTuple};
 
 /// Trait for recursive definition of homogeneous typed tuples.
 /// All entries must have the same associated Type.
-pub trait HomogeneouslyTypedNestedTuple<CT>: TypedNestedTuple {}
+pub trait HomogeneouslyTypedNestedTuple<Type>: TypedNestedTuple {}
 
-impl<CT> HomogeneouslyTypedNestedTuple<CT> for () {}
+impl<Type> HomogeneouslyTypedNestedTuple<Type> for () {}
 
-impl<T> HomogeneouslyTypedNestedTuple<T::Type> for (T,) where T: Typed {}
+impl<Type, T> HomogeneouslyTypedNestedTuple<Type> for (T,)
+where
+    T: Typed,
+    T::ColumnType: From<Type>,
+{
+}
 
-impl<Head, Tail> HomogeneouslyTypedNestedTuple<Head::Type> for (Head, Tail)
+impl<Type, Head, Tail> HomogeneouslyTypedNestedTuple<Type> for (Head, Tail)
 where
     Head: Typed,
-    Tail: HomogeneouslyTypedNestedTuple<Head::Type>,
-    Self: TypedNestedTuple<NestedTupleType = (Head::Type, Tail::NestedTupleType)>,
+    Head::ColumnType: From<Type>,
+    Tail: HomogeneouslyTypedNestedTuple<Type>,
+    Self: TypedNestedTuple<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
 {
 }

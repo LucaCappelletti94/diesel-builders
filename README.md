@@ -61,7 +61,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 [Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. When inserting into a child table, the builder automatically creates the parent record and ensures proper referential integrity. The `ancestors` attribute in `#[table_model]` declares the inheritance relationship.
 
-**Vertical Same-As (Column Propagation)**: Child table columns can use the `#[same_as(...)]` attribute to automatically propagate their values to ancestor table columns during insertion. In the example below, setting `doggo_description` on the Dog also sets `description` on the Animal. This enables a child column to populate one or more parent columns with the same value. Multiple ancestor columns can be specified in a comma-separated list (e.g., `#[same_as(animals::description, animals::notes)]`).
+**Vertical Same-As (Column Propagation)**: Child table columns can use the `#[same_as(...)]` attribute to automatically propagate their values to ancestor table columns during insertion. In the example below, setting `doggo_description` on the Dog also sets `description` on the Animal. This enables a child column to populate one or more parent columns with the same (potentially optional) value. Multiple ancestor columns can be specified in a comma-separated list (e.g., `#[same_as(animals::description, animals::notes)]`).
 
 ```mermaid
 erDiagram
@@ -97,7 +97,7 @@ pub struct Dog {
     id: i32,
     breed: String,
     #[same_as(animals::description)]
-    doggo_description: Option<String>,
+    doggo_description: String,
 }
 
 let mut conn = SqliteConnection::establish(":memory:")?;
@@ -113,7 +113,7 @@ diesel::sql_query(
 diesel::sql_query(
     "CREATE TABLE dogs (
         id INTEGER PRIMARY KEY REFERENCES animals(id),
-        doggo_description TEXT,
+        doggo_description TEXT NOT NULL,
         breed TEXT NOT NULL
     );"
 ).execute(&mut conn)?;

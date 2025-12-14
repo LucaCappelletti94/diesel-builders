@@ -42,9 +42,9 @@ pub trait HorizontalSameAsGroupExt:
     >
 {
     /// The nested mandatory foreign columns associated with this horizontal same-as group.
-    type NestedMandatoryForeignColumns: HomogeneouslyTypedNestedColumns<Self::Type>;
+    type NestedMandatoryForeignColumns: HomogeneouslyTypedNestedColumns<Self::ColumnType>;
     /// The nested discretionary foreign columns associated with this horizontal same-as group.
-    type NestedDiscretionaryForeignColumns: HomogeneouslyTypedNestedColumns<Self::Type>;
+    type NestedDiscretionaryForeignColumns: HomogeneouslyTypedNestedColumns<Self::ColumnType>;
     /// The nested mandatory horizontal keys.
     type NestedMandatoryHorizontalKeys: HorizontalNestedKeys<Self::Table>;
     /// The nested discretionary horizontal keys.
@@ -56,10 +56,10 @@ where
     T: HorizontalSameAsGroup,
     <<<T::MandatoryHorizontalKeys as NestTuple>::Nested as HorizontalNestedKeys<
         T::Table,
-    >>::NestedForeignColumnsMatrix as NestedTupleRow<T::Idx>>::RowType: HomogeneouslyTypedNestedColumns<T::Type>,
+    >>::NestedForeignColumnsMatrix as NestedTupleRow<T::Idx>>::RowType: HomogeneouslyTypedNestedColumns<T::ColumnType>,
     <<<T::DiscretionaryHorizontalKeys as NestTuple>::Nested as HorizontalNestedKeys<
         T::Table,
-    >>::NestedForeignColumnsMatrix as NestedTupleRow<T::Idx>>::RowType: HomogeneouslyTypedNestedColumns<T::Type>,
+    >>::NestedForeignColumnsMatrix as NestedTupleRow<T::Idx>>::RowType: HomogeneouslyTypedNestedColumns<T::ColumnType>,
     <T::DiscretionaryHorizontalKeys as NestTuple>::Nested: HorizontalNestedKeys<T::Table>,
     <T::MandatoryHorizontalKeys as NestTuple>::Nested: HorizontalNestedKeys<T::Table>,
 {

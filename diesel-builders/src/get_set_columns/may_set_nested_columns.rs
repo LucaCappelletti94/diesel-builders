@@ -19,25 +19,25 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn may_set_nested_columns(&mut self, (value,): (Option<C1::Type>,)) -> &mut Self {
+    fn may_set_nested_columns(&mut self, (value,): (Option<C1::ColumnType>,)) -> &mut Self {
         self.may_set_column(value);
         self
     }
 }
 
-impl<Chead, CTail, T> MaySetColumns<(Chead, CTail)> for T
+impl<CHead, CTail, T> MaySetColumns<(CHead, CTail)> for T
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: MaySetColumn<Chead> + MaySetColumns<CTail>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: MaySetColumn<CHead> + MaySetColumns<CTail>,
 {
     #[inline]
     fn may_set_nested_columns(
         &mut self,
         (head, tail): (
-            Option<Chead::Type>,
+            Option<CHead::ColumnType>,
             <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
         ),
     ) -> &mut Self {

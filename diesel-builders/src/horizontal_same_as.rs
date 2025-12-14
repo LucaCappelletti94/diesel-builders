@@ -133,10 +133,10 @@ where
     T: HasPrimaryKeyColumn,
     Head: HorizontalKeyExt<Table = T>,
     Tail: HorizontalNestedKeys<T>,
-    (Head, Tail): NestedColumns<NestedTupleType = (Head::Type, Tail::NestedTupleType)>,
+    (Head, Tail): NestedColumns<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
     (Head::ReferencedTable, Tail::NestedReferencedTables): NonCompositePrimaryKeyNestedTables<
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = (Head::Type, Tail::NestedTupleType),
+                NestedTupleType = (Head::ColumnType, Tail::NestedTupleType),
             >,
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<

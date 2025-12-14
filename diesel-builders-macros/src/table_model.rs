@@ -454,7 +454,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let new_record_type = format_as_nested_tuple(
         new_record_columns
             .iter()
-            .map(|col| quote::quote! { Option<<#col as diesel_builders::Typed>::Type> }),
+            .map(|col| quote::quote! { Option<<#col as diesel_builders::Typed>::ColumnType> }),
     );
     let may_get_column_impls =
         may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_module);

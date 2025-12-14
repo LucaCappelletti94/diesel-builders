@@ -11,7 +11,7 @@ use crate::{
     TryMaySetDiscretionarySameAsColumn, TryMaySetDiscretionarySameAsNestedColumns,
     TryMaySetNestedColumns, TrySetColumn, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
-    TupleMayGetNestedColumns, Typed, TypedColumn, builder_bundle::BundlableTableExt,
+    TupleMayGetNestedColumns, TypedColumn, builder_bundle::BundlableTableExt,
     horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
 use crate::{TypedNestedTuple, ValidateColumn};
@@ -48,7 +48,7 @@ where
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &<C as Typed>::Type) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
         self.insertable_model.validate_column_in_context(value)
     }
 }
@@ -58,12 +58,12 @@ where
     T: BundlableTableExt,
     C: HorizontalSameAsGroupExt,
     Self: TryMaySetDiscretionarySameAsNestedColumns<
-            C::Type,
+            C::ColumnType,
             <T::NewValues as ValidateColumn<C>>::Error,
             C::NestedDiscretionaryHorizontalKeys,
             C::NestedDiscretionaryForeignColumns,
         > + TrySetMandatorySameAsNestedColumns<
-            C::Type,
+            C::ColumnType,
             <T::NewValues as ValidateColumn<C>>::Error,
             C::NestedMandatoryHorizontalKeys,
             C::NestedMandatoryForeignColumns,
@@ -71,7 +71,11 @@ where
     T::NewValues: TrySetColumn<C>,
 {
     #[inline]
-    fn try_set_column(&mut self, value: <C as Typed>::Type) -> Result<&mut Self, Self::Error> {
+    fn try_set_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
+        let value = value.into();
         self.validate_column_in_context(&value)?;
         self.try_may_set_discretionary_same_as_nested_columns(&value)?;
         self.try_set_mandatory_same_as_columns(&value)?;
@@ -93,7 +97,7 @@ where
     #[inline]
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: <C as Typed>::Type,
+        value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         self.nested_mandatory_associated_builders
             .nested_index_mut()
@@ -116,7 +120,7 @@ where
     #[inline]
     fn try_may_set_discretionary_same_as_column(
         &mut self,
-        value: <C as Typed>::Type,
+        value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         if let Some(builder) = self
             .nested_discretionary_associated_builders

@@ -8,39 +8,43 @@ use crate::{
 /// Trait indicating a builder can set multiple columns.
 pub trait SetHomogeneousNestedColumns<Type, CS: HomogeneouslyTypedNestedColumns<Type>> {
     /// Set the `nested_values` of the specified columns.
-    fn set_homogeneous_nested_columns(&mut self, value: Type) -> &mut Self;
+    fn set_homogeneous_nested_columns(&mut self, value: &(impl Into<Type> + Clone)) -> &mut Self;
 }
 
 impl<Type, T> SetHomogeneousNestedColumns<Type, ()> for T {
     #[inline]
-    fn set_homogeneous_nested_columns(&mut self, _value: Type) -> &mut Self {
+    fn set_homogeneous_nested_columns(&mut self, _value: &(impl Into<Type> + Clone)) -> &mut Self {
         self
     }
 }
 
-impl<C1, T> SetHomogeneousNestedColumns<C1::Type, (C1,)> for T
+impl<Type, C1, T> SetHomogeneousNestedColumns<Type, (C1,)> for T
 where
     T: SetColumn<C1>,
     C1: TypedColumn,
+    C1::ColumnType: From<Type>,
 {
     #[inline]
-    fn set_homogeneous_nested_columns(&mut self, value: C1::Type) -> &mut Self {
+    fn set_homogeneous_nested_columns(&mut self, value: &(impl Into<Type> + Clone)) -> &mut Self {
+        let value: Type = value.clone().into();
         self.set_column(value)
     }
 }
 
-impl<Chead, CTail, T> SetHomogeneousNestedColumns<Chead::Type, (Chead, CTail)> for T
+impl<Type: Clone, CHead, CTail, T> SetHomogeneousNestedColumns<Type, (CHead, CTail)> for T
 where
-    Chead: TypedColumn,
-    CTail: HomogeneouslyTypedNestedColumns<Chead::Type>,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: SetColumn<Chead> + SetHomogeneousNestedColumns<Chead::Type, CTail>,
+    CHead: TypedColumn,
+    CTail: HomogeneouslyTypedNestedColumns<Type>,
+    CHead::ColumnType: From<Type>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: SetColumn<CHead> + SetHomogeneousNestedColumns<Type, CTail>,
 {
     #[inline]
-    fn set_homogeneous_nested_columns(&mut self, value: Chead::Type) -> &mut Self {
-        self.set_column(value.clone());
-        self.set_homogeneous_nested_columns(value);
+    fn set_homogeneous_nested_columns(&mut self, value: &(impl Into<Type> + Clone)) -> &mut Self {
+        let value: Type = value.clone().into();
+        self.set_homogeneous_nested_columns(&value);
+        self.set_column(value);
         self
     }
 }

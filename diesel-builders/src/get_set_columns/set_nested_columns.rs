@@ -14,23 +14,23 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn set_nested_columns(&mut self, nested_values: (C1::Type,)) -> &mut Self {
+    fn set_nested_columns(&mut self, nested_values: (C1::ColumnType,)) -> &mut Self {
         self.set_column(nested_values.0)
     }
 }
 
-impl<Chead, CTail, T> SetNestedColumns<(Chead, CTail)> for T
+impl<CHead, CTail, T> SetNestedColumns<(CHead, CTail)> for T
 where
-    Chead: TypedColumn,
+    CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (Chead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (Chead::Type, CTail::NestedTupleType)>,
-    T: SetColumn<Chead> + SetNestedColumns<CTail>,
+    (CHead, CTail):
+        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    T: SetColumn<CHead> + SetNestedColumns<CTail>,
 {
     #[inline]
     fn set_nested_columns(
         &mut self,
-        (head, tail): (Chead::Type, CTail::NestedTupleType),
+        (head, tail): (CHead::ColumnType, CTail::NestedTupleType),
     ) -> &mut Self {
         self.set_column(head);
         self.set_nested_columns(tail);

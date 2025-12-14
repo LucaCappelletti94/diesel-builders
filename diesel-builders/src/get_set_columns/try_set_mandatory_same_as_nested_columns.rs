@@ -13,59 +13,69 @@ pub trait TrySetMandatorySameAsNestedColumns<Type, Error, Keys: NestedColumns, C
     ///
     /// Returns an error if the column values cannot be set in the mandatory
     /// same-as relationship.
-    fn try_set_mandatory_same_as_columns(&mut self, value: &Type) -> Result<&mut Self, Error>;
+    fn try_set_mandatory_same_as_columns(
+        &mut self,
+        value: &(impl Into<Type> + Clone),
+    ) -> Result<&mut Self, Error>;
 }
 
 impl<T, Type, Error> TrySetMandatorySameAsNestedColumns<Type, Error, (), ()> for T {
     #[inline]
-    fn try_set_mandatory_same_as_columns(&mut self, _value: &Type) -> Result<&mut Self, Error> {
+    fn try_set_mandatory_same_as_columns(
+        &mut self,
+        _value: &(impl Into<Type> + Clone),
+    ) -> Result<&mut Self, Error> {
         Ok(self)
     }
 }
 
-impl<T, Error, Key: MandatorySameAsIndex, Column: TypedColumn<Table = Key::ReferencedTable>>
-    TrySetMandatorySameAsNestedColumns<Column::Type, Error, (Key,), (Column,)> for T
+impl<
+    Type: Clone,
+    T,
+    Error,
+    Key: MandatorySameAsIndex,
+    Column: TypedColumn<Table = Key::ReferencedTable>,
+> TrySetMandatorySameAsNestedColumns<Type, Error, (Key,), (Column,)> for T
 where
+    Column::ColumnType: From<Type>,
     T: TrySetMandatorySameAsColumn<Key, Column>,
     Error: From<<T as TrySetMandatorySameAsColumn<Key, Column>>::Error>,
 {
     #[inline]
     fn try_set_mandatory_same_as_columns(
         &mut self,
-        value: &Column::Type,
+        value: &(impl Into<Type> + Clone),
     ) -> Result<&mut Self, Error> {
-        Ok(self.try_set_mandatory_same_as_column(value.clone())?)
+        let value: Type = value.clone().into();
+        Ok(self.try_set_mandatory_same_as_column(value)?)
     }
 }
 
 impl<
     T,
     Error,
+    Type: Clone,
     KeysHead: MandatorySameAsIndex,
     KeysTail: NestedColumns,
-    ColumnsHead: TypedColumn<Table = KeysHead::ReferencedTable>,
-    ColumnsTail: NestedColumns,
->
-    TrySetMandatorySameAsNestedColumns<
-        ColumnsHead::Type,
-        Error,
-        (KeysHead, KeysTail),
-        (ColumnsHead, ColumnsTail),
-    > for T
+    CHead: TypedColumn<Table = KeysHead::ReferencedTable>,
+    CTail: NestedColumns,
+> TrySetMandatorySameAsNestedColumns<Type, Error, (KeysHead, KeysTail), (CHead, CTail)> for T
 where
     (KeysHead, KeysTail): NestedColumns,
-    (ColumnsHead, ColumnsTail): NestedColumns,
-    T: TrySetMandatorySameAsColumn<KeysHead, ColumnsHead>
-        + TrySetMandatorySameAsNestedColumns<ColumnsHead::Type, Error, KeysTail, ColumnsTail>,
-    Error: From<<T as TrySetMandatorySameAsColumn<KeysHead, ColumnsHead>>::Error>,
+    (CHead, CTail): NestedColumns,
+    CHead::ColumnType: From<Type>,
+    T: TrySetMandatorySameAsColumn<KeysHead, CHead>
+        + TrySetMandatorySameAsNestedColumns<Type, Error, KeysTail, CTail>,
+    Error: From<<T as TrySetMandatorySameAsColumn<KeysHead, CHead>>::Error>,
 {
     #[inline]
     fn try_set_mandatory_same_as_columns(
         &mut self,
-        value: &ColumnsHead::Type,
+        value: &(impl Into<Type> + Clone),
     ) -> Result<&mut Self, Error> {
-        self.try_set_mandatory_same_as_column(value.clone())?;
         self.try_set_mandatory_same_as_columns(value)?;
+        let value: Type = value.clone().into();
+        self.try_set_mandatory_same_as_column(value)?;
         Ok(self)
     }
 }
