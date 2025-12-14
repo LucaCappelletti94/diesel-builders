@@ -2,10 +2,10 @@
 
 use tuplities::prelude::{FlattenNestedTuple, IntoNestedTupleOption, NestedTupleRef};
 
-use crate::{Typed, TypedTuple};
+use crate::Typed;
 
 /// Trait for recursive definition of the `Typed` trait.
-pub trait TypedNestedTuple: FlattenNestedTuple<Flattened: TypedTuple> {
+pub trait TypedNestedTuple: FlattenNestedTuple {
     /// The associated nested type.
     type NestedTupleType: FlattenNestedTuple + IntoNestedTupleOption + NestedTupleRef;
 }

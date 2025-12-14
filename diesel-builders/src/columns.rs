@@ -16,18 +16,19 @@ pub use non_empty_nested_projection::NonEmptyNestedProjection;
 pub use non_empty_projection::NonEmptyProjection;
 pub use tuple_eq_all::TupleEqAll;
 
-use crate::TypedTuple;
 use tuplities::prelude::*;
 
+use crate::TypedNestedTuple;
+
 /// A trait representing a collection of Diesel columns.
-pub trait Columns: TypedTuple<Nested: Default> {
+pub trait Columns: NestTuple<Nested: Default + TypedNestedTuple> {
     /// Tables to which these columns belong.
     type Tables: NestTuple;
 }
 
 impl<T> Columns for T
 where
-    T: TypedTuple + NestTuple<Nested: NestedColumns>,
+    T: NestTuple<Nested: NestedColumns>,
     <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened: NestTuple,
 {
     type Tables = <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened;

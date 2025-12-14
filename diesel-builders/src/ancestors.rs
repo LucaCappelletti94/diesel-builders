@@ -7,11 +7,8 @@ use diesel::{RunQueryDsl, Table};
 use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTuplePushBack};
 use typenum::Unsigned;
 
-use crate::columns::NonEmptyNestedProjection;
-use crate::{
-    GetNestedColumns, NestedBundlableTables, TableExt, TableIndex, Tables, tables::NestedTables,
-};
-use crate::{NestedColumns, TypedColumn, TypedNestedTuple, TypedTuple};
+use crate::{GetNestedColumns, NestedBundlableTables, TableExt, Tables, tables::NestedTables};
+use crate::{NestedColumns, TypedColumn, TypedNestedTuple};
 
 /// Marker trait for root table models (tables with no ancestors).
 ///
@@ -43,9 +40,9 @@ where
 }
 
 /// A collection of columns from ancestors of the provided descendant table.
-pub trait AncestorColumnsOf<T>: TypedTuple {}
+pub trait AncestorColumnsOf<T> {}
 
-impl<T, A: TypedTuple> AncestorColumnsOf<T> for A where A::Nested: NestedAncestorColumnsOf<T> {}
+impl<T, A: NestTuple> AncestorColumnsOf<T> for A where A::Nested: NestedAncestorColumnsOf<T> {}
 
 /// A nested collection of columns from ancestors of the provided descendant table.
 pub trait NestedAncestorColumnsOf<T>: TypedNestedTuple {}
@@ -109,37 +106,22 @@ impl<M, Conn> ModelDescendantExt<Conn> for M {}
 impl<Conn, T, M> ModelDescendantOf<Conn, T> for M
 where
     T: Descendant + SelectDsl<<T as Table>::AllColumns>,
-    M: HasTable<Table: DescendantOf<T>>
-        + GetNestedColumns<<T::NestedPrimaryKeyColumns as NestTuple>::Nested>,
-    T::NestedPrimaryKeyColumns: TableIndex<
-            Table = T,
-            Nested: NonEmptyNestedProjection<
-                NestedTupleType: FlattenNestedTuple<
-                    Flattened = <T::NestedPrimaryKeyColumns as crate::TypedTuple>::TupleType,
-                >,
-            >,
-        > + EqAll<<T::NestedPrimaryKeyColumns as crate::TypedTuple>::TupleType>,
+    M: HasTable<Table: DescendantOf<T>> + GetNestedColumns<T::NestedPrimaryKeyColumns>,
+    <T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened: EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>,
     Conn: diesel::connection::LoadConnection,
     <T as SelectDsl<<T as Table>::AllColumns>>::Output: FilterDsl<
-        <T::NestedPrimaryKeyColumns as EqAll<
-            <T::NestedPrimaryKeyColumns as crate::TypedTuple>::TupleType,
-        >>::Output,
+        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
     >,
     <<T as SelectDsl<<T as Table>::AllColumns>>::Output as FilterDsl<
-        <T::NestedPrimaryKeyColumns as EqAll<
-            <T::NestedPrimaryKeyColumns as crate::TypedTuple>::TupleType,
-        >>::Output,
+        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
     >>::Output: LimitDsl + RunQueryDsl<Conn>,
     for<'query> <<<T as SelectDsl<<T as Table>::AllColumns>>::Output as FilterDsl<
-        <T::NestedPrimaryKeyColumns as EqAll<
-            <T::NestedPrimaryKeyColumns as crate::TypedTuple>::TupleType,
-        >>::Output,
+        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
     >>::Output as LimitDsl>::Output: LoadQuery<'query, Conn, <T as TableExt>::Model>,
 {
     fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model> {
         let ancestor_table: T = Default::default();
-        let ancestor_pk_columns =
-            <T::NestedPrimaryKeyColumns as NestTuple>::Nested::default().flatten();
+        let ancestor_pk_columns = T::NestedPrimaryKeyColumns::default().flatten();
         let descendant_pk_values = self.get_nested_columns().flatten();
         RunQueryDsl::first(
             FilterDsl::filter(
