@@ -156,14 +156,12 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
 
     let other_parent = parent_table::table::builder()
         .parent_field("Other parent")
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     let discretionary = discretionary_table::table::builder()
         .parent_id(other_parent.get_column::<parent_table::id>())
         .discretionary_field("Discretionary for Child")
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     // Now single fluent insert for the child
     let child = child_table::table::builder()
@@ -175,8 +173,7 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .d3_model(&discretionary)
         .payload("payload")
         .parent_field("Parent of Child")
-        .insert(&mut conn)
-        .unwrap();
+        .insert(&mut conn)?;
 
     // Validate insertion
     assert_eq!(child.get_column::<child_table::payload>(), "payload");
