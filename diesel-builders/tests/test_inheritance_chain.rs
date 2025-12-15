@@ -39,7 +39,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
         .try_age_months(3)?
         .insert(&mut conn)?;
 
-    assert_eq!(puppy.get_column::<puppies::age_months>(), 3);
+    assert_eq!(*puppy.age_months(), 3);
 
     // Verify puppy can be queried
     let queried_puppy: Puppy = puppies::table

@@ -56,9 +56,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     assert_eq!(
-        animal_with_desc
-            .get_column::<animals::description>()
-            .as_deref(),
+        animal_with_desc.description().as_deref(),
         Some("A friendly dog")
     );
 
@@ -68,7 +66,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .try_description(None)?
         .insert(&mut conn)?;
 
-    assert_eq!(animal_no_desc.get_column::<animals::description>(), None);
+    assert!(animal_no_desc.description().is_none());
 
     // We attempt to query the inserted animal to ensure everything worked correctly.
     let queried_animal: Animal = animals::table

@@ -138,14 +138,11 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     // Validate insertion
-    assert_eq!(child.get_column::<child_table::payload>(), "payload");
+    assert_eq!(child.payload(), "payload");
     let d1 = child.d1(&mut conn)?;
     assert_eq!(d1, discretionary);
     let d2 = child.d2(&mut conn)?;
-    assert_eq!(
-        d2.get_column::<discretionary_table::discretionary_field>(),
-        "D2 for Child"
-    );
+    assert_eq!(d2.discretionary_field(), "D2 for Child");
     let d3 = child.d3(&mut conn)?;
     assert_eq!(d3, discretionary);
     Ok(())

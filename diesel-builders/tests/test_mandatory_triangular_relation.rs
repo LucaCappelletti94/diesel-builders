@@ -109,7 +109,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .insert(&mut conn)
         .unwrap();
 
-    assert_eq!(parent.get_column::<parent_table::parent_field>(), "Value A");
+    assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
     let mandatory = mandatory_table::table::builder()
@@ -118,12 +118,9 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .insert(&mut conn)
         .unwrap();
 
+    assert_eq!(mandatory.mandatory_field(), "Value C");
     assert_eq!(
-        mandatory.get_column::<mandatory_table::mandatory_field>(),
-        "Value C"
-    );
-    assert_eq!(
-        mandatory.get_column::<mandatory_table::parent_id>(),
+        *mandatory.parent_id(),
         parent.get_column::<parent_table::id>()
     );
 
@@ -166,14 +163,11 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
-    assert_eq!(
-        associated_parent.get_column::<parent_table::parent_field>(),
-        "Value A for B"
-    );
+    assert_eq!(associated_parent.parent_field(), "Value A for B");
 
     let associated_mandatory: Mandatory = child.mandatory(&mut conn)?;
     assert_eq!(
-        associated_mandatory.get_column::<mandatory_table::mandatory_field>(),
+        associated_mandatory.mandatory_field(),
         "After setting mandatory"
     );
     assert_eq!(
@@ -181,11 +175,11 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         Some("Another remote field")
     );
     assert_eq!(
-        associated_mandatory.get_column::<mandatory_table::parent_id>(),
+        *associated_mandatory.parent_id(),
         child.get_column::<child_with_mandatory_table::id>()
     );
     assert_eq!(
-        associated_mandatory.get_column::<mandatory_table::parent_id>(),
+        *associated_mandatory.parent_id(),
         associated_parent.get_column::<parent_table::id>()
     );
 

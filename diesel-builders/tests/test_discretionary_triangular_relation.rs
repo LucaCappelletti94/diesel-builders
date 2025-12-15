@@ -46,7 +46,7 @@ pub struct ChildWithDiscretionary {
     /// The remote `parent_id` value from discretionary table that B references via `discretionary_id`.
     #[infallible]
     #[same_as(discretionary_table::another_field)]
-    another_remote_column: Option<String>,    
+    another_remote_column: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
@@ -106,7 +106,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .parent_field("Value A")
         .insert(&mut conn)?;
 
-    assert_eq!(parent.get_column::<parent_table::parent_field>(), "Value A");
+    assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
     let discretionary = discretionary_table::table::builder()
@@ -114,12 +114,9 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .discretionary_field("Value C")
         .insert(&mut conn)?;
 
+    assert_eq!(discretionary.discretionary_field(), "Value C");
     assert_eq!(
-        discretionary.get_column::<discretionary_table::discretionary_field>(),
-        "Value C"
-    );
-    assert_eq!(
-        discretionary.get_column::<discretionary_table::parent_id>(),
+        *discretionary.parent_id(),
         parent.get_column::<parent_table::id>()
     );
 
@@ -160,10 +157,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
-    assert_eq!(
-        associated_parent.get_column::<parent_table::parent_field>(),
-        "Value A for B"
-    );
+    assert_eq!(associated_parent.parent_field(), "Value A for B");
 
     // We can also reference an existing model using the _model variant
     // Example: triangular_b_builder.discretionary_id_model_ref(&c) would reference the existing c model
@@ -174,11 +168,11 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         Some("After setting discretionary")
     );
     assert_eq!(
-        associated_discretionary.get_column::<discretionary_table::parent_id>(),
+        *associated_discretionary.parent_id(),
         child.get_column::<child_with_discretionary_table::id>()
     );
     assert_eq!(
-        associated_discretionary.get_column::<discretionary_table::parent_id>(),
+        *associated_discretionary.parent_id(),
         associated_parent.get_column::<parent_table::id>()
     );
 
@@ -188,10 +182,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .try_discretionary_model(&discretionary)?
         .insert(&mut conn)?;
 
-    assert_eq!(
-        independent_child.get_column::<child_with_discretionary_table::child_field>(),
-        "Independent B"
-    );
+    assert_eq!(independent_child.child_field(), "Independent B");
     assert_eq!(
         independent_child.remote_discretionary_field.as_deref(),
         Some("Value C")
@@ -206,7 +197,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     );
     assert_ne!(
         independent_child.get_column::<child_with_discretionary_table::id>(),
-        discretionary.get_column::<discretionary_table::parent_id>()
+        *discretionary.parent_id()
     );
 
     Ok(())
