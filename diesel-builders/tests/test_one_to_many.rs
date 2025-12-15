@@ -53,6 +53,10 @@ fn test_load_many() -> Result<(), Box<dyn std::error::Error>> {
     assert!(loaded_items.contains(&item1));
     assert!(loaded_items.contains(&item2));
 
+    let loaded_items2: Vec<Item> =
+        <(items::category, (items::val,))>::load_many((1, (20,)), &mut conn)?;
+    assert_eq!(loaded_items2, vec![item2]);
+
     Ok(())
 }
 
@@ -81,7 +85,12 @@ fn test_load_many_sorted() -> Result<(), Box<dyn std::error::Error>> {
     // Should be sorted by Primary Key (id)
     let sorted_items: Vec<Item> = <(items::category,)>::load_many_sorted((1,), &mut conn)?;
 
-    assert_eq!(sorted_items, vec![item1, item2]);
+    assert_eq!(sorted_items, vec![item1, item2.clone()]);
+
+    let sorted_items2: Vec<Item> =
+        <(items::category, (items::val,))>::load_many_sorted((1, (20,)), &mut conn)?;
+
+    assert_eq!(sorted_items2, vec![item2]);
 
     Ok(())
 }
