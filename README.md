@@ -5,17 +5,13 @@
 [![Codecov](https://codecov.io/gh/LucaCappelletti94/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/LucaCappelletti94)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity.
+A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity. It provides fluent APIs for getting/setting column values and associated builders and models, executing foreign key queries, and [`serde`](https://github.com/serde-rs/serde) support.
 
-The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions. Define your struct once; the macro handles the rest.
+[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types that implement the required Diesel traits (`AsExpression`, `FromSql`, `ToSql`).
 
-It additionally offers fluent APIs for getting/setting column values and associated builders and models, and [`serde`](https://github.com/serde-rs/serde) support.
-
-This library is transparent in terms of backends and should work for any Diesel backend. In the README and tests, we use `SQLite` for simplicity.
+The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions.
 
 ## Installation
-
-Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -53,90 +49,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 2. Table Inheritance
 
-[Tables extending a parent table](diesel-builders/tests/test_inheritance.rs) via foreign key on the primary key. The builder automatically creates the parent record. The `ancestors` attribute in `#[table_model]` declares the relationship.
-
-**Vertical Same-As**: Use `#[same_as(...)]` on child columns to propagate values to ancestor columns. Below, `doggo_description` populates `Animal`'s `description`.
-
-```mermaid
-erDiagram
-    ANIMALS ||--o| DOGS : extends
-    ANIMALS {
-        int id PK
-        string name
-        string description
-    }
-    DOGS {
-        int id PK,FK
-        string breed
-        string doggo_description "→ animals::description"
-    }
-```
-
-```rust
-use diesel_builders::prelude::*;
-
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
-#[diesel(table_name = animals)]
-#[table_model(surrogate_key)]
-pub struct Animal {
-    id: i32,
-    name: String,
-    description: Option<String>,
-}
-
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
-#[diesel(table_name = dogs)]
-#[table_model(ancestors(animals))]
-pub struct Dog {
-    id: i32,
-    breed: String,
-    #[same_as(animals::description)]
-    doggo_description: String,
-}
-
-let mut conn = SqliteConnection::establish(":memory:")?;
-
-diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT);").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), doggo_description TEXT NOT NULL, breed TEXT NOT NULL);").execute(&mut conn)?;
-
-let dog = dogs::table::builder()
-    .name("Max")
-    .doggo_description("A playful puppy".to_owned())
-    .breed("Golden Retriever")
-    .insert(&mut conn)?;
-
-let animal: Animal = dog.ancestor(&mut conn)?;
-assert_eq!(animal.name(), "Max");
-assert_eq!(animal.description().as_deref(), Some("A playful puppy"));
-
-Ok::<(), Box<dyn std::error::Error>>(())
-```
-
-### 3. Inheritance Chain
-
-[A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs) (Puppies → Dogs → Animals). The builder enforces the correct insertion order: Animals → Dogs → Puppies.
-
-Here, `dog_notes` in `Dog` uses `#[same_as(animals::description)]` to propagate its value up to `Animal`.
-
-```mermaid
-erDiagram
-    ANIMALS ||--o| DOGS : extends
-    DOGS ||--o| PUPPIES : extends
-    ANIMALS {
-        int id PK
-        string name
-        string description
-    }
-    DOGS {
-        int id PK,FK
-        string breed
-        string dog_notes "→ animals::description"
-    }
-    PUPPIES {
-        int id PK,FK
-        int age_months
-    }
-```
+[A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs). Here, `dog_notes` in `Dog` uses `#[same_as(animals::description)]` to propagate its value up to `Animal`.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -194,34 +107,9 @@ assert_eq!(*puppy.age_months(), 3);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 4. Directed Acyclic Graph (DAG)
+### 3. Directed Acyclic Graph (DAG)
 
-[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child extends multiple parents. Pets extends Dogs and Cats, which both extend Animals. The builder resolves the graph and inserts in order: Animals → Dogs → Cats → Pets.
-
-```mermaid
-erDiagram
-    ANIMALS ||--o| DOGS : extends
-    ANIMALS ||--o| CATS : extends
-    DOGS ||--o| PETS : extends
-    CATS ||--o| PETS : extends
-    ANIMALS {
-        int id PK
-        string name
-        string description
-    }
-    DOGS {
-        int id PK,FK
-        string breed
-    }
-    CATS {
-        int id PK,FK
-        string color
-    }
-    PETS {
-        int id PK,FK
-        string owner_name
-    }
-```
+[Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child extends multiple parents. Pets extends Dogs and Cats, which both extend Animals.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -285,33 +173,11 @@ assert_eq!(cat.color(), "Orange");
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 5. Mandatory Triangular Relation
+### 4. Mandatory Triangular Relation
 
 [A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Child extends Parent and references Mandatory, and Mandatory also references Parent. The `#[mandatory]` attribute ensures atomic creation. Insertion order: Parent → Mandatory → Child.
 
 **Horizontal Same-As**: Like Vertical Same-As, but propagates values from referenced tables via foreign keys. Here, `remote_mandatory_field` mirrors `mandatory_table::mandatory_field` via `HorizontalKey`.
-
-```mermaid
-erDiagram
-    PARENT_TABLE ||--o{ MANDATORY_TABLE : references
-    PARENT_TABLE ||--o| CHILD_TABLE : extends
-    MANDATORY_TABLE ||--|| CHILD_TABLE : "references"
-    PARENT_TABLE {
-        int id PK
-        string parent_field
-    }
-    MANDATORY_TABLE {
-        int id PK
-        int parent_id FK "Must match Child.id"
-        string mandatory_field
-    }
-    CHILD_TABLE {
-        int id PK,FK "Inherits from Parent"
-        int mandatory_id FK "References Mandatory"
-        string child_field
-        string remote_mandatory_field "→ mandatory_table::mandatory_field"
-    }
-```
 
 ```rust
 use diesel_builders::prelude::*;
@@ -380,33 +246,11 @@ assert_eq!(parent, mandatory_parent);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 6. Discretionary Triangular Relation
+### 5. Discretionary Triangular Relation
 
 [Similar to mandatory](diesel-builders/tests/test_discretionary_triangular_relation.rs), but Child can reference *any* Discretionary record. Use `try_discretionary()` (new record) or `try_discretionary_model()` (existing).
 
 **Horizontal Same-As**: `remote_discretionary_field` mirrors `discretionary_table::discretionary_field`.
-
-```mermaid
-erDiagram
-    PARENT_TABLE ||--o{ DISCRETIONARY_TABLE : references
-    PARENT_TABLE ||--o| CHILD_WITH_DISCRETIONARY_TABLE : extends
-    DISCRETIONARY_TABLE ||--o{ CHILD_WITH_DISCRETIONARY_TABLE : "references"
-    PARENT_TABLE {
-        int id PK
-        string parent_field
-    }
-    DISCRETIONARY_TABLE {
-        int id PK
-        int parent_id FK "May differ from Child.id"
-        string discretionary_field
-    }
-    CHILD_WITH_DISCRETIONARY_TABLE {
-        int id PK,FK "Inherits from Parent"
-        int discretionary_id FK "References any Discretionary"
-        string child_field
-        string remote_discretionary_field "→ discretionary_table::discretionary_field"
-    }
-```
 
 ```rust
 use diesel_builders::prelude::*;
@@ -478,7 +322,7 @@ assert_eq!(discretionary2, discretionary);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 7. Validation with Check Constraints
+### 6. Validation with Check Constraints
 
 [Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints. Supports runtime and compile-time (via `const_validator`) checks.
 
@@ -572,40 +416,6 @@ assert_eq!(result.unwrap_err(), UserError::InvalidEmail);
 // Compile-time validated default prevents this at compile time:
 // #[table_model(default = 16)]  // Would fail to compile!
 // age: i32,
-
-Ok::<(), Box<dyn std::error::Error>>(())
-```
-
-### 8. Custom Types
-
-[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types that implement the required Diesel traits (`AsExpression`, `FromSql`, `ToSql`).
-
-### 9. Composite Primary Keys
-
-[Tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with composite keys, allowing type-safe construction and insertion.
-
-```rust
-use diesel_builders::prelude::*;
-
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
-#[diesel(table_name = user_roles)]
-#[diesel(primary_key(user_id, role_id))]
-pub struct UserRole {
-    user_id: i32,
-    role_id: i32,
-    #[table_model(default = "2025-01-01")]
-    assigned_at: String,
-}
-
-let mut conn = SqliteConnection::establish(":memory:")?;
-
-diesel::sql_query("CREATE TABLE user_roles (user_id INTEGER NOT NULL, role_id INTEGER NOT NULL, assigned_at TEXT NOT NULL DEFAULT '2025-01-01', PRIMARY KEY (user_id, role_id));").execute(&mut conn)?;
-
-let user_role = user_roles::table::builder()
-    .user_id(1)
-    .role_id(42)
-    .assigned_at("2025-12-12")
-    .insert(&mut conn)?;
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
