@@ -2,7 +2,6 @@
 //! a single table with a composite primary key.
 
 mod shared;
-use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use diesel_builders_macros::TableModel;
 
@@ -139,6 +138,59 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
             .map(String::as_str),
         Some("2025-12-04")
     );
+
+    Ok(())
+}
+
+#[test]
+fn test_load_many_composite() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+
+    diesel::sql_query(
+        "CREATE TABLE user_roles (
+			user_id INTEGER NOT NULL,
+			role_id INTEGER NOT NULL,
+			assigned_at TEXT NOT NULL,
+			PRIMARY KEY (user_id, role_id)
+		)",
+    )
+    .execute(&mut conn)?;
+
+    // Insert data
+    let ur1_10 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01")
+        .insert(&mut conn)?;
+
+    let ur1_20 = user_roles::table::builder()
+        .user_id(1)
+        .role_id(20)
+        .assigned_at("2025-01-02")
+        .insert(&mut conn)?;
+
+    let ur2_10 = user_roles::table::builder()
+        .user_id(2)
+        .role_id(10)
+        .assigned_at("2025-01-03")
+        .insert(&mut conn)?;
+
+    // Test LoadMany
+    let roles_user_1: Vec<UserRole> = <(user_roles::user_id,)>::load_many((1,), &mut conn)?;
+    assert_eq!(roles_user_1.len(), 2);
+    assert!(roles_user_1.contains(&ur1_10));
+    assert!(roles_user_1.contains(&ur1_20));
+
+    let users_role_10: Vec<UserRole> = <(user_roles::role_id,)>::load_many((10,), &mut conn)?;
+    assert_eq!(users_role_10.len(), 2);
+    assert!(users_role_10.contains(&ur1_10));
+    assert!(users_role_10.contains(&ur2_10));
+
+    // Test LoadManySorted
+    // Sorted by PK (user_id, role_id)
+    let roles_user_1_sorted: Vec<UserRole> =
+        <(user_roles::user_id,)>::load_many_sorted((1,), &mut conn)?;
+    assert_eq!(roles_user_1_sorted, vec![ur1_10.clone(), ur1_20.clone()]);
 
     Ok(())
 }

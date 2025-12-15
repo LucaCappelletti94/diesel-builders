@@ -334,43 +334,16 @@ use diesel_builders::prelude::*;
 #[table_model(error = UserError, surrogate_key)]
 pub struct User {
     id: i32,
+    #[infallible]
     username: String,
-    email: String,
     #[table_model(default = 18)]
     age: i32,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum UserError {
-    #[error("Username cannot be empty")]
-    UsernameEmpty,
-    #[error("Username cannot exceed 50 characters")]
-    UsernameTooLong,
-    #[error("Email must contain @ symbol")]
-    InvalidEmail,
     #[error("Age must be at least 18")]
     AgeTooYoung,
-}
-
-// Runtime validation for username
-impl ValidateColumn<users::username> for <users::table as TableExt>::NewValues {
-    type Error = UserError;
-    
-    fn validate_column(value: &String) -> Result<(), Self::Error> {
-        if value.trim().is_empty() { return Err(UserError::UsernameEmpty); }
-        if value.len() > 50 { return Err(UserError::UsernameTooLong); }
-        Ok(())
-    }
-}
-
-// Runtime validation for email
-impl ValidateColumn<users::email> for <users::table as TableExt>::NewValues {
-    type Error = UserError;
-    
-    fn validate_column(value: &String) -> Result<(), Self::Error> {
-        if !value.contains('@') { return Err(UserError::InvalidEmail); }
-        Ok(())
-    }
 }
 
 // Compile-time validation for age (including default value)
@@ -386,12 +359,11 @@ impl ValidateColumn<users::age> for <users::table as TableExt>::NewValues {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
-diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL CHECK (username <> '' AND length(username) <= 50), email TEXT NOT NULL CHECK (email LIKE '%@%'), age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18));").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18));").execute(&mut conn)?;
 
 // Valid insertion using default age
 let user = users::table::builder()
-    .try_username("alice")?
-    .try_email("alice@example.com")?
+    .username("alice")
     .insert(&mut conn)?;
 
 assert_eq!(user.username(), "alice");
@@ -399,19 +371,15 @@ assert_eq!(*user.age(), 18); // Default value was validated at compile time
 
 // Valid insertion with explicit age
 let user2 = users::table::builder()
-    .try_username("bob")?
-    .try_email("bob@example.com")?
+    .username("bob")
     .try_age(25)?
     .insert(&mut conn)?;
 
 assert_eq!(*user2.age(), 25);
 
 // Runtime validation errors
-let result = users::table::builder().try_username("");  // Error: UsernameEmpty
-assert_eq!(result.unwrap_err(), UserError::UsernameEmpty);
-
-let result = users::table::builder().try_username("valid_user")?.try_email("invalid-email");  // Error: InvalidEmail
-assert_eq!(result.unwrap_err(), UserError::InvalidEmail);
+let result = users::table::builder().try_age(7);  // Error: AgeTooYoung
+assert_eq!(result.unwrap_err(), UserError::AgeTooYoung);
 
 // Compile-time validated default prevents this at compile time:
 // #[table_model(default = 16)]  // Would fail to compile!

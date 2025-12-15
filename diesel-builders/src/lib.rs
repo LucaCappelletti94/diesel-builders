@@ -62,7 +62,7 @@ pub use nested_bundlable_tables::*;
 pub mod get_foreign;
 pub use get_foreign::{GetForeign, GetForeignExt};
 pub mod load_query_builder;
-pub use load_query_builder::LoadQueryBuilder;
+pub use load_query_builder::{LoadFirst, LoadMany, LoadManySorted, LoadQueryBuilder};
 
 /// Re-export typenum for convenience
 pub mod typenum {
@@ -107,6 +107,8 @@ pub mod prelude {
     // diesel_builders_macros
     pub use crate::horizontal_same_as::HorizontalKey;
     // Builder setter extension traits (always use Ext variants)
+    /// Query loading traits
+    pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadManySorted};
     pub use crate::set_builder::{
         SetDiscretionaryBuilderExt, SetDiscretionaryModelExt, SetMandatoryBuilderExt,
         TrySetDiscretionaryBuilderExt, TrySetDiscretionaryModelExt, TrySetMandatoryBuilderExt,
