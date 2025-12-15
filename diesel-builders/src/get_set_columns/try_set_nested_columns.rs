@@ -10,7 +10,7 @@ pub trait ValidateNestedColumns<Error, CS: NestedColumns> {
     /// # Errors
     ///
     /// Returns an error if any column fails validation.
-    fn validate_nested_columns(&self, values: &CS::NestedTupleType) -> Result<(), Error>;
+    fn validate_nested_columns(&self, values: &CS::NestedTupleColumnType) -> Result<(), Error>;
 }
 
 impl<T, Error> ValidateNestedColumns<Error, ()> for T {
@@ -36,14 +36,15 @@ impl<CHead, CTail, T, Error> ValidateNestedColumns<Error, (CHead, CTail)> for T
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     T: ValidateColumn<CHead> + ValidateNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
     #[inline]
     fn validate_nested_columns(
         &self,
-        (head, tail): &(CHead::ColumnType, CTail::NestedTupleType),
+        (head, tail): &(CHead::ColumnType, CTail::NestedTupleColumnType),
     ) -> Result<(), Error> {
         self.validate_column_in_context(head)?;
         self.validate_nested_columns(tail)?;
@@ -60,7 +61,7 @@ pub trait MayValidateNestedColumns<Error, CS: NestedColumns> {
     /// Returns an error if any column fails validation.
     fn may_validate_nested_columns(
         &self,
-        values: &<CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        values: &<CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) -> Result<(), Error>;
 }
 
@@ -90,7 +91,8 @@ impl<CHead, CTail, T, Error> MayValidateNestedColumns<Error, (CHead, CTail)> for
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     T: ValidateColumn<CHead> + MayValidateNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
@@ -99,7 +101,7 @@ where
         &self,
         values: &(
             Option<CHead::ColumnType>,
-            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+            <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
         ),
     ) -> Result<(), Error> {
         if let Some(ref head) = values.0 {
@@ -117,7 +119,10 @@ pub trait TrySetNestedColumns<Error, CS: NestedColumns>: ValidateNestedColumns<E
     /// # Errors
     ///
     /// Returns an error if any column cannot be set.
-    fn try_set_nested_columns(&mut self, values: CS::NestedTupleType) -> Result<&mut Self, Error>;
+    fn try_set_nested_columns(
+        &mut self,
+        values: CS::NestedTupleColumnType,
+    ) -> Result<&mut Self, Error>;
 }
 
 impl<T, Error> TrySetNestedColumns<Error, ()> for T {
@@ -144,14 +149,15 @@ impl<CHead, CTail, T, Error> TrySetNestedColumns<Error, (CHead, CTail)> for T
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     T: TrySetColumn<CHead> + TrySetNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
     #[inline]
     fn try_set_nested_columns(
         &mut self,
-        (head, tail): <(CHead, CTail) as TypedNestedTuple>::NestedTupleType,
+        (head, tail): <(CHead, CTail) as TypedNestedTuple>::NestedTupleColumnType,
     ) -> Result<&mut Self, Error> {
         self.try_set_column(head)?;
         self.try_set_nested_columns(tail)?;

@@ -7,12 +7,11 @@ use crate::columns::TupleEqAll;
 use crate::{
     BuildableTable, BuilderError, BuilderResult, DiscretionarySameAsIndex, HasNestedTables,
     HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns, NestedTables,
-    RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
-    TryMaySetDiscretionarySameAsNestedColumns, TryMaySetNestedColumns, TrySetColumn,
-    TrySetDiscretionarySameAsColumn, TrySetMandatorySameAsColumn,
-    TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
-    TupleMayGetNestedColumns, TypedColumn, builder_bundle::BundlableTableExt,
-    horizontal_same_as_group::HorizontalSameAsGroupExt,
+    RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt, TryMaySetNestedColumns,
+    TrySetColumn, TrySetDiscretionarySameAsColumn, TrySetDiscretionarySameAsNestedColumns,
+    TrySetMandatorySameAsColumn, TrySetMandatorySameAsNestedColumns, TrySetNestedColumns,
+    TupleGetNestedColumns, TupleMayGetNestedColumns, TypedColumn,
+    builder_bundle::BundlableTableExt, horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
 use crate::{TypedNestedTuple, ValidateColumn};
 
@@ -57,13 +56,13 @@ impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTableExt,
     C: HorizontalSameAsGroupExt,
-    Self: TryMaySetDiscretionarySameAsNestedColumns<
-            C::ColumnType,
+    Self: TrySetDiscretionarySameAsNestedColumns<
+            C::ValueType,
             <T::NewValues as ValidateColumn<C>>::Error,
             C::NestedDiscretionaryHorizontalKeys,
             C::NestedDiscretionaryForeignColumns,
         > + TrySetMandatorySameAsNestedColumns<
-            C::ColumnType,
+            C::ValueType,
             <T::NewValues as ValidateColumn<C>>::Error,
             C::NestedMandatoryHorizontalKeys,
             C::NestedMandatoryForeignColumns,
@@ -77,8 +76,8 @@ where
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
         self.validate_column_in_context(&value)?;
-        self.try_may_set_discretionary_same_as_nested_columns(&value)?;
-        self.try_set_mandatory_same_as_columns(&value)?;
+        self.try_set_discretionary_same_as_nested_columns(&value)?;
+        self.try_set_mandatory_same_as_nested_columns(&value)?;
         self.insertable_model.try_set_column(value)?;
         Ok(self)
     }
@@ -182,7 +181,7 @@ where
         + TryMaySetNestedColumns<Error, T::NestedDiscretionaryTriangularColumns> ,
     T::MandatoryNestedBuilders: InsertTuple<Error, Conn>,
     T::OptionalDiscretionaryNestedBuilders: InsertOptionTuple<Error, Conn>,
-    T::NewRecord: TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<T>>> + TypedNestedTuple<NestedTupleType=T::CompletedNewValues>,
+    T::NewRecord: TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<T>>> + TypedNestedTuple<NestedTupleColumnType=T::CompletedNewValues>,
     diesel::query_builder::InsertStatement<
         Self::Table,
         <<<T::NewRecord as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<T>>::Values,

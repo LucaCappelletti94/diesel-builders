@@ -1,7 +1,7 @@
 //! Submodule defining the `Descendant` trait.
 
 use diesel::associations::HasTable;
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleFrom, NestedTuplePushBack};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
 
 use crate::load_query_builder::LoadFirst;
@@ -106,8 +106,8 @@ where
     T: Descendant,
     M: HasTable<Table: DescendantOf<T>> + GetNestedColumns<T::NestedPrimaryKeyColumns>,
     T::NestedPrimaryKeyColumns: LoadFirst<Conn>,
-    <T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType:
-        NestedTupleFrom<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType>,
+    <T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType:
+        NestedTupleInto<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType>,
 {
     fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model> {
         let descendant_pk_values = self.get_nested_columns();
@@ -131,14 +131,14 @@ pub trait Descendant: TableExt {
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.
-pub trait DescendantWithSelf: Descendant {
+pub trait DescendantWithSelf: Descendant + AncestorOfIndex<Self> {
     /// The ancestor tables of this table, including itself.
     type NestedAncestorsWithSelf: NestedBundlableTables;
 }
 
 impl<T> DescendantWithSelf for T
 where
-    T: Descendant,
+    T: Descendant + AncestorOfIndex<Self>,
     <T::Ancestors as NestTuple>::Nested: NestedTuplePushBack<Self>,
     <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output:
         NestedBundlableTables,

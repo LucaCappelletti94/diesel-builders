@@ -1,5 +1,7 @@
 //! Submodule defining and implementing the `NestedColumns` trait.
 
+use std::fmt::Debug;
+
 use crate::{TypedColumn, TypedNestedTuple};
 use tuplities::prelude::FlattenNestedTuple;
 
@@ -11,7 +13,7 @@ pub trait NestedColumns: TypedNestedTuple + Default {
     /// Associated type representing a set of nested tables.
     type NestedTables: FlattenNestedTuple;
     /// The of the columns as a nested tuple of strings.
-    type NestedColumnNames: FlattenNestedTuple;
+    type NestedColumnNames: FlattenNestedTuple + Debug;
     /// Const representing the names of the columns as a nested tuple of strings.
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames;
 }

@@ -88,7 +88,7 @@ impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: SetHomogeneousNestedColumns<C::ColumnType, C::VerticalSameAsNestedColumns>,
+    Self: SetHomogeneousNestedColumns<C::ValueType, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -99,6 +99,7 @@ where
     #[inline]
     fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {
         let value = value.into();
+        // We set eventual vertically-same-as columns in nested builders first.
         self.set_homogeneous_nested_columns(&value);
         self.bundles.nested_index_mut().set_column(value);
         self
@@ -109,8 +110,7 @@ impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self:
-        TrySetHomogeneousNestedColumns<C::ColumnType, Self::Error, C::VerticalSameAsNestedColumns>,
+    Self: TrySetHomogeneousNestedColumns<C::ValueType, Self::Error, C::VerticalSameAsNestedColumns>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -124,6 +124,7 @@ where
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
+        // We try to set eventual vertically-same-as columns in nested builders first.
         self.try_set_homogeneous_nested_columns(&value)?;
         self.bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)
@@ -136,7 +137,7 @@ where
         + DescendantOf<
             Key::Table,
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = (<<Key::Table as Table>::PrimaryKey as Typed>::ColumnType,),
+                NestedTupleColumnType = (<<Key::Table as Table>::PrimaryKey as Typed>::ColumnType,),
             >,
         >,
     Key: MandatorySameAsIndex,

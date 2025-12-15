@@ -3,7 +3,7 @@
 use tuplities::prelude::{FlattenNestedTuple, IntoNestedTupleOption, NestedTupleOptionWith};
 
 use crate::{
-    NestedColumns, TableModel, TypedNestedTuple,
+    NestedColumns, NonOptionalTypedNestedTuple, TableModel, TypedNestedTuple,
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
@@ -14,18 +14,19 @@ pub trait TableExt: diesel::Table + Default {
     /// The nested columns necessary to execute insert operations for this table.
     type NewRecord: NonEmptyNestedProjection<
             Table = Self,
-            NestedTupleType: IntoNestedTupleOption<IntoOptions = Self::NewValues>,
+            NestedTupleColumnType: IntoNestedTupleOption<IntoOptions = Self::NewValues>,
             Flattened: NonEmptyProjection<Table = Self>,
         >;
     /// The nested types representing a `Self::NewColumns` for this table.
     type NewValues: FlattenNestedTuple
         + NestedTupleOptionWith<
             &'static str,
-            Transposed = <Self::NewRecord as TypedNestedTuple>::NestedTupleType,
+            Transposed = <Self::NewRecord as TypedNestedTuple>::NestedTupleColumnType,
             SameDepth = <Self::NewRecord as NestedColumns>::NestedColumnNames,
         >;
     /// The nested primary key columns of this table.
-    type NestedPrimaryKeyColumns: NonEmptyNestedProjection<Table = Self>;
+    type NestedPrimaryKeyColumns: NonEmptyNestedProjection<Table = Self>
+        + NonOptionalTypedNestedTuple;
     /// Error type associated with this table, such as for the validation
     /// of values before insertion.
     type Error;

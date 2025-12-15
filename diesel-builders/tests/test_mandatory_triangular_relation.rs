@@ -30,6 +30,7 @@ use diesel_builders_macros::TableModel;
 /// Model for table B.
 pub struct ChildWithMandatory {
     #[infallible]
+    #[same_as(mandatory_table::parent_id)]
     /// Primary key.
     id: i32,
     #[infallible]
@@ -39,10 +40,12 @@ pub struct ChildWithMandatory {
     #[infallible]
     /// Column B value.
     child_field: String,
+    #[same_as(mandatory_table::mandatory_field)]
     /// The remote `mandatory_field` value from table C that B references via `mandatory_id`.
     remote_mandatory_field: Option<String>,
     /// Another remote column from `mandatory_table`.
     #[infallible]
+    #[same_as(mandatory_table::another_field)]
     another_remote_column: Option<String>,
 }
 
@@ -77,26 +80,7 @@ impl ValidateColumn<child_with_mandatory_table::remote_mandatory_field>
 
 fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
 fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::another_remote_column) -> (mandatory_table::id, mandatory_table::mandatory_field));
-
-// This is the key part: B's mandatory_id must match C's id, and C's parent_id must match A's
-// id. We express that B's mandatory_id is horizontally the same as C's parent_id, which in
-// turn is the same as A's id.
-impl diesel_builders::HorizontalKey for child_with_mandatory_table::mandatory_id {
-    // HostColumns are columns in child_with_mandatory_table (the same table) that relate to this key
-    // In this case, there are no other columns in child_with_mandatory_table that need to match
-    // Actually, we need to think about this differently...
-    type HostColumns = (
-        child_with_mandatory_table::id,
-        child_with_mandatory_table::another_remote_column,
-        child_with_mandatory_table::remote_mandatory_field,
-    );
-    type ForeignColumns = (
-        mandatory_table::parent_id,
-        mandatory_table::mandatory_field,
-        mandatory_table::mandatory_field,
-    );
-}
+fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::another_remote_column) -> (mandatory_table::id, mandatory_table::another_field));
 
 #[test]
 fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
@@ -114,7 +98,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
             another_remote_column TEXT,
 			FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id),
             FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field),
-            FOREIGN KEY (mandatory_id, another_remote_column) REFERENCES mandatory_table(id, mandatory_field)
+            FOREIGN KEY (mandatory_id, another_remote_column) REFERENCES mandatory_table(id, another_field)
         )",
     )
     .execute(&mut conn)?;
@@ -122,7 +106,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Insert into table A
     let parent = parent_table::table::builder()
         .parent_field("Value A")
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .unwrap();
 
     assert_eq!(parent.get_column::<parent_table::parent_field>(), "Value A");
 
@@ -130,7 +115,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let mandatory = mandatory_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
         .mandatory_field("Value C")
-        .insert(&mut conn)?;
+        .insert(&mut conn)
+        .unwrap();
 
     assert_eq!(
         mandatory.get_column::<mandatory_table::mandatory_field>(),
@@ -141,7 +127,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         parent.get_column::<parent_table::id>()
     );
 
-    let mut mandatory_builder = mandatory_table::table::builder();
+    let mut mandatory_builder =
+        mandatory_table::table::builder().another_field("Original another remote field".to_owned());
     mandatory_builder.mandatory_field_ref("Value C");
 
     // Insert into table B (extends C and references A)
@@ -171,7 +158,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // Using the generated trait method for more ergonomic code
     let child = child_builder
         .try_mandatory(mandatory_builder)?
-        .insert(&mut conn)?;
+        // Overriding the another_remote_column value set in the mandatory builder
+        .another_remote_column("Another remote field".to_owned())
+        .try_remote_mandatory_field("After setting mandatory".to_owned())?
+        .try_another_remote_column("Another remote field".to_owned())?
+        .insert(&mut conn)
+        .unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(
@@ -182,7 +174,11 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let associated_mandatory: Mandatory = child.mandatory(&mut conn)?;
     assert_eq!(
         associated_mandatory.get_column::<mandatory_table::mandatory_field>(),
-        "Value C"
+        "After setting mandatory"
+    );
+    assert_eq!(
+        associated_mandatory.another_field().as_deref(),
+        Some("Another remote field")
     );
     assert_eq!(
         associated_mandatory.get_column::<mandatory_table::parent_id>(),

@@ -12,10 +12,7 @@ pub trait HomogeneouslyTypedNestedColumns<CT>:
 
 impl<CT> HomogeneouslyTypedNestedColumns<CT> for () {}
 
-impl<Type, C1: TypedColumn> HomogeneouslyTypedNestedColumns<Type> for (C1,) where
-    C1::ColumnType: From<Type>
-{
-}
+impl<Type, C1: TypedColumn> HomogeneouslyTypedNestedColumns<Type> for (C1,) {}
 
 impl<Type, Head, Tail> HomogeneouslyTypedNestedColumns<Type> for (Head, Tail)
 where

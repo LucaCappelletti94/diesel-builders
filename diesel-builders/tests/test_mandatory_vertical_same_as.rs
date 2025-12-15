@@ -41,10 +41,12 @@ unique_index!(mandatory_table::id, mandatory_table::parent_id);
 #[diesel(table_name = child_table)]
 /// Model for a child table that inherits from `parent_table`.
 pub struct Child {
+    #[same_as(mandatory_table::parent_id)]
     /// Primary key.
     id: i32,
     /// Child specific field.
     #[same_as(parent_table::parent_field)]
+    #[same_as(mandatory_table::mandatory_field)]
     child_field: String,
     /// Field linking to mandatory table.
     #[mandatory(mandatory_table)]
@@ -53,11 +55,6 @@ pub struct Child {
 
 fk!((child_table::mandatory_id, child_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
 fk!((child_table::mandatory_id, child_table::child_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-
-impl diesel_builders::HorizontalKey for child_table::mandatory_id {
-    type HostColumns = (child_table::id, child_table::child_field);
-    type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
-}
 
 #[test]
 fn test_mandatory_vertical_same_as() -> Result<(), Box<dyn std::error::Error>> {

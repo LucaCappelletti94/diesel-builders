@@ -343,20 +343,17 @@ unique_index!(mandatory_table::id, mandatory_table::parent_id);
 #[diesel(table_name = child_table)]
 #[table_model(ancestors = parent_table)]
 pub struct Child {
+    #[same_as(mandatory_table::parent_id)]
     id: i32,
     #[mandatory(mandatory_table)]
     mandatory_id: i32,
     child_field: String,
+    #[same_as(mandatory_table::mandatory_field)]
     remote_mandatory_field: Option<String>,
 }
 
 fk!((child_table::mandatory_id, child_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
 fk!((child_table::mandatory_id, child_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-
-impl diesel_builders::HorizontalKey for child_table::mandatory_id {
-    type HostColumns = (child_table::id, child_table::remote_mandatory_field);
-    type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
-}
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
@@ -439,19 +436,16 @@ unique_index!(discretionary_table::id, discretionary_table::discretionary_field)
 #[diesel(table_name = child_with_discretionary_table)]
 #[table_model(ancestors = parent_table)]
 pub struct Child {
+    #[same_as(discretionary_table::parent_id)]
     id: i32,
     #[discretionary(discretionary_table)]
     discretionary_id: i32,
     child_field: String,
+    #[same_as(discretionary_table::discretionary_field)]
     remote_discretionary_field: Option<String>,
 }
 
 fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
-
-impl diesel_builders::HorizontalKey for child_with_discretionary_table::discretionary_id {
-    type HostColumns = (child_with_discretionary_table::id, child_with_discretionary_table::remote_discretionary_field);
-    type ForeignColumns = (discretionary_table::parent_id, discretionary_table::discretionary_field);
-}
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 

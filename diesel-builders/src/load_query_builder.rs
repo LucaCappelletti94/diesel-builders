@@ -26,19 +26,19 @@ pub trait LoadQueryBuilder: NonEmptyNestedProjection {
     /// # Arguments
     ///
     /// * `values` - A nested tuple of values corresponding to the foreign columns.
-    fn load_query(values: impl NestedTupleInto<Self::NestedTupleType>) -> Self::LoadQuery;
+    fn load_query(values: impl NestedTupleInto<Self::NestedTupleValueType>) -> Self::LoadQuery;
 }
 
 impl<NestedColumns> LoadQueryBuilder for NestedColumns
 where
     NestedColumns: NonEmptyNestedProjection,
     NestedColumns::Flattened:
-        EqAll<<NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened>,
+        EqAll<<NestedColumns::NestedTupleValueType as FlattenNestedTuple>::Flattened>,
     NestedColumns::Table: TableExt + SelectDsl<<NestedColumns::Table as Table>::AllColumns>,
     <NestedColumns::Table as SelectDsl<<NestedColumns::Table as Table>::AllColumns>>::Output:
         FilterDsl<
             <NestedColumns::Flattened as EqAll<
-                <NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened,
+                <NestedColumns::NestedTupleValueType as FlattenNestedTuple>::Flattened,
             >>::Output,
         >,
 {
@@ -46,14 +46,14 @@ where
         <NestedColumns::Table as Table>::AllColumns,
     >>::Output as FilterDsl<
         <NestedColumns::Flattened as EqAll<
-            <NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened,
+            <NestedColumns::NestedTupleValueType as FlattenNestedTuple>::Flattened,
         >>::Output,
     >>::Output;
 
-    fn load_query(values: impl NestedTupleInto<Self::NestedTupleType>) -> Self::LoadQuery {
+    fn load_query(values: impl NestedTupleInto<Self::NestedTupleValueType>) -> Self::LoadQuery {
         let table: NestedColumns::Table = Default::default();
         let columns = NestedColumns::default().flatten();
-        let values: NestedColumns::NestedTupleType = values.nested_tuple_into();
+        let values: NestedColumns::NestedTupleValueType = values.nested_tuple_into();
         FilterDsl::filter(
             SelectDsl::select(table, <NestedColumns::Table as Table>::all_columns()),
             columns.eq_all(values.flatten()),
@@ -75,7 +75,7 @@ pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// * Returns a `diesel::QueryResult` which may contain an error
     ///   if the query fails or if no matching record is found.
     fn load_first(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<<Self::Table as TableExt>::Model>;
 }
@@ -89,7 +89,7 @@ where
         LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn load_first(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<<Self::Table as TableExt>::Model> {
         let query = Self::load_query(values).limit(1);
@@ -111,7 +111,7 @@ pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// * Returns a `diesel::QueryResult` which may contain an error
     ///   if the query fails.
     fn load_many(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
 }
@@ -124,7 +124,7 @@ where
     for<'query> Self::LoadQuery: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn load_many(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
         let query = Self::load_query(values);
@@ -146,7 +146,7 @@ pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// * Returns a `diesel::QueryResult` which may contain an error
     ///   if the query fails or if no matching record is found.
     fn load_many_sorted(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
 }
@@ -164,7 +164,7 @@ where
     >>::Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn load_many_sorted(
-        values: impl NestedTupleInto<Self::NestedTupleType>,
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
         let order =

@@ -8,18 +8,12 @@ pub trait HomogeneouslyTypedNestedTuple<Type>: TypedNestedTuple {}
 
 impl<Type> HomogeneouslyTypedNestedTuple<Type> for () {}
 
-impl<Type, T> HomogeneouslyTypedNestedTuple<Type> for (T,)
-where
-    T: Typed,
-    T::ColumnType: From<Type>,
-{
-}
+impl<Type, T> HomogeneouslyTypedNestedTuple<Type> for (T,) where T: Typed {}
 
 impl<Type, Head, Tail> HomogeneouslyTypedNestedTuple<Type> for (Head, Tail)
 where
     Head: Typed,
-    Head::ColumnType: From<Type>,
     Tail: HomogeneouslyTypedNestedTuple<Type>,
-    Self: TypedNestedTuple<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
+    Self: TypedNestedTuple<NestedTupleColumnType = (Head::ColumnType, Tail::NestedTupleColumnType)>,
 {
 }

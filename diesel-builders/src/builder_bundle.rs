@@ -2,6 +2,7 @@
 //! a table record new values and its mandatory and discretionary associated
 //! builders.
 
+use diesel::Column;
 use diesel::associations::HasTable;
 
 mod completed_table_builder_bundle;
@@ -10,8 +11,15 @@ pub use completed_table_builder_bundle::CompletedTableBuilderBundle;
 pub use completed_table_builder_bundle::RecursiveBundleInsert;
 
 use crate::SetColumn;
+use crate::SetDiscretionarySameAsNestedColumns;
+use crate::SetMandatorySameAsNestedColumns;
+use crate::TrySetDiscretionarySameAsColumn;
+use crate::TrySetDiscretionarySameAsNestedColumns;
+use crate::TrySetMandatorySameAsColumn;
+use crate::TrySetMandatorySameAsNestedColumns;
 use crate::ValidateColumn;
 use crate::columns::NestedColumns;
+use crate::horizontal_same_as_group::HorizontalSameAsGroupExt;
 use crate::tables::NonCompositePrimaryKeyNestedTables;
 use crate::{
     BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
@@ -40,7 +48,7 @@ pub trait BundlableTableExt:
         + IntoNestedTupleOption<IntoOptions = Self::NewValues>;
     /// Nested mandatory triangular same-as columns.
     type NestedMandatoryTriangularColumns: NestedColumns<
-        NestedTupleType = Self::NestedMandatoryPrimaryKeyTypes,
+        NestedTupleColumnType = Self::NestedMandatoryPrimaryKeyTypes,
     >;
     /// Nested mandatory tables.
     type NestedMandatoryTables: NonCompositePrimaryKeyNestedTables<
@@ -49,7 +57,7 @@ pub trait BundlableTableExt:
         > + NestedBuildableTables;
     /// Nested discretionary triangular same-as columns.
     type NestedDiscretionaryTriangularColumns: NestedColumns<
-        NestedTupleType = Self::NestedDiscretionaryPrimaryKeyTypes,
+        NestedTupleColumnType = Self::NestedDiscretionaryPrimaryKeyTypes,
     >;
     /// Nested discretionary tables.
     type NestedDiscretionaryTables: NonCompositePrimaryKeyNestedTables<
@@ -59,13 +67,13 @@ pub trait BundlableTableExt:
         > + NestedBuildableTables;
     /// Nested mandatory foreign primary keys.
     type NestedMandatoryPrimaryKeys: NestedColumns<
-        NestedTupleType = Self::NestedMandatoryPrimaryKeyTypes,
+        NestedTupleColumnType = Self::NestedMandatoryPrimaryKeyTypes,
     >;
     /// Nested mandatory foreign primary keys types.
     type NestedMandatoryPrimaryKeyTypes;
     /// Nested discretionary foreign primary keys.
     type NestedDiscretionaryPrimaryKeys: NestedColumns<
-        NestedTupleType = Self::NestedDiscretionaryPrimaryKeyTypes,
+        NestedTupleColumnType = Self::NestedDiscretionaryPrimaryKeyTypes,
     >;
     /// Nested discretionary foreign primary key types.
     type NestedDiscretionaryPrimaryKeyTypes: IntoNestedTupleOption<
@@ -107,7 +115,7 @@ impl<T> BundlableTableExt for T
 where
     T: BundlableTable + TableExt,
 {
-    type CompletedNewValues = <T::NewRecord as TypedNestedTuple>::NestedTupleType;
+    type CompletedNewValues = <T::NewRecord as TypedNestedTuple>::NestedTupleColumnType;
     type NestedMandatoryTriangularColumns = <T::MandatoryTriangularColumns as NestTuple>::Nested;
     type NestedMandatoryTables =
         <Self::NestedMandatoryTriangularColumns as HorizontalNestedKeys<T>>::NestedReferencedTables;
@@ -120,11 +128,11 @@ where
     type NestedMandatoryPrimaryKeys =
         <Self::NestedMandatoryTables as NonCompositePrimaryKeyNestedTables>::NestedPrimaryKeyColumns;
     type NestedMandatoryPrimaryKeyTypes =
-        <Self::NestedMandatoryPrimaryKeys as TypedNestedTuple>::NestedTupleType;
+        <Self::NestedMandatoryPrimaryKeys as TypedNestedTuple>::NestedTupleColumnType;
     type NestedDiscretionaryPrimaryKeys =
         <Self::NestedDiscretionaryTables as NonCompositePrimaryKeyNestedTables>::NestedPrimaryKeyColumns;
     type NestedDiscretionaryPrimaryKeyTypes =
-        <Self::NestedDiscretionaryPrimaryKeys as TypedNestedTuple>::NestedTupleType;
+        <Self::NestedDiscretionaryPrimaryKeys as TypedNestedTuple>::NestedTupleColumnType;
     type OptionalNestedDiscretionaryPrimaryKeyTypes =
         <Self::NestedDiscretionaryPrimaryKeyTypes as IntoNestedTupleOption>::IntoOptions;
     type MandatoryNestedBuilders =
@@ -212,11 +220,23 @@ where
 impl<T, C> SetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: TypedColumn<Table = T>,
+    C: HorizontalSameAsGroupExt<Table = T>,
+    Self: SetDiscretionarySameAsNestedColumns<
+            C::ValueType,
+            C::NestedDiscretionaryHorizontalKeys,
+            C::NestedDiscretionaryForeignColumns,
+        > + SetMandatorySameAsNestedColumns<
+            C::ValueType,
+            C::NestedMandatoryHorizontalKeys,
+            C::NestedMandatoryForeignColumns,
+        >,
     T::NewValues: SetColumn<C> + ValidateColumn<C, Error = std::convert::Infallible>,
 {
     #[inline]
     fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {
+        let value = value.into();
+        self.set_discretionary_same_as_nested_columns(&value);
+        self.set_mandatory_same_as_nested_columns(&value);
         self.insertable_model.set_column(value);
         self
     }
@@ -225,7 +245,18 @@ where
 impl<T, C> TrySetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: TypedColumn<Table = T>,
+    C: HorizontalSameAsGroupExt<Table = T>,
+    Self: TrySetDiscretionarySameAsNestedColumns<
+            C::ValueType,
+            <T::NewValues as ValidateColumn<C>>::Error,
+            C::NestedDiscretionaryHorizontalKeys,
+            C::NestedDiscretionaryForeignColumns,
+        > + TrySetMandatorySameAsNestedColumns<
+            C::ValueType,
+            <T::NewValues as ValidateColumn<C>>::Error,
+            C::NestedMandatoryHorizontalKeys,
+            C::NestedMandatoryForeignColumns,
+        >,
     T::NewValues: TrySetColumn<C>,
 {
     #[inline]
@@ -233,7 +264,59 @@ where
         &mut self,
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
+        let value = value.into();
+        self.validate_column_in_context(&value)?;
+        self.try_set_discretionary_same_as_nested_columns(&value)?;
+        self.try_set_mandatory_same_as_nested_columns(&value)?;
         self.insertable_model.try_set_column(value)?;
+        Ok(self)
+    }
+}
+
+impl<Key: MandatorySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
+    TrySetMandatorySameAsColumn<Key, C> for TableBuilderBundle<<Key as Column>::Table>
+where
+    C: TypedColumn<Table = Key::ReferencedTable>,
+    <Key::Table as BundlableTableExt>::OptionalMandatoryNestedBuilders:
+        NestedTupleIndexMut<Key::Idx, Element = Option<TableBuilder<C::Table>>>,
+    TableBuilder<C::Table>: TrySetColumn<C>,
+{
+    type Error = <TableBuilder<C::Table> as ValidateColumn<C>>::Error;
+
+    #[inline]
+    fn try_set_mandatory_same_as_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
+        if let Some(builder) = self.nested_mandatory_associated_builders.nested_index_mut() {
+            builder.try_set_column(value)?;
+        }
+        Ok(self)
+    }
+}
+
+impl<Key: DiscretionarySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
+    TrySetDiscretionarySameAsColumn<Key, C> for TableBuilderBundle<<Key as Column>::Table>
+where
+    C: TypedColumn<Table = Key::ReferencedTable>,
+    <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders:
+        NestedTupleIndexMut<Key::Idx, Element = Option<TableBuilder<C::Table>>>,
+    TableBuilder<Key::ReferencedTable>: TrySetColumn<C>,
+{
+    type Error = <TableBuilder<C::Table> as ValidateColumn<C>>::Error;
+
+    #[inline]
+    fn try_set_discretionary_same_as_column(
+        &mut self,
+        value: impl Into<C::ColumnType> + Clone,
+    ) -> Result<&mut Self, Self::Error> {
+        if let Some(builder) = self
+            .nested_discretionary_associated_builders
+            .nested_index_mut()
+            .as_mut()
+        {
+            builder.try_set_column(value)?;
+        }
         Ok(self)
     }
 }

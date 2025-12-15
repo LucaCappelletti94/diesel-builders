@@ -1,7 +1,7 @@
 //! Submodule defining the `GetForeign` trait for Diesel table models.
 
-use tuplities::prelude::NestTuple;
-use tuplities::prelude::NestedTupleFrom;
+use tuplities::prelude::NestedTupleInto;
+use tuplities::prelude::{IntoNestedTupleOption, NestedTupleOption};
 
 use crate::TypedNestedTuple;
 use crate::UniqueTableIndex;
@@ -45,16 +45,19 @@ where
                 Table = <ForeignColumns as NonEmptyProjection>::Table,
             > + LoadFirst<Conn>,
         >,
-    <ForeignColumns::Nested as TypedNestedTuple>::NestedTupleType:
-        NestedTupleFrom<<HostColumns::Nested as TypedNestedTuple>::NestedTupleType>,
+    <HostColumns::Nested as TypedNestedTuple>::NestedTupleValueType:
+        NestedTupleInto<<ForeignColumns::Nested as TypedNestedTuple>::NestedTupleValueType>,
 {
     fn foreign(
         &self,
         conn: &mut Conn,
     ) -> diesel::QueryResult<<<ForeignColumns>::Table as TableExt>::Model> {
-        let host_values: <<HostColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType =
-            self.get_nested_columns();
-        <ForeignColumns::Nested as LoadFirst<Conn>>::load_first(host_values, conn)
+        let host_column_values = self.get_nested_columns();
+        let optional_host_values: <<HostColumns::Nested as TypedNestedTuple>::NestedTupleValueType as IntoNestedTupleOption>::IntoOptions = host_column_values.nested_tuple_into();
+        let Some(transposed_host_values) = optional_host_values.transpose() else {
+            return Err(diesel::result::Error::NotFound);
+        };
+        <ForeignColumns::Nested as LoadFirst<Conn>>::load_first(transposed_host_values, conn)
     }
 }
 

@@ -31,6 +31,7 @@ use diesel_builders::prelude::*;
 pub struct ChildWithDiscretionary {
     #[infallible]
     /// Primary key.
+    #[same_as(discretionary_table::parent_id)]
     id: i32,
     #[infallible]
     #[discretionary(discretionary_table)]
@@ -40,10 +41,12 @@ pub struct ChildWithDiscretionary {
     /// Some other column in the child table.
     child_field: String,
     /// The remote `discretionary_field` value from discretionary table that B references via `discretionary_id`.
+    #[same_as(discretionary_table::discretionary_field)]
     remote_discretionary_field: Option<String>,
+    /// The remote `parent_id` value from discretionary table that B references via `discretionary_id`.
     #[infallible]
-    /// Another remote column from `discretionary_table`.
-    another_remote_column: Option<String>,
+    #[same_as(discretionary_table::another_field)]
+    another_remote_column: Option<String>,    
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
@@ -78,26 +81,6 @@ impl ValidateColumn<child_with_discretionary_table::remote_discretionary_field>
 // Define foreign key relationship using SQL-like syntax
 // B's (discretionary_id, remote_discretionary_field) references C's (id, discretionary_field)
 fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
-fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::another_remote_column) -> (discretionary_table::id, discretionary_table::discretionary_field));
-
-// This is the key part: B's discretionary_id must match C's id, and C's parent_id must match A's
-// id. We express that B's discretionary_id is horizontally the same as C's parent_id, which in
-// turn is the same as A's id.
-impl diesel_builders::HorizontalKey for child_with_discretionary_table::discretionary_id {
-    // HostColumns are columns in child_with_discretionary_table (the same table) that relate to this key
-    // In this case, there are no other columns in child_with_discretionary_table that need to match
-    // Actually, we need to think about this differently...
-    type HostColumns = (
-        child_with_discretionary_table::id,
-        child_with_discretionary_table::another_remote_column,
-        child_with_discretionary_table::remote_discretionary_field,
-    );
-    type ForeignColumns = (
-        discretionary_table::parent_id,
-        discretionary_table::discretionary_field,
-        discretionary_table::discretionary_field,
-    );
-}
 
 #[test]
 fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
@@ -113,7 +96,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
             remote_discretionary_field TEXT CHECK (remote_discretionary_field <> ''),
             another_remote_column TEXT,
 			FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field),
-            FOREIGN KEY (discretionary_id, another_remote_column) REFERENCES discretionary_table(id, discretionary_field)
+            FOREIGN KEY (discretionary_id, another_remote_column) REFERENCES discretionary_table(id, another_field)
         )",
     )
     .execute(&mut conn)?;
@@ -171,7 +154,10 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     let child = child_builder
         .try_discretionary(discretionary_builder)?
-        .insert(&mut conn)?;
+        .try_another_remote_column("After setting discretionary".to_owned())?
+        .another_remote_column("After setting discretionary".to_owned())
+        .insert(&mut conn)
+        .unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(
@@ -184,8 +170,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     let associated_discretionary: Discretionary = child.discretionary(&mut conn)?;
     assert_eq!(
-        associated_discretionary.get_column::<discretionary_table::discretionary_field>(),
-        "Value C for B"
+        associated_discretionary.another_field().as_deref(),
+        Some("After setting discretionary")
     );
     assert_eq!(
         associated_discretionary.get_column::<discretionary_table::parent_id>(),

@@ -26,7 +26,7 @@ where
     #[inline]
     fn try_set_nested_columns_collection(
         &mut self,
-        nested_values: (C1::NestedTupleType,),
+        nested_values: (C1::NestedTupleColumnType,),
     ) -> Result<&mut Self, Error> {
         self.try_set_nested_columns(nested_values.0)
     }
@@ -38,7 +38,7 @@ where
     CTail: TypedNestedTupleCollection,
     (CHead, CTail): TypedNestedTupleCollection<
         NestedCollectionType = (
-            CHead::NestedTupleType,
+            CHead::NestedTupleColumnType,
             <CTail as TypedNestedTupleCollection>::NestedCollectionType,
         ),
     >,
@@ -48,7 +48,7 @@ where
     fn try_set_nested_columns_collection(
         &mut self,
         (head, tail): (
-            CHead::NestedTupleType,
+            CHead::NestedTupleColumnType,
             <CTail as TypedNestedTupleCollection>::NestedCollectionType,
         ),
     ) -> Result<&mut Self, Error> {

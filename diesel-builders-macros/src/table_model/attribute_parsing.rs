@@ -357,24 +357,63 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
 }
 
 /// Extract the `same_as` columns from a field's attributes.
-/// Returns a vector of column paths (e.g., `ancestor_table::column_name`).
-/// Multiple `#[same_as(...)]` attributes can be specified on a field.
-/// Each attribute can contain comma-separated column paths.
-pub fn extract_same_as_columns(field: &syn::Field) -> syn::Result<Vec<syn::Path>> {
-    let mut same_as_columns = Vec::new();
+/// Returns a vector of vectors, where each inner vector contains the paths from one `#[same_as(...)]` attribute.
+/// Format: `#[same_as(path1, path2)]` -> `vec![vec![path1, path2]]`
+/// Format: `#[same_as(path1, (path2, path3))]` -> `vec![vec![path1, path2], vec![path1, path3]]`
+pub fn extract_same_as_columns(field: &syn::Field) -> syn::Result<Vec<Vec<syn::Path>>> {
+    let mut same_as_attributes = Vec::new();
 
     for attr in &field.attrs {
         if !attr.path().is_ident("same_as") {
             continue;
         }
 
-        // Parse the column paths from the attribute
-        // Format: #[same_as(ancestor_table::column_name, another_table::column)]
-        let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
-            attr.parse_args_with(syn::punctuated::Punctuated::parse_terminated)?;
+        // Custom parsing to handle tuples
+        let nested_paths = attr.parse_args_with(|input: syn::parse::ParseStream| {
+            let mut results = Vec::new();
 
-        same_as_columns.extend(punct);
+            // Parse the first path (foreign column)
+            let first_path: syn::Path = input.parse()?;
+
+            if input.is_empty() {
+                results.push(vec![first_path]);
+                return Ok(results);
+            }
+
+            input.parse::<syn::Token![,]>()?;
+
+            if input.peek(syn::token::Paren) {
+                // Handle tuple: (col1, col2, ...)
+                let content;
+                syn::parenthesized!(content in input);
+                let tuple_paths: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
+                    syn::punctuated::Punctuated::parse_terminated(&content)?;
+
+                if tuple_paths.is_empty() {
+                    return Err(syn::Error::new(
+                        content.span(),
+                        "Tuple of same_as columns cannot be empty",
+                    ));
+                }
+
+                for tuple_path in tuple_paths {
+                    results.push(vec![first_path.clone(), tuple_path]);
+                }
+            } else {
+                // Handle remaining paths as a list (legacy behavior or simple list)
+                let remaining_paths: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
+                    syn::punctuated::Punctuated::parse_terminated(input)?;
+
+                let mut full_path = vec![first_path];
+                full_path.extend(remaining_paths);
+                results.push(full_path);
+            }
+
+            Ok(results)
+        })?;
+
+        same_as_attributes.extend(nested_paths);
     }
 
-    Ok(same_as_columns)
+    Ok(same_as_attributes)
 }

@@ -139,14 +139,14 @@ where
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
-    Self:
-        TrySetHomogeneousNestedColumns<C::ColumnType, Self::Error, C::VerticalSameAsNestedColumns>,
+    Self: TrySetHomogeneousNestedColumns<C::ValueType, Self::Error, C::VerticalSameAsNestedColumns>,
 {
     #[inline]
     fn try_set_column(
         &mut self,
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
+        let value: C::ColumnType = value.into();
         self.try_set_homogeneous_nested_columns(&value)?;
         self.nested_bundles
             .nested_index_mut()
@@ -188,7 +188,7 @@ where
         RecursiveBuilderInsert<Error, Conn, Table = T>
             + TrySetHomogeneousNestedColumnsCollection<
                 Error,
-                <<Head::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType,
+                <<Head::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType,
                 <Tail::NestedTables as NestedTables>::NestedPrimaryKeyColumnsCollection,
             >,
 {

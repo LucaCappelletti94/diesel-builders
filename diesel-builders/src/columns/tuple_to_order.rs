@@ -29,7 +29,8 @@ where
     Head: TypedColumn<ColumnType: AsExpression<<Head as diesel::Expression>::SqlType>>
         + Expression<SqlType: SingleValue>,
     Tail: TupleToOrder,
-    (Head, Tail): TypedNestedTuple<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
+    (Head, Tail):
+        TypedNestedTuple<NestedTupleColumnType = (Head::ColumnType, Tail::NestedTupleColumnType)>,
     (Head, Tail::Order): FlattenNestedTuple + Expression,
 {
     type Order = (Head, Tail::Order);

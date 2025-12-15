@@ -17,6 +17,7 @@ pub fn generate_vertical_same_as_impls(
     fields: &Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
     attributes: &TableModelAttributes,
+    triangular_tables: &std::collections::HashSet<syn::Path>,
 ) -> syn::Result<Vec<TokenStream>> {
     let mut impls = Vec::new();
 
@@ -27,11 +28,54 @@ pub fn generate_vertical_same_as_impls(
             .ok_or_else(|| syn::Error::new_spanned(field, "Field must have a name"))?;
 
         // Extract same_as columns from field attributes
-        let same_as_columns = extract_same_as_columns(field)?;
+        let same_as_attributes = extract_same_as_columns(field)?;
+        let mut vertical_same_as_cols = Vec::new();
 
-        // Validate that all same_as columns are from ancestor tables
-        if let Some(ancestors) = &attributes.ancestors {
-            for column_path in &same_as_columns {
+        for attr_paths in &same_as_attributes {
+            // Check if this is a horizontal same_as with an explicit key
+            // #[same_as(Target::Col, Key)]
+            let is_horizontal_with_key = if attr_paths.len() == 2 {
+                let first = &attr_paths[0];
+                let second = &attr_paths[1];
+
+                // Check if first is triangular
+                let first_is_triangular = if first.segments.is_empty() {
+                    false
+                } else {
+                    let table_name = &first.segments[0].ident;
+                    triangular_tables.iter().any(|t| {
+                        if let Some(segment) = t.segments.last() {
+                            return segment.ident == *table_name;
+                        }
+                        false
+                    })
+                };
+
+                // Check if second looks like a key (local table reference or single segment)
+                let second_is_key = if second.segments.len() == 1 {
+                    // Single segment (e.g. "key_field")
+                    true
+                } else if second.segments.len() >= 2 {
+                    // Check if starts with table_module
+                    second
+                        .segments
+                        .first()
+                        .is_some_and(|s| s.ident == *table_module)
+                } else {
+                    false
+                };
+
+                first_is_triangular && second_is_key
+            } else {
+                false
+            };
+
+            for (i, column_path) in attr_paths.iter().enumerate() {
+                // Skip the key if we identified this as a horizontal same_as with key
+                if is_horizontal_with_key && i == 1 {
+                    continue;
+                }
+
                 // Extract the table name from the column path (e.g., parent_table from parent_table::column)
                 if column_path.segments.len() < 2 {
                     return Err(syn::Error::new_spanned(
@@ -43,38 +87,55 @@ pub fn generate_vertical_same_as_impls(
                 let table_name = &column_path.segments[0].ident;
 
                 // Check if this table is in the ancestors list
-                let is_ancestor = ancestors.iter().any(|ancestor| {
-                    // Extract the identifier from the ancestor Type
-                    if let syn::Type::Path(type_path) = ancestor {
-                        if let Some(segment) = type_path.path.segments.last() {
-                            return segment.ident == *table_name;
+                let is_ancestor = if let Some(ancestors) = &attributes.ancestors {
+                    ancestors.iter().any(|ancestor| {
+                        // Extract the identifier from the ancestor Type
+                        if let syn::Type::Path(type_path) = ancestor {
+                            if let Some(segment) = type_path.path.segments.last() {
+                                return segment.ident == *table_name;
+                            }
                         }
+                        false
+                    })
+                } else {
+                    false
+                };
+
+                // Check if this table is in the triangular tables list
+                let is_triangular = triangular_tables.iter().any(|t| {
+                    if let Some(segment) = t.segments.last() {
+                        return segment.ident == *table_name;
                     }
                     false
                 });
 
-                if !is_ancestor {
+                if is_ancestor {
+                    vertical_same_as_cols.push(column_path);
+                } else if is_triangular {
+                    // Ignore for VerticalSameAsGroup, handled by HorizontalKey
+                } else {
                     return Err(syn::Error::new_spanned(
                         column_path,
                         format!(
-                            "Column `{}` is not from an ancestor table. \
+                            "Column `{}` is not from an ancestor or triangular table. \
                              The #[same_as(...)] attribute can only reference columns from tables \
-                             listed in #[table_model(ancestors(...))]",
-                            quote!(#column_path)
+                             listed in #[table_model(ancestors(...))] or marked as #[mandatory]/#[discretionary]",
+                            quote!(#column_path).to_string().replace(' ', "")
                         ),
                     ));
                 }
             }
-        } else if !same_as_columns.is_empty() {
-            // If there are same_as columns but no ancestors defined
+        }
+
+        if !vertical_same_as_cols.is_empty() && attributes.ancestors.is_none() {
             return Err(syn::Error::new_spanned(
                 field,
-                "Cannot use #[same_as(...)] on a table without ancestors. \
+                "Cannot use ancestor #[same_as(...)] on a table without ancestors. \
                  Add #[table_model(ancestors(...))] to specify the ancestor tables.",
             ));
         }
 
-        let nested_columns = format_as_nested_tuple(same_as_columns);
+        let nested_columns = format_as_nested_tuple(vertical_same_as_cols);
 
         // Generate implementation for this column
         impls.push(quote! {

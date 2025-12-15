@@ -17,7 +17,7 @@ pub trait TryMaySetNestedColumns<Error, CS: NestedColumns>:
     /// Returns an error if any column cannot be set.
     fn try_may_set_nested_columns(
         &mut self,
-        nested_values: <CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        nested_values: <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) -> Result<&mut Self, Error>;
 }
 
@@ -50,7 +50,8 @@ impl<CHead, CTail, T, Error> TryMaySetNestedColumns<Error, (CHead, CTail)> for T
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     T: TrySetColumn<CHead> + TryMaySetNestedColumns<Error, CTail>,
     Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
@@ -59,7 +60,7 @@ where
         &mut self,
         (head, tail): (
             Option<CHead::ColumnType>,
-            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+            <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
         ),
     ) -> Result<&mut Self, Error> {
         if let Some(value) = head {

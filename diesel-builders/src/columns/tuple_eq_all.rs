@@ -10,7 +10,7 @@ pub trait TupleEqAll: TypedNestedTuple {
     /// The output type of the equality operation.
     type EqAll: FlattenNestedTuple;
     /// Creates a tuple of equality tuple comparing all elements.
-    fn eq_all(self, rhs: Self::NestedTupleType) -> Self::EqAll;
+    fn eq_all(self, rhs: Self::NestedTupleColumnType) -> Self::EqAll;
 }
 
 impl<Head> TupleEqAll for (Head,)
@@ -30,11 +30,12 @@ where
     Head: TypedColumn<ColumnType: AsExpression<<Head as diesel::Expression>::SqlType>>
         + Expression<SqlType: SingleValue>,
     Tail: TupleEqAll,
-    (Head, Tail): TypedNestedTuple<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
+    (Head, Tail):
+        TypedNestedTuple<NestedTupleColumnType = (Head::ColumnType, Tail::NestedTupleColumnType)>,
     (diesel::dsl::Eq<Head, Head::ColumnType>, Tail::EqAll): FlattenNestedTuple,
 {
     type EqAll = (diesel::dsl::Eq<Head, Head::ColumnType>, Tail::EqAll);
-    fn eq_all(self, rhs: (Head::ColumnType, Tail::NestedTupleType)) -> Self::EqAll {
+    fn eq_all(self, rhs: (Head::ColumnType, Tail::NestedTupleColumnType)) -> Self::EqAll {
         use diesel::ExpressionMethods;
         (self.0.eq(rhs.0), self.1.eq_all(rhs.1))
     }

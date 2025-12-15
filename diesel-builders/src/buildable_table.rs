@@ -1,17 +1,18 @@
 //! Submodule providing the `BuildableTables` trait and its implementations.
 
-use tuplities::prelude::NestedTupleTryFrom;
+use tuplities::prelude::{NestedTupleIndex, NestedTupleTryFrom};
 
 use crate::{
-    IncompleteBuilderError, NestedBundlableTables, TableBuilder, ancestors::DescendantWithSelf,
-    builder_bundle::BundlableTableExt,
+    AncestorOfIndex, IncompleteBuilderError, NestedBundlableTables, TableBuilder,
+    TableBuilderBundle, ancestors::DescendantWithSelf, builder_bundle::BundlableTableExt,
 };
 
 /// A trait for Diesel tables that can be used to build insertable models for
 /// themselves and their ancestors.
 pub trait BuildableTable: BundlableTableExt + DescendantWithSelf {
     /// The ancestor builders associated with this table.
-    type NestedAncestorBuilders: Default;
+    type NestedAncestorBuilders: Default
+        + NestedTupleIndex<<Self as AncestorOfIndex<Self>>::Idx, Element = TableBuilderBundle<Self>>;
     /// The completed ancestor builders associated with this table.
     type NestedCompletedAncestorBuilders: NestedTupleTryFrom<Self::NestedAncestorBuilders, IncompleteBuilderError>;
 
@@ -26,6 +27,8 @@ pub trait BuildableTable: BundlableTableExt + DescendantWithSelf {
 impl<T> BuildableTable for T
 where
     T: BundlableTableExt + DescendantWithSelf,
+    <T::NestedAncestorsWithSelf as NestedBundlableTables>::NestedBundleBuilders:
+        NestedTupleIndex<<T as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<T>>,
 {
     type NestedAncestorBuilders =
         <T::NestedAncestorsWithSelf as NestedBundlableTables>::NestedBundleBuilders;

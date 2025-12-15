@@ -9,7 +9,7 @@ pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
     /// May set the `nested_values` of the specified columns.
     fn may_set_nested_columns(
         &mut self,
-        nested_values: <CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        nested_values: <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) -> &mut Self;
 }
 
@@ -29,8 +29,9 @@ impl<CHead, CTail, T> MaySetColumns<(CHead, CTail)> for T
 where
     CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (CHead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail): NonEmptyNestedProjection<
+        NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType),
+    >,
     T: MaySetColumn<CHead> + MaySetColumns<CTail>,
 {
     #[inline]
@@ -38,7 +39,7 @@ where
         &mut self,
         (head, tail): (
             Option<CHead::ColumnType>,
-            <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+            <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
         ),
     ) -> &mut Self {
         self.may_set_column(head);

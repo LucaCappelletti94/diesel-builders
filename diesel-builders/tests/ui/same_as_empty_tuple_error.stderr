@@ -1,0 +1,19 @@
+error: Tuple of same_as columns cannot be empty
+  --> tests/ui/same_as_empty_tuple_error.rs:16:33
+   |
+16 |     #[same_as(other_table::id, ())]
+   |                                 ^
+
+warning: unused import: `diesel_builders::prelude::*`
+ --> tests/ui/same_as_empty_tuple_error.rs:1:5
+  |
+1 | use diesel_builders::prelude::*;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `diesel::prelude::*`
+ --> tests/ui/same_as_empty_tuple_error.rs:5:9
+  |
+5 |     use diesel::prelude::*;
+  |         ^^^^^^^^^^^^^^^^^^

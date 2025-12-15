@@ -37,33 +37,33 @@ pub trait HorizontalKey:
 {
     /// The set of host columns in the same table which have
     /// an horizontal same-as relationship defined by this key.
-    type HostColumns: NonEmptyProjection<Table = Self::Table, Nested: NonEmptyNestedProjection<
-        NestedTupleType: NestedTupleFrom<<<Self::ForeignColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType> + IntoNestedTupleOption<
-            IntoOptions: NestedTupleOptionFrom<
-                <<<Self::ForeignColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
-            >
-        >,
-    >>;
+    type HostColumns: NonEmptyProjection<Table = Self::Table, Nested: NonEmptyNestedProjection>;
     /// The set of foreign columns in other tables which have
     /// an horizontal same-as relationship defined by this key.
-    type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns, Nested: NonEmptyNestedProjection>;
+    type ForeignColumns: HorizontalSameAsColumns<Self, Self::HostColumns, Nested: NonEmptyNestedProjection<
+        NestedTupleColumnType:  NestedTupleInto<<<Self::HostColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleColumnType> + IntoNestedTupleOption<
+            IntoOptions: NestedTupleOptionInto<
+                <<<Self::HostColumns as NestTuple>::Nested as TypedNestedTuple>::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
+            >,
+        >,
+    >>;
 }
 
 /// Extension trait for `HorizontalKey` to access nested host and foreign
 /// columns.
 pub trait HorizontalKeyExt: HorizontalKey {
     /// The nested host columns.
-    type NestedHostColumns: NonEmptyNestedProjection<
-        NestedTupleType: NestedTupleFrom<
-            <Self::NestedForeignColumns as TypedNestedTuple>::NestedTupleType,
-        > + IntoNestedTupleOption<
-            IntoOptions: NestedTupleOptionFrom<
-                <<Self::NestedForeignColumns as TypedNestedTuple>::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
-            >,
-        >,
-    >;
+    type NestedHostColumns: NonEmptyNestedProjection;
     /// The nested foreign columns.
-    type NestedForeignColumns: NonEmptyNestedProjection;
+    type NestedForeignColumns: NonEmptyNestedProjection<
+        NestedTupleColumnType: NestedTupleInto<
+            <Self::NestedHostColumns as TypedNestedTuple>::NestedTupleColumnType,
+        > + IntoNestedTupleOption<
+            IntoOptions: NestedTupleOptionInto<
+                <<Self::NestedHostColumns as TypedNestedTuple>::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
+            >,
+        >
+    >;
 }
 
 impl<K> HorizontalKeyExt for K
@@ -94,7 +94,7 @@ pub trait HorizontalNestedKeys<T>: NestedColumns {
     /// The set of referenced tables.
     type NestedReferencedTables: NonCompositePrimaryKeyNestedTables<
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = <Self as TypedNestedTuple>::NestedTupleType,
+                NestedTupleColumnType = <Self as TypedNestedTuple>::NestedTupleColumnType,
             >,
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<
@@ -121,7 +121,7 @@ where
     (Head,): NestedColumns,
     (Head::ReferencedTable,): NonCompositePrimaryKeyNestedTables<
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = <(Head,) as TypedNestedTuple>::NestedTupleType,
+                NestedTupleColumnType = <(Head,) as TypedNestedTuple>::NestedTupleColumnType,
             >,
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<
@@ -142,10 +142,11 @@ where
     T: HasPrimaryKeyColumn,
     Head: HorizontalKeyExt<Table = T>,
     Tail: HorizontalNestedKeys<T>,
-    (Head, Tail): NestedColumns<NestedTupleType = (Head::ColumnType, Tail::NestedTupleType)>,
+    (Head, Tail):
+        NestedColumns<NestedTupleColumnType = (Head::ColumnType, Tail::NestedTupleColumnType)>,
     (Head::ReferencedTable, Tail::NestedReferencedTables): NonCompositePrimaryKeyNestedTables<
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleType = (Head::ColumnType, Tail::NestedTupleType),
+                NestedTupleColumnType = (Head::ColumnType, Tail::NestedTupleColumnType),
             >,
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<

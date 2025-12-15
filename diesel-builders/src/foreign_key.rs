@@ -3,7 +3,7 @@
 use tuplities::prelude::*;
 
 use crate::{
-    GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple,
+    Descendant, GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple,
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
@@ -134,8 +134,8 @@ where
             typenum::U0,
             ReferencedColumns::Nested,
             ReferencedColumns,
-            NestedTupleType: NestedTupleFrom<
-                <ReferencedColumns::Nested as TypedNestedTuple>::NestedTupleType,
+            NestedTupleColumnType: NestedTupleFrom<
+                <ReferencedColumns::Nested as TypedNestedTuple>::NestedTupleColumnType,
             >,
         >,
     >,
@@ -152,7 +152,9 @@ pub trait NestedForeignKeyTail<
     FullReferencedIndex,
 >:
     NonEmptyNestedProjection<
-    NestedTupleType: NestedTupleFrom<<ReferencedColumns as TypedNestedTuple>::NestedTupleType>,
+    NestedTupleColumnType: NestedTupleFrom<
+        <ReferencedColumns as TypedNestedTuple>::NestedTupleColumnType,
+    >,
 >
 {
 }
@@ -174,9 +176,10 @@ where
     (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
     Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
-    Htail::NestedTupleType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleType>,
-    <(Hhead, Htail) as TypedNestedTuple>::NestedTupleType:
-        NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleType>,
+    Htail::NestedTupleColumnType:
+        NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleColumnType>,
+    <(Hhead, Htail) as TypedNestedTuple>::NestedTupleColumnType:
+        NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleColumnType>,
 {
 }
 
@@ -197,6 +200,7 @@ pub trait HostColumn<
 pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
     type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<ColumnType = <Self as Typed>::ColumnType>>
+        + Descendant
         + diesel::query_source::TableNotEqual<Self::Table>;
 }
 

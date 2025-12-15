@@ -9,7 +9,7 @@ pub trait TupleMayGetNestedColumns<CS: NestedColumns> {
     /// May get the values of the specified columns as an n-uple.
     fn tuple_may_get_nested_columns(
         &self,
-    ) -> <CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions;
+    ) -> <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions;
 }
 
 impl TupleMayGetNestedColumns<()> for () {
@@ -32,7 +32,8 @@ impl<CHead, CTail, THead, TTail> TupleMayGetNestedColumns<(CHead, CTail)> for (T
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     THead: MayGetColumn<CHead>,
     TTail: TupleMayGetNestedColumns<CTail>,
 {
@@ -41,7 +42,7 @@ where
         &self,
     ) -> (
         Option<CHead::ColumnType>,
-        <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) {
         (
             self.0.may_get_column(),

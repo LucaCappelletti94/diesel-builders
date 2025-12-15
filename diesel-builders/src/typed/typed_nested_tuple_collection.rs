@@ -18,9 +18,9 @@ impl<T> TypedNestedTupleCollection for (T,)
 where
     T: TypedNestedTuple,
     (T,): FlattenNestedTupleMatrix,
-    (T::NestedTupleType,): FlattenNestedTupleMatrix,
+    (T::NestedTupleColumnType,): FlattenNestedTupleMatrix,
 {
-    type NestedCollectionType = (T::NestedTupleType,);
+    type NestedCollectionType = (T::NestedTupleColumnType,);
 }
 
 impl<Head, Tail> TypedNestedTupleCollection for (Head, Tail)
@@ -28,7 +28,7 @@ where
     Head: TypedNestedTuple,
     Tail: TypedNestedTupleCollection,
     (Head, Tail): FlattenNestedTupleMatrix,
-    (Head::NestedTupleType, Tail::NestedCollectionType): FlattenNestedTupleMatrix,
+    (Head::NestedTupleColumnType, Tail::NestedCollectionType): FlattenNestedTupleMatrix,
 {
-    type NestedCollectionType = (Head::NestedTupleType, Tail::NestedCollectionType);
+    type NestedCollectionType = (Head::NestedTupleColumnType, Tail::NestedCollectionType);
 }

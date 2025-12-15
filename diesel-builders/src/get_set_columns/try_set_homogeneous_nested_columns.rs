@@ -14,7 +14,7 @@ pub trait TrySetHomogeneousNestedColumns<Type, Error, CS: HomogeneouslyTypedNest
     /// Returns an error if the value fails validation for any of the columns.
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Type> + Clone),
+        value: &(impl Into<Option<Type>> + Clone),
     ) -> Result<&mut Self, Error>;
 }
 
@@ -22,7 +22,7 @@ impl<Type, Error, T> TrySetHomogeneousNestedColumns<Type, Error, ()> for T {
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        _value: &(impl Into<Type> + Clone),
+        _value: &(impl Into<Option<Type>> + Clone),
     ) -> Result<&mut Self, Error> {
         Ok(self)
     }
@@ -32,16 +32,18 @@ impl<Type: Clone, C1, Error, T> TrySetHomogeneousNestedColumns<Type, Error, (C1,
 where
     T: TrySetColumn<C1>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
-    C1: TypedColumn,
-    C1::ColumnType: From<Type>,
+    C1: TypedColumn<ColumnType: From<Type>>,
 {
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Type> + Clone),
+        value: &(impl Into<Option<Type>> + Clone),
     ) -> Result<&mut Self, Error> {
-        let value: Type = value.clone().into();
-        Ok(self.try_set_column(value)?)
+        let value: Option<Type> = value.clone().into();
+        if let Some(value) = value {
+            self.try_set_column(value)?;
+        }
+        Ok(self)
     }
 }
 
@@ -51,19 +53,22 @@ where
     CHead: TypedColumn,
     CHead::ColumnType: From<Type>,
     CTail: HomogeneouslyTypedNestedColumns<Type>,
-    (CHead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail): NonEmptyNestedProjection<
+        NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType),
+    >,
     T: TrySetColumn<CHead> + TrySetHomogeneousNestedColumns<Type, Error, CTail>,
     Error: From<<T as ValidateColumn<CHead>>::Error>,
 {
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Type> + Clone),
+        value: &(impl Into<Option<Type>> + Clone),
     ) -> Result<&mut Self, Error> {
-        let value: Type = value.clone().into();
+        let value: Option<Type> = value.clone().into();
         self.try_set_homogeneous_nested_columns(&value)?;
-        self.try_set_column(value)?;
+        if let Some(value) = value {
+            self.try_set_column(value)?;
+        }
         Ok(self)
     }
 }

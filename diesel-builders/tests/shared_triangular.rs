@@ -25,6 +25,8 @@ pub struct Mandatory {
     parent_id: i32,
     /// A column in the mandatory table.
     mandatory_field: String,
+    /// Another column in the mandatory table.
+    another_field: Option<String>,
 }
 
 #[allow(clippy::struct_field_names)]
@@ -39,15 +41,19 @@ pub struct Discretionary {
     parent_id: i32,
     /// A column in the discretionary table.
     discretionary_field: String,
+    /// Another column in the discretionary table.
+    another_field: Option<String>,
 }
 
 // Define table index that can be referenced by foreign keys
 unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
+unique_index!(mandatory_table::id, mandatory_table::another_field);
 unique_index!(mandatory_table::id, mandatory_table::parent_id);
 unique_index!(
     discretionary_table::id,
     discretionary_table::discretionary_field
 );
+unique_index!(discretionary_table::id, discretionary_table::another_field);
 
 /// Setups the triangular relation tables in the given connection.
 ///
@@ -71,8 +77,10 @@ pub fn setup_triangular_tables(
         "CREATE TABLE mandatory_table (
             id INTEGER PRIMARY KEY NOT NULL,
             parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-            mandatory_field TEXT,
+            mandatory_field TEXT NOT NULL,
+            another_field TEXT,
 			UNIQUE(id, mandatory_field),
+            UNIQUE(id, another_field),
 			UNIQUE(id, parent_id)
         )",
     )
@@ -82,8 +90,10 @@ pub fn setup_triangular_tables(
         "CREATE TABLE discretionary_table (
             id INTEGER PRIMARY KEY NOT NULL,
             parent_id INTEGER NOT NULL REFERENCES parent_table(id),
-            discretionary_field TEXT,
-			UNIQUE(id, discretionary_field)
+            discretionary_field TEXT NOT NULL,
+            another_field TEXT,
+			UNIQUE(id, discretionary_field),
+            UNIQUE(id, another_field)
         )",
     )
     .execute(conn)?;

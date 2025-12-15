@@ -6,8 +6,9 @@ use crate::{MayGetColumn, TypedColumn, columns::NonEmptyNestedProjection};
 /// Trait indicating a builder which may get multiple columns.
 pub trait MayGetNestedColumns<CS: NonEmptyNestedProjection> {
     /// May get the owned values of the specified columns.
-    fn may_get_nested_columns(&self)
-    -> <CS::NestedTupleType as IntoNestedTupleOption>::IntoOptions;
+    fn may_get_nested_columns(
+        &self,
+    ) -> <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions;
 }
 
 impl<C1, T> MayGetNestedColumns<(C1,)> for T
@@ -25,8 +26,9 @@ impl<CHead, CTail, T> MayGetNestedColumns<(CHead, CTail)> for T
 where
     CHead: TypedColumn,
     CTail: NonEmptyNestedProjection,
-    (CHead, CTail):
-        NonEmptyNestedProjection<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail): NonEmptyNestedProjection<
+        NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType),
+    >,
     T: MayGetColumn<CHead> + MayGetNestedColumns<CTail>,
 {
     #[inline]
@@ -34,7 +36,7 @@ where
         &self,
     ) -> (
         Option<CHead::ColumnType>,
-        <CTail::NestedTupleType as IntoNestedTupleOption>::IntoOptions,
+        <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) {
         (self.may_get_column(), self.may_get_nested_columns())
     }

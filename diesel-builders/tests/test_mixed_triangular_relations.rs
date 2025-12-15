@@ -18,6 +18,8 @@ use shared_triangular::*;
 #[table_model(ancestors = parent_table)]
 /// Model for table B.
 pub struct ChildWithMixed {
+    #[same_as(mandatory_table::parent_id)]
+    #[same_as(discretionary_table::parent_id)]
     /// Primary key.
     id: i32,
     #[mandatory(mandatory_table)]
@@ -28,8 +30,10 @@ pub struct ChildWithMixed {
     discretionary_id: i32,
     /// Column B value.
     child_field: String,
+    #[same_as(mandatory_table::mandatory_field)]
     /// Remote column C value.
     remote_mandatory_field: Option<String>,
+    #[same_as(discretionary_table::discretionary_field)]
     /// Remote column D value.
     remote_discretionary_field: Option<String>,
 }
@@ -38,26 +42,6 @@ pub struct ChildWithMixed {
 fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
 fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
 fk!((child_with_mixed_table::discretionary_id, child_with_mixed_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
-
-// Define horizontal same-as relationships
-impl diesel_builders::HorizontalKey for child_with_mixed_table::mandatory_id {
-    type HostColumns = (
-        child_with_mixed_table::id,
-        child_with_mixed_table::remote_mandatory_field,
-    );
-    type ForeignColumns = (mandatory_table::parent_id, mandatory_table::mandatory_field);
-}
-
-impl diesel_builders::HorizontalKey for child_with_mixed_table::discretionary_id {
-    type HostColumns = (
-        child_with_mixed_table::id,
-        child_with_mixed_table::remote_discretionary_field,
-    );
-    type ForeignColumns = (
-        discretionary_table::parent_id,
-        discretionary_table::discretionary_field,
-    );
-}
 
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     setup_triangular_tables(conn)?;

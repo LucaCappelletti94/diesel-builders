@@ -5,7 +5,7 @@ use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 /// Variant of `GetNestedColumns` for n-uples.
 pub trait TupleGetNestedColumns<CS: NestedColumns> {
     /// Get the values of the specified columns as an n-uple.
-    fn tuple_get_nested_columns(&self) -> <CS as TypedNestedTuple>::NestedTupleType;
+    fn tuple_get_nested_columns(&self) -> <CS as TypedNestedTuple>::NestedTupleColumnType;
 }
 
 impl TupleGetNestedColumns<()> for () {
@@ -19,7 +19,7 @@ where
     C1: TypedColumn,
 {
     #[inline]
-    fn tuple_get_nested_columns(&self) -> <(C1,) as TypedNestedTuple>::NestedTupleType {
+    fn tuple_get_nested_columns(&self) -> <(C1,) as TypedNestedTuple>::NestedTupleColumnType {
         (self.0.get_column(),)
     }
 }
@@ -28,12 +28,15 @@ impl<CHead, CTail, THead, TTail> TupleGetNestedColumns<(CHead, CTail)> for (THea
 where
     CHead: TypedColumn,
     CTail: NestedColumns,
-    (CHead, CTail): NestedColumns<NestedTupleType = (CHead::ColumnType, CTail::NestedTupleType)>,
+    (CHead, CTail):
+        NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
     THead: GetColumn<CHead>,
     TTail: TupleGetNestedColumns<CTail>,
 {
     #[inline]
-    fn tuple_get_nested_columns(&self) -> <(CHead, CTail) as TypedNestedTuple>::NestedTupleType {
+    fn tuple_get_nested_columns(
+        &self,
+    ) -> <(CHead, CTail) as TypedNestedTuple>::NestedTupleColumnType {
         (self.0.get_column(), self.1.tuple_get_nested_columns())
     }
 }
