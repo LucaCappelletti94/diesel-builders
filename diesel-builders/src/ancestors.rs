@@ -1,12 +1,10 @@
 //! Submodule defining the `Descendant` trait.
 
 use diesel::associations::HasTable;
-use diesel::expression_methods::EqAll;
-use diesel::query_dsl::methods::{FilterDsl, LimitDsl, LoadQuery, SelectDsl};
-use diesel::{RunQueryDsl, Table};
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTuplePushBack};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleFrom, NestedTuplePushBack};
 use typenum::Unsigned;
 
+use crate::load_query_builder::LoadFirst;
 use crate::{GetNestedColumns, NestedBundlableTables, TableExt, Tables, tables::NestedTables};
 use crate::{NestedColumns, TypedColumn, TypedNestedTuple};
 
@@ -105,31 +103,15 @@ impl<M, Conn> ModelDescendantExt<Conn> for M {}
 
 impl<Conn, T, M> ModelDescendantOf<Conn, T> for M
 where
-    T: Descendant + SelectDsl<<T as Table>::AllColumns>,
+    T: Descendant,
     M: HasTable<Table: DescendantOf<T>> + GetNestedColumns<T::NestedPrimaryKeyColumns>,
-    <T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened: EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>,
-    Conn: diesel::connection::LoadConnection,
-    <T as SelectDsl<<T as Table>::AllColumns>>::Output: FilterDsl<
-        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
-    >,
-    <<T as SelectDsl<<T as Table>::AllColumns>>::Output as FilterDsl<
-        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
-    >>::Output: LimitDsl + RunQueryDsl<Conn>,
-    for<'query> <<<T as SelectDsl<<T as Table>::AllColumns>>::Output as FilterDsl<
-        <<T::NestedPrimaryKeyColumns as FlattenNestedTuple>::Flattened as EqAll<<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType as FlattenNestedTuple>::Flattened>>::Output,
-    >>::Output as LimitDsl>::Output: LoadQuery<'query, Conn, <T as TableExt>::Model>,
+    T::NestedPrimaryKeyColumns: LoadFirst<Conn>,
+    <T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType:
+        NestedTupleFrom<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleType>,
 {
     fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model> {
-        let ancestor_table: T = Default::default();
-        let ancestor_pk_columns = T::NestedPrimaryKeyColumns::default().flatten();
-        let descendant_pk_values = self.get_nested_columns().flatten();
-        RunQueryDsl::first(
-            FilterDsl::filter(
-                SelectDsl::select(ancestor_table, <T as Table>::all_columns()),
-                ancestor_pk_columns.eq_all(descendant_pk_values),
-            ),
-            conn,
-        )
+        let descendant_pk_values = self.get_nested_columns();
+        <T::NestedPrimaryKeyColumns as LoadFirst<Conn>>::load_first(descendant_pk_values, conn)
     }
 }
 

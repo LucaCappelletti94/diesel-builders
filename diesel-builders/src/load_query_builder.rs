@@ -154,17 +154,21 @@ pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
 impl<Conn, NestedColumns> LoadManySorted<Conn> for NestedColumns
 where
     Conn: diesel::connection::LoadConnection,
-    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt> + TupleToOrder,
-    NestedColumns::LoadQuery:
-        OrderDsl<<NestedColumns as TupleToOrder>::Order> + diesel::query_dsl::RunQueryDsl<Conn>,
-    for<'query> <Self::LoadQuery as OrderDsl<<NestedColumns as TupleToOrder>::Order>>::Output:
-        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
+    <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns: TupleToOrder,
+    NestedColumns::LoadQuery: OrderDsl<
+            <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+        > + diesel::query_dsl::RunQueryDsl<Conn>,
+    for<'query> <Self::LoadQuery as OrderDsl<
+        <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+    >>::Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn load_many_sorted(
         values: impl NestedTupleInto<Self::NestedTupleType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
-        let order = NestedColumns::default().to_order();
+        let order =
+            <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns::default().to_order();
         let query = Self::load_query(values).order(order);
         diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
     }
