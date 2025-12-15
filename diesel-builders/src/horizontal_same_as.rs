@@ -5,7 +5,7 @@ use typenum::Unsigned;
 use tuplities::prelude::*;
 
 use crate::{
-    ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TypedNestedTuple,
+    ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TableExt, TypedNestedTuple,
     ancestors::DescendantWithSelf,
     columns::{
         ColumnsCollection, NestedColumns, NestedColumnsCollection, NonEmptyNestedProjection,
@@ -75,7 +75,11 @@ where
 }
 
 /// Index in a tuple for a mandatory same-as relationship.
-pub trait MandatorySameAsIndex: HorizontalKeyExt {
+pub trait MandatorySameAsIndex:
+    HorizontalKeyExt<
+    NestedHostColumns: NestedTupleStartsWith<<Self::Table as TableExt>::NestedPrimaryKeyColumns>,
+>
+{
     /// The index in the n-uple of host columns where the mandatory same-as
     /// relationship is defined.
     type Idx: Unsigned;
