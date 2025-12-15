@@ -101,7 +101,7 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
                     Conn,
                     (#column,),
                     (<#referenced_table::table as diesel::Table>::PrimaryKey,),
-                >>::get_foreign(self, conn)
+                >>::first_foreign(self, conn)
             }
         }
 

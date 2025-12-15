@@ -124,11 +124,11 @@ impl<T> HasPrimaryKeyColumn for T where
 
 /// A trait for Diesel columns collections that are part of a foreign key
 /// relationship.
-pub trait ForeignKey<ReferencedColumns: UniqueTableIndex>: NonEmptyProjection {}
+pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
 impl<ReferencedColumns, HostColumns> ForeignKey<ReferencedColumns> for HostColumns
 where
-    ReferencedColumns: UniqueTableIndex,
-    ReferencedColumns::Nested: NestedUniqueTableIndexTail<typenum::U0, ReferencedColumns>,
+    ReferencedColumns: TableIndex,
+    ReferencedColumns::Nested: NestedTableIndexTail<typenum::U0, ReferencedColumns>,
     HostColumns: NonEmptyProjection<
         Nested: NestedForeignKeyTail<
             typenum::U0,
@@ -148,7 +148,7 @@ where
 /// except the first one, and so on.
 pub trait NestedForeignKeyTail<
     Idx,
-    ReferencedColumns: NestedUniqueTableIndexTail<Idx, FullReferencedIndex>,
+    ReferencedColumns: NestedTableIndexTail<Idx, FullReferencedIndex>,
     FullReferencedIndex,
 >:
     NonEmptyNestedProjection<
@@ -160,8 +160,7 @@ pub trait NestedForeignKeyTail<
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
     H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType>
-        + UniquelyIndexedColumn<typenum::U0, (F1,)>,
+    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType> + IndexedColumn<typenum::U0, (F1,)>,
 {
 }
 
@@ -170,9 +169,9 @@ impl<Idx, Fhead, Ftail, Hhead, Htail, FullReferencedIndex>
 where
     Htail: NonEmptyNestedProjection,
     Idx: core::ops::Add<typenum::B1>,
-    Ftail: NestedUniqueTableIndexTail<typenum::Add1<Idx>, FullReferencedIndex>,
+    Ftail: NestedTableIndexTail<typenum::Add1<Idx>, FullReferencedIndex>,
     (Hhead, Htail): NonEmptyNestedProjection<Table = Hhead::Table>,
-    (Fhead, Ftail): NestedUniqueTableIndexTail<Idx, FullReferencedIndex>,
+    (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
     Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
     Htail::NestedTupleType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleType>,
@@ -188,7 +187,7 @@ where
 pub trait HostColumn<
     Idx,
     HostColumns: ForeignKey<ReferencedColumns, Nested: NestedTupleIndex<Idx, Element = Self>>,
-    ReferencedColumns: UniqueTableIndex,
+    ReferencedColumns: TableIndex,
 >: TypedColumn
 {
 }

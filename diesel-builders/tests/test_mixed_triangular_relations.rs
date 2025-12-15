@@ -148,7 +148,7 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use GetForeignExt directly for primary-key based foreign key
     let c_pk: Mandatory = b
-        .get_foreign::<(child_with_mixed_table::mandatory_id,), (mandatory_table::id,)>(
+        .first_foreign::<(child_with_mixed_table::mandatory_id,), (mandatory_table::id,)>(
             &mut conn,
         )?;
     assert_eq!(
@@ -162,7 +162,7 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
     let c_horizontal: Mandatory =
-        b.get_foreign::<(
+        b.first_foreign::<(
             child_with_mixed_table::mandatory_id,
             child_with_mixed_table::id,
         ), (mandatory_table::id, mandatory_table::parent_id)>(&mut conn)?;

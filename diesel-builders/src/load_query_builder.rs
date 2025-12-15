@@ -1,0 +1,171 @@
+//! Module providing a helper trait to construct a load query to be further specialized
+//! and completed by other traits.
+
+use diesel::Table;
+use diesel::expression_methods::EqAll;
+use diesel::query_dsl::methods::FilterDsl;
+use diesel::query_dsl::methods::LimitDsl;
+use diesel::query_dsl::methods::LoadQuery;
+use diesel::query_dsl::methods::OrderDsl;
+use diesel::query_dsl::methods::SelectDsl;
+use tuplities::prelude::{FlattenNestedTuple, NestedTupleInto};
+
+use crate::{
+    TableExt,
+    columns::{NonEmptyNestedProjection, TupleToOrder},
+};
+
+/// The `LoadQueryBuilder` trait allows retrieving the foreign table
+/// model curresponding to specified foreign columns from a host table model.
+pub trait LoadQueryBuilder: NonEmptyNestedProjection {
+    /// The type of the constructed load query.
+    type LoadQuery;
+
+    /// Constructs a load query.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - A nested tuple of values corresponding to the foreign columns.
+    fn load_query(values: impl NestedTupleInto<Self::NestedTupleType>) -> Self::LoadQuery;
+}
+
+impl<NestedColumns> LoadQueryBuilder for NestedColumns
+where
+    NestedColumns: NonEmptyNestedProjection,
+    NestedColumns::Flattened:
+        EqAll<<NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened>,
+    NestedColumns::Table: TableExt + SelectDsl<<NestedColumns::Table as Table>::AllColumns>,
+    <NestedColumns::Table as SelectDsl<<NestedColumns::Table as Table>::AllColumns>>::Output:
+        FilterDsl<
+            <NestedColumns::Flattened as EqAll<
+                <NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened,
+            >>::Output,
+        >,
+{
+    type LoadQuery = <<NestedColumns::Table as SelectDsl<
+        <NestedColumns::Table as Table>::AllColumns,
+    >>::Output as FilterDsl<
+        <NestedColumns::Flattened as EqAll<
+            <NestedColumns::NestedTupleType as FlattenNestedTuple>::Flattened,
+        >>::Output,
+    >>::Output;
+
+    fn load_query(values: impl NestedTupleInto<Self::NestedTupleType>) -> Self::LoadQuery {
+        let table: NestedColumns::Table = Default::default();
+        let columns = NestedColumns::default().flatten();
+        let values: NestedColumns::NestedTupleType = values.nested_tuple_into();
+        FilterDsl::filter(
+            SelectDsl::select(table, <NestedColumns::Table as Table>::all_columns()),
+            columns.eq_all(values.flatten()),
+        )
+    }
+}
+
+/// The `LoadFirst` trait allows retrieving the first record from a load query.
+pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: TableExt> {
+    /// Constructs a load query.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - A nested tuple of values corresponding to the foreign columns.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails or if no matching record is found.
+    fn load_first(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<<Self::Table as TableExt>::Model>;
+}
+
+impl<Conn, NestedColumns> LoadFirst<Conn> for NestedColumns
+where
+    Conn: diesel::connection::LoadConnection,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
+    NestedColumns::LoadQuery: LimitDsl + diesel::query_dsl::RunQueryDsl<Conn>,
+    for<'query> <Self::LoadQuery as LimitDsl>::Output:
+        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn load_first(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<<Self::Table as TableExt>::Model> {
+        let query = Self::load_query(values).limit(1);
+        diesel::query_dsl::RunQueryDsl::get_result::<<Self::Table as TableExt>::Model>(query, conn)
+    }
+}
+
+/// The `LoadMany` trait allows retrieving several records from a load query.
+pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
+    /// Constructs a load query.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - A nested tuple of values corresponding to the foreign columns.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails.
+    fn load_many(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
+}
+
+impl<Conn, NestedColumns> LoadMany<Conn> for NestedColumns
+where
+    Conn: diesel::connection::LoadConnection,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
+    NestedColumns::LoadQuery: diesel::query_dsl::RunQueryDsl<Conn>,
+    for<'query> Self::LoadQuery: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn load_many(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
+        let query = Self::load_query(values);
+        diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
+    }
+}
+
+/// The `LoadManySorted` trait allows retrieving several records from a load query, sorted by a given expression.
+pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
+    /// Constructs a load query.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - The values to filter the load query by.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails or if no matching record is found.
+    fn load_many_sorted(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
+}
+
+impl<Conn, NestedColumns> LoadManySorted<Conn> for NestedColumns
+where
+    Conn: diesel::connection::LoadConnection,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt> + TupleToOrder,
+    NestedColumns::LoadQuery:
+        OrderDsl<<NestedColumns as TupleToOrder>::Order> + diesel::query_dsl::RunQueryDsl<Conn>,
+    for<'query> <Self::LoadQuery as OrderDsl<<NestedColumns as TupleToOrder>::Order>>::Output:
+        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn load_many_sorted(
+        values: impl NestedTupleInto<Self::NestedTupleType>,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
+        let order = NestedColumns::default().to_order();
+        let query = Self::load_query(values).order(order);
+        diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
+    }
+}

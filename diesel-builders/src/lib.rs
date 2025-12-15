@@ -61,6 +61,8 @@ pub mod nested_bundlable_tables;
 pub use nested_bundlable_tables::*;
 pub mod get_foreign;
 pub use get_foreign::{GetForeign, GetForeignExt};
+pub mod load_query_builder;
+pub use load_query_builder::LoadQueryBuilder;
 
 /// Re-export typenum for convenience
 pub mod typenum {
