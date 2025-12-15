@@ -96,8 +96,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     // Verify associated C
     let c: Mandatory = b.mandatory(&mut conn)?;
     assert_eq!(
-        c.get_column::<mandatory_table::parent_id>(),
-        b.get_column::<child_with_mixed_table::id>()
+        c.parent_id(),
+        b.get_column_ref::<child_with_mixed_table::id>()
     );
     assert_eq!(
         c.get_column::<mandatory_table::mandatory_field>(),
@@ -134,12 +134,21 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     let c_pk: Mandatory =
         b.foreign::<(child_with_mixed_table::mandatory_id,), (mandatory_table::id,)>(&mut conn)?;
     assert_eq!(
-        c_pk.get_column::<mandatory_table::id>(),
-        b.get_column::<child_with_mixed_table::mandatory_id>()
+        c_pk.get_column_ref::<mandatory_table::id>(),
+        b.mandatory_id()
     );
     assert_eq!(
         c_pk.get_column::<mandatory_table::mandatory_field>(),
         "Value C"
+    );
+    let c_pk2: Mandatory =
+        b.foreign::<(
+            child_with_mixed_table::mandatory_id,
+            child_with_mixed_table::remote_mandatory_field,
+        ), (mandatory_table::id, mandatory_table::mandatory_field)>(&mut conn)?;
+    assert_eq!(
+        c_pk2.get_column_ref::<mandatory_table::id>(),
+        b.mandatory_id()
     );
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
@@ -149,12 +158,12 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
             child_with_mixed_table::id,
         ), (mandatory_table::id, mandatory_table::parent_id)>(&mut conn)?;
     assert_eq!(
-        c_horizontal.get_column::<mandatory_table::id>(),
-        b.get_column::<child_with_mixed_table::mandatory_id>()
+        c_horizontal.get_column_ref::<mandatory_table::id>(),
+        b.mandatory_id()
     );
     assert_eq!(
-        c_horizontal.get_column::<mandatory_table::parent_id>(),
-        b.get_column::<child_with_mixed_table::id>()
+        c_horizontal.parent_id(),
+        b.get_column_ref::<child_with_mixed_table::id>()
     );
     assert_eq!(
         c_horizontal.get_column::<mandatory_table::mandatory_field>(),

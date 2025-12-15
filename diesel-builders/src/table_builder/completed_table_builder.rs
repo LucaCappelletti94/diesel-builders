@@ -147,6 +147,8 @@ where
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         let value: C::ColumnType = value.into();
+        self.validate_column_in_context(&value)?;
+        // We try to set eventual vertically-same-as columns in nested builders first.
         self.try_set_homogeneous_nested_columns(&value)?;
         self.nested_bundles
             .nested_index_mut()
