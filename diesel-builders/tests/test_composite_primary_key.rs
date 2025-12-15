@@ -190,7 +190,7 @@ fn test_load_many_composite() -> Result<(), Box<dyn std::error::Error>> {
     // Sorted by PK (user_id, role_id)
     let roles_user_1_sorted: Vec<UserRole> =
         <(user_roles::user_id,)>::load_many_sorted((1,), &mut conn)?;
-    assert_eq!(roles_user_1_sorted, vec![ur1_10.clone(), ur1_20.clone()]);
+    assert_eq!(roles_user_1_sorted, vec![ur1_10, ur1_20]);
 
     Ok(())
 }
