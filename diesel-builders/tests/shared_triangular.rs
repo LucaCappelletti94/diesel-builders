@@ -42,9 +42,9 @@ pub struct Discretionary {
 }
 
 // Define table index that can be referenced by foreign keys
-index!(mandatory_table::id, mandatory_table::mandatory_field);
-index!(mandatory_table::id, mandatory_table::parent_id);
-index!(
+unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
+unique_index!(mandatory_table::id, mandatory_table::parent_id);
+unique_index!(
     discretionary_table::id,
     discretionary_table::discretionary_field
 );

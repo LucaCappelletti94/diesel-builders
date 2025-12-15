@@ -206,58 +206,62 @@ pub fn fpk(input: TokenStream) -> TokenStream {
     fpk::generate_fpk_impl(column, &referenced_type).into()
 }
 
-/// Define a table index using SQL-like syntax.
-///
-/// This macro generates `IndexedColumn` implementations for each column in the index.
-/// The `TableIndex` trait implementation is automatically provided by the `#[impl_table_index]`
-/// procedural macro when all columns implement `IndexedColumn`.
-#[proc_macro]
-pub fn index(input: TokenStream) -> TokenStream {
-    use quote::quote;
-    use syn::{
-        parse::{Parse, ParseStream},
-        punctuated::Punctuated,
-        Token, Type,
-    };
+/// Parsed representation of an index macro invocation.
+struct IndexDefinition {
+    /// The columns that form the index.
+    columns: syn::punctuated::Punctuated<syn::Type, syn::Token![,]>,
+}
 
-    /// Parsed representation of an `INDEX` macro invocation, containing the
-    /// columns that form the index definition.
-    struct TableIndex {
-        /// The columns included in the index.
-        columns: Punctuated<Type, Token![,]>,
-    }
-
-    impl Parse for TableIndex {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            // Accept either: a parenthesized tuple `(col1, col2)` or a bare list `col1, col2`.
-            if input.peek(syn::token::Paren) {
-                let content;
-                syn::parenthesized!(content in input);
-                let columns = Punctuated::parse_terminated(&content)?;
-                Ok(TableIndex { columns })
-            } else {
-                let columns = Punctuated::parse_terminated(input)?;
-                Ok(TableIndex { columns })
-            }
+impl syn::parse::Parse for IndexDefinition {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        if input.peek(syn::token::Paren) {
+            let content;
+            syn::parenthesized!(content in input);
+            let columns = syn::punctuated::Punctuated::parse_terminated(&content)?;
+            Ok(IndexDefinition { columns })
+        } else {
+            let columns = syn::punctuated::Punctuated::parse_terminated(input)?;
+            Ok(IndexDefinition { columns })
         }
     }
+}
 
-    let index_def = syn::parse_macro_input!(input as TableIndex);
+/// Helper function to generate index implementations for each column in the index.
+fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream) -> TokenStream {
+    let index_def = syn::parse_macro_input!(input as IndexDefinition);
     let cols: Vec<_> = index_def.columns.iter().collect();
 
-    // Generate IndexedColumn implementation for each column at its index
     let impls = cols.iter().enumerate().map(|(idx, col)| {
         let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
-        quote! {
-            impl diesel_builders::IndexedColumn<
+        quote::quote! {
+            impl #trait_path<
                 diesel_builders::typenum::#idx_type,
                 ( #(#cols,)* )
             > for #col {}
         }
     });
 
-    quote! {
+    quote::quote! {
         #(#impls)*
     }
     .into()
+}
+
+/// Define a table UNIQUE index using SQL-like syntax.
+///
+/// This macro generates `UniquelyIndexedColumn` implementations for each column in the index.
+#[proc_macro]
+pub fn unique_index(input: TokenStream) -> TokenStream {
+    generate_index_impl(
+        input,
+        &quote::quote!(diesel_builders::UniquelyIndexedColumn),
+    )
+}
+
+/// Define a table index using SQL-like syntax.
+///
+/// This macro generates `IndexedColumn` implementations for each column in the index.
+#[proc_macro]
+pub fn index(input: TokenStream) -> TokenStream {
+    generate_index_impl(input, &quote::quote!(diesel_builders::IndexedColumn))
 }

@@ -32,8 +32,8 @@ pub struct Mandatory {
     mandatory_field: String,
 }
 
-index!(mandatory_table::id, mandatory_table::mandatory_field);
-index!(mandatory_table::id, mandatory_table::parent_id);
+unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
+unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]

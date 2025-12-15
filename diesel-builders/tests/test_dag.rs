@@ -76,7 +76,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(pet.owner_name(), "Alice Smith");
 
-    // Test TableModel derive - using IndexedColumn implementations
+    // Test TableModel derive - using UniquelyIndexedColumn implementations
     assert_eq!(pet.id(), pet.id());
     assert_eq!(pet.get_column_ref::<animals::id>(), pet.id());
     assert_eq!(pet.get_column_ref::<dogs::id>(), pet.id());

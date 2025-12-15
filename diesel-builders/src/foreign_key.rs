@@ -14,6 +14,13 @@ impl<I> TableIndex for I where
 {
 }
 
+/// A trait defining a UNIQUE table index for Diesel tables.
+pub trait UniqueTableIndex: NonEmptyProjection {}
+impl<I> UniqueTableIndex for I where
+    I: NonEmptyProjection + NestTuple<Nested: NestedUniqueTableIndexTail<typenum::U0, I>>
+{
+}
+
 /// A trait defining a tail of a table index starting from a given index.
 ///
 /// This trait may not define a full index, but only the tail part starting
@@ -40,18 +47,60 @@ where
 {
 }
 
-/// A trait for Diesel columns which are part of a `NestedTableIndex`.
-pub trait IndexedColumn<Idx, IndexedColumns: NonEmptyProjection<Table = Self::Table>>:
-    TypedColumn
+/// A trait defining a tail of a UNIQUE table index starting from a given index.
+///
+/// This trait may not define a full index, but only the tail part starting
+/// from a given index.
+pub trait NestedUniqueTableIndexTail<Idx, FullIndex>: NonEmptyNestedProjection {}
+
+impl<Idx, C1, FullIndex> NestedUniqueTableIndexTail<Idx, FullIndex> for (C1,)
 where
-    <IndexedColumns as NestTuple>::Nested: NestedTupleIndex<Idx, Element = Self>,
+    C1: UniquelyIndexedColumn<Idx, FullIndex>,
+    FullIndex: NonEmptyProjection<Table = C1::Table>,
+    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
+{
+}
+
+impl<Idx, CHead, Ctail, FullIndex> NestedUniqueTableIndexTail<Idx, FullIndex> for (CHead, Ctail)
+where
+    (CHead, Ctail): NonEmptyNestedProjection<Table = CHead::Table>
+        + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = CHead::Table>>,
+    CHead: UniquelyIndexedColumn<Idx, FullIndex>,
+    Ctail: NestedUniqueTableIndexTail<typenum::Add1<Idx>, FullIndex>,
+    Idx: core::ops::Add<typenum::B1>,
+    FullIndex: NonEmptyProjection<Table = CHead::Table>,
+    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = CHead>,
+{
+}
+
+/// A trait for Diesel columns which are part of a `NestedTableIndex`.
+pub trait IndexedColumn<
+    Idx,
+    IndexedColumns: NonEmptyProjection<Table = Self::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
+>: TypedColumn
+{
+}
+
+/// A trait for Diesel columns which are part of a `NestedUniqueTableIndex`.
+pub trait UniquelyIndexedColumn<
+    Idx,
+    UniquelyIndexedColumns: NonEmptyProjection<Table = Self::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
+>: TypedColumn
+{
+}
+impl<Idx, C, IndexedColumns> IndexedColumn<Idx, IndexedColumns> for C
+where
+    C: UniquelyIndexedColumn<Idx, IndexedColumns>,
+    IndexedColumns:
+        UniqueTableIndex<Table = C::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
 {
 }
 
 /// A trait defining a non-composited primary key column.
-pub trait PrimaryKeyColumn: IndexedColumn<typenum::U0, (Self,)> {}
+pub trait PrimaryKeyColumn: UniquelyIndexedColumn<typenum::U0, (Self,)> {}
 impl<C> PrimaryKeyColumn for C where
-    C: IndexedColumn<typenum::U0, (C,)> + diesel::Column<Table: diesel::Table<PrimaryKey = C>>
+    C: UniquelyIndexedColumn<typenum::U0, (C,)>
+        + diesel::Column<Table: diesel::Table<PrimaryKey = C>>
 {
 }
 
@@ -75,11 +124,11 @@ impl<T> HasPrimaryKeyColumn for T where
 
 /// A trait for Diesel columns collections that are part of a foreign key
 /// relationship.
-pub trait ForeignKey<ReferencedColumns: TableIndex>: NonEmptyProjection {}
+pub trait ForeignKey<ReferencedColumns: UniqueTableIndex>: NonEmptyProjection {}
 impl<ReferencedColumns, HostColumns> ForeignKey<ReferencedColumns> for HostColumns
 where
-    ReferencedColumns: TableIndex,
-    ReferencedColumns::Nested: NestedTableIndexTail<typenum::U0, ReferencedColumns>,
+    ReferencedColumns: UniqueTableIndex,
+    ReferencedColumns::Nested: NestedUniqueTableIndexTail<typenum::U0, ReferencedColumns>,
     HostColumns: NonEmptyProjection<
         Nested: NestedForeignKeyTail<
             typenum::U0,
@@ -99,7 +148,7 @@ where
 /// except the first one, and so on.
 pub trait NestedForeignKeyTail<
     Idx,
-    ReferencedColumns: NestedTableIndexTail<Idx, FullReferencedIndex>,
+    ReferencedColumns: NestedUniqueTableIndexTail<Idx, FullReferencedIndex>,
     FullReferencedIndex,
 >:
     NonEmptyNestedProjection<
@@ -111,7 +160,8 @@ pub trait NestedForeignKeyTail<
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
     H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType> + IndexedColumn<typenum::U0, (F1,)>,
+    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType>
+        + UniquelyIndexedColumn<typenum::U0, (F1,)>,
 {
 }
 
@@ -120,9 +170,9 @@ impl<Idx, Fhead, Ftail, Hhead, Htail, FullReferencedIndex>
 where
     Htail: NonEmptyNestedProjection,
     Idx: core::ops::Add<typenum::B1>,
-    Ftail: NestedTableIndexTail<typenum::Add1<Idx>, FullReferencedIndex>,
+    Ftail: NestedUniqueTableIndexTail<typenum::Add1<Idx>, FullReferencedIndex>,
     (Hhead, Htail): NonEmptyNestedProjection<Table = Hhead::Table>,
-    (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
+    (Fhead, Ftail): NestedUniqueTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
     Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
     Htail::NestedTupleType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleType>,
@@ -138,7 +188,7 @@ where
 pub trait HostColumn<
     Idx,
     HostColumns: ForeignKey<ReferencedColumns, Nested: NestedTupleIndex<Idx, Element = Self>>,
-    ReferencedColumns: TableIndex,
+    ReferencedColumns: UniqueTableIndex,
 >: TypedColumn
 {
 }

@@ -336,8 +336,8 @@ pub struct Mandatory {
 
 diesel::allow_tables_to_appear_in_same_query!(parent_table, mandatory_table);
 fpk!(mandatory_table::parent_id -> parent_table);
-index!(mandatory_table::id, mandatory_table::mandatory_field);
-index!(mandatory_table::id, mandatory_table::parent_id);
+unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
+unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_table)]
@@ -433,7 +433,7 @@ pub struct Discretionary {
 
 diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table);
 fpk!(discretionary_table::parent_id -> parent_table);
-index!(discretionary_table::id, discretionary_table::discretionary_field);
+unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_with_discretionary_table)]

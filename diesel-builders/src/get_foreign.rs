@@ -11,8 +11,8 @@ use diesel::query_dsl::methods::SelectDsl;
 use tuplities::prelude::*;
 
 use crate::ForeignKey;
-use crate::TableIndex;
 use crate::TypedNestedTuple;
+use crate::UniqueTableIndex;
 use crate::columns::NonEmptyNestedProjection;
 use crate::columns::NonEmptyProjection;
 use crate::{GetNestedColumns, TableExt};
@@ -22,7 +22,7 @@ use crate::{GetNestedColumns, TableExt};
 pub trait GetForeign<
     Conn,
     HostColumns: NonEmptyProjection<Nested: NonEmptyNestedProjection>,
-    ForeignColumns: TableIndex,
+    ForeignColumns: UniqueTableIndex,
 >: GetNestedColumns<HostColumns::Nested> where
     ForeignColumns::Table: TableExt,
 {
@@ -52,7 +52,7 @@ impl<
 where
     T: GetNestedColumns<<HostColumns as NestTuple>::Nested> + HasTable<Table = HostColumns::Table>,
     HostColumns: ForeignKey<ForeignColumns> + NonEmptyProjection<Nested: NonEmptyNestedProjection>,
-    ForeignColumns: TableIndex<
+    ForeignColumns: UniqueTableIndex<
         Nested: TypedNestedTuple<
             NestedTupleType: NestedTupleFrom<<HostColumns::Nested as TypedNestedTuple>::NestedTupleType>,
         >,
@@ -118,7 +118,7 @@ pub trait GetForeignExt<Conn> {
     where
         Self: GetForeign<Conn, HostColumns, ForeignColumns>,
         HostColumns: NonEmptyProjection<Nested: NonEmptyNestedProjection>,
-        ForeignColumns: TableIndex<Table: TableExt>,
+        ForeignColumns: UniqueTableIndex<Table: TableExt>,
     {
         <Self as GetForeign<Conn, HostColumns, ForeignColumns>>::get_foreign(self, conn)
     }
