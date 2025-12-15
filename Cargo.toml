@@ -35,7 +35,7 @@ diesel-builders = { path = "diesel-builders" }
 diesel-builders-macros = { path = "diesel-builders-macros" }
 thiserror = "2.0"
 typenum = "1"
-tuplities = { git = "https://github.com/LucaCappelletti94/tuplities.git", branch = "main", default-features = false, features = [
+tuplities = { version = "0.1.4", default-features = false, features = [
 	"flatten-nest",
 ] }
 

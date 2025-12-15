@@ -721,8 +721,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d7f14b658f81e33e7fecf96267a88411ab094d64169c9237e63b2e25e7c738b"
 dependencies = [
  "tuplities-clone",
  "tuplities-copy",
@@ -755,16 +756,18 @@ dependencies = [
 
 [[package]]
 name = "tuplities-clone"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74bbb5ebb5bea8c218f9787d73e146bb1d09bbf870b80a230e611319fb2c9fcc"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-copy"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e90745237a4f07cf3a0997e645fc3b5dcdd840ef410e4ac5e215135adde840c6"
 dependencies = [
  "tuplities-clone",
  "tuplities-derive",
@@ -772,24 +775,27 @@ dependencies = [
 
 [[package]]
 name = "tuplities-debug"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7df4f5290f7bd667a2c65ca43284766ebecc67c69680dc010c8c1fe5947387e8"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-default"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8995d8db4a205058bf480b1e8d6b3c255d2500f429bd192001a8a3608ef6ab9"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-derive"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba55e3ed3086d31c9563f1d1cb7d24f1b9deaab25f7ccd1e070497aa0f26f8d0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -800,8 +806,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-eq"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fda8ba31babc1b6f588d0d793b5b482821fad6432fe0704904f5bc4ae27c54a"
 dependencies = [
  "tuplities-derive",
  "tuplities-partial-eq",
@@ -809,8 +816,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-flatten-nest"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0f99e9e28101cde6dbca98981207e9b115b7d1ba232b53991d0fc21aa562980"
 dependencies = [
  "tuplities-derive",
  "tuplities-push-front",
@@ -819,16 +827,18 @@ dependencies = [
 
 [[package]]
 name = "tuplities-from"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8aa14bce62cae33eb69fab6c47999af6cc0379f8ebb3418dad0c03910921363c"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-hash"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74819b11166beeb8ede86e66185a0c754c780770b1d2eb3c8308d47c9b94b02e"
 dependencies = [
  "tuplities-derive",
  "tuplities-eq",
@@ -836,8 +846,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-index"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bddf6b27ff2f63f0d3b016b65b8f84398d8c516d9f482359fd8d02dd78affdbd"
 dependencies = [
  "tuplities-derive",
  "tuplities-len",
@@ -846,8 +857,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-insert"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "210be38180c91f2d0aa3f339c4f60b1a9f9fd0320f9fd384b941889087d95029"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -855,8 +867,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-len"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5280ec1d7b34a7148f323bb8cbad10d796175dca1e2cde8032c50ebd18fcfbbf"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -864,16 +877,18 @@ dependencies = [
 
 [[package]]
 name = "tuplities-mut"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a51c0dc89092e168e0a8d9837670ac6ec31b83244c3ca49d6bb7a23330a230e0"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-option"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34575861951fd535181d218679e6118c617ffaaec637913fb00effb1289a330b"
 dependencies = [
  "tuplities-default",
  "tuplities-derive",
@@ -881,8 +896,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-ord"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1164628a279b870c9f959d18708f71ec44678c7e9c76d63ebd65482ba352bf20"
 dependencies = [
  "tuplities-derive",
  "tuplities-eq",
@@ -891,16 +907,18 @@ dependencies = [
 
 [[package]]
 name = "tuplities-partial-eq"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee58dc5a70f5f025347cf5d73bc0d3da7f6aaf9263a79d31d4eb0a0aebd20e2a"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-partial-ord"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d499ac45da41022340c458e0013355ec10e12c899e14dbf895c9e3cfe10fa532"
 dependencies = [
  "tuplities-derive",
  "tuplities-partial-eq",
@@ -908,16 +926,18 @@ dependencies = [
 
 [[package]]
 name = "tuplities-pop-back"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "227d1807b09336967f2b6b3909e77dbbdfff2ed5399dd909cd5e2fe6eac47e26"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-pop-front"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd6b70121bbca9670e29b0029f66b3e26e840876c22fa2f9c913e45497da9985"
 dependencies = [
  "tuplities-derive",
  "tuplities-push-front",
@@ -925,32 +945,36 @@ dependencies = [
 
 [[package]]
 name = "tuplities-push-back"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fec8cba31c0cbbf910c651b504461934e8eb075f6245f7b5a86ef6bd8442bc95"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-push-front"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "227611740e410e9bf849f7db2054d0d546c47546cd2463e8ab554758c1305363"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-ref"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1806a49cee43b375dc5eae45c57e29f274a84e54c6595ff983aea6659d50152"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-remove"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62d6507c90ef0c36803b0e82041a7568d0599b5d03fcfbca03f42def2e341c1d"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -958,24 +982,27 @@ dependencies = [
 
 [[package]]
 name = "tuplities-replicate"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20eecb94e333b16e0d3000dbbcdcc8ff5fd23cdef29365e4e5457658baebee16"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-reverse"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c91919a2cb88ad08b483768b6cd42b6b0a076c81fa9259a60b04bb93c3550e9"
 dependencies = [
  "tuplities-derive",
 ]
 
 [[package]]
 name = "tuplities-row"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9d5863d777fae1d49a3cd8e0650b959a453d5435fa5bb4d7ddca1b079414a7e"
 dependencies = [
  "tuplities-derive",
  "tuplities-index",
@@ -989,8 +1016,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-split"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e81a02d058aa5ade04c8bc2284ba7f6d984df9d17ca1125c23bf4b3f85c7ebf5"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -998,8 +1026,9 @@ dependencies = [
 
 [[package]]
 name = "tuplities-try-from"
-version = "0.1.3"
-source = "git+https://github.com/LucaCappelletti94/tuplities.git?branch=main#24a58d542665719725eaabd011216ef7f358831b"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf389117278b431630d9153492f65eef1528af09b583a34d74c3c04d413f329e"
 dependencies = [
  "tuplities-derive",
 ]
