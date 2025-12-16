@@ -80,6 +80,25 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
             syn::Error::new_spanned(&*item, "`ValidateColumn` must define `Error` type")
         })?;
 
+    // Extract the Borrowed type from the associated type
+    let borrowed_type = item
+        .items
+        .iter()
+        .find_map(|impl_item| {
+            if let syn::ImplItem::Type(type_item) = impl_item {
+                if type_item.ident == "Borrowed" {
+                    Some(type_item.ty.clone())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| {
+            syn::Error::new_spanned(&*item, "`ValidateColumn` must define `Borrowed` type")
+        })?;
+
     // Store the self_ty for error messages (before mutably borrowing items)
     let impl_self_ty = item.self_ty.clone();
 
@@ -105,7 +124,7 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
             )
         })?;
 
-    // Extract the value parameter name and type
+    // Extract the value parameter name
     let value_param = validate_method
         .sig
         .inputs
@@ -118,19 +137,16 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
             )
         })?;
 
-    let (value_param_name, value_type) = match value_param {
-        syn::FnArg::Typed(pat_type) => {
-            let param_name = match &*pat_type.pat {
-                syn::Pat::Ident(ident) => ident.ident.clone(),
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        &pat_type.pat,
-                        "Expected simple parameter name",
-                    ))
-                }
-            };
-            (param_name, pat_type.ty.clone())
-        }
+    let value_param_name = match value_param {
+        syn::FnArg::Typed(pat_type) => match &*pat_type.pat {
+            syn::Pat::Ident(ident) => ident.ident.clone(),
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    &pat_type.pat,
+                    "Expected simple parameter name",
+                ))
+            }
+        },
         syn::FnArg::Receiver(_) => {
             return Err(syn::Error::new_spanned(
                 value_param,
@@ -155,7 +171,7 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
         #[doc = "If this function fails to compile as `const fn`, it means the validation logic"]
         #[doc = "uses non-const operations. Consider simplifying the validation or removing the"]
         #[doc = "`const_validator` attribute if compile-time validation is not needed."]
-        pub const fn #validator_name(#value_param_name: #value_type) -> Result<(), #error_type> {
+        pub const fn #validator_name(#value_param_name: &#borrowed_type) -> Result<(), #error_type> {
             #original_body
         }
     };

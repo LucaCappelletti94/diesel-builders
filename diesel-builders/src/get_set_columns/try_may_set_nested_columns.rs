@@ -1,5 +1,7 @@
 //! Submodule providing the `TryMaySetColumns` trait.
 
+use std::borrow::Borrow;
+
 use tuplities::prelude::IntoNestedTupleOption;
 
 use crate::{
@@ -31,7 +33,7 @@ impl<T, Error> TryMaySetNestedColumns<Error, ()> for T {
 impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where
     T: TrySetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<ValueType: Borrow<T::Borrowed>>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
 {
     #[inline]
@@ -48,7 +50,7 @@ where
 
 impl<CHead, CTail, T, Error> TryMaySetNestedColumns<Error, (CHead, CTail)> for T
 where
-    CHead: TypedColumn,
+    CHead: TypedColumn<ValueType: Borrow<T::Borrowed>>,
     CTail: NestedColumns,
     (CHead, CTail):
         NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,

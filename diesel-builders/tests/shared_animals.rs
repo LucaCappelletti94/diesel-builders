@@ -90,8 +90,9 @@ impl diesel_builders::ValidateColumn<animals::name>
     for <animals::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewAnimalError;
+    type Borrowed = str;
 
-    fn validate_column(value: &String) -> Result<(), Self::Error> {
+    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
         if value.trim().is_empty() {
             return Err(NewAnimalError::NameEmpty);
         }
@@ -108,15 +109,14 @@ impl diesel_builders::ValidateColumn<animals::description>
     for <animals::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewAnimalError;
+    type Borrowed = str;
 
-    fn validate_column(value: &Option<String>) -> Result<(), Self::Error> {
-        if let Some(desc) = value {
-            if desc.trim().is_empty() {
-                return Err(NewAnimalError::DescriptionEmpty);
-            }
-            if desc.len() > 500 {
-                return Err(NewAnimalError::DescriptionTooLong);
-            }
+    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+        if value.trim().is_empty() {
+            return Err(NewAnimalError::DescriptionEmpty);
+        }
+        if value.len() > 500 {
+            return Err(NewAnimalError::DescriptionTooLong);
         }
 
         Ok(())
@@ -165,8 +165,9 @@ impl diesel_builders::ValidateColumn<cats::color>
     for <cats::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewCatError;
+    type Borrowed = str;
 
-    fn validate_column(value: &String) -> Result<(), Self::Error> {
+    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
         if value.trim().is_empty() {
             return Err(NewCatError::ColorEmpty);
         }
@@ -193,6 +194,7 @@ impl diesel_builders::ValidateColumn<puppies::age_months>
     for <puppies::table as diesel_builders::TableExt>::NewValues
 {
     type Error = NewPuppyError;
+    type Borrowed = i32;
 
     fn validate_column(value: &i32) -> Result<(), Self::Error> {
         if *value < 0 {

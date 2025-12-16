@@ -1,12 +1,13 @@
 //! Submodule for the completed table builder and related impls.
 
+use std::borrow::Borrow;
 use std::ops::Sub;
 
 use crate::builder_bundle::RecursiveBundleInsert;
 use crate::{
     BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
-    TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection, TypedNestedTuple,
-    ValidateColumn, VerticalSameAsGroup,
+    OptionalRef, TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection,
+    TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
 };
 use diesel::Table;
 use diesel::associations::HasTable;
@@ -119,9 +120,10 @@ where
     TableBuilder<T>: ValidateColumn<C>,
 {
     type Error = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
+    type Borrowed = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Borrowed;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
         self.nested_bundles
             .nested_index()
             .validate_column_in_context(value)
@@ -135,7 +137,7 @@ where
             Element = CompletedTableBuilderBundle<C::Table>,
         >,
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup,
+    C: VerticalSameAsGroup<ValueType: Borrow<Self::Borrowed>>,
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
@@ -147,7 +149,9 @@ where
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         let value: C::ColumnType = value.into();
-        self.validate_column_in_context(&value)?;
+        if let Some(value_ref) = value.as_optional_ref() {
+            self.validate_column_in_context(value_ref.borrow())?;
+        }
         // We try to set eventual vertically-same-as columns in nested builders first.
         self.try_set_homogeneous_nested_columns(&value)?;
         self.nested_bundles

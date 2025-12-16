@@ -12,6 +12,7 @@ impl diesel_builders::ValidateColumn<products::stock>
     for <products::table as diesel_builders::TableExt>::NewValues
 {
     type Error = ProductError;
+    type Borrowed = i32;
 
     fn validate_column(value: &i32) -> Result<(), Self::Error> {
         if *value < 0 {

@@ -14,7 +14,29 @@ pub trait Typed {
     /// The value type associated with this object, as it appears in queries.
     type ValueType: Clone;
     /// The column type associated with this object, which may be an `Option` of the value type.
-    type ColumnType: Clone + Debug + From<Self::ValueType> + Into<Option<Self::ValueType>>;
+    type ColumnType: Clone
+        + Debug
+        + From<Self::ValueType>
+        + Into<Option<Self::ValueType>>
+        + OptionalRef<Self::ValueType>;
+}
+
+/// Trait providing a method to get an optional reference to another type.
+pub trait OptionalRef<Other> {
+    /// Get an optional reference to the other type.
+    fn as_optional_ref(&self) -> Option<&Other>;
+}
+
+impl<T> OptionalRef<T> for T {
+    fn as_optional_ref(&self) -> Option<&T> {
+        Some(self)
+    }
+}
+
+impl<T> OptionalRef<T> for Option<T> {
+    fn as_optional_ref(&self) -> Option<&T> {
+        self.as_ref()
+    }
 }
 
 /// Trait representing an object whose `ValueType` and `ColumnType` are the same,

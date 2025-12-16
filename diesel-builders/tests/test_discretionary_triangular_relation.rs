@@ -42,6 +42,7 @@ pub struct ChildWithDiscretionary {
     child_field: String,
     /// The remote `discretionary_field` value from discretionary table that B references via `discretionary_id`.
     #[same_as(discretionary_table::discretionary_field)]
+    #[table_model(default = "Some default value")]
     remote_discretionary_field: Option<String>,
     /// The remote `parent_id` value from discretionary table that B references via `discretionary_id`.
     #[infallible]
@@ -63,15 +64,15 @@ impl From<Infallible> for ErrorB {
     }
 }
 
+#[diesel_builders_macros::const_validator]
 impl ValidateColumn<child_with_discretionary_table::remote_discretionary_field>
     for <child_with_discretionary_table::table as TableExt>::NewValues
 {
     type Error = ErrorB;
+    type Borrowed = str;
 
-    fn validate_column(value: &Option<String>) -> Result<(), Self::Error> {
-        if let Some(v) = value
-            && v.is_empty()
-        {
+    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+        if value.is_empty() {
             return Err(ErrorB::EmptyRemoteColumnC);
         }
         Ok(())

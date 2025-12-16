@@ -1,5 +1,7 @@
 //! Submodule for the completed table builder bundle and related impls.
 
+use std::borrow::Borrow;
+
 use diesel::{Column, Insertable, RunQueryDsl, associations::HasTable};
 use tuplities::prelude::*;
 
@@ -13,7 +15,7 @@ use crate::{
     TupleGetNestedColumns, TupleMayGetNestedColumns, TypedColumn,
     builder_bundle::BundlableTableExt, horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
-use crate::{TypedNestedTuple, ValidateColumn};
+use crate::{OptionalRef, TypedNestedTuple, ValidateColumn};
 
 #[derive(Debug)]
 /// The build-ready variant of a table builder bundle.
@@ -45,9 +47,10 @@ where
     T::NewValues: ValidateColumn<C>,
 {
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
+    type Borrowed = <T::NewValues as ValidateColumn<C>>::Borrowed;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
         self.insertable_model.validate_column_in_context(value)
     }
 }
@@ -55,7 +58,7 @@ where
 impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: HorizontalSameAsGroupExt,
+    C: HorizontalSameAsGroupExt<ValueType: Borrow<Self::Borrowed>>,
     Self: TrySetDiscretionarySameAsNestedColumns<
             C::ValueType,
             <T::NewValues as ValidateColumn<C>>::Error,
@@ -75,7 +78,9 @@ where
         value: impl Into<C::ColumnType> + Clone,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
-        self.validate_column_in_context(&value)?;
+        if let Some(value_ref) = value.as_optional_ref() {
+            self.validate_column_in_context(value_ref.borrow())?;
+        }
         self.try_set_discretionary_same_as_nested_columns(&value)?;
         self.try_set_mandatory_same_as_nested_columns(&value)?;
         self.insertable_model.try_set_column(value)?;

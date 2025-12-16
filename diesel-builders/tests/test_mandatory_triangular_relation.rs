@@ -67,11 +67,10 @@ impl ValidateColumn<child_with_mandatory_table::remote_mandatory_field>
     for <child_with_mandatory_table::table as TableExt>::NewValues
 {
     type Error = ErrorChildWithMandatory;
+    type Borrowed = str;
 
-    fn validate_column(value: &Option<String>) -> Result<(), Self::Error> {
-        if let Some(v) = value
-            && v.trim().is_empty()
-        {
+    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+        if value.trim().is_empty() {
             return Err(ErrorChildWithMandatory::EmptyRemoteColumnC);
         }
         Ok(())

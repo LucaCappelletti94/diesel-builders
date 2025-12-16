@@ -75,9 +75,10 @@ where
         >,
 {
     type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
+    type Borrowed = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Borrowed;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
         self.bundles
             .nested_index()
             .validate_column_in_context(value)

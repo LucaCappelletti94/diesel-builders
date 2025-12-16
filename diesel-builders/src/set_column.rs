@@ -1,6 +1,8 @@
 //! Submodule providing the `SetColumn` trait.
 
-use crate::{Typed, TypedColumn};
+use std::borrow::Borrow;
+
+use crate::{OptionalRef, Typed, TypedColumn};
 
 /// Trait providing a setter for a specific Diesel column.
 pub trait SetColumn<Column: TypedColumn> {
@@ -31,6 +33,8 @@ where
 pub trait ValidateColumn<C: Typed> {
     /// The associated error type for the operation.
     type Error;
+    /// Borrowable version of the column's value type.
+    type Borrowed: ?Sized;
 
     #[inline]
     /// Validate the value of the specified column.
@@ -38,7 +42,7 @@ pub trait ValidateColumn<C: Typed> {
     /// # Errors
     ///
     /// Returns an error if the column value is invalid.
-    fn validate_column(_value: &C::ColumnType) -> Result<(), Self::Error> {
+    fn validate_column(_value: &Self::Borrowed) -> Result<(), Self::Error> {
         Ok(())
     }
 
@@ -49,7 +53,7 @@ pub trait ValidateColumn<C: Typed> {
     /// # Errors
     ///
     /// Returns an error if the column value is invalid.
-    fn validate_column_in_context(&self, value: &C::ColumnType) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
         Self::validate_column(value)
     }
 }
@@ -70,7 +74,7 @@ pub trait TrySetColumn<C: Typed>: ValidateColumn<C> {
 impl<T, C> TrySetColumn<C> for (T,)
 where
     Self: SetColumn<C> + ValidateColumn<C>,
-    C: TypedColumn,
+    C: TypedColumn<ValueType: Borrow<Self::Borrowed>>,
 {
     #[inline]
     fn try_set_column(
@@ -78,7 +82,9 @@ where
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
-        <Self as ValidateColumn<C>>::validate_column_in_context(self, &value)?;
+        if let Some(value_ref) = value.as_optional_ref() {
+            <Self as ValidateColumn<C>>::validate_column_in_context(self, value_ref.borrow())?;
+        }
         <Self as SetColumn<C>>::set_column(self, value);
         Ok(self)
     }
@@ -87,7 +93,7 @@ where
 impl<Head, Tail, C> TrySetColumn<C> for (Head, Tail)
 where
     Self: SetColumn<C> + ValidateColumn<C>,
-    C: TypedColumn,
+    C: TypedColumn<ValueType: Borrow<Self::Borrowed>>,
 {
     #[inline]
     fn try_set_column(
@@ -95,7 +101,9 @@ where
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
-        <Self as ValidateColumn<C>>::validate_column_in_context(self, &value)?;
+        if let Some(value_ref) = value.as_optional_ref() {
+            <Self as ValidateColumn<C>>::validate_column_in_context(self, value_ref.borrow())?;
+        }
         <Self as SetColumn<C>>::set_column(self, value);
         Ok(self)
     }

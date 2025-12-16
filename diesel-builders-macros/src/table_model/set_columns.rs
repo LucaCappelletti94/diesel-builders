@@ -33,11 +33,7 @@ pub(super) fn generate_infallible_validate_column_impls(
         quote::quote! {
             impl diesel_builders::ValidateColumn<#infallible_record> for <#table_module::table as diesel_builders::TableExt>::NewValues {
                 type Error = core::convert::Infallible;
-
-                #[inline]
-                fn validate_column(value: &<#infallible_record as diesel_builders::Typed>::ColumnType) -> Result<(), Self::Error> {
-                    Ok(())
-                }
+                type Borrowed = <#infallible_record as diesel_builders::Typed>::ValueType;
             }
         }
     }).collect()

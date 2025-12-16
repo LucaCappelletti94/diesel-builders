@@ -52,7 +52,7 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 /// impl ValidateColumn<animals::name> for AnimalsNewValues {
 ///     type Error = NewAnimalError;
 ///
-///     fn validate_column(value: &String) -> Result<(), Self::Error> {
+///     fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
 ///         if value.is_empty() {
 ///             return Err(NewAnimalError::NameEmpty);
 ///         }
