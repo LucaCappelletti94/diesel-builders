@@ -18,13 +18,6 @@ pub trait ValidateNestedColumns<Error, CS: NestedColumns> {
     fn validate_nested_columns(&self, values: &CS::NestedTupleColumnType) -> Result<(), Error>;
 }
 
-impl<T, Error> ValidateNestedColumns<Error, ()> for T {
-    #[inline]
-    fn validate_nested_columns(&self, _values: &()) -> Result<(), Error> {
-        Ok(())
-    }
-}
-
 impl<C1, T, Error> ValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
@@ -75,13 +68,6 @@ pub trait MayValidateNestedColumns<Error, CS: NestedColumns> {
     ) -> Result<(), Error>;
 }
 
-impl<T, Error> MayValidateNestedColumns<Error, ()> for T {
-    #[inline]
-    fn may_validate_nested_columns(&self, _values: &()) -> Result<(), Error> {
-        Ok(())
-    }
-}
-
 impl<C1, T, Error> MayValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
@@ -126,7 +112,7 @@ where
 }
 
 /// Trait indicating a builder can fallibly set multiple columns.
-pub trait TrySetNestedColumns<Error, CS: NestedColumns>: ValidateNestedColumns<Error, CS> {
+pub trait TrySetNestedColumns<Error, CS: NestedColumns> {
     /// Attempt to set the values of the specified columns.
     ///
     /// # Errors

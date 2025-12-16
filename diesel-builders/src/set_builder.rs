@@ -3,7 +3,7 @@
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
     HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
-    TrySetColumn, TrySetNestedColumns, TypedColumn, ValidateColumn,
+    TrySetColumn, TrySetNestedColumns, TypedColumn, ValidateColumn, ValidateNestedColumns,
 };
 use diesel::Table;
 use tuplities::prelude::NestedTupleInto;
@@ -103,7 +103,8 @@ where
     T: HasTableExt,
     C: DiscretionarySameAsIndex,
     Self: TrySetNestedColumns<<Self::Table as TableExt>::Error, C::NestedHostColumns>
-        + TrySetColumn<C>,
+        + TrySetColumn<C>
+        + ValidateNestedColumns<<Self::Table as TableExt>::Error, C::NestedHostColumns>,
     <Self::Table as TableExt>::Error: From<<Self as ValidateColumn<C>>::Error>,
     <<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model:
         GetNestedColumns<C::NestedForeignColumns>,

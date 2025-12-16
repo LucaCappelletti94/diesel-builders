@@ -4,14 +4,10 @@ use std::borrow::Borrow;
 
 use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{
-    MayValidateNestedColumns, TrySetColumn, TypedColumn, ValidateColumn, columns::NestedColumns,
-};
+use crate::{TrySetColumn, TypedColumn, ValidateColumn, columns::NestedColumns};
 
 /// Trait indicating a builder which may try to set multiple columns.
-pub trait TryMaySetNestedColumns<Error, CS: NestedColumns>:
-    MayValidateNestedColumns<Error, CS>
-{
+pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
     /// Attempt to set the `nested_values` of the specified columns.
     ///
     /// # Errors

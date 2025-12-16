@@ -23,11 +23,10 @@ use diesel::prelude::*;
 use diesel_builders::{IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*};
 use diesel_builders_macros::TableModel;
 
-// Table B models
 #[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
 #[diesel(table_name = child_with_mandatory_table)]
-/// Model for table B.
+/// Model for child table with mandatory triangular relation.
 pub struct ChildWithMandatory {
     #[infallible]
     #[same_as(mandatory_table::parent_id)]
@@ -48,6 +47,27 @@ pub struct ChildWithMandatory {
     #[same_as(mandatory_table::another_field)]
     another_remote_column: Option<String>,
 }
+
+fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
+fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
+fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::another_remote_column) -> (mandatory_table::id, mandatory_table::another_field));
+
+#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[table_model(ancestors = parent_table)]
+#[diesel(table_name = simple_child_with_mandatory_table)]
+/// Model for simple child table with mandatory triangular relation.
+pub struct SimpleChildWithMandatory {
+    #[infallible]
+    #[same_as(mandatory_table::parent_id)]
+    /// Primary key.
+    id: i32,
+    #[infallible]
+    #[mandatory(mandatory_table)]
+    /// Foreign key to table A.
+    mandatory_id: i32,
+}
+
+fk!((simple_child_with_mandatory_table::mandatory_id, simple_child_with_mandatory_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewChildWithMandatory` validation.
@@ -76,10 +96,6 @@ impl ValidateColumn<child_with_mandatory_table::remote_mandatory_field>
         Ok(())
     }
 }
-
-fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
-fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-fk!((child_with_mandatory_table::mandatory_id, child_with_mandatory_table::another_remote_column) -> (mandatory_table::id, mandatory_table::another_field));
 
 #[test]
 fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
@@ -184,6 +200,89 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     let _ = TableBuilderBundle::<child_with_mandatory_table::table>::table();
     let _ = TableBuilder::<child_with_mandatory_table::table>::table();
+
+    Ok(())
+}
+
+#[test]
+fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+
+    setup_triangular_tables(&mut conn)?;
+
+    // Create table B (extends C and also references A)
+    diesel::sql_query(
+        "CREATE TABLE simple_child_with_mandatory_table (
+            id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
+            mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id),
+			FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id)
+        )",
+    )
+    .execute(&mut conn)?;
+
+    // Insert into table A
+    let parent = parent_table::table::builder()
+        .parent_field("Value A")
+        .insert(&mut conn)
+        .unwrap();
+
+    assert_eq!(parent.parent_field(), "Value A");
+
+    // Insert into table C (references A)
+    let mandatory = mandatory_table::table::builder()
+        .parent_id(parent.get_column::<parent_table::id>())
+        .mandatory_field("Value C")
+        .insert(&mut conn)
+        .unwrap();
+
+    assert_eq!(mandatory.mandatory_field(), "Value C");
+    assert_eq!(
+        *mandatory.parent_id(),
+        parent.get_column::<parent_table::id>()
+    );
+
+    let mut mandatory_builder =
+        mandatory_table::table::builder().another_field("Original another remote field".to_owned());
+    mandatory_builder.mandatory_field_ref("Value C");
+
+    // Insert into table B (extends C and references A)
+    // The mandatory triangular relation means B's parent_id should automatically
+    // match C's parent_id when we only set C's columns
+    // Using generated trait methods like try_mandatory_ref for type-safe builders
+    let mut child_builder =
+        simple_child_with_mandatory_table::table::builder().parent_field("Value A for B");
+
+    let saved_child_builder = child_builder.clone();
+
+    // Since the operation has failed, the preliminary state of the builder should
+    // have remained unchanged.
+    assert_eq!(child_builder, saved_child_builder);
+
+    child_builder.try_mandatory_ref(mandatory_builder.clone())?;
+
+    // Using the generated trait method for more ergonomic code
+    let child = child_builder
+        .try_mandatory(mandatory_builder)?
+        .insert(&mut conn)
+        .unwrap();
+
+    let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
+    assert_eq!(associated_parent.parent_field(), "Value A for B");
+
+    let associated_mandatory: Mandatory = child.mandatory(&mut conn)?;
+    assert_eq!(associated_mandatory.mandatory_field(), "Value C");
+    assert_eq!(
+        associated_mandatory.another_field().as_deref(),
+        Some("Original another remote field")
+    );
+    assert_eq!(
+        *associated_mandatory.parent_id(),
+        child.get_column::<simple_child_with_mandatory_table::id>()
+    );
+    assert_eq!(
+        *associated_mandatory.parent_id(),
+        associated_parent.get_column::<parent_table::id>()
+    );
 
     Ok(())
 }

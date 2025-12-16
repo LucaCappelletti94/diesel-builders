@@ -144,7 +144,8 @@ where
     Key: MandatorySameAsIndex,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>,
+    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
+        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>,
     TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
     TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<Key, Table = Key::Table>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -160,10 +161,7 @@ where
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
-        MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
-            self,
-            &converted_columns,
-        )?;
+        self.may_validate_nested_columns(&converted_columns)?;
         self.bundles
             .nested_index_mut()
             .try_set_mandatory_builder(builder)?;
@@ -208,7 +206,8 @@ where
     Key: DiscretionarySameAsIndex,
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>,
+    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
+        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>,
     TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
     TableBuilderBundle<Key::Table>: TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
     T::NestedAncestorBuilders: NestedTupleIndexMut<
@@ -224,10 +223,7 @@ where
     ) -> Result<&mut Self, T::Error> {
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
-        MayValidateNestedColumns::<T::Error, Key::NestedHostColumns>::may_validate_nested_columns(
-            self,
-            &converted_columns,
-        )?;
+        self.may_validate_nested_columns(&converted_columns)?;
         self.bundles
             .nested_index_mut()
             .try_set_discretionary_builder(builder)?;
