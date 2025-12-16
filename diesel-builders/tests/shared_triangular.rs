@@ -2,7 +2,7 @@
 use diesel_builders::prelude::*;
 
 // Table A models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = parent_table)]
 /// Model for parent table.
@@ -14,7 +14,7 @@ pub struct Parent {
 }
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = mandatory_table)]
 /// Model for mandatory table.
@@ -30,7 +30,7 @@ pub struct Mandatory {
 }
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = discretionary_table)]
 /// Model for discretionary table.

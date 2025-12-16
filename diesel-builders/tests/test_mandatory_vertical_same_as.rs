@@ -7,7 +7,7 @@ mod shared;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 /// A parent table model.
@@ -19,7 +19,7 @@ pub struct Parent {
 }
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = mandatory_table)]
 #[table_model(surrogate_key)]
 /// A parent table model.
@@ -36,7 +36,7 @@ unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
 unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = child_table)]
 /// Model for a child table that inherits from `parent_table`.

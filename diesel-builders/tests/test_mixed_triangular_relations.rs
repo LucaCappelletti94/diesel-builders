@@ -13,7 +13,7 @@ use diesel_builders_macros::TableModel;
 use shared_triangular::*;
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_with_mixed_table)]
 #[table_model(ancestors = parent_table)]
 /// Model for table B.

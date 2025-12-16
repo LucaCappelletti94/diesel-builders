@@ -1,7 +1,8 @@
 //! Trait for attempting to set columns in a mandatory same-as relationship.
 
 use crate::{
-    MandatorySameAsIndex, OptionalRef, TrySetMandatorySameAsColumn, TypedColumn, columns::NestedColumns
+    MandatorySameAsIndex, OptionalRef, TrySetMandatorySameAsColumn, TypedColumn,
+    columns::NestedColumns,
 };
 
 /// Trait to try set a column in a mandatory same-as relationship.
@@ -87,10 +88,8 @@ where
 pub trait SetMandatorySameAsNestedColumns<Type, Keys: NestedColumns, CS: NestedColumns> {
     /// Attempt to set the value of the specified columns in the mandatory
     /// same-as relationship.
-    fn set_mandatory_same_as_nested_columns(
-        &mut self,
-        value: &impl OptionalRef<Type>,
-    ) -> &mut Self;
+    fn set_mandatory_same_as_nested_columns(&mut self, value: &impl OptionalRef<Type>)
+    -> &mut Self;
 }
 
 impl<T, Type, Keys, CS> SetMandatorySameAsNestedColumns<Type, Keys, CS> for T

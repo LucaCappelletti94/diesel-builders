@@ -24,7 +24,7 @@ use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = ErrorB, ancestors = parent_table)]
 #[diesel(table_name = child_with_discretionary_table)]
 /// Model for table B.
@@ -50,7 +50,7 @@ pub struct ChildWithDiscretionary {
     another_remote_column: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 /// Errors for `NewChildWithDiscretionary` validation.
 pub enum ErrorB {
     /// `remote_discretionary_field` cannot be empty.

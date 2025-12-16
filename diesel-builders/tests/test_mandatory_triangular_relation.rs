@@ -24,7 +24,7 @@ use diesel_builders::{IncompleteBuilderError, TableBuilder, TableBuilderBundle, 
 use diesel_builders_macros::TableModel;
 
 // Table B models
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
 #[diesel(table_name = child_with_mandatory_table)]
 /// Model for table B.
@@ -49,7 +49,7 @@ pub struct ChildWithMandatory {
     another_remote_column: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Hash, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewChildWithMandatory` validation.
 pub enum ErrorChildWithMandatory {
     /// `remote_mandatory_field` cannot be empty.

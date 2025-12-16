@@ -49,7 +49,7 @@ pub fn setup_animal_tables(
     Ok(())
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(error = NewAnimalError, surrogate_key)]
 /// Model for the animals table.
@@ -63,7 +63,7 @@ pub struct Animal {
 }
 
 /// Error variants for `NewAnimal` validation.
-#[derive(Debug, PartialEq, PartialOrd, Eq, Clone, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum NewAnimalError {
     /// Name cannot be empty.
     #[error("Animal name cannot be empty")]
@@ -123,7 +123,7 @@ impl diesel_builders::ValidateColumn<animals::description>
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 /// Model for the dogs table.
@@ -135,7 +135,7 @@ pub struct Dog {
     breed: String,
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = NewCatError, ancestors(animals))]
 #[diesel(table_name = cats)]
 /// Model for the cats table.
@@ -147,7 +147,7 @@ pub struct Cat {
     color: String,
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewCat` validation.
 pub enum NewCatError {
     /// Color cannot be empty.
@@ -175,7 +175,7 @@ impl diesel_builders::ValidateColumn<cats::color>
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Hash, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewPuppy` validation.
 pub enum NewPuppyError {
     /// Age cannot be negative.
@@ -204,7 +204,7 @@ impl diesel_builders::ValidateColumn<puppies::age_months>
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = puppies)]
 #[table_model(error = NewPuppyError)]
 #[table_model(ancestors(animals, dogs))]
@@ -218,7 +218,7 @@ pub struct Puppy {
     age_months: i32,
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = pets)]
 #[table_model(ancestors(animals, dogs, cats))]
 /// Model for the pets table.

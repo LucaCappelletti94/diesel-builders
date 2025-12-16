@@ -65,10 +65,8 @@ pub trait TrySetColumn<C: Typed>: ValidateColumn<C> {
     /// # Errors
     ///
     /// Returns an error if the column cannot be set.
-    fn try_set_column(
-        &mut self,
-        value: impl Into<C::ColumnType>,
-    ) -> Result<&mut Self, Self::Error>;
+    fn try_set_column(&mut self, value: impl Into<C::ColumnType>)
+    -> Result<&mut Self, Self::Error>;
 }
 
 impl<T, C> TrySetColumn<C> for (T,)

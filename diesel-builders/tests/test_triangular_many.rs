@@ -10,7 +10,7 @@ use shared_triangular::*;
 /// composite foreign keys. The `payload` field verifies the builder's
 /// insertion logic while several `m*` and `d*` columns test mandatory and
 /// discretionary triangular relationships.
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_table)]
 #[table_model(ancestors = parent_table)]
 pub struct Child {

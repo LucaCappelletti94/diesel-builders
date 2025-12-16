@@ -5,7 +5,7 @@
 mod shared;
 use diesel_builders::prelude::*;
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = single_column_root_table)]
 #[table_model(surrogate_key, error = SingleColumnRootError)]
 /// Model for the `single_column_root_table`.
@@ -16,7 +16,7 @@ pub struct SingleColumnRoot {
     name: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewSingleColumnRoot` validation.
 pub enum SingleColumnRootError {
     /// Name cannot be empty.

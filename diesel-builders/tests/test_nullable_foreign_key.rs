@@ -2,7 +2,7 @@
 mod shared;
 use diesel_builders::prelude::*;
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 /// Model for parent table.
 pub struct Parent {
@@ -10,7 +10,7 @@ pub struct Parent {
     id: i32,
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_table)]
 #[table_model(surrogate_key)]
 /// Model for child table with nullable foreign key to parent.

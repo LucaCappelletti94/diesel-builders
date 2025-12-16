@@ -9,7 +9,7 @@ use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 /// A parent table model.
@@ -23,7 +23,7 @@ pub struct Parent {
 }
 
 #[allow(clippy::struct_field_names)]
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = child_table)]
 /// Model for a child table that inherits from `parent_table`.
@@ -71,7 +71,7 @@ fn test_inheritance_vertical_same_as() -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, PartialOrd, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = parent_table_checked)]
 #[table_model(surrogate_key, error = ParentCheckedError)]
 /// A parent table model.
@@ -136,7 +136,7 @@ impl From<Infallible> for ChildCheckedError {
     }
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table_checked, error = ChildCheckedError)]
 #[diesel(table_name = child_table_checked)]
 /// Model for a child table that inherits from `parent_table_checked`.
