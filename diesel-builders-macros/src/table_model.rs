@@ -42,6 +42,8 @@ struct ProcessedFields {
     default_values: Vec<proc_macro2::TokenStream>,
     /// Const validation assertions for default values.
     const_validations: Vec<proc_macro2::TokenStream>,
+    /// Warnings to be emitted.
+    warnings: Vec<proc_macro2::TokenStream>,
 }
 
 /// Process fields to extract columns, validation status, and default values.
@@ -56,6 +58,7 @@ fn process_fields(
     let mut infallible_records = Vec::new();
     let mut default_values = Vec::new();
     let mut const_validations = Vec::new();
+    let mut warnings = Vec::new();
 
     for field in fields {
         validate_field_attributes(field)?;
@@ -90,6 +93,44 @@ fn process_fields(
 
         new_record_columns.push(syn::parse_quote!(#table_module::#field_name));
         let is_failable = !(is_field_infallible(field) || attributes.error.is_none());
+
+        if is_field_infallible(field) && attributes.error.is_none() {
+            let warning_msg = format!(
+                "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",                
+            );
+
+            let mut span = field.span();
+            for attr in &field.attrs {
+                if attr.path().is_ident("infallible") {
+                    span = attr.span();
+                    break;
+                }
+                if attr.path().is_ident("table_model") {
+                    let mut found = false;
+                    let _ = attr.parse_nested_meta(|meta| {
+                        if meta.path.is_ident("infallible") {
+                            found = true;
+                        }
+                        Ok(())
+                    });
+                    if found {
+                        span = attr.span();
+                        break;
+                    }
+                }
+            }
+
+            let const_name =
+                syn::Ident::new(&format!("__WARN_REDUNDANT_INFALLIBLE_{field_name}"), span);
+            warnings.push(quote! {
+                const _: () = {
+                    #[deprecated(note = #warning_msg)]
+                    #[allow(non_upper_case_globals)]
+                    const #const_name: () = ();
+                    let _ = #const_name;
+                };
+            });
+        }
 
         if is_field_infallible(field) || attributes.error.is_none() {
             infallible_records.push(syn::parse_quote!(#table_module::#field_name));
@@ -201,6 +242,7 @@ fn process_fields(
         infallible_records,
         default_values,
         const_validations,
+        warnings,
     })
 }
 
@@ -418,6 +460,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         infallible_records,
         const_validations,
         default_values,
+        warnings,
     } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
 
     // Collect triangular relation columns for BundlableTable implementation
@@ -886,6 +929,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         // Allow tables to appear in same query with ancestors
         #(#allow_same_query_calls)*
+
+        // Warnings
+        #(#warnings)*
 
         // Const validations for default values
         #(#const_validations)*

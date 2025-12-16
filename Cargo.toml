@@ -46,7 +46,6 @@ unconditional_recursion = "forbid"
 unreachable_patterns = "forbid"
 unused_import_braces = "forbid"
 unused_must_use = "forbid"
-deprecated = "deny"
 dead_code = "deny"
 
 [workspace.lints.clippy]

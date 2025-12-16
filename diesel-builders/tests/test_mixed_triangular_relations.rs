@@ -1,9 +1,4 @@
 //! Test case for a table with both mandatory and discretionary triangular relations.
-//!
-//! This test sets up four tables: Parent (root), Mandatory (references Parent), Discretionary (references Parent),
-//! and `ChildWithMixed` which:
-//! - Has a mandatory triangular relation with Mandatory (via `mandatory_id`)
-//! - Has a discretionary triangular relation with Discretionary (via `discretionary_id`)
 
 mod shared;
 mod shared_triangular;
@@ -18,30 +13,30 @@ use shared_triangular::*;
 #[table_model(ancestors = parent_table)]
 /// Model for table B.
 pub struct ChildWithMixed {
-    #[same_as(mandatory_table::parent_id)]
-    #[same_as(discretionary_table::parent_id)]
+    #[same_as(satellite_table::parent_id, mandatory_id)]
+    #[same_as(satellite_table::parent_id, discretionary_id)]
     /// Primary key.
     id: i32,
-    #[mandatory(mandatory_table)]
+    #[mandatory(satellite_table)]
     /// Foreign key to table C.
     mandatory_id: i32,
-    #[discretionary(discretionary_table)]
+    #[discretionary(satellite_table)]
     /// Foreign key to table D.
     discretionary_id: i32,
     /// Column B value.
     child_field: String,
-    #[same_as(mandatory_table::mandatory_field)]
+    #[same_as(satellite_table::field, mandatory_id)]
     /// Remote column C value.
     remote_mandatory_field: Option<String>,
-    #[same_as(discretionary_table::discretionary_field)]
+    #[same_as(satellite_table::field, discretionary_id)]
     /// Remote column D value.
     remote_discretionary_field: Option<String>,
 }
 
 // Define foreign key relationships
-fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
-fk!((child_with_mixed_table::discretionary_id, child_with_mixed_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
+fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (satellite_table::id, satellite_table::field));
+fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::id) -> (satellite_table::id, satellite_table::parent_id));
+fk!((child_with_mixed_table::discretionary_id, child_with_mixed_table::remote_discretionary_field) -> (satellite_table::id, satellite_table::field));
 
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     setup_triangular_tables(conn)?;
@@ -49,14 +44,14 @@ fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::
     diesel::sql_query(
         "CREATE TABLE child_with_mixed_table (
             id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
-            mandatory_id INTEGER NOT NULL REFERENCES mandatory_table(id),
-            discretionary_id INTEGER NOT NULL REFERENCES discretionary_table(id),
+            mandatory_id INTEGER NOT NULL REFERENCES satellite_table(id),
+            discretionary_id INTEGER NOT NULL REFERENCES satellite_table(id),
             child_field TEXT NOT NULL,
             remote_mandatory_field TEXT,
             remote_discretionary_field TEXT,
-            FOREIGN KEY (mandatory_id, id) REFERENCES mandatory_table(id, parent_id),
-            FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES mandatory_table(id, mandatory_field),
-            FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES discretionary_table(id, discretionary_field)
+            FOREIGN KEY (mandatory_id, id) REFERENCES satellite_table(id, parent_id),
+            FOREIGN KEY (mandatory_id, remote_mandatory_field) REFERENCES satellite_table(id, field),
+            FOREIGN KEY (discretionary_id, remote_discretionary_field) REFERENCES satellite_table(id, field)
         )",
     )
     .execute(conn)?;
@@ -74,8 +69,8 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     let b = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
-        .mandatory(mandatory_table::table::builder().mandatory_field("Value C"))
-        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
+        .mandatory(satellite_table::table::builder().field("Value C"))
+        .discretionary(satellite_table::table::builder().field("Value D"))
         .insert(&mut conn)?;
 
     assert_eq!(
@@ -94,26 +89,20 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Verify associated C
-    let c: Mandatory = b.mandatory(&mut conn)?;
+    let c: Satellite = b.mandatory(&mut conn)?;
     assert_eq!(
         c.parent_id(),
         b.get_column_ref::<child_with_mixed_table::id>()
     );
-    assert_eq!(
-        c.get_column::<mandatory_table::mandatory_field>(),
-        "Value C"
-    );
+    assert_eq!(c.get_column::<satellite_table::field>(), "Value C");
 
     // Verify associated D
-    let d: Discretionary = b.discretionary(&mut conn)?;
+    let d: Satellite = b.discretionary(&mut conn)?;
     assert_eq!(
-        d.get_column::<discretionary_table::parent_id>(),
+        d.get_column::<satellite_table::parent_id>(),
         b.get_column::<child_with_mixed_table::id>()
     );
-    assert_eq!(
-        d.get_column::<discretionary_table::discretionary_field>(),
-        "Value D"
-    );
+    assert_eq!(d.get_column::<satellite_table::field>(), "Value D");
 
     Ok(())
 }
@@ -126,39 +115,35 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     let b = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
-        .mandatory(mandatory_table::table::builder().mandatory_field("Value C"))
-        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
+        .mandatory(satellite_table::table::builder().field("Value C"))
+        .discretionary(satellite_table::table::builder().field("Value D"))
         .insert(&mut conn)?;
 
     // Use GetForeignExt directly for primary-key based foreign key
-    let c_pk: Mandatory =
-        b.foreign::<(child_with_mixed_table::mandatory_id,), (mandatory_table::id,)>(&mut conn)?;
+    let c_pk: Satellite =
+        b.foreign::<(child_with_mixed_table::mandatory_id,), (satellite_table::id,)>(&mut conn)?;
     assert_eq!(
-        c_pk.get_column_ref::<mandatory_table::id>(),
+        c_pk.get_column_ref::<satellite_table::id>(),
         b.mandatory_id()
     );
+    assert_eq!(c_pk.get_column::<satellite_table::field>(), "Value C");
+    let c_pk2: Satellite = b.foreign::<(
+        child_with_mixed_table::mandatory_id,
+        child_with_mixed_table::remote_mandatory_field,
+    ), (satellite_table::id, satellite_table::field)>(&mut conn)?;
     assert_eq!(
-        c_pk.get_column::<mandatory_table::mandatory_field>(),
-        "Value C"
-    );
-    let c_pk2: Mandatory =
-        b.foreign::<(
-            child_with_mixed_table::mandatory_id,
-            child_with_mixed_table::remote_mandatory_field,
-        ), (mandatory_table::id, mandatory_table::mandatory_field)>(&mut conn)?;
-    assert_eq!(
-        c_pk2.get_column_ref::<mandatory_table::id>(),
+        c_pk2.get_column_ref::<satellite_table::id>(),
         b.mandatory_id()
     );
 
     // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
-    let c_horizontal: Mandatory =
+    let c_horizontal: Satellite =
         b.foreign::<(
             child_with_mixed_table::mandatory_id,
             child_with_mixed_table::id,
-        ), (mandatory_table::id, mandatory_table::parent_id)>(&mut conn)?;
+        ), (satellite_table::id, satellite_table::parent_id)>(&mut conn)?;
     assert_eq!(
-        c_horizontal.get_column_ref::<mandatory_table::id>(),
+        c_horizontal.get_column_ref::<satellite_table::id>(),
         b.mandatory_id()
     );
     assert_eq!(
@@ -166,7 +151,7 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
         b.get_column_ref::<child_with_mixed_table::id>()
     );
     assert_eq!(
-        c_horizontal.get_column::<mandatory_table::mandatory_field>(),
+        c_horizontal.get_column::<satellite_table::field>(),
         "Value C"
     );
 
@@ -182,9 +167,9 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
         .parent_field("Value A")
         .insert(&mut conn)?;
 
-    let discretionary_table = discretionary_table::table::builder()
+    let satellite_table = satellite_table::table::builder()
         .parent_id(parent_table.get_column::<parent_table::id>())
-        .discretionary_field("Value D")
+        .field("Value D")
         .insert(&mut conn)?;
 
     // Try to create without mandatory C builder
@@ -192,8 +177,8 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let result = child_with_mixed_table::table::builder()
         .parent_field("Value A")
         .child_field("Value B")
-        .discretionary(discretionary_table::table::builder().discretionary_field("Value D"))
-        .discretionary_model(&discretionary_table)
+        .discretionary(satellite_table::table::builder().field("Value D"))
+        .discretionary_model(&satellite_table)
         .insert(&mut conn);
 
     assert!(matches!(
