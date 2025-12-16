@@ -384,7 +384,7 @@ pub trait TrySetMandatorySameAsColumn<
     /// same-as relationship.
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error>;
 }
 
@@ -406,6 +406,6 @@ pub trait TrySetDiscretionarySameAsColumn<
     /// same-as relationship.
     fn try_set_discretionary_same_as_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error>;
 }

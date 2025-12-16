@@ -146,7 +146,7 @@ where
     #[inline]
     fn try_set_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value: C::ColumnType = value.into();
         if let Some(value_ref) = value.as_optional_ref() {

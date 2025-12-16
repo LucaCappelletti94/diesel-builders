@@ -122,7 +122,7 @@ where
     #[inline]
     fn try_set_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
         // We try to set eventual vertically-same-as columns in nested builders first.

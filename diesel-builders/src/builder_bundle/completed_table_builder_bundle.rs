@@ -75,7 +75,7 @@ where
     #[inline]
     fn try_set_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
         if let Some(value_ref) = value.as_optional_ref() {
@@ -101,7 +101,7 @@ where
     #[inline]
     fn try_set_mandatory_same_as_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         self.nested_mandatory_associated_builders
             .nested_index_mut()
@@ -123,7 +123,7 @@ where
     #[inline]
     fn try_set_discretionary_same_as_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         if let Some(builder) = self
             .nested_discretionary_associated_builders

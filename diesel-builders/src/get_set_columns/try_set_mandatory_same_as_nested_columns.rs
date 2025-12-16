@@ -1,7 +1,7 @@
 //! Trait for attempting to set columns in a mandatory same-as relationship.
 
 use crate::{
-    MandatorySameAsIndex, TrySetMandatorySameAsColumn, TypedColumn, columns::NestedColumns,
+    MandatorySameAsIndex, OptionalRef, TrySetMandatorySameAsColumn, TypedColumn, columns::NestedColumns
 };
 
 /// Trait to try set a column in a mandatory same-as relationship.
@@ -15,7 +15,7 @@ pub trait TrySetMandatorySameAsNestedColumns<Type, Error, Keys: NestedColumns, C
     /// same-as relationship.
     fn try_set_mandatory_same_as_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error>;
 }
 
@@ -23,7 +23,7 @@ impl<T, Type, Error> TrySetMandatorySameAsNestedColumns<Type, Error, (), ()> for
     #[inline]
     fn try_set_mandatory_same_as_nested_columns(
         &mut self,
-        _value: &(impl Into<Option<Type>> + Clone),
+        _value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
         Ok(self)
     }
@@ -44,11 +44,10 @@ where
     #[inline]
     fn try_set_mandatory_same_as_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
-        let value: Option<Type> = value.clone().into();
-        if let Some(value) = value {
-            self.try_set_mandatory_same_as_column(value)?;
+        if let Some(value) = value.as_optional_ref() {
+            self.try_set_mandatory_same_as_column(value.clone())?;
         }
         Ok(self)
     }
@@ -74,12 +73,11 @@ where
     #[inline]
     fn try_set_mandatory_same_as_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
         self.try_set_mandatory_same_as_nested_columns(value)?;
-        let value: Option<Type> = value.clone().into();
-        if let Some(value) = value {
-            self.try_set_mandatory_same_as_column(value)?;
+        if let Some(value) = value.as_optional_ref() {
+            self.try_set_mandatory_same_as_column(value.clone())?;
         }
         Ok(self)
     }
@@ -91,7 +89,7 @@ pub trait SetMandatorySameAsNestedColumns<Type, Keys: NestedColumns, CS: NestedC
     /// same-as relationship.
     fn set_mandatory_same_as_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> &mut Self;
 }
 
@@ -104,7 +102,7 @@ where
     #[inline]
     fn set_mandatory_same_as_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> &mut Self {
         self.try_set_mandatory_same_as_nested_columns(value)
             .unwrap_or_else(|err| match err {})

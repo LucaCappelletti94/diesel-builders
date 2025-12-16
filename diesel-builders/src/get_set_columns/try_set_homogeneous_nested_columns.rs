@@ -1,7 +1,7 @@
 //! Trait indicating a builder can set multiple columns.
 
 use crate::{
-    TrySetColumn, TypedColumn, ValidateColumn,
+    OptionalRef, TrySetColumn, TypedColumn, ValidateColumn,
     columns::{HomogeneouslyTypedNestedColumns, NonEmptyNestedProjection},
 };
 
@@ -14,7 +14,7 @@ pub trait TrySetHomogeneousNestedColumns<Type, Error, CS: HomogeneouslyTypedNest
     /// Returns an error if the value fails validation for any of the columns.
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error>;
 }
 
@@ -22,7 +22,7 @@ impl<Type, Error, T> TrySetHomogeneousNestedColumns<Type, Error, ()> for T {
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        _value: &(impl Into<Option<Type>> + Clone),
+        _value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
         Ok(self)
     }
@@ -37,11 +37,10 @@ where
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
-        let value: Option<Type> = value.clone().into();
-        if let Some(value) = value {
-            self.try_set_column(value)?;
+        if let Some(value) = value.as_optional_ref() {
+            self.try_set_column(value.clone())?;
         }
         Ok(self)
     }
@@ -62,12 +61,11 @@ where
     #[inline]
     fn try_set_homogeneous_nested_columns(
         &mut self,
-        value: &(impl Into<Option<Type>> + Clone),
+        value: &impl OptionalRef<Type>,
     ) -> Result<&mut Self, Error> {
-        let value: Option<Type> = value.clone().into();
-        self.try_set_homogeneous_nested_columns(&value)?;
-        if let Some(value) = value {
-            self.try_set_column(value)?;
+        self.try_set_homogeneous_nested_columns(value)?;
+        if let Some(value) = value.as_optional_ref() {
+            self.try_set_column(value.clone())?;
         }
         Ok(self)
     }

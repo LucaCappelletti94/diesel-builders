@@ -67,7 +67,7 @@ pub trait TrySetColumn<C: Typed>: ValidateColumn<C> {
     /// Returns an error if the column cannot be set.
     fn try_set_column(
         &mut self,
-        value: impl Into<C::ColumnType> + Clone,
+        value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error>;
 }
 
@@ -154,7 +154,7 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column_ref<Column>(
         &mut self,
-        value: impl Into<Column::ColumnType> + Clone,
+        value: impl Into<Column::ColumnType>,
     ) -> Result<&mut Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
@@ -171,7 +171,7 @@ pub trait TrySetColumnExt: Sized {
     /// Returns an error if the column cannot be set.
     fn try_set_column<Column>(
         mut self,
-        value: impl Into<Column::ColumnType> + Clone,
+        value: impl Into<Column::ColumnType>,
     ) -> Result<Self, <Self as ValidateColumn<Column>>::Error>
     where
         Column: TypedColumn,
