@@ -18,6 +18,9 @@ pub struct Mandatory {
     mandatory_field: String,
 }
 
+unique_index!(mandatory_table::id, mandatory_table::parent_id);
+unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
+
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = child_table)]

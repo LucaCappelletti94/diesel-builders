@@ -18,6 +18,9 @@ pub struct Discretionary {
     discretionary_field: String,
 }
 
+unique_index!(discretionary_table::id, discretionary_table::parent_id);
+unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
+
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = child_table)]

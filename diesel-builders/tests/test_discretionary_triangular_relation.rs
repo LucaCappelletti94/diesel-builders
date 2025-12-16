@@ -78,11 +78,6 @@ impl ValidateColumn<child_with_satellite_table::remote_field>
     }
 }
 
-// Define foreign key relationship using SQL-like syntax
-// B's (discretionary_id, remote_field) references C's (id, field)
-fk!((child_with_satellite_table::discretionary_id, child_with_satellite_table::remote_field) -> (satellite_table::id, satellite_table::field));
-fk!((simple_child_with_satellite_table::discretionary_id, simple_child_with_satellite_table::id) -> (satellite_table::id, satellite_table::parent_id));
-
 #[test]
 fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;

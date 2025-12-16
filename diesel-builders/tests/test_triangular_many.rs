@@ -60,20 +60,6 @@ pub struct Child {
     payload: String,
 }
 
-// FKs from child to intermediates — these macros define the same composite
-// foreign keys that are present in the SQL test DDL and allow the builder
-// to reason about composite relationships when assembling insert bundles.
-fk!((child_table::m1_id, child_table::m1_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_table::m1_id, child_table::id) -> (satellite_table::id, satellite_table::parent_id));
-fk!((child_table::m2_id, child_table::m2_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_table::m2_id, child_table::id) -> (satellite_table::id, satellite_table::parent_id));
-fk!((child_table::m3_id, child_table::m3_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_table::m3_id, child_table::id) -> (satellite_table::id, satellite_table::parent_id));
-
-fk!((child_table::d1_id, child_table::d1_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_table::d2_id, child_table::d2_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_table::d3_id, child_table::d3_field) -> (satellite_table::id, satellite_table::field));
-
 #[test]
 /// Insert a child record and validate triangular relationships.
 ///

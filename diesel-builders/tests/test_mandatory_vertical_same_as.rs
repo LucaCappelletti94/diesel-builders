@@ -18,6 +18,8 @@ pub struct Parent {
     parent_field: String,
 }
 
+unique_index!(parent_table::id, parent_table::parent_field);
+
 #[allow(clippy::struct_field_names)]
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = satellite_table)]
@@ -52,9 +54,6 @@ pub struct Child {
     #[mandatory(satellite_table)]
     mandatory_id: i32,
 }
-
-fk!((child_table::mandatory_id, child_table::id) -> (satellite_table::id, satellite_table::parent_id));
-fk!((child_table::mandatory_id, child_table::child_field) -> (satellite_table::id, satellite_table::field));
 
 #[test]
 fn test_mandatory_vertical_same_as() -> Result<(), Box<dyn std::error::Error>> {

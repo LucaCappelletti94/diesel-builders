@@ -4,6 +4,7 @@
 //! split into logical components for better maintainability.
 
 mod attribute_parsing;
+mod foreign_keys;
 mod get_column;
 mod may_get_columns;
 mod primary_key;
@@ -24,6 +25,7 @@ use attribute_parsing::{
     validate_field_attributes,
 };
 
+use foreign_keys::generate_foreign_key_impls;
 use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
 use table_generation::generate_table_macro;
@@ -906,6 +908,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         &triangular_relation_tables,
     )?;
 
+    // Generate foreign key implementations for triangular relations
+    let foreign_key_impls = generate_foreign_key_impls(fields, &table_module)?;
+
     // Generate final output
     Ok(quote! {
         #table_macro
@@ -923,6 +928,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#column_horizontal_impls)*
         #(#horizontal_key_impls)*
         #(#vertical_same_as_impls)*
+        #(#foreign_key_impls)*
 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*

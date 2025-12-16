@@ -36,10 +36,6 @@ pub struct ChildWithMandatory {
     another_remote_column: Option<String>,
 }
 
-fk!((child_with_satellite_table::mandatory_id, child_with_satellite_table::id) -> (satellite_table::id, satellite_table::parent_id));
-fk!((child_with_satellite_table::mandatory_id, child_with_satellite_table::remote_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_with_satellite_table::mandatory_id, child_with_satellite_table::another_remote_column) -> (satellite_table::id, satellite_table::another_field));
-
 #[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = simple_child_with_satellite_table)]
@@ -52,8 +48,6 @@ pub struct SimpleChildWithMandatory {
     /// Foreign key to table A.
     mandatory_id: i32,
 }
-
-fk!((simple_child_with_satellite_table::mandatory_id, simple_child_with_satellite_table::id) -> (satellite_table::id, satellite_table::parent_id));
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 /// Errors for `NewChildWithMandatory` validation.

@@ -218,9 +218,6 @@ pub struct Child {
     remote_mandatory_field: Option<String>,
 }
 
-fk!((child_table::mandatory_id, child_table::id) -> (mandatory_table::id, mandatory_table::parent_id));
-fk!((child_table::mandatory_id, child_table::remote_mandatory_field) -> (mandatory_table::id, mandatory_table::mandatory_field));
-
 let mut conn = SqliteConnection::establish(":memory:")?;
 
 diesel::sql_query("CREATE TABLE parent_table (id INTEGER PRIMARY KEY NOT NULL, parent_field TEXT NOT NULL);").execute(&mut conn)?;
@@ -275,6 +272,7 @@ pub struct Discretionary {
 diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table);
 fpk!(discretionary_table::parent_id -> parent_table);
 unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
+unique_index!(discretionary_table::id, discretionary_table::parent_id);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_with_discretionary_table)]
@@ -288,8 +286,6 @@ pub struct Child {
     #[same_as(discretionary_table::discretionary_field)]
     remote_discretionary_field: Option<String>,
 }
-
-fk!((child_with_discretionary_table::discretionary_id, child_with_discretionary_table::remote_discretionary_field) -> (discretionary_table::id, discretionary_table::discretionary_field));
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 

@@ -33,11 +33,6 @@ pub struct ChildWithMixed {
     remote_discretionary_field: Option<String>,
 }
 
-// Define foreign key relationships
-fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::remote_mandatory_field) -> (satellite_table::id, satellite_table::field));
-fk!((child_with_mixed_table::mandatory_id, child_with_mixed_table::id) -> (satellite_table::id, satellite_table::parent_id));
-fk!((child_with_mixed_table::discretionary_id, child_with_mixed_table::remote_discretionary_field) -> (satellite_table::id, satellite_table::field));
-
 fn create_tables(conn: &mut SqliteConnection) -> Result<(), Box<dyn std::error::Error>> {
     setup_triangular_tables(conn)?;
 
