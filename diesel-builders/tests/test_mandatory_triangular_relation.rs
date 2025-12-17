@@ -9,7 +9,7 @@ use std::convert::Infallible;
 use diesel::associations::HasTable;
 use diesel::prelude::*;
 use diesel_builders::{IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*};
-use diesel_builders_macros::TableModel;
+use diesel_builders_derive::TableModel;
 
 #[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]

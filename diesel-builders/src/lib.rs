@@ -91,9 +91,9 @@ pub mod prelude {
     // Table model trait - not exported to avoid collision with TableModel macro
     // pub use crate::table_model::TableModel;
 
-    // Re-export commonly used macros from diesel_builders_macros
+    // Re-export commonly used macros from diesel_builders_derive
     // Note: GetColumn is now automatically implemented by TableModel derive
-    pub use diesel_builders_macros::{TableModel, fk, fpk, index, unique_index};
+    pub use diesel_builders_derive::{TableModel, fk, fpk, index, unique_index};
 
     pub use crate::get_foreign::GetForeignExt;
 
@@ -104,7 +104,7 @@ pub mod prelude {
     // Column accessor extension traits (always use Ext variants)
     pub use crate::get_column::{GetColumnExt, MayGetColumnExt};
     // Note: Root is NOT exported here to avoid collision with Root macro from
-    // diesel_builders_macros
+    // diesel_builders_derive
     pub use crate::horizontal_same_as::HorizontalKey;
     // Builder setter extension traits (always use Ext variants)
     /// Query loading traits

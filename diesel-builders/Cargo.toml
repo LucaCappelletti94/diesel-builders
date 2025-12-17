@@ -1,11 +1,19 @@
 [package]
 name = "diesel-builders"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "A type-safe builder pattern library for Diesel that handles complex table relationships."
+readme.workspace = true
+license-file.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+homepage.workspace = true
 
 [dependencies]
 diesel.workspace = true
-diesel-builders-macros.workspace = true
+diesel-builders-derive.workspace = true
 serde = { workspace = true, optional = true }
 tuplities.workspace = true
 typenum.workspace = true
@@ -25,10 +33,10 @@ workspace = true
 
 [features]
 default = ["serde", "size-16"]
-size-16 = ["diesel-builders-macros/size-16", "tuplities/size-16"]
-size-32 = ["diesel-builders-macros/size-32", "tuplities/size-32"]
-size-48 = ["diesel-builders-macros/size-48", "tuplities/size-48"]
-size-64 = ["diesel-builders-macros/size-64", "tuplities/size-64"]
-size-96 = ["diesel-builders-macros/size-96", "tuplities/size-96"]
-size-128 = ["diesel-builders-macros/size-128", "tuplities/size-128"]
+size-16 = ["diesel-builders-derive/size-16", "tuplities/size-16"]
+size-32 = ["diesel-builders-derive/size-32", "tuplities/size-32"]
+size-48 = ["diesel-builders-derive/size-48", "tuplities/size-48"]
+size-64 = ["diesel-builders-derive/size-64", "tuplities/size-64"]
+size-96 = ["diesel-builders-derive/size-96", "tuplities/size-96"]
+size-128 = ["diesel-builders-derive/size-128", "tuplities/size-128"]
 serde = ["dep:serde"]

@@ -122,7 +122,7 @@ dependencies = [
 [[package]]
 name = "diesel"
 version = "2.3.1"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=future2#4a4e0eab7c3ef8aa5e5a60df98d87f9820a40eee"
+source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -146,7 +146,7 @@ name = "diesel-builders"
 version = "0.1.0"
 dependencies = [
  "diesel",
- "diesel-builders-macros",
+ "diesel-builders-derive",
  "serde",
  "serde_json",
  "thiserror",
@@ -156,7 +156,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "diesel-builders-macros"
+name = "diesel-builders-derive"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -167,7 +167,7 @@ dependencies = [
 [[package]]
 name = "diesel_derives"
 version = "2.3.2"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=future2#4a4e0eab7c3ef8aa5e5a60df98d87f9820a40eee"
+source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
 dependencies = [
  "diesel_table_macro_syntax",
  "dsl_auto_type",
@@ -179,7 +179,7 @@ dependencies = [
 [[package]]
 name = "diesel_table_macro_syntax"
 version = "0.3.0"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=future2#4a4e0eab7c3ef8aa5e5a60df98d87f9820a40eee"
+source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
 dependencies = [
  "syn",
 ]
@@ -193,7 +193,7 @@ checksum = "117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc"
 [[package]]
 name = "dsl_auto_type"
 version = "0.2.0"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=future2#4a4e0eab7c3ef8aa5e5a60df98d87f9820a40eee"
+source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
 dependencies = [
  "darling",
  "either",

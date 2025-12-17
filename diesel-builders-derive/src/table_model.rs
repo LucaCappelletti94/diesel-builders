@@ -170,7 +170,7 @@ fn process_fields(
                         "Missing compile-time validator function `validate_{}`.\n\n",
                         "To use default values with failable columns, you must add the #[const_validator]\n",
                         "attribute to your ValidateColumn implementation:\n\n",
-                        "    #[diesel_builders_macros::const_validator]\n",
+                        "    #[diesel_builders_derive::const_validator]\n",
                         "    impl ValidateColumn<{}::{}> for ... {{\n",
                         "        fn validate_column(value: &T) -> Result<(), Self::Error) {{\n",
                         "            // your validation logic\n",

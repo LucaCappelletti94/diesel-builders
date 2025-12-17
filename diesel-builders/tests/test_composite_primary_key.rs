@@ -3,7 +3,7 @@
 
 mod shared;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::TableModel;
+use diesel_builders_derive::TableModel;
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = user_roles)]

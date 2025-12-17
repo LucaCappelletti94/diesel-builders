@@ -1,5 +1,5 @@
 use diesel_builders::prelude::*;
-use diesel_builders_macros::TableModel;
+use diesel_builders_derive::TableModel;
 
 mod other_table {
     use diesel::prelude::*;

@@ -4,7 +4,7 @@ mod shared;
 mod shared_triangular;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::TableModel;
+use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
 // Table B models

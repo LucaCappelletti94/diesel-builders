@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["diesel-builders", "diesel-builders-macros"]
+members = ["diesel-builders", "diesel-builders-derive"]
 
 [workspace.package]
 authors = ["Luca Cappelletti"]
@@ -28,13 +28,16 @@ readme = "../README.md"
 rust-version = "1.85"
 
 [workspace.dependencies]
-diesel = { git = "https://github.com/LucaCappelletti94/diesel", branch = "future2" }
+diesel = { git = "https://github.com/diesel-rs/diesel", branch = "main" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 diesel-builders = { path = "diesel-builders" }
-diesel-builders-macros = { path = "diesel-builders-macros" }
+diesel-builders-derive = { path = "diesel-builders-derive" }
 thiserror = "2.0"
 typenum = "1"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
 tuplities = { version = "0.1.4", default-features = false, features = [
 	"flatten-nest",
 ] }

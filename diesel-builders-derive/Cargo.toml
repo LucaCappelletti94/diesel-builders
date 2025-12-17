@@ -1,0 +1,32 @@
+[package]
+name = "diesel-builders-derive"
+description = "Procedural macros for diesel-builders to generate type-safe builders for Diesel ORM."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+readme.workspace = true
+license-file.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+homepage.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+size-16 = []
+size-32 = []
+size-48 = []
+size-64 = []
+size-96 = []
+size-128 = []

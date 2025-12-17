@@ -189,7 +189,7 @@ impl From<Infallible> for NewPuppyError {
     }
 }
 
-#[diesel_builders_macros::const_validator]
+#[diesel_builders_derive::const_validator]
 impl diesel_builders::ValidateColumn<puppies::age_months>
     for <puppies::table as diesel_builders::TableExt>::NewValues
 {

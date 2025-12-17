@@ -343,7 +343,7 @@ pub enum UserError {
 }
 
 // Compile-time validation for age (including default value)
-#[diesel_builders_macros::const_validator]
+#[diesel_builders_derive::const_validator]
 impl ValidateColumn<users::age> for <users::table as TableExt>::NewValues {
     type Error = UserError;
     type Borrowed = i32;

@@ -3,7 +3,7 @@
 mod shared;
 mod shared_triangular;
 use diesel_builders::prelude::*;
-use diesel_builders_macros::TableModel;
+use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
 /// The `Child` table ties together multiple intermediate rows using
