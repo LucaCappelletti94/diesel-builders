@@ -125,13 +125,13 @@ fn test_load_many_sorted_paginated() -> Result<(), Box<dyn std::error::Error>> {
     let paginated_items: Vec<Item> =
         <(items::category,)>::load_many_sorted_paginated((1,), 0, 2, &mut conn)?;
 
-    assert_eq!(paginated_items, vec![item1.clone(), item2.clone()]);
+    assert_eq!(paginated_items, vec![item1, item2.clone()]);
 
     // Test with offset - skip first item
     let paginated_items_offset: Vec<Item> =
         <(items::category,)>::load_many_sorted_paginated((1,), 1, 2, &mut conn)?;
 
-    assert_eq!(paginated_items_offset, vec![item2.clone(), item3.clone()]);
+    assert_eq!(paginated_items_offset, vec![item2.clone(), item3]);
 
     // Test with offset and limit - get only middle item
     let paginated_items_middle: Vec<Item> =
