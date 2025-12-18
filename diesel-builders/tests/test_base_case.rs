@@ -69,9 +69,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert!(animal_no_desc.description().is_none());
 
     // We attempt to query the inserted animal to ensure everything worked correctly.
-    let queried_animal: Animal = animals::table
-        .filter(animals::id.eq(animal.id()))
-        .first(&mut conn)?;
+    let queried_animal: Animal = Animal::find(animal.id(), &mut conn)?;
     assert_eq!(animal, queried_animal);
 
     // Test chained builder pattern with GetColumn derive
@@ -84,6 +82,15 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test TableModel derive - verifying unique primary keys
     assert_ne!(animal.id(), another_animal.id());
+
+    // We try to delete the first animal using the ModelDelete trait
+    let deleted_rows = animal.delete(&mut conn)?;
+    assert_eq!(deleted_rows, 1);
+
+    // We check that the animal is indeed deleted
+    let remaining_animals: Vec<Animal> = animals::table.load(&mut conn)?;
+    assert!(!remaining_animals.contains(&animal));
+    assert!(remaining_animals.contains(&another_animal));
 
     Ok(())
 }

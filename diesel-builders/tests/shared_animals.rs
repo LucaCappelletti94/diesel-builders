@@ -19,25 +19,25 @@ pub fn setup_animal_tables(
     )";
 
     const CREATE_DOGS_TABLE: &str = "CREATE TABLE dogs (
-        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id) ON DELETE CASCADE,
         breed TEXT NOT NULL
     )";
 
     const CREATE_CATS_TABLE: &str = "CREATE TABLE cats (
-        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id),
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES animals(id) ON DELETE CASCADE,
         color TEXT NOT NULL CHECK (color <> '')
     )";
 
     const CREATE_PUPPIES_TABLE: &str = "CREATE TABLE puppies (
-        id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id),
+        id INTEGER PRIMARY KEY NOT NULL REFERENCES dogs(id) ON DELETE CASCADE,
         age_months INTEGER NOT NULL CHECK (age_months >= 0)
     )";
 
     const CREATE_PETS_TABLE: &str = "CREATE TABLE pets (
         id INTEGER PRIMARY KEY NOT NULL,
         owner_name TEXT NOT NULL,
-        FOREIGN KEY (id) REFERENCES dogs(id),
-        FOREIGN KEY (id) REFERENCES cats(id)
+        FOREIGN KEY (id) REFERENCES dogs(id) ON DELETE CASCADE,
+        FOREIGN KEY (id) REFERENCES cats(id) ON DELETE CASCADE
     )";
 
     diesel::sql_query(CREATE_ANIMALS_TABLE).execute(conn)?;

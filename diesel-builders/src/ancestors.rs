@@ -1,6 +1,9 @@
 //! Submodule defining the `Descendant` trait.
 
 use diesel::associations::HasTable;
+use diesel::query_builder::{DeleteStatement, IntoUpdateTarget};
+use diesel::query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery};
+use diesel::{Identifiable, QueryResult, RunQueryDsl};
 use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
 
@@ -12,7 +15,7 @@ use crate::{NestedColumns, TypedColumn, TypedNestedTuple};
 ///
 /// This trait should be derived on Model structs to automatically generate
 /// the `Descendant` implementation for their associated table type.
-pub trait Root: crate::TableExt {}
+pub trait Root: TableExt {}
 
 /// A trait marker for getting the ancestor index of a table.
 pub trait AncestorOfIndex<T: DescendantOf<Self>>: Descendant {
@@ -97,6 +100,24 @@ pub trait ModelDescendantExt<Conn> {
     {
         <Self as ModelDescendantOf<Conn, M::Table>>::ancestor(self, conn)
     }
+
+    /// Deletes the root table record associated with this descendant model,
+    /// which will cascade and delete all descendants including this instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the delete operation fails.
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>
+    where
+        Self: ModelDelete<Conn>,
+    {
+        <Self as ModelDelete<Conn>>::delete(self, conn)
+    }
 }
 
 impl<M, Conn> ModelDescendantExt<Conn> for M {}
@@ -115,6 +136,100 @@ where
     }
 }
 
+/// A trait for finding a model by its ID.
+pub trait ModelFind<Conn>: HasTable<Table: TableExt>
+where
+    for<'a> &'a Self: Identifiable,
+{
+    /// Finds a model by its ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID to search for.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails or if no matching record is found.
+    fn find(
+        id: <&Self as Identifiable>::Id,
+        conn: &mut Conn,
+    ) -> QueryResult<<Self::Table as TableExt>::Model>;
+
+    /// Returns whether a model with the given ID exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID to search for.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails.
+    fn exists(id: <&Self as Identifiable>::Id, conn: &mut Conn) -> QueryResult<bool> {
+        use diesel::OptionalExtension;
+        match Self::find(id, conn).optional()? {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
+    }
+}
+
+impl<Conn, M> ModelFind<Conn> for M
+where
+    M: HasTable<Table: TableExt>,
+    Conn: diesel::connection::LoadConnection,
+    for<'query> &'query M: Identifiable,
+    M::Table: for<'query> FindDsl<<&'query M as Identifiable>::Id>,
+    for<'query> <M::Table as FindDsl<<&'query M as Identifiable>::Id>>::Output:
+        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn find(
+        id: <&Self as Identifiable>::Id,
+        conn: &mut Conn,
+    ) -> QueryResult<<Self::Table as TableExt>::Model> {
+        M::Table::default().find(id).get_result(conn)
+    }
+}
+
+/// A trait for deleting a model from its root table, which cascades to all descendants.
+pub trait ModelDelete<Conn>: HasTable<Table: Descendant> {
+    /// Deletes the root table record associated with this descendant model,
+    /// which will cascade and delete all descendants including this instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the delete operation fails.
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>;
+}
+
+impl<Conn, M> ModelDelete<Conn> for M
+where
+    M: HasTable<Table: Descendant>,
+    for<'query> &'query M: Identifiable,
+    Conn: diesel::Connection,
+    <M::Table as Descendant>::Root: for<'query> FindDsl<<&'query M as Identifiable>::Id>,
+    for<'query> <<M::Table as Descendant>::Root as FindDsl<<&'query M as Identifiable>::Id>>::Output:
+        IntoUpdateTarget<Table = <M::Table as Descendant>::Root>,
+    for<'query> DeleteStatement<
+        <M::Table as Descendant>::Root,
+        <<<M::Table as Descendant>::Root as FindDsl<<&'query M as Identifiable>::Id>>::Output as
+        IntoUpdateTarget>::WhereClause,
+    >: ExecuteDsl<Conn>,
+{
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize> {
+        let root_table: <M::Table as Descendant>::Root = Default::default();
+        diesel::delete(root_table.find(self.id())).execute(conn)
+    }
+}
+
 /// A trait marker for getting the ancestor tables of a descendant table.
 pub trait NestedAncestorsOf<T: Descendant<Ancestors = <Self as FlattenNestedTuple>::Flattened>>:
     NestedTables
@@ -127,7 +242,10 @@ pub trait Descendant: TableExt {
     type Ancestors: Tables<Nested: NestedAncestorsOf<Self> + NestedTuplePushBack<Self>>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
-    type Root: Root;
+    type Root: Root<NestedPrimaryKeyColumns: TypedNestedTuple<
+        NestedTupleColumnType = <Self::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType,
+        NestedTupleValueType = <Self::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleValueType,
+    >>;
 }
 
 /// A trait for Diesel tables that have ancestor tables, including themselves.

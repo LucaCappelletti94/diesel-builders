@@ -9,7 +9,6 @@ mod shared;
 mod shared_animals;
 use shared_animals::*;
 
-use diesel::prelude::*;
 use diesel_builders::{BuilderError, prelude::*};
 
 #[test]
@@ -89,8 +88,33 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_dog.breed(), "Labrador");
     let queried_cat: Cat = pet.ancestor(&mut conn)?;
     assert_eq!(queried_cat.color(), "Black");
-    let queried_pet: Pet = pets::table.filter(pets::id.eq(pet.id())).first(&mut conn)?;
+    let queried_pet: Pet = Pet::find(pet.id(), &mut conn)?;
     assert_eq!(queried_pet, pet);
+
+    // Test delete cascade with DAG structure
+    // Deleting pet should cascade through both dog and cat to animals
+    let pet_id = pet.id();
+    let deleted_rows = pet.delete(&mut conn)?;
+    assert_eq!(deleted_rows, 1);
+
+    // Verify pet is deleted
+    assert!(!Pet::exists(pet.id(), &mut conn)?);
+
+    // Verify associated dog is deleted
+    assert!(!Dog::exists(pet_id, &mut conn)?);
+
+    // Verify associated cat is deleted
+    assert!(!Cat::exists(pet_id, &mut conn)?);
+
+    // Verify associated animal is deleted
+    assert!(!Animal::exists(pet_id, &mut conn)?);
+
+    // The standalone dog, cat, and animal should still exist
+    assert!(Dog::exists(dog.id(), &mut conn)?);
+
+    assert!(Cat::exists(cat.id(), &mut conn)?);
+
+    assert!(Animal::exists(animal.id(), &mut conn)?);
 
     Ok(())
 }

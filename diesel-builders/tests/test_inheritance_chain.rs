@@ -29,7 +29,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(dog.breed(), "Golden Retriever");
 
     // Verify dog can be queried
-    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
+    let queried_dog: Dog = Dog::find(dog.id(), &mut conn)?;
     assert_eq!(queried_dog, dog);
 
     // Insert into puppies table (extends dogs, transitively extends animals)
@@ -42,23 +42,19 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(*puppy.age_months(), 3);
 
     // Verify puppy can be queried
-    let queried_puppy: Puppy = puppies::table
-        .filter(puppies::id.eq(puppy.id()))
-        .first(&mut conn)?;
+    let queried_puppy: Puppy = Puppy::find(puppy.id(), &mut conn)?;
     assert_eq!(queried_puppy, puppy);
 
     // Verify we can join through the chain: animals -> dogs
     let loaded_animal: Animal = dog.ancestor(&mut conn)?;
-    let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
+    let loaded_dog: Dog = Dog::find(dog.id(), &mut conn)?;
 
     assert_eq!(loaded_animal.id(), loaded_dog.id());
     assert_eq!(loaded_dog, dog);
 
     // Verify we can join through the chain: dogs -> puppies
     let loaded_dog2: Dog = puppy.ancestor(&mut conn)?;
-    let loaded_puppy: Puppy = puppies::table
-        .filter(puppies::id.eq(puppy.id()))
-        .first(&mut conn)?;
+    let loaded_puppy: Puppy = Puppy::find(puppy.id(), &mut conn)?;
 
     assert_eq!(loaded_dog2.id(), loaded_puppy.id());
     assert_eq!(loaded_puppy, puppy);
@@ -69,6 +65,26 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(full_chain_animal.id(), full_chain_dog.id());
     assert_eq!(full_chain_dog.id(), puppy.id());
+
+    // Test delete cascade through the inheritance chain
+    // Deleting puppy should cascade through dogs to animals
+    let puppy_id = puppy.id();
+    let deleted_rows = puppy.delete(&mut conn)?;
+    assert_eq!(deleted_rows, 1);
+
+    // Verify puppy is deleted
+    assert!(!Puppy::exists(puppy_id, &mut conn)?);
+
+    // Verify associated dog is deleted
+    assert!(!Dog::exists(puppy_id, &mut conn)?);
+
+    // Verify associated animal is deleted
+    assert!(!Animal::exists(puppy_id, &mut conn)?);
+
+    // The standalone dog and animal should still exist
+    assert!(Dog::exists(dog.id(), &mut conn)?);
+
+    assert!(Animal::exists(animal.id(), &mut conn)?);
 
     Ok(())
 }

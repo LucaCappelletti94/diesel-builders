@@ -36,7 +36,9 @@ pub use foreign_key::*;
 pub mod ancestors;
 pub mod horizontal_same_as;
 pub mod vertical_same_as_group;
-pub use ancestors::{AncestorOfIndex, Descendant, DescendantOf, ModelDescendantExt, Root};
+pub use ancestors::{
+    AncestorOfIndex, Descendant, DescendantOf, ModelDelete, ModelDescendantExt, ModelFind, Root,
+};
 pub use horizontal_same_as::*;
 pub use vertical_same_as_group::VerticalSameAsGroup;
 pub mod horizontal_same_as_group;
@@ -98,7 +100,7 @@ pub mod prelude {
     pub use crate::get_foreign::GetForeignExt;
 
     // Table relationship traits
-    pub use crate::ancestors::{Descendant, DescendantOf, ModelDescendantExt};
+    pub use crate::ancestors::{Descendant, DescendantOf, ModelDescendantExt, ModelFind};
     // Core table building traits
     pub use crate::buildable_table::BuildableTable;
     // Column accessor extension traits (always use Ext variants)

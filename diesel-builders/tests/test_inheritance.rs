@@ -19,9 +19,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
         .try_name("Generic Animal")?
         .insert(&mut conn)?;
 
-    let loaded_animal: Animal = animals::table
-        .filter(animals::id.eq(animal.id()))
-        .first(&mut conn)?;
+    let loaded_animal: Animal = Animal::find(animal.id(), &mut conn)?;
     assert_eq!(loaded_animal, animal.clone());
 
     // Test TableModel derive - accessing primary key via GetColumn
@@ -42,18 +40,32 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(dog.breed(), "Golden Retriever");
 
     // Verify the dog can be queried
-    let queried_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
+    let queried_dog: Dog = Dog::find(dog.id(), &mut conn)?;
     assert_eq!(dog, queried_dog);
 
     let loaded_animal: Animal = dog.ancestor(&mut conn)?;
 
-    let loaded_dog: Dog = dogs::table.filter(dogs::id.eq(dog.id())).first(&mut conn)?;
+    let loaded_dog: Dog = Dog::find(dog.id(), &mut conn)?;
 
     // Test GetColumn derive on both parent and child models
     assert_eq!(loaded_animal.id(), dog.id());
     assert_eq!(loaded_animal.name(), "Max");
     assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
+
+    // Test delete cascade - deleting dog should cascade delete from animals table
+    let dog_id = dog.id();
+    let deleted_rows = dog.delete(&mut conn)?;
+    assert_eq!(deleted_rows, 1);
+
+    // Verify the dog is deleted
+    assert!(!Dog::exists(dog_id, &mut conn)?);
+
+    // Verify the associated animal is also deleted due to CASCADE
+    assert!(!Animal::exists(dog_id, &mut conn)?);
+
+    // The standalone animal should still exist
+    assert!(Animal::exists(animal.id(), &mut conn)?);
 
     Ok(())
 }
@@ -77,18 +89,29 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(cat.color(), "Orange");
 
     // Verify the cat can be queried
-    let queried_cat: Cat = cats::table.filter(cats::id.eq(cat.id())).first(&mut conn)?;
+    let queried_cat: Cat = Cat::find(cat.id(), &mut conn)?;
     assert_eq!(cat, queried_cat);
 
     let loaded_animal: Animal = cat.ancestor(&mut conn)?;
 
-    let loaded_cat: Cat = cats::table.filter(cats::id.eq(cat.id())).first(&mut conn)?;
+    let loaded_cat: Cat = Cat::find(cat.id(), &mut conn)?;
 
     // Test GetColumn derive - type-safe column access on both models
     assert_eq!(loaded_animal.id(), cat.id());
     assert_eq!(loaded_animal.name(), "Whiskers");
     assert_eq!(loaded_cat.color(), "Orange");
     assert_eq!(loaded_cat, cat);
+
+    // Test delete cascade for cat
+    let cat_id = cat.id();
+    let deleted_rows = cat.delete(&mut conn)?;
+    assert_eq!(deleted_rows, 1);
+
+    // Verify the cat is deleted
+    assert!(!Cat::exists(cat_id, &mut conn)?);
+
+    // Verify the associated animal is also deleted due to CASCADE
+    assert!(!Animal::exists(cat_id, &mut conn)?);
 
     Ok(())
 }

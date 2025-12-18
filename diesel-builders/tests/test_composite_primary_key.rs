@@ -81,10 +81,7 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(user_role.assigned_at(), "2025-01-01");
 
     // We attempt to query the inserted user role to ensure everything worked
-    let queried_user_role: UserRole = user_roles::table
-        .filter(user_roles::user_id.eq(user_role.user_id()))
-        .filter(user_roles::role_id.eq(user_role.role_id()))
-        .first(&mut conn)?;
+    let queried_user_role: UserRole = UserRole::find(user_role.id(), &mut conn)?;
     assert_eq!(user_role, queried_user_role);
 
     // We test the chained variant.

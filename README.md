@@ -85,9 +85,10 @@ pub struct Puppy {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
+diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut conn)?;
 diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT DEFAULT 'A really good boy');").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), breed TEXT NOT NULL, dog_notes TEXT);").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE puppies (id INTEGER PRIMARY KEY REFERENCES dogs(id), age_months INTEGER NOT NULL DEFAULT 6);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE, breed TEXT NOT NULL, dog_notes TEXT);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE puppies (id INTEGER PRIMARY KEY REFERENCES dogs(id) ON DELETE CASCADE, age_months INTEGER NOT NULL DEFAULT 6);").execute(&mut conn)?;
 
 let puppy = puppies::table::builder()
     .name("Buddy")
@@ -96,6 +97,10 @@ let puppy = puppies::table::builder()
     .age_months(3)
     .insert(&mut conn)?;
 
+// You can load the table with `find`:
+let loaded_puppy: Puppy = Puppy::find(puppy.id(), &mut conn)?;
+
+// Access ancestor records
 let animal: Animal = puppy.ancestor(&mut conn)?;
 assert_eq!(animal.name(), "Buddy");
 assert_eq!(animal.description().as_deref(), Some("A cute little puppy"));
@@ -103,6 +108,11 @@ let dog: Dog = puppy.ancestor(&mut conn)?;
 assert_eq!(dog.breed(), "Labrador");
 assert_eq!(dog.dog_notes().as_deref(), Some("A cute little puppy"));
 assert_eq!(*puppy.age_months(), 3);
+
+puppy.delete(&mut conn)?;
+assert!(!Puppy::exists(puppy.id(), &mut conn)?);
+assert!(!Dog::exists(puppy.id(), &mut conn)?);
+assert!(!Animal::exists(puppy.id(), &mut conn)?);
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
@@ -151,10 +161,11 @@ pub struct Pet {
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
+diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut conn)?;
 diesel::sql_query("CREATE TABLE animals (id INTEGER PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT 'No description');").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id), breed TEXT NOT NULL);").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE cats (id INTEGER PRIMARY KEY REFERENCES animals(id), color TEXT NOT NULL DEFAULT 'All cats are orange');").execute(&mut conn)?;
-diesel::sql_query("CREATE TABLE pets (id INTEGER PRIMARY KEY, owner_name TEXT NOT NULL, FOREIGN KEY (id) REFERENCES dogs(id), FOREIGN KEY (id) REFERENCES cats(id));").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE, breed TEXT NOT NULL);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE cats (id INTEGER PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE, color TEXT NOT NULL DEFAULT 'All cats are orange');").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE pets (id INTEGER PRIMARY KEY, owner_name TEXT NOT NULL, FOREIGN KEY (id) REFERENCES dogs(id) ON DELETE CASCADE, FOREIGN KEY (id) REFERENCES cats(id) ON DELETE CASCADE);").execute(&mut conn)?;
 
 let pet = pets::table::builder()
     .name("Bellerophon")
@@ -169,6 +180,12 @@ let dog: Dog = pet.ancestor(&mut conn)?;
 assert_eq!(dog.breed(), "Hybrid Orange-Labrador");
 let cat: Cat = pet.ancestor(&mut conn)?;
 assert_eq!(cat.color(), "Orange");
+
+pet.delete(&mut conn)?;
+assert!(!Pet::exists(pet.id(), &mut conn)?);
+assert!(!Dog::exists(pet.id(), &mut conn)?);
+assert!(!Cat::exists(pet.id(), &mut conn)?);
+assert!(!Animal::exists(pet.id(), &mut conn)?);
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
