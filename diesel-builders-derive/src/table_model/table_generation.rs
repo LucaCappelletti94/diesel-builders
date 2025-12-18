@@ -9,15 +9,13 @@ use crate::utils::is_option;
 /// Infers the Diesel SQL type from a Rust type.
 fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
     if is_option(ty) {
-        if let Type::Path(type_path) = ty {
-            if let Some(segment) = type_path.path.segments.last() {
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                        let inner_sql_type = infer_sql_type(inner_ty)?;
-                        return Some(quote! { diesel::sql_types::Nullable<#inner_sql_type> });
-                    }
-                }
-            }
+        if let Type::Path(type_path) = ty
+            && let Some(segment) = type_path.path.segments.last()
+            && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+            && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+        {
+            let inner_sql_type = infer_sql_type(inner_ty)?;
+            return Some(quote! { diesel::sql_types::Nullable<#inner_sql_type> });
         }
         return None;
     }
@@ -26,23 +24,21 @@ fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
         if let Some(segment) = type_path.path.segments.last() {
             let type_name = segment.ident.to_string();
 
-            if type_name == "Vec" {
-                if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                        // Check if inner_ty is u8 for Binary
-                        if let Type::Path(inner_path) = inner_ty {
-                            if let Some(inner_segment) = inner_path.path.segments.last() {
-                                if inner_segment.ident == "u8" {
-                                    return Some(quote! { diesel::sql_types::Binary });
-                                }
-                            }
-                        }
+            if type_name == "Vec"
+                && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+                && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+            {
+                // Check if inner_ty is u8 for Binary
+                if let Type::Path(inner_path) = inner_ty
+                    && let Some(inner_segment) = inner_path.path.segments.last()
+                    && inner_segment.ident == "u8"
+                {
+                    return Some(quote! { diesel::sql_types::Binary });
+                }
 
-                        // Otherwise infer for Array<T>
-                        if let Some(inner_sql_type) = infer_sql_type(inner_ty) {
-                            return Some(quote! { diesel::sql_types::Array<#inner_sql_type> });
-                        }
-                    }
+                // Otherwise infer for Array<T>
+                if let Some(inner_sql_type) = infer_sql_type(inner_ty) {
+                    return Some(quote! { diesel::sql_types::Array<#inner_sql_type> });
                 }
             }
 

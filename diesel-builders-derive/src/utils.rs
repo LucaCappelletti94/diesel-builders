@@ -46,10 +46,8 @@ pub(crate) fn format_as_nested_tuple<
 
 /// Checks if the given type is an `Option`.
 pub(crate) fn is_option(ty: &syn::Type) -> bool {
-    if let syn::Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            return segment.ident == "Option";
-        }
+    if let syn::Type::Path(type_path) = ty && let Some(segment) = type_path.path.segments.last() {
+        return segment.ident == "Option";
     }
     false
 }

@@ -90,10 +90,10 @@ pub fn generate_vertical_same_as_impls(
                 let is_ancestor = if let Some(ancestors) = &attributes.ancestors {
                     ancestors.iter().any(|ancestor| {
                         // Extract the identifier from the ancestor Type
-                        if let syn::Type::Path(type_path) = ancestor {
-                            if let Some(segment) = type_path.path.segments.last() {
-                                return segment.ident == *table_name;
-                            }
+                        if let syn::Type::Path(type_path) = ancestor
+                            && let Some(segment) = type_path.path.segments.last()
+                        {
+                            return segment.ident == *table_name;
                         }
                         false
                     })

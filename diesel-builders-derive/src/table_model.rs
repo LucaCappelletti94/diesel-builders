@@ -484,41 +484,41 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Validate mandatory triangular relations on primary keys
     for field in fields {
-        if is_field_mandatory(field) {
-            if let Some(mandatory_table) = extract_mandatory_table(field)? {
-                // Check if ALL primary key columns have a same_as pointing to this mandatory table
-                for pk_col_name in &primary_key_columns {
-                    let pk_field = fields
-                        .iter()
-                        .find(|f| f.ident.as_ref() == Some(pk_col_name));
+        if is_field_mandatory(field)
+            && let Some(mandatory_table) = extract_mandatory_table(field)?
+        {
+            // Check if ALL primary key columns have a same_as pointing to this mandatory table
+            for pk_col_name in &primary_key_columns {
+                let pk_field = fields
+                    .iter()
+                    .find(|f| f.ident.as_ref() == Some(pk_col_name));
 
-                    if let Some(pk_field) = pk_field {
-                        let same_as_cols_groups = extract_same_as_columns(pk_field)?;
+                if let Some(pk_field) = pk_field {
+                    let same_as_cols_groups = extract_same_as_columns(pk_field)?;
 
-                        let has_same_as_to_mandatory =
-                            same_as_cols_groups.iter().flatten().any(|path| {
-                                if path.segments.len() <= mandatory_table.segments.len() {
+                    let has_same_as_to_mandatory =
+                        same_as_cols_groups.iter().flatten().any(|path| {
+                            if path.segments.len() <= mandatory_table.segments.len() {
+                                return false;
+                            }
+                            for (i, segment) in mandatory_table.segments.iter().enumerate() {
+                                if path.segments[i].ident != segment.ident {
                                     return false;
                                 }
-                                for (i, segment) in mandatory_table.segments.iter().enumerate() {
-                                    if path.segments[i].ident != segment.ident {
-                                        return false;
-                                    }
-                                }
-                                true
-                            });
+                            }
+                            true
+                        });
 
-                        if !has_same_as_to_mandatory {
-                            let mandatory_table_str =
-                                quote::quote!(#mandatory_table).to_string().replace(' ', "");
-                            return Err(syn::Error::new_spanned(
-                                pk_field,
-                                format!(
-                                    "Primary key column `{pk_col_name}` must have a `#[same_as({mandatory_table_str}::Column)]` attribute \
+                    if !has_same_as_to_mandatory {
+                        let mandatory_table_str =
+                            quote::quote!(#mandatory_table).to_string().replace(' ', "");
+                        return Err(syn::Error::new_spanned(
+                            pk_field,
+                            format!(
+                                "Primary key column `{pk_col_name}` must have a `#[same_as({mandatory_table_str}::Column)]` attribute \
                                      specifying the corresponding column in the mandatory table `{mandatory_table_str}`.",
-                                ),
-                            ));
-                        }
+                            ),
+                        ));
                     }
                 }
             }
@@ -703,13 +703,13 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             (None, false)
         };
 
-        if let Some(target_table) = target_table {
-            if let Some(last_segment) = target_table.segments.last() {
-                potential_keys
-                    .entry(last_segment.ident.clone())
-                    .or_default()
-                    .push((field_name.clone(), is_mandatory, target_table.clone()));
-            }
+        if let Some(target_table) = target_table
+            && let Some(last_segment) = target_table.segments.last()
+        {
+            potential_keys
+                .entry(last_segment.ident.clone())
+                .or_default()
+                .push((field_name.clone(), is_mandatory, target_table.clone()));
         }
     }
 
@@ -754,10 +754,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
                 for (i, col_path) in attr_paths.iter().enumerate() {
                     // If this is the explicit key, skip it (it's not a target column)
-                    if let Some(ref k) = explicit_key_ident {
-                        if i == 1 && col_path.segments.last().map(|s| &s.ident) == Some(k) {
-                            continue;
-                        }
+                    if let Some(ref k) = explicit_key_ident
+                        && i == 1
+                        && col_path.segments.last().map(|s| &s.ident) == Some(k)
+                    {
+                        continue;
                     }
 
                     if let Some(segment) = col_path.segments.first() {
@@ -798,12 +799,12 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                                 }
                             };
 
-                            if let Some(key_ident) = selected_key {
-                                if let Some(info) = horizontal_keys_map.get_mut(&key_ident) {
-                                    let f_ident = f.ident.as_ref().unwrap().clone();
-                                    info.host_columns.push(f_ident);
-                                    info.foreign_columns.push(col_path.clone());
-                                }
+                            if let Some(key_ident) = selected_key
+                                && let Some(info) = horizontal_keys_map.get_mut(&key_ident)
+                            {
+                                let f_ident = f.ident.as_ref().unwrap().clone();
+                                info.host_columns.push(f_ident);
+                                info.foreign_columns.push(col_path.clone());
                             }
                         }
                     }
