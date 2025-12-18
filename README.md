@@ -44,6 +44,14 @@ let animal = animals::table::builder()
     .description("A friendly dog".to_owned())
     .insert(&mut conn)?;
 
+// You can load the table with `find`:
+let loaded_animal: Animal = Animal::find(animal.id(), &mut conn)?;
+assert_eq!(loaded_animal.name(), "Buddy");
+// Delete the record
+loaded_animal.delete(&mut conn)?;
+// Check existence
+assert!(!Animal::exists(loaded_animal.id(), &mut conn)?);
+
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
