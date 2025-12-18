@@ -3,7 +3,7 @@
 use crate::utils::snake_to_camel_case;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{punctuated::Punctuated, Field, Ident, Token};
+use syn::{Field, Ident, Token, punctuated::Punctuated};
 
 /// Generate `TypedColumn` implementations and associated setter/getter traits for all fields.
 pub fn generate_typed_column_impls(

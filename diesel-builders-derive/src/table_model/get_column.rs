@@ -2,7 +2,7 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{punctuated::Punctuated, Field, Ident, Token};
+use syn::{Field, Ident, Token, punctuated::Punctuated};
 
 /// Generate `GetColumn` trait implementations for all fields.
 /// This replaces the separate `GetColumn` derive macro.

@@ -86,9 +86,9 @@ pub fn const_validator(_attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn fk(input: TokenStream) -> TokenStream {
     use quote::quote;
     use syn::{
+        Token, Type,
         parse::{Parse, ParseStream},
         punctuated::Punctuated,
-        Token, Type,
     };
 
     /// Parsed representation of a `FOREIGN KEY` specification provided to
@@ -172,8 +172,8 @@ pub fn fk(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn fpk(input: TokenStream) -> TokenStream {
     use syn::{
-        parse::{Parse, ParseStream},
         Path, Token,
+        parse::{Parse, ParseStream},
     };
 
     /// Parsed representation of a foreign primary key specification.

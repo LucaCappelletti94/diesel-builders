@@ -15,8 +15,8 @@ mod vertical_same_as;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::spanned::Spanned;
 use syn::DeriveInput;
+use syn::spanned::Spanned;
 
 use attribute_parsing::{
     extract_discretionary_table, extract_field_default_value, extract_mandatory_table,
@@ -98,7 +98,7 @@ fn process_fields(
 
         if is_field_infallible(field) && attributes.error.is_none() {
             let warning_msg = format!(
-                "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",                
+                "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",
             );
 
             let mut span = field.span();
@@ -179,9 +179,7 @@ fn process_fields(
                         "The #[const_validator] attribute generates a const function that can be\n",
                         "evaluated at compile time to validate default values."
                     ),
-                    field_name,
-                    table_module,
-                    field_name
+                    field_name, table_module, field_name
                 );
 
                 // Generate a macro that provides a helpful error if the validator doesn't exist
@@ -287,7 +285,9 @@ fn collect_triangular_relation_tables(
                 } else {
                     return Err(syn::Error::new_spanned(
                         field,
-                        format!("Field '{field_name}' is marked as #[mandatory] but no table name is specified. Use #[mandatory(table_name)]", )
+                        format!(
+                            "Field '{field_name}' is marked as #[mandatory] but no table name is specified. Use #[mandatory(table_name)]",
+                        ),
                     ));
                 }
             }
@@ -299,7 +299,9 @@ fn collect_triangular_relation_tables(
                 } else {
                     return Err(syn::Error::new_spanned(
                         field,
-                        format!("Field '{field_name}' is marked as #[discretionary] but no table name is specified. Use #[discretionary(table_name)]")
+                        format!(
+                            "Field '{field_name}' is marked as #[discretionary] but no table name is specified. Use #[discretionary(table_name)]"
+                        ),
                     ));
                 }
             }
@@ -514,7 +516,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                                 format!(
                                     "Primary key column `{pk_col_name}` must have a `#[same_as({mandatory_table_str}::Column)]` attribute \
                                      specifying the corresponding column in the mandatory table `{mandatory_table_str}`.",
-                                )
+                                ),
                             ));
                         }
                     }
@@ -791,7 +793,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                                              Please specify which key to use: `#[same_as({target_table_str}::{}, KeyField)]`. \
                                              Available keys: {available_keys_str}",
                                             col_path.segments.last().unwrap().ident,
-                                        )
+                                        ),
                                     ));
                                 }
                             };

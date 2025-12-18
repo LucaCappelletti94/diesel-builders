@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_quote, ItemImpl};
+use syn::{ItemImpl, parse_quote};
 
 /// Generate a const validator function from a `ValidateColumn` implementation.
 ///
@@ -53,7 +53,7 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
                 return Err(syn::Error::new_spanned(
                     last_segment,
                     "ValidateColumn must have angle-bracketed type parameters",
-                ))
+                ));
             }
         }
     };
@@ -144,14 +144,14 @@ pub fn generate_const_validator(item: &mut ItemImpl) -> syn::Result<TokenStream>
                 return Err(syn::Error::new_spanned(
                     &pat_type.pat,
                     "Expected simple parameter name",
-                ))
+                ));
             }
         },
         syn::FnArg::Receiver(_) => {
             return Err(syn::Error::new_spanned(
                 value_param,
                 "Expected typed parameter",
-            ))
+            ));
         }
     };
 

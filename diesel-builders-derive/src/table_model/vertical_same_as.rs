@@ -6,7 +6,7 @@ use syn::punctuated::Punctuated;
 
 use crate::utils::format_as_nested_tuple;
 
-use super::attribute_parsing::{extract_same_as_columns, TableModelAttributes};
+use super::attribute_parsing::{TableModelAttributes, extract_same_as_columns};
 
 /// Generate `VerticalSameAsGroup` implementations for all columns in the table.
 ///
