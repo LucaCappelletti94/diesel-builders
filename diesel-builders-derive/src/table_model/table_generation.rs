@@ -6,59 +6,70 @@ use syn::{DeriveInput, Field, Ident, Type};
 
 use crate::utils::is_option;
 
+/// Extracts the first generic type argument from a type path, if it exists.
+fn extract_first_generic_arg(ty: &Type) -> Option<&Type> {
+    if let Type::Path(type_path) = ty
+        && let syn::PathArguments::AngleBracketed(args) = &type_path.path.segments.last()?.arguments
+        && let syn::GenericArgument::Type(inner_ty) = args.args.first()?
+    {
+        Some(inner_ty)
+    } else {
+        None
+    }
+}
+
+/// Maps primitive Rust types to their corresponding Diesel SQL types.
+fn map_primitive_type(type_name: &str) -> Option<TokenStream> {
+    match type_name {
+        "i32" => Some(quote! { diesel::sql_types::Integer }),
+        "i64" => Some(quote! { diesel::sql_types::BigInt }),
+        "i16" => Some(quote! { diesel::sql_types::SmallInt }),
+        "f32" => Some(quote! { diesel::sql_types::Float }),
+        "f64" => Some(quote! { diesel::sql_types::Double }),
+        "bool" => Some(quote! { diesel::sql_types::Bool }),
+        "String" => Some(quote! { diesel::sql_types::Text }),
+        "NaiveDate" => Some(quote! { diesel::sql_types::Date }),
+        "NaiveDateTime" => Some(quote! { diesel::sql_types::Timestamp }),
+        "NaiveTime" => Some(quote! { diesel::sql_types::Time }),
+        "Uuid" => Some(quote! { diesel::sql_types::Uuid }),
+        _ => None,
+    }
+}
+
 /// Infers the Diesel SQL type from a Rust type.
 fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
+    // Handle Option<T> -> Nullable<InnerType>
     if is_option(ty) {
-        if let Type::Path(type_path) = ty
-            && let Some(segment) = type_path.path.segments.last()
-            && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
-            && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
-        {
-            let inner_sql_type = infer_sql_type(inner_ty)?;
-            return Some(quote! { diesel::sql_types::Nullable<#inner_sql_type> });
-        }
-        return None;
+        let inner_ty = extract_first_generic_arg(ty)?;
+        let inner_sql_type = infer_sql_type(inner_ty)?;
+        return Some(quote! { diesel::sql_types::Nullable<#inner_sql_type> });
     }
 
+    // Handle other types
     if let Type::Path(type_path) = ty {
-        if let Some(segment) = type_path.path.segments.last() {
-            let type_name = segment.ident.to_string();
+        let segment = type_path.path.segments.last()?;
+        let type_name = segment.ident.to_string();
 
-            if type_name == "Vec"
-                && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
-                && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+        // Handle Vec<T>
+        if type_name == "Vec" {
+            let inner_ty = extract_first_generic_arg(ty)?;
+
+            // Special case: Vec<u8> -> Binary
+            if let Type::Path(inner_path) = inner_ty
+                && let Some(inner_segment) = inner_path.path.segments.last()
+                && inner_segment.ident == "u8"
             {
-                // Check if inner_ty is u8 for Binary
-                if let Type::Path(inner_path) = inner_ty
-                    && let Some(inner_segment) = inner_path.path.segments.last()
-                    && inner_segment.ident == "u8"
-                {
-                    return Some(quote! { diesel::sql_types::Binary });
-                }
-
-                // Otherwise infer for Array<T>
-                if let Some(inner_sql_type) = infer_sql_type(inner_ty) {
-                    return Some(quote! { diesel::sql_types::Array<#inner_sql_type> });
-                }
+                return Some(quote! { diesel::sql_types::Binary });
             }
 
-            match type_name.as_str() {
-                "i32" => Some(quote! { diesel::sql_types::Integer }),
-                "i64" => Some(quote! { diesel::sql_types::BigInt }),
-                "i16" => Some(quote! { diesel::sql_types::SmallInt }),
-                "f32" => Some(quote! { diesel::sql_types::Float }),
-                "f64" => Some(quote! { diesel::sql_types::Double }),
-                "bool" => Some(quote! { diesel::sql_types::Bool }),
-                "String" => Some(quote! { diesel::sql_types::Text }),
-                "NaiveDate" => Some(quote! { diesel::sql_types::Date }),
-                "NaiveDateTime" => Some(quote! { diesel::sql_types::Timestamp }),
-                "NaiveTime" => Some(quote! { diesel::sql_types::Time }),
-                "Uuid" => Some(quote! { diesel::sql_types::Uuid }),
-                _ => None,
+            // General case: Vec<T> -> Array<InnerType>
+            if let Some(inner_sql_type) = infer_sql_type(inner_ty) {
+                return Some(quote! { diesel::sql_types::Array<#inner_sql_type> });
             }
-        } else {
-            None
         }
+
+        // Handle primitive types
+        map_primitive_type(&type_name)
     } else {
         None
     }
@@ -127,7 +138,9 @@ pub fn generate_table_macro(
     let mut column_defs = Vec::new();
 
     for field in fields {
-        let field_name = field.ident.as_ref().unwrap();
+        let Some(field_name) = &field.ident else {
+            continue;
+        };
         let sql_type = get_column_sql_type(field)?;
 
         // Preserve documentation
@@ -147,18 +160,11 @@ pub fn generate_table_macro(
         .iter()
         .filter(|attr| attr.path().is_ident("doc"));
 
-    let pk_tuple = if primary_key_columns.len() == 1 {
-        let pk = &primary_key_columns[0];
-        quote! { #pk }
-    } else {
-        quote! { #(#primary_key_columns),* }
-    };
-
     // Use the module identifier as the table name for definition
     Ok(quote! {
         diesel::table! {
             #(#struct_doc_attrs)*
-            #table_module (#pk_tuple) {
+            #table_module (#(#primary_key_columns),*) {
                 #(#column_defs)*
             }
         }

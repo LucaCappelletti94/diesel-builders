@@ -11,7 +11,7 @@ use quote::ToTokens;
 ///
 /// Example: `"my_table_name"` -> `"MyTableName"`.
 pub(crate) fn snake_to_camel_case(s: &str) -> String {
-    let mut result = String::new();
+    let mut result = String::with_capacity(s.len());
     let mut capitalize_next = true;
 
     for c in s.chars() {

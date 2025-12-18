@@ -25,20 +25,16 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
     };
 
     // Extract column name for method generation
-    let column_name = column
-        .segments
-        .last()
-        .expect("Column path must have at least one segment")
-        .ident
-        .to_string();
+    let Some(last_segment) = column.segments.last() else {
+        return quote! {};
+    };
+    let column_name = last_segment.ident.to_string();
 
     // Extract referenced table name for method generation
-    let referenced_table_name = referenced_table_path
-        .segments
-        .last()
-        .expect("Referenced table path must have at least one segment")
-        .ident
-        .to_string();
+    let Some(last_segment) = referenced_table_path.segments.last() else {
+        return quote! {};
+    };
+    let referenced_table_name = last_segment.ident.to_string();
 
     // Generate method name based on column name
     let method_name = if let Some(stripped) = column_name.strip_suffix("_id") {

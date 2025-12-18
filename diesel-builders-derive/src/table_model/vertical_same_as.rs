@@ -4,9 +4,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::punctuated::Punctuated;
 
-use crate::utils::format_as_nested_tuple;
-
 use super::attribute_parsing::{TableModelAttributes, extract_same_as_columns};
+use super::tokens_to_string;
+use crate::utils::format_as_nested_tuple;
 
 /// Generate `VerticalSameAsGroup` implementations for all columns in the table.
 ///
@@ -120,7 +120,7 @@ pub fn generate_vertical_same_as_impls(
                             "Column `{}` is not from an ancestor or triangular table. \
                              The #[same_as(...)] attribute can only reference columns from tables \
                              listed in #[table_model(ancestors(...))] or marked as #[mandatory]/#[discretionary]",
-                            quote!(#column_path).to_string().replace(' ', "")
+                            tokens_to_string(column_path)
                         ),
                     ));
                 }

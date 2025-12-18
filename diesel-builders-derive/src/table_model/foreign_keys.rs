@@ -21,7 +21,9 @@ pub fn generate_foreign_key_impls(
 
     // 1. Identify mandatory/discretionary columns (M)
     for field in fields {
-        let field_name = field.ident.as_ref().unwrap();
+        let Some(field_name) = &field.ident else {
+            continue;
+        };
         let m_col = quote::quote!(#table_module::#field_name);
 
         // Check for mandatory or discretionary table reference
@@ -35,7 +37,9 @@ pub fn generate_foreign_key_impls(
 
         // 2. Find same_as columns (C) referencing the same table
         for other_field in fields {
-            let other_field_name = other_field.ident.as_ref().unwrap();
+            let Some(other_field_name) = &other_field.ident else {
+                continue;
+            };
 
             if field_name == other_field_name {
                 continue;
@@ -51,7 +55,7 @@ pub fn generate_foreign_key_impls(
                 if !disambiguators.is_empty() {
                     let matches_current_field = disambiguators
                         .iter()
-                        .any(|p| p.segments.first().unwrap().ident == *field_name);
+                        .any(|p| p.segments.first().is_some_and(|s| s.ident == *field_name));
 
                     if !matches_current_field {
                         continue;

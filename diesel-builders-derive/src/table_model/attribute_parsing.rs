@@ -137,22 +137,17 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
 /// Check if a field is marked as infallible via `#[table_model(infallible)]` or `#[infallible]`.
 pub fn is_field_infallible(field: &syn::Field) -> bool {
     field.attrs.iter().any(|attr| {
-        if attr.path().is_ident("infallible") {
-            return true;
-        }
-
-        if !attr.path().is_ident("table_model") {
-            return false;
-        }
-
-        let mut infallible = false;
-        let _ = attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("infallible") {
-                infallible = true;
-            }
-            Ok(())
-        });
-        infallible
+        attr.path().is_ident("infallible")
+            || (attr.path().is_ident("table_model") && {
+                let mut infallible = false;
+                let _ = attr.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("infallible") {
+                        infallible = true;
+                    }
+                    Ok(())
+                });
+                infallible
+            })
     })
 }
 
@@ -172,17 +167,20 @@ pub fn is_field_discretionary(field: &syn::Field) -> bool {
         .any(|attr| attr.path().is_ident("discretionary"))
 }
 
-/// Extract the referenced table from `#[mandatory(table_name)]` attribute.
-/// The table name is now required and must be specified.
-pub fn extract_mandatory_table(field: &syn::Field) -> syn::Result<Option<syn::Path>> {
+/// Extract the referenced table from a triangular relation attribute.
+/// The table name is required and must be specified.
+fn extract_triangular_table(field: &syn::Field, attr_name: &str) -> syn::Result<Option<syn::Path>> {
     for attr in &field.attrs {
-        if !attr.path().is_ident("mandatory") {
+        if !attr.path().is_ident(attr_name) {
             continue;
         }
 
         // Parse the table path from the attribute
         let table_path: syn::Path = attr.parse_args().map_err(|_| {
-            syn::Error::new_spanned(attr, "Expected table name: #[mandatory(table_name)]")
+            syn::Error::new_spanned(
+                attr,
+                format!("Expected table name: #[{attr_name}(table_name)]"),
+            )
         })?;
 
         return Ok(Some(table_path));
@@ -190,22 +188,16 @@ pub fn extract_mandatory_table(field: &syn::Field) -> syn::Result<Option<syn::Pa
     Ok(None)
 }
 
+/// Extract the referenced table from `#[mandatory(table_name)]` attribute.
+/// The table name is now required and must be specified.
+pub fn extract_mandatory_table(field: &syn::Field) -> syn::Result<Option<syn::Path>> {
+    extract_triangular_table(field, "mandatory")
+}
+
 /// Extract the referenced table from `#[discretionary(table_name)]` attribute.
 /// The table name is now required and must be specified.
 pub fn extract_discretionary_table(field: &syn::Field) -> syn::Result<Option<syn::Path>> {
-    for attr in &field.attrs {
-        if !attr.path().is_ident("discretionary") {
-            continue;
-        }
-
-        // Parse the table path from the attribute
-        let table_path: syn::Path = attr.parse_args().map_err(|_| {
-            syn::Error::new_spanned(attr, "Expected table name: #[discretionary(table_name)]")
-        })?;
-
-        return Ok(Some(table_path));
-    }
-    Ok(None)
+    extract_triangular_table(field, "discretionary")
 }
 
 /// Extract default value from `#[table_model(default = ...)]` attribute on a field.
@@ -237,6 +229,49 @@ pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
     default_values.into_iter().next()
 }
 
+/// Count occurrences of a specific attribute on a field.
+fn count_attribute(field: &syn::Field, attr_name: &str) -> usize {
+    field
+        .attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident(attr_name))
+        .count()
+}
+
+/// Count occurrences of infallible markers (both standalone and nested).
+fn count_infallible_markers(field: &syn::Field) -> usize {
+    let mut count = 0;
+    for attr in &field.attrs {
+        if attr.path().is_ident("infallible") {
+            count += 1;
+        } else if attr.path().is_ident("table_model") {
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("infallible") {
+                    count += 1;
+                }
+                Ok(())
+            });
+        }
+    }
+    count
+}
+
+/// Count occurrences of nested attribute within `#[table_model(...)]`.
+fn count_nested_attribute(field: &syn::Field, nested_name: &str) -> usize {
+    let mut count = 0;
+    for attr in &field.attrs {
+        if attr.path().is_ident("table_model") {
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident(nested_name) {
+                    count += 1;
+                }
+                Ok(())
+            });
+        }
+    }
+    count
+}
+
 /// Validate field attributes for unsupported configurations.
 pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     // Check for conflicting mandatory/discretionary attributes
@@ -248,12 +283,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     }
 
     // Check for duplicate mandatory attributes
-    let mandatory_count = field
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident("mandatory"))
-        .count();
-    if mandatory_count > 1 {
+    if count_attribute(field, "mandatory") > 1 {
         return Err(syn::Error::new_spanned(
             field,
             "Duplicate `#[mandatory]` attribute found. Each field can only have one `#[mandatory]` attribute.",
@@ -261,12 +291,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     }
 
     // Check for duplicate discretionary attributes
-    let discretionary_count = field
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident("discretionary"))
-        .count();
-    if discretionary_count > 1 {
+    if count_attribute(field, "discretionary") > 1 {
         return Err(syn::Error::new_spanned(
             field,
             "Duplicate `#[discretionary]` attribute found. Each field can only have one `#[discretionary]` attribute.",
@@ -274,20 +299,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     }
 
     // Check for duplicate infallible attributes (both standalone and nested)
-    let mut infallible_count = 0;
-    for attr in &field.attrs {
-        if attr.path().is_ident("infallible") {
-            infallible_count += 1;
-        } else if attr.path().is_ident("table_model") {
-            let _ = attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("infallible") {
-                    infallible_count += 1;
-                }
-                Ok(())
-            });
-        }
-    }
-    if infallible_count > 1 {
+    if count_infallible_markers(field) > 1 {
         return Err(syn::Error::new_spanned(
             field,
             "Duplicate `#[infallible]` or `#[table_model(infallible)]` attribute found. Each field can only have one infallible marker.",
@@ -295,18 +307,7 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     }
 
     // Check for multiple default values
-    let mut default_count = 0;
-    for attr in &field.attrs {
-        if attr.path().is_ident("table_model") {
-            let _ = attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("default") {
-                    default_count += 1;
-                }
-                Ok(())
-            });
-        }
-    }
-    if default_count > 1 {
+    if count_nested_attribute(field, "default") > 1 {
         return Err(syn::Error::new_spanned(
             field,
             "Multiple `default` values specified for the same field",

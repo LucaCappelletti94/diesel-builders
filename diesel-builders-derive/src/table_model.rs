@@ -34,6 +34,11 @@ use vertical_same_as::generate_vertical_same_as_impls;
 
 use crate::utils::{format_as_nested_tuple, is_option};
 
+/// Helper to convert `TokenStream` to normalized string for comparison.
+fn tokens_to_string(tokens: &impl quote::ToTokens) -> String {
+    quote::quote!(#tokens).to_string().replace(' ', "")
+}
+
 /// Struct to hold processed field information.
 struct ProcessedFields {
     /// Columns for the new record tuple.
@@ -63,8 +68,6 @@ fn process_fields(
     let mut warnings = Vec::new();
 
     for field in fields {
-        validate_field_attributes(field)?;
-
         let field_name = field
             .ident
             .as_ref()
@@ -153,7 +156,7 @@ fn process_fields(
                     proc_macro2::Span::call_site(),
                 );
 
-                let def_string = quote::quote!(#def).to_string().replace(' ', "");
+                let def_string = tokens_to_string(&def);
                 let error_msg = format!(
                     concat!(
                         "Compile-time validation failed for table `{}`, column `{}`.\n",
@@ -215,19 +218,9 @@ fn process_fields(
 
                 const_validations.push(validation_assert);
 
-                // For Option types, use to_owned() to convert borrowed values
-                if is_nullable {
-                    quote::quote! { Some((#def).to_owned().into()) }
-                } else {
-                    quote::quote! { Some((#def).into()) }
-                }
+                quote::quote! { Some((#def).to_owned().into()) }
             } else {
-                // For Option types, use to_owned() to convert borrowed values
-                if is_nullable {
-                    quote::quote! { Some((#def).to_owned().into()) }
-                } else {
-                    quote::quote! { Some((#def).into()) }
-                }
+                quote::quote! { Some((#def).to_owned().into()) }
             }
         } else if is_nullable {
             quote::quote! { Some(None) }
@@ -251,20 +244,26 @@ fn collect_triangular_columns(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
 ) -> (Vec<syn::Type>, Vec<syn::Type>) {
-    let mut mandatory_columns = Vec::new();
-    let mut discretionary_columns = Vec::new();
+    let (mandatory_columns, discretionary_columns): (Vec<_>, Vec<_>) = fields
+        .iter()
+        .filter_map(|field| {
+            let field_name = field.ident.as_ref()?;
+            let col = syn::parse_quote!(#table_module::#field_name);
 
-    for field in fields {
-        if let Some(field_name) = &field.ident {
             if is_field_mandatory(field) {
-                mandatory_columns.push(syn::parse_quote!(#table_module::#field_name));
+                Some((Some(col), None))
             } else if is_field_discretionary(field) {
-                discretionary_columns.push(syn::parse_quote!(#table_module::#field_name));
+                Some((None, Some(col)))
+            } else {
+                None
             }
-        }
-    }
+        })
+        .unzip();
 
-    (mandatory_columns, discretionary_columns)
+    (
+        mandatory_columns.into_iter().flatten().collect(),
+        discretionary_columns.into_iter().flatten().collect(),
+    )
 }
 
 /// Collect tables referenced by mandatory and discretionary fields.
@@ -274,7 +273,7 @@ fn collect_triangular_relation_tables(
 ) -> syn::Result<std::collections::HashSet<syn::Path>> {
     use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
 
-    let mut referenced_tables = std::collections::HashSet::new();
+    let mut referenced_tables = std::collections::HashSet::with_capacity(fields.len());
 
     for field in fields {
         if let Some(field_name) = &field.ident {
@@ -378,9 +377,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     if let Some(ancestors) = &attributes.ancestors {
         let table_type_str = table_module.to_string();
 
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = std::collections::HashSet::with_capacity(ancestors.len());
         for ancestor in ancestors {
-            let ancestor_str = quote::quote!(#ancestor).to_string().replace(' ', "");
+            let ancestor_str = tokens_to_string(ancestor);
 
             if ancestor_str == table_type_str {
                 return Err(syn::Error::new_spanned(
@@ -510,8 +509,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                         });
 
                     if !has_same_as_to_mandatory {
-                        let mandatory_table_str =
-                            quote::quote!(#mandatory_table).to_string().replace(' ', "");
+                        let mandatory_table_str = tokens_to_string(&mandatory_table);
                         return Err(syn::Error::new_spanned(
                             pk_field,
                             format!(
@@ -532,25 +530,23 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
     // Generate allow_tables_to_appear_in_same_query! macro calls for ancestors and triangular relations
-    let mut allow_same_query_calls: Vec<_> = if let Some(ancestors) = &attributes.ancestors {
-        ancestors
-            .iter()
-            .map(|ancestor| {
-                quote! {
-                    diesel::allow_tables_to_appear_in_same_query!(#table_module, #ancestor);
-                }
-            })
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let ancestor_count = attributes.ancestors.as_ref().map_or(0, Vec::len);
+    let total_capacity = ancestor_count + triangular_relation_tables.len();
+    let mut allow_same_query_calls = Vec::with_capacity(total_capacity);
 
-    // Add calls for triangular relation tables
-    for referenced_table in &triangular_relation_tables {
-        allow_same_query_calls.push(quote! {
-            diesel::allow_tables_to_appear_in_same_query!(#table_module, #referenced_table);
-        });
+    if let Some(ancestors) = &attributes.ancestors {
+        allow_same_query_calls.extend(ancestors.iter().map(|ancestor| {
+            quote! {
+                diesel::allow_tables_to_appear_in_same_query!(#table_module, #ancestor);
+            }
+        }));
     }
+
+    allow_same_query_calls.extend(triangular_relation_tables.iter().map(|referenced_table| {
+        quote! {
+            diesel::allow_tables_to_appear_in_same_query!(#table_module, #referenced_table);
+        }
+    }));
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
@@ -709,7 +705,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             potential_keys
                 .entry(last_segment.ident.clone())
                 .or_default()
-                .push((field_name.clone(), is_mandatory, target_table.clone()));
+                .push((field_name.clone(), is_mandatory, target_table));
         }
     }
 
@@ -786,14 +782,17 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                                     let available_keys: Vec<String> =
                                         keys.iter().map(|(k, _, _)| format!("`{k}`")).collect();
                                     let available_keys_str = available_keys.join(", ");
+                                    let col_name = col_path.segments.last().map_or_else(
+                                        || "<unknown>".to_string(),
+                                        |s| s.ident.to_string(),
+                                    );
 
                                     return Err(syn::Error::new_spanned(
                                         f,
                                         format!(
                                             "Ambiguous triangular relationship: multiple fields point to table `{target_table_str}`. \
-                                             Please specify which key to use: `#[same_as({target_table_str}::{}, KeyField)]`. \
-                                             Available keys: {available_keys_str}",
-                                            col_path.segments.last().unwrap().ident,
+                                             Please specify which key to use: `#[same_as({target_table_str}::{col_name}, KeyField)]`. \
+                                             Available keys: {available_keys_str}"
                                         ),
                                     ));
                                 }
@@ -801,9 +800,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
                             if let Some(key_ident) = selected_key
                                 && let Some(info) = horizontal_keys_map.get_mut(&key_ident)
+                                && let Some(f_ident) = &f.ident
                             {
-                                let f_ident = f.ident.as_ref().unwrap().clone();
-                                info.host_columns.push(f_ident);
+                                info.host_columns.push(f_ident.clone());
                                 info.foreign_columns.push(col_path.clone());
                             }
                         }
@@ -818,19 +817,18 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // to satisfy BundlableTable bounds, even if they don't propagate any values.
 
     // Generate HorizontalKey implementations
-    let mut horizontal_key_impls = Vec::new();
+    let mut horizontal_key_impls = Vec::with_capacity(horizontal_keys.len());
     for key in &horizontal_keys {
-        let mut seen = std::collections::HashSet::new();
+        let mut seen = std::collections::HashSet::with_capacity(key.foreign_columns.len());
         for foreign_col in &key.foreign_columns {
-            let col_str = quote::quote!(#foreign_col).to_string().replace(' ', "");
-            if !seen.insert(col_str) {
+            let col_str = tokens_to_string(foreign_col);
+            if !seen.insert(col_str.clone()) {
                 let err = syn::Error::new_spanned(
                     foreign_col,
                     format!(
-                        "Duplicate column in ForeignColumns: `{}`. \
+                        "Duplicate column in ForeignColumns: `{col_str}`. \
                          This column appears multiple times in the same horizontal key relationship. \
-                         Please ensure that each column is only involved in one `same_as` relationship for this key.",
-                        quote::quote!(#foreign_col).to_string().replace(' ', "")
+                         Please ensure that each column is only involved in one `same_as` relationship for this key."
                     ),
                 );
                 horizontal_key_impls.push(err.to_compile_error());
