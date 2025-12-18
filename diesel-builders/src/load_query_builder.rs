@@ -6,6 +6,7 @@ use diesel::expression_methods::EqAll;
 use diesel::query_dsl::methods::FilterDsl;
 use diesel::query_dsl::methods::LimitDsl;
 use diesel::query_dsl::methods::LoadQuery;
+use diesel::query_dsl::methods::OffsetDsl;
 use diesel::query_dsl::methods::OrderDsl;
 use diesel::query_dsl::methods::SelectDsl;
 use tuplities::prelude::{FlattenNestedTuple, NestedTupleInto};
@@ -170,6 +171,65 @@ where
         let order =
             <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns::default().to_order();
         let query = Self::load_query(values).order(order);
+        diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
+    }
+}
+
+/// The `LoadManySortedPaginated` trait allows retrieving several records from a load query,
+/// sorted by a given expression with offset and limit for pagination.
+pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
+    /// Constructs a paginated load query.
+    ///
+    /// # Arguments
+    ///
+    /// * `values` - The values to filter the load query by.
+    /// * `offset` - The number of records to skip.
+    /// * `limit` - The maximum number of records to return.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the query fails.
+    fn load_many_sorted_paginated(
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
+        offset: i64,
+        limit: i64,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
+}
+
+impl<Conn, NestedColumns> LoadManySortedPaginated<Conn> for NestedColumns
+where
+    Conn: diesel::connection::LoadConnection,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
+    <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns: TupleToOrder,
+    NestedColumns::LoadQuery: OrderDsl<
+            <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+        > + diesel::query_dsl::RunQueryDsl<Conn>,
+    <NestedColumns::LoadQuery as OrderDsl<
+        <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+    >>::Output: LimitDsl + OffsetDsl,
+    <<NestedColumns::LoadQuery as OrderDsl<
+        <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+    >>::Output as LimitDsl>::Output: OffsetDsl,
+    for<'query> <<<NestedColumns::LoadQuery as OrderDsl<
+        <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
+    >>::Output as LimitDsl>::Output as OffsetDsl>::Output:
+        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn load_many_sorted_paginated(
+        values: impl NestedTupleInto<Self::NestedTupleValueType>,
+        offset: i64,
+        limit: i64,
+        conn: &mut Conn,
+    ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
+        let order =
+            <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns::default().to_order();
+        let query = Self::load_query(values)
+            .order(order)
+            .limit(limit)
+            .offset(offset);
         diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
     }
 }

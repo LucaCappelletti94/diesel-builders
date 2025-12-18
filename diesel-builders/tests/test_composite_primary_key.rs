@@ -2,6 +2,7 @@
 //! a single table with a composite primary key.
 
 mod shared;
+use diesel_builders::load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated};
 use diesel_builders::prelude::*;
 use diesel_builders_derive::TableModel;
 
@@ -190,7 +191,23 @@ fn test_load_many_composite() -> Result<(), Box<dyn std::error::Error>> {
     // Sorted by PK (user_id, role_id)
     let roles_user_1_sorted: Vec<UserRole> =
         <(user_roles::user_id,)>::load_many_sorted((1,), &mut conn)?;
-    assert_eq!(roles_user_1_sorted, vec![ur1_10, ur1_20]);
+    assert_eq!(roles_user_1_sorted, vec![ur1_10.clone(), ur1_20.clone()]);
+
+    // Test LoadManySortedPaginated
+    // Get first item only
+    let roles_user_1_paginated: Vec<UserRole> =
+        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 0, 1, &mut conn)?;
+    assert_eq!(roles_user_1_paginated, vec![ur1_10.clone()]);
+
+    // Get second item using offset
+    let roles_user_1_offset: Vec<UserRole> =
+        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 1, 1, &mut conn)?;
+    assert_eq!(roles_user_1_offset, vec![ur1_20.clone()]);
+
+    // Get all items with high limit
+    let roles_user_1_all: Vec<UserRole> =
+        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 0, 10, &mut conn)?;
+    assert_eq!(roles_user_1_all, vec![ur1_10, ur1_20]);
 
     Ok(())
 }
