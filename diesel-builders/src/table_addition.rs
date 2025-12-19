@@ -8,7 +8,12 @@ use crate::{
 };
 
 /// Extended trait for Diesel tables.
-pub trait TableExt: diesel::Table + diesel::associations::HasTable + Default {
+pub trait TableExt:
+    diesel::Table<AllColumns: NonEmptyProjection<Table = Self>>
+    + diesel::associations::HasTable
+    + Default
+    + Copy
+{
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The nested columns necessary to execute insert operations for this table.

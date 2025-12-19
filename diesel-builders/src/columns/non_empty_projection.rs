@@ -3,7 +3,7 @@
 use super::{Columns, NonEmptyNestedProjection};
 
 /// A trait representing a non-empty projection of Diesel columns.
-pub trait NonEmptyProjection: Columns {
+pub trait NonEmptyProjection: Columns<Nested: NonEmptyNestedProjection> {
     /// The table associated to this projection.
     type Table: diesel::Table + Default;
 }

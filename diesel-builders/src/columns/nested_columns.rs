@@ -9,7 +9,7 @@ use tuplities::prelude::FlattenNestedTuple;
 ///
 /// Given a tuple of columns `(C1, C2, C3, C4)`, the associated
 /// nested columns would be `(C1, (C2, (C3, (C4,))))`.
-pub trait NestedColumns: TypedNestedTuple + Default {
+pub trait NestedColumns: TypedNestedTuple + Default + Copy {
     /// Associated type representing a set of nested tables.
     type NestedTables: FlattenNestedTuple;
     /// The of the columns as a nested tuple of strings.

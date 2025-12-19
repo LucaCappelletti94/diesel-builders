@@ -208,3 +208,60 @@ fn test_load_many_composite() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_upsert_composite() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+
+    diesel::sql_query(
+        "CREATE TABLE user_roles (
+			user_id INTEGER NOT NULL,
+			role_id INTEGER NOT NULL,
+			assigned_at TEXT NOT NULL,
+			PRIMARY KEY (user_id, role_id)
+		)",
+    )
+    .execute(&mut conn)?;
+
+    // 1. Insert initial record
+    let mut user_role = user_roles::table::builder()
+        .user_id(1)
+        .role_id(10)
+        .assigned_at("2025-01-01")
+        .insert(&mut conn)?;
+
+    assert_eq!(user_role.assigned_at, "2025-01-01");
+
+    // 2. Upsert (Update)
+    user_role.assigned_at = "2025-01-02".to_string();
+
+    let updated_role = user_role.upsert(&mut conn)?;
+    assert_eq!(updated_role.assigned_at, "2025-01-02");
+    assert_eq!(updated_role.user_id, 1);
+    assert_eq!(updated_role.role_id, 10);
+
+    // Verify in DB
+    let queried_role: UserRole = UserRole::find(updated_role.id(), &mut conn)?;
+    assert_eq!(queried_role.assigned_at, "2025-01-02");
+
+    // 3. Upsert (Insert)
+    // We need to construct a UserRole manually since we don't have a builder that returns a struct without inserting.
+    // But we can use the struct constructor since fields are public now.
+    // TODO: We will add support for upsert via builder in the future.
+    let new_role = UserRole {
+        user_id: 2,
+        role_id: 20,
+        assigned_at: "2025-02-01".to_string(),
+    };
+
+    let inserted_role = new_role.upsert(&mut conn)?;
+    assert_eq!(inserted_role.user_id, 2);
+    assert_eq!(inserted_role.role_id, 20);
+    assert_eq!(inserted_role.assigned_at, "2025-02-01");
+
+    // Verify in DB
+    let queried_new_role: UserRole = UserRole::find(inserted_role.id(), &mut conn)?;
+    assert_eq!(queried_new_role, inserted_role);
+
+    Ok(())
+}

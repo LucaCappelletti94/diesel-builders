@@ -179,3 +179,61 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     Ok(())
 }
+
+#[test]
+fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // 1. Upsert on Root (Animal)
+    let animal = animals::table::builder()
+        .try_name("Original Animal")?
+        .insert(&mut conn)?;
+
+    let mut animal_update = animal.clone();
+    animal_update.name = "Updated Animal".to_string();
+
+    let updated_animal = animal_update.upsert(&mut conn)?;
+    assert_eq!(updated_animal.name, "Updated Animal");
+
+    let queried_animal: Animal = Animal::find(&animal.id, &mut conn)?;
+    assert_eq!(queried_animal.name, "Updated Animal");
+
+    // 2. Upsert on Descendant (Dog)
+    // Note: upsert currently only updates the specific table columns.
+    // If we update a field belonging to Dog (breed), it should work.
+    let dog = dogs::table::builder()
+        .try_name("Original Dog")?
+        .breed("Poodle")
+        .insert(&mut conn)?;
+
+    let mut dog_update = dog.clone();
+    dog_update.breed = "Standard Poodle".to_string();
+
+    let updated_dog = dog_update.upsert(&mut conn)?;
+    assert_eq!(updated_dog.breed, "Standard Poodle");
+
+    let queried_dog: Dog = Dog::find(&dog.id, &mut conn)?;
+    assert_eq!(queried_dog.breed, "Standard Poodle");
+
+    // 3. Upsert on Multi-Descendant (Pet)
+    // Pet extends Dog and Cat.
+    // We update a field belonging to Pet (owner_name).
+    let pet = pets::table::builder()
+        .try_name("Original Pet")?
+        .breed("Mix")
+        .try_color("Brown")?
+        .owner_name("Original Owner")
+        .insert(&mut conn)?;
+
+    let mut pet_update = pet.clone();
+    pet_update.owner_name = "Updated Owner".to_string();
+
+    let updated_pet = pet_update.upsert(&mut conn)?;
+    assert_eq!(updated_pet.owner_name, "Updated Owner");
+
+    let queried_pet: Pet = Pet::find(&pet.id, &mut conn)?;
+    assert_eq!(queried_pet.owner_name, "Updated Owner");
+
+    Ok(())
+}

@@ -37,7 +37,8 @@ pub mod ancestors;
 pub mod horizontal_same_as;
 pub mod vertical_same_as_group;
 pub use ancestors::{
-    AncestorOfIndex, Descendant, DescendantOf, ModelDelete, ModelDescendantExt, ModelFind, Root,
+    AncestorOfIndex, Descendant, DescendantOf, ModelDelete, ModelDescendantExt, ModelFind,
+    ModelUpsert, Root,
 };
 pub use horizontal_same_as::*;
 pub use vertical_same_as_group::VerticalSameAsGroup;
@@ -100,7 +101,9 @@ pub mod prelude {
     pub use crate::get_foreign::GetForeignExt;
 
     // Table relationship traits
-    pub use crate::ancestors::{Descendant, DescendantOf, ModelDescendantExt, ModelFind};
+    pub use crate::ancestors::{
+        Descendant, DescendantOf, ModelDescendantExt, ModelFind, ModelUpsert,
+    };
     // Core table building traits
     pub use crate::buildable_table::BuildableTable;
     // Column accessor extension traits (always use Ext variants)

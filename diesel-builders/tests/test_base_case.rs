@@ -37,7 +37,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         Some(&None)
     );
 
-    let animal = builder.insert(&mut conn)?;
+    let mut animal = builder.insert(&mut conn)?;
 
     assert_eq!(animal.name(), "Max");
     assert!(animal.description().is_none());
@@ -82,6 +82,14 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test TableModel derive - verifying unique primary keys
     assert_ne!(animal.id(), another_animal.id());
+
+    // We try to change Animal and use directly Upsert:
+    animal.name = "Maximus".to_string();
+    let upserted_animal = animal.upsert(&mut conn)?;
+    assert_eq!(upserted_animal.name(), "Maximus");
+    assert_eq!(upserted_animal.id(), animal.id());
+    let reloaded_animal: Animal = Animal::find(animal.id(), &mut conn)?;
+    assert_eq!(reloaded_animal, upserted_animal);
 
     // We try to delete the first animal using the ModelDelete trait
     let deleted_rows = animal.delete(&mut conn)?;

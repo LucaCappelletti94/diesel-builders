@@ -38,9 +38,9 @@ checksum = "812e12b5285cc515a9c72a5c1d3b6d46a19dac5acfef5265968c166106e31dd3"
 
 [[package]]
 name = "bumpalo"
-version = "3.19.0"
+version = "3.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46c5e41b57b8bba42a04676d81cb89e9ee8e859a1a66f80a5a72e1cb76b34d43"
+checksum = "5dd9dc738b7a8311c7ade152424974d8115f2cdad61e8dab8dac9f2362298510"
 
 [[package]]
 name = "cc"
@@ -122,7 +122,7 @@ dependencies = [
 [[package]]
 name = "diesel"
 version = "2.3.1"
-source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -167,7 +167,7 @@ dependencies = [
 [[package]]
 name = "diesel_derives"
 version = "2.3.2"
-source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
 dependencies = [
  "diesel_table_macro_syntax",
  "dsl_auto_type",
@@ -179,7 +179,7 @@ dependencies = [
 [[package]]
 name = "diesel_table_macro_syntax"
 version = "0.3.0"
-source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
 dependencies = [
  "syn",
 ]
@@ -193,7 +193,7 @@ checksum = "117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc"
 [[package]]
 name = "dsl_auto_type"
 version = "0.2.0"
-source = "git+https://github.com/diesel-rs/diesel?branch=main#e0a025aee09accc71336947a070b59ca15298a1b"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
 dependencies = [
  "darling",
  "either",
@@ -544,9 +544,9 @@ dependencies = [
 
 [[package]]
 name = "serde_spanned"
-version = "1.0.3"
+version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e24345aa0fe688594e73770a5f6d1b216508b4f93484c0026d521acd30134392"
+checksum = "f8bbf91e5a4d6315eee45e704372590b30e260ee83af6639d64557f51b067776"
 dependencies = [
  "serde_core",
 ]
@@ -571,9 +571,9 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "sqlite-wasm-rs"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7daddb7b39e5da61fb649987177b622f95c7d0e240ce47b3c7610420e6fb8e5"
+checksum = "05e98301bf8b0540c7de45ecd760539b9c62f5772aed172f08efba597c11cd5d"
 dependencies = [
  "cc",
  "hashbrown",
@@ -667,9 +667,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.9.8"
+version = "0.9.10+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0dc8b1fb61449e27716ec0e1bdf0f6b8f3e8f6b05391e8497b8b6d7804ea6d8"
+checksum = "0825052159284a1a8b4d6c0c86cbc801f2da5afd2b225fa548c72f2e74002f48"
 dependencies = [
  "indexmap",
  "serde_core",
@@ -682,27 +682,27 @@ dependencies = [
 
 [[package]]
 name = "toml_datetime"
-version = "0.7.3"
+version = "0.7.5+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2cdb639ebbc97961c51720f858597f7f24c4fc295327923af55b74c3c724533"
+checksum = "92e1cfed4a3038bc5a127e35a2d360f145e1f4b971b551a2ba5fd7aedf7e1347"
 dependencies = [
  "serde_core",
 ]
 
 [[package]]
 name = "toml_parser"
-version = "1.0.4"
+version = "1.0.6+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0cbe268d35bdb4bb5a56a2de88d0ad0eb70af5384a99d648cd4b3d04039800e"
+checksum = "a3198b4b0a8e11f09dd03e133c0280504d0801269e9afa46362ffde1cbeebf44"
 dependencies = [
  "winnow",
 ]
 
 [[package]]
 name = "toml_writer"
-version = "1.0.4"
+version = "1.0.6+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df8b2b54733674ad286d16267dcfc7a71ed5c776e4ac7aa3c3e2561f7c637bf2"
+checksum = "ab16f14aed21ee8bfd8ec22513f7287cd4a91aa92e44edfe2c17ddd004e92607"
 
 [[package]]
 name = "trybuild"

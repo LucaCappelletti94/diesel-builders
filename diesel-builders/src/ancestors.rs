@@ -1,9 +1,12 @@
 //! Submodule defining the `Descendant` trait.
 
+use crate::columns::TupleEqAll;
 use diesel::associations::HasTable;
-use diesel::query_builder::{DeleteStatement, IntoUpdateTarget};
-use diesel::query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery};
-use diesel::{Identifiable, QueryResult, RunQueryDsl};
+use diesel::connection::LoadConnection;
+use diesel::query_builder::{DeleteStatement, InsertStatement, IntoUpdateTarget};
+use diesel::query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery, SetUpdateDsl};
+use diesel::query_dsl::{DoUpdateDsl, OnConflictDsl};
+use diesel::{AsChangeset, Identifiable, Insertable, QueryResult, RunQueryDsl, Table};
 use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
 
@@ -227,6 +230,74 @@ where
     fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize> {
         let root_table: <M::Table as Descendant>::Root = Default::default();
         diesel::delete(root_table.find(self.id())).execute(conn)
+    }
+}
+
+/// A trait for upserting (insert or update) a model.
+///
+/// This trait allows inserting a model or updating it if it already exists,
+/// based on a conflict on the primary key.
+///
+pub trait ModelUpsert<Conn>: HasTable<Table: TableExt> {
+    /// Upserts the model (insert or update on conflict).
+    ///
+    /// If a record with the same primary key exists, it is updated.
+    /// Otherwise, a new record is inserted.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection.
+    ///
+    /// # Returns
+    ///
+    /// * The inserted or updated model.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error
+    ///   if the upsert operation fails.
+    fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
+    where
+        Self: Sized;
+}
+
+impl<Conn, M> ModelUpsert<Conn> for M
+where
+    M: HasTable<Table: TableExt>
+        + GetNestedColumns<<<M::Table as Table>::AllColumns as NestTuple>::Nested>,
+    Conn: LoadConnection,
+    <<M::Table as Table>::AllColumns as NestTuple>::Nested:
+        TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<M::Table> + AsChangeset<Target = M::Table>>>,
+    for<'query> InsertStatement<
+        Self::Table,
+        <<<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<Self::Table>>::Values,
+    >: OnConflictDsl<
+        <M::Table as Table>::PrimaryKey,
+        Output: DoUpdateDsl<Output: SetUpdateDsl<
+            <<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened,
+            Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+        >>
+    >,
+{
+    fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
+    where
+        Self: Sized,
+    {
+        use diesel::Table;
+        let table: M::Table = Default::default();
+        let columns = <<M::Table as Table>::AllColumns as NestTuple>::Nested::default();
+        let results: Vec<<Self::Table as TableExt>::Model> = diesel::insert_into(table)
+            .values(columns.eq_all(self.get_nested_columns()).flatten())
+            .on_conflict(table.primary_key())
+            .do_update()
+            .set(columns.eq_all(self.get_nested_columns()).flatten())
+            .get_results(conn)?;
+
+        if let Some(first) = results.into_iter().next() {
+            Ok(first)
+        } else {
+            Err(diesel::result::Error::NotFound)
+        }
     }
 }
 

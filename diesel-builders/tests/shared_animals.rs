@@ -49,17 +49,27 @@ pub fn setup_animal_tables(
     Ok(())
 }
 
-#[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(
+    Debug,
+    Queryable,
+    Clone,
+    Selectable,
+    Identifiable,
+    AsChangeset,
+    Insertable,
+    PartialEq,
+    TableModel,
+)]
 #[diesel(table_name = animals)]
 #[table_model(error = NewAnimalError, surrogate_key)]
 /// Model for the animals table.
 pub struct Animal {
     /// Primary key.
-    id: i32,
+    pub id: i32,
     /// The name of the animal.
-    name: String,
+    pub name: String,
     /// Optional description.
-    description: Option<String>,
+    pub description: Option<String>,
 }
 
 /// Error variants for `NewAnimal` validation.
@@ -123,16 +133,16 @@ impl diesel_builders::ValidateColumn<animals::description>
     }
 }
 
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel, Clone)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.
-    id: i32,
+    pub id: i32,
     /// The breed of the dog.
     #[table_model(default = "Unknown")]
-    breed: String,
+    pub breed: String,
 }
 
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
@@ -142,9 +152,9 @@ pub struct Dog {
 pub struct Cat {
     #[infallible]
     /// Primary key.
-    id: i32,
+    pub id: i32,
     /// The color of the cat.
-    color: String,
+    pub color: String,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -204,7 +214,7 @@ impl diesel_builders::ValidateColumn<puppies::age_months>
     }
 }
 
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel, Clone)]
 #[diesel(table_name = puppies)]
 #[table_model(error = NewPuppyError)]
 #[table_model(ancestors(animals, dogs))]
@@ -212,19 +222,19 @@ impl diesel_builders::ValidateColumn<puppies::age_months>
 pub struct Puppy {
     #[infallible]
     /// Primary key.
-    id: i32,
+    pub id: i32,
     /// The age in months of the puppy.
     #[table_model(default = 6)]
-    age_months: i32,
+    pub age_months: i32,
 }
 
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel, Clone)]
 #[diesel(table_name = pets)]
 #[table_model(ancestors(animals, dogs, cats))]
 /// Model for the pets table.
 pub struct Pet {
     /// Primary key.
-    id: i32,
+    pub id: i32,
     /// The owner name of the pet.
-    owner_name: String,
+    pub owner_name: String,
 }
