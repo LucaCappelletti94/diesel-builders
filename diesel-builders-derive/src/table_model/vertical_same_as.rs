@@ -88,11 +88,9 @@ pub fn generate_vertical_same_as_impls(
 
                 // Check if this table is in the ancestors list
                 let is_ancestor = if let Some(ancestors) = &attributes.ancestors {
-                    ancestors.iter().any(|ancestor| {
+                    ancestors.iter().any(|type_path| {
                         // Extract the identifier from the ancestor Type
-                        if let syn::Type::Path(type_path) = ancestor
-                            && let Some(segment) = type_path.path.segments.last()
-                        {
+                        if let Some(segment) = type_path.segments.last() {
                             return segment.ident == *table_name;
                         }
                         false

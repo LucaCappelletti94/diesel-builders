@@ -9,7 +9,7 @@ pub struct TableModelAttributes {
     /// Whether the primary key is a surrogate key.
     pub surrogate_key: bool,
     /// The ancestors of the table.
-    pub ancestors: Option<Vec<Type>>,
+    pub ancestors: Option<Vec<syn::Path>>,
     /// The root of the ancestor hierarchy.
     pub root: Option<Type>,
 }

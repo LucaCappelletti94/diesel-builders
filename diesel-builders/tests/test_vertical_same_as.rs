@@ -31,7 +31,8 @@ pub struct Child {
     /// Primary key.
     id: i32,
     /// Child specific field.
-    #[same_as(parent_table::parent_field, parent_table::another_field)]
+    #[same_as(parent_table::parent_field)]
+    #[same_as(parent_table::another_field)]
     child_field: String,
 }
 

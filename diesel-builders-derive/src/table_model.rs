@@ -530,23 +530,17 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
     // Generate allow_tables_to_appear_in_same_query! macro calls for ancestors and triangular relations
-    let ancestor_count = attributes.ancestors.as_ref().map_or(0, Vec::len);
-    let total_capacity = ancestor_count + triangular_relation_tables.len();
-    let mut allow_same_query_calls = Vec::with_capacity(total_capacity);
-
-    if let Some(ancestors) = &attributes.ancestors {
-        allow_same_query_calls.extend(ancestors.iter().map(|ancestor| {
+    let allow_same_query_calls = attributes
+        .ancestors
+        .iter()
+        .flat_map(|paths| paths.iter())
+        .chain(triangular_relation_tables.iter())
+        .map(|other| {
             quote! {
-                diesel::allow_tables_to_appear_in_same_query!(#table_module, #ancestor);
+                diesel::allow_tables_to_appear_in_same_query!(#table_module, #other);
             }
-        }));
-    }
-
-    allow_same_query_calls.extend(triangular_relation_tables.iter().map(|referenced_table| {
-        quote! {
-            diesel::allow_tables_to_appear_in_same_query!(#table_module, #referenced_table);
-        }
-    }));
+        })
+        .collect::<Vec<_>>();
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
