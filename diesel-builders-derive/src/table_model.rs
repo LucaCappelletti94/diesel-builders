@@ -13,10 +13,12 @@ mod table_generation;
 mod typed_column;
 mod vertical_same_as;
 
+use std::collections::HashMap;
+
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::DeriveInput;
 use syn::spanned::Spanned;
+use syn::{DeriveInput, Ident};
 
 use attribute_parsing::{
     extract_discretionary_table, extract_field_default_value, extract_mandatory_table,
@@ -244,43 +246,39 @@ fn collect_triangular_columns(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
 ) -> (Vec<syn::Type>, Vec<syn::Type>) {
-    let (mandatory_columns, discretionary_columns): (Vec<_>, Vec<_>) = fields
-        .iter()
-        .filter_map(|field| {
-            let field_name = field.ident.as_ref()?;
-            let col = syn::parse_quote!(#table_module::#field_name);
+    let mut mandatory_columns = Vec::new();
+    let mut discretionary_columns = Vec::new();
+    fields.iter().for_each(|field| {
+        let Some(field_name) = field.ident.as_ref() else {
+            return;
+        };
+        let col = syn::parse_quote!(#table_module::#field_name);
 
-            if is_field_mandatory(field) {
-                Some((Some(col), None))
-            } else if is_field_discretionary(field) {
-                Some((None, Some(col)))
-            } else {
-                None
-            }
-        })
-        .unzip();
+        if is_field_mandatory(field) {
+            mandatory_columns.push(col);
+        } else if is_field_discretionary(field) {
+            discretionary_columns.push(col);
+        }
+    });
 
-    (
-        mandatory_columns.into_iter().flatten().collect(),
-        discretionary_columns.into_iter().flatten().collect(),
-    )
+    (mandatory_columns, discretionary_columns)
 }
 
 /// Collect tables referenced by mandatory and discretionary fields.
 /// Returns a set of unique table paths.
 fn collect_triangular_relation_tables(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
-) -> syn::Result<std::collections::HashSet<syn::Path>> {
+) -> syn::Result<HashMap<&syn::Ident, syn::Path>> {
     use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
 
-    let mut referenced_tables = std::collections::HashSet::with_capacity(fields.len());
+    let mut referenced_tables = HashMap::with_capacity(fields.len());
 
     for field in fields {
         if let Some(field_name) = &field.ident {
             // Check if field is mandatory and extract its referenced table
             if is_field_mandatory(field) {
                 if let Some(table_path) = extract_mandatory_table(field)? {
-                    referenced_tables.insert(table_path);
+                    referenced_tables.insert(field_name, table_path);
                 } else {
                     return Err(syn::Error::new_spanned(
                         field,
@@ -294,7 +292,7 @@ fn collect_triangular_relation_tables(
             // Check if field is discretionary and extract its referenced table
             if is_field_discretionary(field) {
                 if let Some(table_path) = extract_discretionary_table(field)? {
-                    referenced_tables.insert(table_path);
+                    referenced_tables.insert(field_name, table_path);
                 } else {
                     return Err(syn::Error::new_spanned(
                         field,
@@ -310,35 +308,40 @@ fn collect_triangular_relation_tables(
     Ok(referenced_tables)
 }
 
+/// Collect tables referenced by mandatory and discretionary fields.
+/// Returns a set of unique table paths.
+fn collect_unique_triangular_relation_tables(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
+) -> syn::Result<Vec<syn::Path>> {
+    let tables = collect_triangular_relation_tables(fields)?;
+    let mut observed_table_idents = Vec::new();
+    let mut observed_tables = Vec::new();
+    for table in tables.values() {
+        if let Some(last_segment) = table.segments.last()
+            && !observed_table_idents.contains(&last_segment)
+        {
+            observed_table_idents.push(last_segment);
+            observed_tables.push(table.clone());
+        }
+    }
+    Ok(observed_tables)
+}
+
 /// Generate fpk! implementations for mandatory and discretionary fields.
 /// Returns a vector of `TokenStream`s, one for each field.
 fn generate_triangular_fpk_impls(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
 ) -> syn::Result<Vec<proc_macro2::TokenStream>> {
-    use attribute_parsing::{extract_discretionary_table, extract_mandatory_table};
-
     let mut fpk_impls = Vec::new();
 
-    for field in fields {
-        if let Some(field_name) = &field.ident {
-            let referenced_table = if is_field_mandatory(field) {
-                extract_mandatory_table(field)?
-            } else if is_field_discretionary(field) {
-                extract_discretionary_table(field)?
-            } else {
-                None
-            };
-
-            if let Some(ref_table) = referenced_table {
-                // Generate fpk implementation using the fpk generation function
-                let column_path: syn::Path = syn::parse_quote!(#table_module::#field_name);
-                fpk_impls.push(crate::fpk::generate_fpk_impl_from_paths(
-                    &column_path,
-                    &ref_table,
-                ));
-            }
-        }
+    for (field_name, triangular_table) in collect_triangular_relation_tables(fields)? {
+        // Generate fpk implementation using the fpk generation function
+        let column_path: syn::Path = syn::parse_quote!(#table_module::#field_name);
+        fpk_impls.extend(crate::fpk::generate_fpk_impl(
+            &column_path,
+            &triangular_table,
+        ));
     }
 
     Ok(fpk_impls)
@@ -424,8 +427,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     };
 
     // Validate that all primary key columns exist in the struct
-    let field_names: std::collections::HashSet<_> =
-        fields.iter().filter_map(|f| f.ident.as_ref()).collect();
+    let field_names: Vec<_> = fields.iter().filter_map(|f| f.ident.as_ref()).collect();
 
     for pk_column in &primary_key_columns {
         if !field_names.contains(&pk_column) {
@@ -497,15 +499,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
                     let has_same_as_to_mandatory =
                         same_as_cols_groups.iter().flatten().any(|path| {
-                            if path.segments.len() <= mandatory_table.segments.len() {
-                                return false;
-                            }
-                            for (i, segment) in mandatory_table.segments.iter().enumerate() {
-                                if path.segments[i].ident != segment.ident {
-                                    return false;
-                                }
-                            }
-                            true
+                            let number_of_segments = path.segments.len();
+                            let col_table = &path.segments[number_of_segments - 2];
+                            let mandatory_table = &mandatory_table.segments.last().unwrap();
+                            col_table.ident == mandatory_table.ident
                         });
 
                     if !has_same_as_to_mandatory {
@@ -524,7 +521,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     // Collect tables referenced by triangular relations
-    let triangular_relation_tables = collect_triangular_relation_tables(fields)?;
+    let triangular_relation_tables = collect_unique_triangular_relation_tables(fields)?;
 
     // Generate fpk! implementations for triangular relation fields
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
@@ -617,27 +614,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
-    // Generate ForeignPrimaryKey implementation for single-column primary key with single ancestor
-    let foreign_primary_key_impl = if let Some(ancestors) = &attributes.ancestors {
-        if ancestors.len() == 1 && primary_key_columns.len() == 1 {
-            let ancestor = &ancestors[0];
-            let pk_column = &primary_key_columns[0];
-
-            // Use the fpk generation function to generate the implementation
-            // ancestors are stored as module paths (e.g., parent_table) without ::table suffix
-            let column_path: syn::Path = syn::parse_quote!(#table_module::#pk_column);
-            quote! {
-                impl diesel_builders::ForeignPrimaryKey for #column_path {
-                    type ReferencedTable = #ancestor::table;
-                }
-            }
-        } else {
-            quote! {}
-        }
-    } else {
-        quote! {}
-    };
-
     let bundlable_table_impl = quote! {
         impl diesel_builders::BundlableTable for #table_module::table {
             type MandatoryTriangularColumns = (#(#mandatory_columns,)*);
@@ -675,10 +651,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Collect Horizontal Keys
     // Map from TargetTable (last segment ident) to list of (KeyField, IsMandatory, TargetTablePath)
-    let mut potential_keys: std::collections::HashMap<
-        syn::Ident,
-        Vec<(syn::Ident, bool, syn::Path)>,
-    > = std::collections::HashMap::new();
+    let mut potential_keys: HashMap<syn::Ident, Vec<(&syn::Ident, bool, syn::Path)>> =
+        HashMap::new();
 
     for field in fields {
         let Some(field_name) = &field.ident else {
@@ -686,11 +660,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         };
 
         let (target_table, is_mandatory) = if is_field_mandatory(field) {
-            (extract_mandatory_table(field).ok().flatten(), true)
+            (extract_mandatory_table(field)?, true)
         } else if is_field_discretionary(field) {
-            (extract_discretionary_table(field).ok().flatten(), false)
+            (extract_discretionary_table(field)?, false)
         } else {
-            (None, false)
+            continue;
         };
 
         if let Some(target_table) = target_table
@@ -699,18 +673,17 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             potential_keys
                 .entry(last_segment.ident.clone())
                 .or_default()
-                .push((field_name.clone(), is_mandatory, target_table));
+                .push((field_name, is_mandatory, target_table));
         }
     }
 
     // Initialize horizontal_keys map: KeyField -> HorizontalKeyInfo
-    let mut horizontal_keys_map: std::collections::HashMap<syn::Ident, HorizontalKeyInfo> =
-        std::collections::HashMap::new();
+    let mut horizontal_keys_map: HashMap<&syn::Ident, HorizontalKeyInfo> = HashMap::new();
 
     for keys in potential_keys.values() {
         for (key_field, is_mandatory, _) in keys {
             horizontal_keys_map.insert(
-                key_field.clone(),
+                key_field,
                 HorizontalKeyInfo {
                     key_column: syn::parse_quote!(#table_module::#key_field),
                     is_mandatory: *is_mandatory,
@@ -725,80 +698,67 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         if let Ok(same_as_attributes) = extract_same_as_columns(f) {
             for attr_paths in same_as_attributes {
                 // Check for explicit key in the attribute (2nd argument)
-                let explicit_key_ident = if attr_paths.len() == 2 {
-                    let potential_key_path = &attr_paths[1];
-                    // Check if it resolves to a known horizontal key
-                    // We check if the last segment matches a key field name
-                    if let Some(segment) = potential_key_path.segments.last() {
-                        if horizontal_keys_map.contains_key(&segment.ident) {
-                            Some(segment.ident.clone())
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
+                let explicit_key_ident = if let [_, potential_key_path] = &attr_paths[..]
+                    && let Some(segment) = potential_key_path.segments.last()
+                    && horizontal_keys_map.contains_key(&segment.ident)
+                {
+                    Some(segment.ident.clone())
                 } else {
                     None
                 };
 
                 for (i, col_path) in attr_paths.iter().enumerate() {
                     // If this is the explicit key, skip it (it's not a target column)
-                    if let Some(ref k) = explicit_key_ident
+                    if let Some(k) = &explicit_key_ident
                         && i == 1
                         && col_path.segments.last().map(|s| &s.ident) == Some(k)
                     {
                         continue;
                     }
 
-                    if let Some(segment) = col_path.segments.first() {
-                        // Check if this matches a target table
-                        if let Some(keys) = potential_keys.get(&segment.ident) {
-                            // Found a match for target table
+                    let number_of_segments = col_path.segments.len();
+                    let table_ident = &col_path.segments[number_of_segments - 2].ident;
 
-                            let selected_key = if let Some(ref k_ident) = explicit_key_ident {
-                                // Verify the explicit key belongs to this target table
-                                if keys.iter().any(|(kf, _, _)| kf == k_ident) {
-                                    Some(k_ident.clone())
-                                } else {
-                                    // Explicit key provided but doesn't match this target table
-                                    // This might happen if we have #[same_as(Target1, KeyForTarget2)]
-                                    // We ignore it for Target1.
-                                    None
-                                }
+                    // Check if this matches a target table
+                    if let Some(keys) = potential_keys.get(table_ident) {
+                        // Found a match for target table
+
+                        let selected_key: Option<Ident> = if let Some(k_ident) = &explicit_key_ident
+                        {
+                            // Verify the explicit key belongs to this target table
+                            if keys.iter().any(|(kf, _, _)| kf == &k_ident) {
+                                Some(k_ident.clone())
                             } else {
-                                // No explicit key
-                                if keys.len() == 1 {
-                                    Some(keys[0].0.clone())
-                                } else {
-                                    // Ambiguous
-                                    let target_table_str = quote::quote!(#segment).to_string();
-                                    let available_keys: Vec<String> =
-                                        keys.iter().map(|(k, _, _)| format!("`{k}`")).collect();
-                                    let available_keys_str = available_keys.join(", ");
-                                    let col_name = col_path.segments.last().map_or_else(
-                                        || "<unknown>".to_string(),
-                                        |s| s.ident.to_string(),
-                                    );
-
-                                    return Err(syn::Error::new_spanned(
-                                        f,
-                                        format!(
-                                            "Ambiguous triangular relationship: multiple fields point to table `{target_table_str}`. \
-                                             Please specify which key to use: `#[same_as({target_table_str}::{col_name}, KeyField)]`. \
-                                             Available keys: {available_keys_str}"
-                                        ),
-                                    ));
-                                }
-                            };
-
-                            if let Some(key_ident) = selected_key
-                                && let Some(info) = horizontal_keys_map.get_mut(&key_ident)
-                                && let Some(f_ident) = &f.ident
-                            {
-                                info.host_columns.push(f_ident.clone());
-                                info.foreign_columns.push(col_path.clone());
+                                // Explicit key provided but doesn't match this target table
+                                // This might happen if we have #[same_as(Target1, KeyForTarget2)]
+                                // We ignore it for Target1.
+                                None
                             }
+                        } else if keys.len() == 1 {
+                            Some(keys[0].0.clone())
+                        } else {
+                            // Ambiguous
+                            let available_keys: Vec<String> =
+                                keys.iter().map(|(k, _, _)| format!("`{k}`")).collect();
+                            let available_keys_str = available_keys.join(", ");
+                            let col_name = &col_path.segments.last().unwrap().ident;
+
+                            return Err(syn::Error::new_spanned(
+                                f,
+                                format!(
+                                    "Ambiguous triangular relationship: multiple fields point to table `{table_ident}`. \
+                                            Please specify which key to use: `#[same_as({table_ident}::{col_name}, KeyField)]`. \
+                                            Available keys: {available_keys_str}"
+                                ),
+                            ));
+                        };
+
+                        if let Some(key_ident) = selected_key
+                            && let Some(info) = horizontal_keys_map.get_mut(&key_ident)
+                            && let Some(f_ident) = &f.ident
+                        {
+                            info.host_columns.push(f_ident.clone());
+                            info.foreign_columns.push(col_path.clone());
                         }
                     }
                 }
@@ -836,6 +796,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             .map(|f| quote::quote!(#table_module::#f))
             .collect();
         let foreign_cols = &key.foreign_columns;
+
+        assert!(
+            !host_cols.is_empty(),
+            "Horizontal key must have at least one host column"
+        );
+        assert!(
+            !foreign_cols.is_empty(),
+            "Horizontal key must have at least one foreign column"
+        );
 
         horizontal_key_impls.push(quote! {
             impl diesel_builders::HorizontalKey for #key_column {
@@ -916,7 +885,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #set_column_impls
         #infallible_validate_column_impls
         #descendant_impls
-        #foreign_primary_key_impl
         #bundlable_table_impl
         #(#mandatory_same_as_impls)*
         #(#discretionary_same_as_impls)*

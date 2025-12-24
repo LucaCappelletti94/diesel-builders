@@ -2,7 +2,7 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Path, Type};
+use syn::Path;
 
 /// Generate a foreign primary key implementation for a column.
 ///
@@ -13,27 +13,13 @@ use syn::{Path, Type};
 /// # Arguments
 /// * `column` - The column path (e.g., `table_b::c_id`)
 /// * `referenced_table` - The referenced table type (e.g., `table_c`)
-pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream {
-    // Extract the path from the Type if it's a path type
-    let referenced_table_path = match referenced_table {
-        Type::Path(type_path) => &type_path.path,
-        _ => {
-            // If it's not a path type, we can't extract the information needed
-            // Return an empty token stream
-            return quote! {};
-        }
-    };
-
+pub fn generate_fpk_impl(column: &Path, referenced_table: &Path) -> Option<TokenStream> {
     // Extract column name for method generation
-    let Some(last_segment) = column.segments.last() else {
-        return quote! {};
-    };
+    let last_segment = column.segments.last()?;
     let column_name = last_segment.ident.to_string();
 
     // Extract referenced table name for method generation
-    let Some(last_segment) = referenced_table_path.segments.last() else {
-        return quote! {};
-    };
+    let last_segment = referenced_table.segments.last()?;
     let referenced_table_name = last_segment.ident.to_string();
 
     // Generate method name based on column name
@@ -66,7 +52,7 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
         "Fetches the foreign `{referenced_table_name}` record referenced by this `{column_name}`."
     );
 
-    quote! {
+    Some(quote! {
         impl diesel_builders::ForeignPrimaryKey for #column {
             type ReferencedTable = #referenced_table::table;
         }
@@ -108,13 +94,5 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Type) -> TokenStream 
                 (#column,),
                 (<#referenced_table::table as diesel::Table>::PrimaryKey,)
             > {}
-    }
-}
-
-/// Generate a foreign primary key implementation for a column with a Path reference.
-///
-/// This is a convenience wrapper for `generate_fpk_impl` that converts a Path to Type.
-pub fn generate_fpk_impl_from_paths(column: &Path, referenced_table: &Path) -> TokenStream {
-    let referenced_type: Type = syn::parse_quote!(#referenced_table);
-    generate_fpk_impl(column, &referenced_type)
+    })
 }

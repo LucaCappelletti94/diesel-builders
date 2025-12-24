@@ -102,20 +102,15 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
                 if meta.input.peek(syn::token::Paren) {
                     let content;
                     syn::parenthesized!(content in meta.input);
-                    let punct: syn::punctuated::Punctuated<syn::Ident, syn::Token![,]> =
+                    let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
                         syn::punctuated::Punctuated::parse_terminated(&content)?;
                     // Store ancestor module paths directly without ::table suffix
-                    ancestors = Some(
-                        punct
-                            .into_iter()
-                            .map(|module_ident| syn::parse_quote!(#module_ident))
-                            .collect(),
-                    );
+                    ancestors = Some(punct.into_iter().collect());
                 } else {
                     let value = meta.value()?;
-                    let module_ident: syn::Ident = value.parse()?;
+                    let module_ident: syn::Path = value.parse()?;
                     // Store ancestor module path directly without ::table suffix
-                    ancestors = Some(vec![syn::parse_quote!(#module_ident)]);
+                    ancestors = Some(vec![module_ident]);
                 }
             } else if meta.path.is_ident("root") {
                 let value = meta.value()?;

@@ -17,7 +17,7 @@ pub fn generate_vertical_same_as_impls(
     fields: &Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
     attributes: &TableModelAttributes,
-    triangular_tables: &std::collections::HashSet<syn::Path>,
+    triangular_tables: &[syn::Path],
 ) -> syn::Result<Vec<TokenStream>> {
     let mut impls = Vec::new();
 
@@ -34,15 +34,13 @@ pub fn generate_vertical_same_as_impls(
         for attr_paths in &same_as_attributes {
             // Check if this is a horizontal same_as with an explicit key
             // #[same_as(Target::Col, Key)]
-            let is_horizontal_with_key = if attr_paths.len() == 2 {
-                let first = &attr_paths[0];
-                let second = &attr_paths[1];
-
+            let is_horizontal_with_key = if let [first, second] = &attr_paths[..] {
                 // Check if first is triangular
                 let first_is_triangular = if first.segments.is_empty() {
                     false
                 } else {
-                    let table_name = &first.segments[0].ident;
+                    let number_of_segments = first.segments.len();
+                    let table_name = &first.segments[number_of_segments - 2].ident;
                     triangular_tables.iter().any(|t| {
                         if let Some(segment) = t.segments.last() {
                             return segment.ident == *table_name;
@@ -55,14 +53,12 @@ pub fn generate_vertical_same_as_impls(
                 let second_is_key = if second.segments.len() == 1 {
                     // Single segment (e.g. "key_field")
                     true
-                } else if second.segments.len() >= 2 {
+                } else {
                     // Check if starts with table_module
                     second
                         .segments
-                        .first()
+                        .get(second.segments.len() - 2)
                         .is_some_and(|s| s.ident == *table_module)
-                } else {
-                    false
                 };
 
                 first_is_triangular && second_is_key
@@ -84,7 +80,8 @@ pub fn generate_vertical_same_as_impls(
                     ));
                 }
 
-                let table_name = &column_path.segments[0].ident;
+                let number_of_segments = column_path.segments.len();
+                let table_name = &column_path.segments[number_of_segments - 2].ident;
 
                 // Check if this table is in the ancestors list
                 let is_ancestor = if let Some(ancestors) = &attributes.ancestors {

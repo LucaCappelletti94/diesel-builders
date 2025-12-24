@@ -11,16 +11,16 @@ use diesel_builders::prelude::*;
 
 // Table B models
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
-#[table_model(error = ErrorB, ancestors = parent_table)]
+#[table_model(error = ErrorB, ancestors = shared_triangular::parent_table)]
 #[diesel(table_name = child_with_satellite_table)]
 /// Model for table B.
 pub struct ChildWithDiscretionary {
     #[infallible]
     /// Primary key.
-    #[same_as(satellite_table::parent_id)]
+    #[same_as(shared_triangular::satellite_table::parent_id)]
     id: i32,
     #[infallible]
-    #[discretionary(satellite_table)]
+    #[discretionary(shared_triangular::satellite_table)]
     /// Foreign key to discretionary table.
     discretionary_id: i32,
     #[infallible]
@@ -32,7 +32,7 @@ pub struct ChildWithDiscretionary {
     remote_field: Option<String>,
     /// The remote `parent_id` value from discretionary table that B references via `discretionary_id`.
     #[infallible]
-    #[same_as(satellite_table::another_field)]
+    #[same_as(shared_triangular::satellite_table::another_field)]
     another_remote_column: Option<String>,
 }
 
@@ -127,10 +127,10 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
 
     let saved_child_builder = child_builder.clone();
 
-    assert!(matches!(
+    assert_eq!(
         child_builder.try_discretionary_ref(satellite_table::table::builder().field(String::new())),
         Err(ErrorB::EmptyRemoteColumnC)
-    ));
+    );
 
     // Since the operation has failed, the preliminary state of the builder should
     // have remained unchanged.

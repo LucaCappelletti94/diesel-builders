@@ -35,6 +35,17 @@ pub fn generate_foreign_key_impls(
             continue;
         };
 
+        let ref_table_name = &ref_table
+            .segments
+            .last()
+            .ok_or_else(|| {
+                syn::Error::new_spanned(
+                    &ref_table,
+                    "Referenced table path must have at least one segment",
+                )
+            })?
+            .ident;
+
         // 2. Find same_as columns (C) referencing the same table
         for other_field in fields {
             let Some(other_field_name) = &other_field.ident else {
@@ -64,30 +75,21 @@ pub fn generate_foreign_key_impls(
 
                 for ref_col in group {
                     // Check if path starts with ref_table
-                    // We assume the path is like RefTable::Column
+                    // We assume the path is like `RefTable::Column` or `Module1::Module2::RefTable::Column`
                     // So we check if the path excluding the last segment matches ref_table
 
-                    if ref_col.segments.len() < 2 {
+                    let number_of_segments = ref_col.segments.len();
+                    if number_of_segments < 2 {
                         continue;
                     }
 
-                    let table_path_segments: Vec<_> = ref_col
-                        .segments
-                        .iter()
-                        .take(ref_col.segments.len() - 1)
-                        .collect();
+                    let table_name = &ref_col.segments[number_of_segments - 2].ident;
 
                     // Construct a path from table_path_segments to compare with ref_table
                     // This is a bit heuristic. We check if ref_table ends with the table name found in same_as.
                     // Or better, we check if the segments match.
 
-                    if ref_table.segments.len() == table_path_segments.len()
-                        && ref_table
-                            .segments
-                            .iter()
-                            .zip(table_path_segments.iter())
-                            .all(|(a, b)| a.ident == b.ident)
-                    {
+                    if ref_table_name == table_name {
                         // Use the fk! macro logic directly
                         impls.push(quote! {
                             diesel_builders::prelude::fk!(

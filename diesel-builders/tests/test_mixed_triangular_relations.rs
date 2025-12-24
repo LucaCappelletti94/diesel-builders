@@ -13,14 +13,14 @@ use shared_triangular::*;
 #[table_model(ancestors = parent_table)]
 /// Model for table B.
 pub struct ChildWithMixed {
-    #[same_as(satellite_table::parent_id, mandatory_id)]
+    #[same_as(shared_triangular::satellite_table::parent_id, mandatory_id)]
     #[same_as(satellite_table::parent_id, discretionary_id)]
     /// Primary key.
     id: i32,
     #[mandatory(satellite_table)]
     /// Foreign key to table C.
     mandatory_id: i32,
-    #[discretionary(satellite_table)]
+    #[discretionary(shared_triangular::satellite_table)]
     /// Foreign key to table D.
     discretionary_id: i32,
     /// Column B value.

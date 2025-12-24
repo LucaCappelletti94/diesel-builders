@@ -12,6 +12,7 @@ mod fpk;
 mod table_model;
 mod utils;
 use proc_macro::TokenStream;
+use quote::quote;
 
 /// Derive macro to automatically implement `TypedColumn` for all table columns.
 ///
@@ -201,9 +202,12 @@ pub fn fpk(input: TokenStream) -> TokenStream {
     let fpk_def = syn::parse_macro_input!(input as ForeignPrimaryKey);
     let column = &fpk_def.column;
     let referenced_table = &fpk_def.referenced_table;
-    let referenced_type: syn::Type = syn::parse_quote!(#referenced_table);
 
-    fpk::generate_fpk_impl(column, &referenced_type).into()
+    let stream = fpk::generate_fpk_impl(column, referenced_table);
+    quote! {
+        #stream
+    }
+    .into()
 }
 
 /// Parsed representation of an index macro invocation.
@@ -214,15 +218,8 @@ struct IndexDefinition {
 
 impl syn::parse::Parse for IndexDefinition {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        if input.peek(syn::token::Paren) {
-            let content;
-            syn::parenthesized!(content in input);
-            let columns = syn::punctuated::Punctuated::parse_terminated(&content)?;
-            Ok(IndexDefinition { columns })
-        } else {
-            let columns = syn::punctuated::Punctuated::parse_terminated(input)?;
-            Ok(IndexDefinition { columns })
-        }
+        let columns = syn::punctuated::Punctuated::parse_terminated(input)?;
+        Ok(IndexDefinition { columns })
     }
 }
 

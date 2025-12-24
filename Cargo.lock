@@ -121,8 +121,8 @@ dependencies = [
 
 [[package]]
 name = "diesel"
-version = "2.3.1"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
+version = "2.3.5"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=future3#9cba7a4e780f64091b423bb346bdc61175ac0b22"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -166,8 +166,8 @@ dependencies = [
 
 [[package]]
 name = "diesel_derives"
-version = "2.3.2"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
+version = "2.3.6"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=future3#9cba7a4e780f64091b423bb346bdc61175ac0b22"
 dependencies = [
  "diesel_table_macro_syntax",
  "dsl_auto_type",
@@ -179,7 +179,7 @@ dependencies = [
 [[package]]
 name = "diesel_table_macro_syntax"
 version = "0.3.0"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=future3#9cba7a4e780f64091b423bb346bdc61175ac0b22"
 dependencies = [
  "syn",
 ]
@@ -193,7 +193,7 @@ checksum = "117240f60069e65410b3ae1bb213295bd828f707b5bec6596a1afc8793ce0cbc"
 [[package]]
 name = "dsl_auto_type"
 version = "0.2.0"
-source = "git+https://github.com/LucaCappelletti94/diesel?branch=on-conflict-dsl#b1c426a42f037fcc3e7ea23111886c503456cb6f"
+source = "git+https://github.com/LucaCappelletti94/diesel?branch=future3#9cba7a4e780f64091b423bb346bdc61175ac0b22"
 dependencies = [
  "darling",
  "either",

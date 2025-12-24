@@ -21,7 +21,7 @@ pub struct ChildWithMandatory {
     /// Primary key.
     id: i32,
     #[infallible]
-    #[mandatory(satellite_table)]
+    #[mandatory(shared_triangular::satellite_table)]
     /// Foreign key to table A.
     mandatory_id: i32,
     #[infallible]
@@ -32,7 +32,7 @@ pub struct ChildWithMandatory {
     remote_field: Option<String>,
     /// Another remote column from `satellite_table`.
     #[infallible]
-    #[same_as(satellite_table::another_field)]
+    #[same_as(shared_triangular::satellite_table::another_field)]
     another_remote_column: Option<String>,
 }
 
