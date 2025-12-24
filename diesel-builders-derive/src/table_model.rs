@@ -564,36 +564,22 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Generate Root/Descendant implementations
     // If ancestors are specified, generate Descendant; otherwise generate Root
     let descendant_impls = if let Some(ref ancestors) = attributes.ancestors {
-        let root = attributes
-            .root
-            .clone()
-            .or_else(|| ancestors.first().map(|a| syn::parse_quote!(#a::table)));
+        let table_type: syn::Type = syn::parse_quote!(#table_module::table);
+        // Convert ancestor module paths to table types for the trait implementation
+        let ancestor_tables: Vec<syn::Type> = ancestors
+            .iter()
+            .map(|a| syn::parse_quote!(#a::table))
+            .collect();
+        let root: &syn::Type = ancestor_tables.first().unwrap();
+        let aux_impls =
+            crate::descendant::generate_auxiliary_descendant_impls(&table_type, &ancestor_tables);
 
-        if let Some(root) = root {
-            let table_type: syn::Type = syn::parse_quote!(#table_module::table);
-            // Convert ancestor module paths to table types for the trait implementation
-            let ancestor_tables: Vec<syn::Type> = ancestors
-                .iter()
-                .map(|a| syn::parse_quote!(#a::table))
-                .collect();
-            let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(
-                &table_type,
-                &ancestor_tables,
-            );
-
-            quote! {
-                impl diesel_builders::Descendant for #table_type {
-                    type Ancestors = (#(#ancestor_tables,)*);
-                    type Root = #root;
-                }
-                #aux_impls
+        quote! {
+            impl diesel_builders::Descendant for #table_type {
+                type Ancestors = (#(#ancestor_tables,)*);
+                type Root = #root;
             }
-        } else {
-            syn::Error::new_spanned(
-                input,
-                "`ancestors` attribute provided but no `root` could be inferred (ancestors list is empty and no root specified)",
-            )
-            .to_compile_error()
+            #aux_impls
         }
     } else {
         // No ancestors attribute means this is a root table

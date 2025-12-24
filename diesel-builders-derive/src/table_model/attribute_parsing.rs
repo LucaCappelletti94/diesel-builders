@@ -10,8 +10,6 @@ pub struct TableModelAttributes {
     pub surrogate_key: bool,
     /// The ancestors of the table.
     pub ancestors: Option<Vec<syn::Path>>,
-    /// The root of the ancestor hierarchy.
-    pub root: Option<Type>,
 }
 
 /// Extract the table module name from the `#[diesel(table_name = ...)]` attribute.
@@ -84,7 +82,6 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
     let mut error = None;
     let mut surrogate_key = false;
     let mut ancestors = None;
-    let mut root = None;
 
     for attr in &input.attrs {
         if !attr.path().is_ident("table_model") {
@@ -112,10 +109,6 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
                     // Store ancestor module path directly without ::table suffix
                     ancestors = Some(vec![module_ident]);
                 }
-            } else if meta.path.is_ident("root") {
-                let value = meta.value()?;
-                let ty: syn::Type = value.parse()?;
-                root = Some(ty);
             }
             Ok(())
         });
@@ -125,7 +118,6 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> TableModelAttribut
         error,
         surrogate_key,
         ancestors,
-        root,
     }
 }
 
