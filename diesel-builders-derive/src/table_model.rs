@@ -579,7 +579,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(
                 &table_type,
                 &ancestor_tables,
-                &root,
             );
 
             quote! {
@@ -599,8 +598,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     } else {
         // No ancestors attribute means this is a root table
         let table_type: syn::Type = syn::parse_quote!(#table_module::table);
-        let aux_impls =
-            crate::descendant::generate_auxiliary_descendant_impls(&table_type, &[], &table_type);
+        let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(&table_type, &[]);
 
         quote! {
             impl diesel_builders::Root for #table_type {}

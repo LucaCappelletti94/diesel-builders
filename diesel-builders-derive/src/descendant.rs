@@ -5,17 +5,12 @@ use quote::quote;
 use syn::Type;
 
 /// Generates the auxiliary implementations required for a `Descendant` table.
-///
-/// This includes:
-/// - `DescendantOf` implementations for each ancestor.
-/// - `GetColumn` implementations for each ancestor's primary key.
-/// - `DescendantOf` implementation for the root (if not in ancestors).
-/// - `AncestorOfIndex` implementations for each ancestor and self.
-pub fn generate_auxiliary_descendant_impls(
-    table_type: &Type,
-    ancestors: &[Type],
-    root_type: &Type,
-) -> TokenStream {
+pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]) -> TokenStream {
+    assert!(
+        !ancestors.contains(table_type),
+        "Table cannot be its own ancestor"
+    );
+
     let num_ancestors = ancestors.len();
 
     // Generate TupleIndex for self (last position in ancestors + self)
@@ -54,27 +49,6 @@ pub fn generate_auxiliary_descendant_impls(
         })
         .collect();
 
-    // Generate DescendantOf implementation for the root (if it's not already in
-    // ancestors) We need to check if root_type is different from all ancestors
-    let root_descendant_of_impl = if ancestors.is_empty() {
-        quote! {}
-    } else {
-        // Check if the root is already in the ancestors list by comparing token streams
-        let root_tokens = quote! { #root_type }.to_string();
-        let is_root_in_ancestors = ancestors.iter().any(|ancestor| {
-            let ancestor_tokens = quote! { #ancestor }.to_string();
-            ancestor_tokens == root_tokens
-        });
-
-        if is_root_in_ancestors {
-            quote! {}
-        } else {
-            quote! {
-                impl diesel_builders::DescendantOf<#root_type> for #table_type {}
-            }
-        }
-    };
-
     // Generate AncestorOfIndex implementations for each ancestor
     let ancestor_of_index_impls: Vec<_> = ancestors
         .iter()
@@ -98,8 +72,6 @@ pub fn generate_auxiliary_descendant_impls(
 
     quote! {
         #(#descendant_of_impls)*
-
-        #root_descendant_of_impl
 
         #self_ancestor_of_index
 
