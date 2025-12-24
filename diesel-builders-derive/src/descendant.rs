@@ -26,29 +26,6 @@ pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]
         })
         .collect();
 
-    // Generate `GetColumn` implementation for each ancestor's primary key
-    // for the descendant table model
-    let descendant_table_model = quote! {
-        <#table_type as diesel_builders::TableExt>::Model
-    };
-    let get_column_impls: Vec<_> = ancestors
-        .iter()
-        .map(|ancestor| {
-            quote! {
-                impl diesel_builders::GetColumn<<#ancestor as diesel::Table>::PrimaryKey>
-                    for #descendant_table_model
-                {
-                    fn get_column_ref(
-                        &self,
-                    ) -> &<<#ancestor as diesel::Table>::PrimaryKey as diesel_builders::Typed>::ColumnType {
-                        use diesel::Identifiable;
-                        self.id()
-                    }
-                }
-            }
-        })
-        .collect();
-
     // Generate AncestorOfIndex implementations for each ancestor
     let ancestor_of_index_impls: Vec<_> = ancestors
         .iter()
@@ -74,8 +51,6 @@ pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]
         #(#descendant_of_impls)*
 
         #self_ancestor_of_index
-
-        #(#get_column_impls)*
 
         #(#ancestor_of_index_impls)*
     }

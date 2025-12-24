@@ -77,9 +77,6 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test TableModel derive - using UniquelyIndexedColumn implementations
     assert_eq!(pet.id(), pet.id());
-    assert_eq!(pet.get_column_ref::<animals::id>(), pet.id());
-    assert_eq!(pet.get_column_ref::<dogs::id>(), pet.id());
-    assert_eq!(pet.get_column_ref::<cats::id>(), pet.id());
 
     // Query to verify relationships
     let queried_animal: Animal = pet.ancestor(&mut conn)?;

@@ -128,9 +128,10 @@ impl<M, Conn> ModelDescendantExt<Conn> for M {}
 impl<Conn, T, M> ModelDescendantOf<Conn, T> for M
 where
     T: Descendant,
-    M: HasTable<Table: DescendantOf<T>> + GetNestedColumns<T::NestedPrimaryKeyColumns>,
+    M: HasTable<Table: DescendantOf<T>>
+        + GetNestedColumns<<M::Table as TableExt>::NestedPrimaryKeyColumns>,
     T::NestedPrimaryKeyColumns: LoadFirst<Conn>,
-    <T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType:
+    <<M::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType:
         NestedTupleInto<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType>,
 {
     fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model> {
