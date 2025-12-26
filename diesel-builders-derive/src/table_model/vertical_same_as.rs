@@ -36,7 +36,7 @@ pub fn generate_vertical_same_as_impls(
             // #[same_as(Target::Col, Key)]
             let is_horizontal_with_key = if let [first, second] = &attr_paths[..] {
                 // Check if first is triangular
-                let first_is_triangular = if first.segments.is_empty() {
+                let first_is_triangular = if first.segments.len() < 2 {
                     false
                 } else {
                     let number_of_segments = first.segments.len();

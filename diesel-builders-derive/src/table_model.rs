@@ -500,6 +500,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                     let has_same_as_to_mandatory =
                         same_as_cols_groups.iter().flatten().any(|path| {
                             let number_of_segments = path.segments.len();
+                            assert!(
+                                number_of_segments >= 2,
+                                "Column path in #[same_as(...)] must be in the format `table::column`"
+                            );
                             let col_table = &path.segments[number_of_segments - 2];
                             let mandatory_table = &mandatory_table.segments.last().unwrap();
                             col_table.ident == mandatory_table.ident
@@ -701,6 +705,12 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                     }
 
                     let number_of_segments = col_path.segments.len();
+                    if number_of_segments < 2 {
+                        return Err(syn::Error::new_spanned(
+                            col_path,
+                            "Non-key column path in #[same_as(...)] must be in the format `table::column` or a `#[mandatory]`/`#[discretionary]` attribute is missing.",
+                        ));
+                    }
                     let table_ident = &col_path.segments[number_of_segments - 2].ident;
 
                     // Check if this matches a target table
