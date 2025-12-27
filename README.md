@@ -345,7 +345,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### 6. Validation with Check Constraints
 
-[Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints. Supports runtime and compile-time (via `const_validator`) checks.
+[Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -367,8 +367,6 @@ pub enum UserError {
     AgeTooYoung,
 }
 
-// Compile-time validation for age (including default value)
-#[diesel_builders::prelude::const_validator]
 impl ValidateColumn<users::age> for <users::table as TableExt>::NewValues {
     type Error = UserError;
     type Borrowed = i32;
@@ -389,7 +387,7 @@ let user = users::table::builder()
     .insert(&mut conn)?;
 
 assert_eq!(user.username(), "alice");
-assert_eq!(*user.age(), 18); // Default value was validated at compile time
+assert_eq!(*user.age(), 18);
 
 // Valid insertion with explicit age
 let user2 = users::table::builder()
@@ -402,10 +400,6 @@ assert_eq!(*user2.age(), 25);
 // Runtime validation errors
 let result = users::table::builder().try_age(7);  // Error: AgeTooYoung
 assert_eq!(result.unwrap_err(), UserError::AgeTooYoung);
-
-// Compile-time validated default prevents this at compile time:
-// #[table_model(default = 16)]  // Would fail to compile!
-// age: i32,
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```

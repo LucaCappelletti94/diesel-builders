@@ -49,8 +49,6 @@ struct ProcessedFields {
     infallible_records: Vec<syn::Path>,
     /// Default values for fields.
     default_values: Vec<proc_macro2::TokenStream>,
-    /// Const validation assertions for default values.
-    const_validations: Vec<proc_macro2::TokenStream>,
     /// Warnings to be emitted.
     warnings: Vec<proc_macro2::TokenStream>,
 }
@@ -66,7 +64,6 @@ fn process_fields(
     let mut new_record_columns = Vec::new();
     let mut infallible_records = Vec::new();
     let mut default_values = Vec::new();
-    let mut const_validations = Vec::new();
     let mut warnings = Vec::new();
 
     for field in fields {
@@ -99,7 +96,6 @@ fn process_fields(
         }
 
         new_record_columns.push(syn::parse_quote!(#table_module::#field_name));
-        let is_failable = !(is_field_infallible(field) || attributes.error.is_none());
 
         if is_field_infallible(field) && attributes.error.is_none() {
             let warning_msg = format!(
@@ -148,82 +144,7 @@ fn process_fields(
         let is_nullable = is_option(&field.ty);
 
         let default_val = if let Some(def) = user_default {
-            // For failable columns with defaults, add compile-time validation
-            if is_failable {
-                let validator_fn = syn::Ident::new(&format!("validate_{field_name}"), def.span());
-
-                // Generate a const assertion with better error reporting
-                let const_name = syn::Ident::new(
-                    &format!("_validate_default_{field_name}"),
-                    proc_macro2::Span::call_site(),
-                );
-
-                let def_string = tokens_to_string(&def);
-                let error_msg = format!(
-                    concat!(
-                        "Compile-time validation failed for table `{}`, column `{}`.\n",
-                        "Invalid default value: `{}`\n",
-                        "The default value does not pass ValidateColumn::validate_column().\n",
-                        "Please ensure the default value satisfies the validation constraints."
-                    ),
-                    table_module, field_name, def_string
-                );
-
-                // Generate a helpful compile_error if the validator function doesn't exist
-                let missing_validator_help = format!(
-                    concat!(
-                        "Missing compile-time validator function `validate_{}`.\n\n",
-                        "To use default values with failable columns, you must add the #[const_validator]\n",
-                        "attribute to your ValidateColumn implementation:\n\n",
-                        "    #[diesel_builders::prelude::const_validator]\n",
-                        "    impl ValidateColumn<{}::{}> for ... {{\n",
-                        "        fn validate_column(value: &T) -> Result<(), Self::Error) {{\n",
-                        "            // your validation logic\n",
-                        "        }}\n",
-                        "    }}\n\n",
-                        "The #[const_validator] attribute generates a const function that can be\n",
-                        "evaluated at compile time to validate default values."
-                    ),
-                    field_name, table_module, field_name
-                );
-
-                // Generate a macro that provides a helpful error if the validator doesn't exist
-                let helper_macro_name = syn::Ident::new(
-                    &format!("_diesel_builders_validator_help_{field_name}"),
-                    def.span(),
-                );
-
-                let helper_macro = quote::quote_spanned! { def.span() =>
-                    macro_rules! #helper_macro_name {
-                        () => {
-                            ::core::compile_error!(#missing_validator_help)
-                        };
-                        ($f:expr) => { $f };
-                    }
-                };
-
-                // Apply the span to the validation call
-                // If validate_* exists, it will be called. If not, the macro will trigger compile_error
-                let validation_assert = quote::quote_spanned! { def.span() =>
-                    #helper_macro
-
-                    #[allow(clippy::match_single_binding)]
-                    const #const_name: () = {
-                        // Try to use the validator function; if it doesn't exist, use the macro fallback
-                        #[allow(unused_macros)]
-                        match #helper_macro_name!(#validator_fn)(&#def) {
-                            Ok(()) => (),
-                            Err(_) => ::core::panic!(#error_msg),
-                        }
-                    };
-                };
-
-                const_validations.push(validation_assert);
-
-                quote::quote! { Some((#def).to_owned().into()) }
-            } else {
-                quote::quote! { Some((#def).to_owned().into()) }
-            }
+            quote::quote! { Some((#def).to_owned().into()) }
         } else if is_nullable {
             quote::quote! { Some(None) }
         } else {
@@ -236,7 +157,6 @@ fn process_fields(
         new_record_columns,
         infallible_records,
         default_values,
-        const_validations,
         warnings,
     })
 }
@@ -463,7 +383,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let ProcessedFields {
         new_record_columns,
         infallible_records,
-        const_validations,
         default_values,
         warnings,
     } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
@@ -895,9 +814,6 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         // Warnings
         #(#warnings)*
-
-        // Const validations for default values
-        #(#const_validations)*
 
         // Auto-implement TableExt for the table associated with this model.
         impl diesel_builders::TableExt for #table_module::table {

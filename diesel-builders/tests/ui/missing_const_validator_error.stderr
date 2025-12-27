@@ -1,5 +1,0 @@
-error[E0425]: cannot find function `validate_stock` in this scope
-  --> tests/ui/missing_const_validator_error.rs:31:29
-   |
-31 |     #[table_model(default = 10)]
-   |                             ^^ not found in this scope

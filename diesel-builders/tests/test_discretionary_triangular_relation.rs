@@ -63,7 +63,6 @@ impl From<Infallible> for ErrorB {
     }
 }
 
-#[diesel_builders::prelude::const_validator]
 impl ValidateColumn<child_with_satellite_table::remote_field>
     for <child_with_satellite_table::table as TableExt>::NewValues
 {

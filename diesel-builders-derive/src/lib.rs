@@ -4,8 +4,6 @@
 //! for tuples, replacing the complex `macro_rules!` patterns with cleaner
 //! procedural macros.
 
-/// Validation for const validators.
-mod const_validator;
 mod descendant;
 /// Foreign primary key generation.
 mod fpk;
@@ -36,44 +34,6 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
 
     match table_model::derive_table_model_impl(&input) {
         Ok(tokens) => tokens.into(),
-        Err(err) => err.to_compile_error().into(),
-    }
-}
-
-/// Attribute macro to generate a const validator function from a `ValidateColumn` implementation.
-///
-/// This macro should be placed on `ValidateColumn` implementations that need compile-time
-/// validation of default values. It generates a const function named `validate_{column_name}`
-/// that can be used to validate default values at compile time.
-///
-/// # Example
-///
-/// ```ignore
-/// #[const_validator]
-/// impl ValidateColumn<animals::name> for AnimalsNewValues {
-///     type Error = NewAnimalError;
-///
-///     fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
-///         if value.is_empty() {
-///             return Err(NewAnimalError::NameEmpty);
-///         }
-///         Ok(())
-///     }
-/// }
-/// // Generates: pub const fn validate_name(value: &String) -> Result<(), NewAnimalError>
-/// ```
-#[proc_macro_attribute]
-pub fn const_validator(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let mut item_impl = syn::parse_macro_input!(item as syn::ItemImpl);
-
-    match const_validator::generate_const_validator(&mut item_impl) {
-        Ok(const_fn) => {
-            let output = quote::quote! {
-                #item_impl
-                #const_fn
-            };
-            output.into()
-        }
         Err(err) => err.to_compile_error().into(),
     }
 }
