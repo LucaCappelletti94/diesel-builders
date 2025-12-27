@@ -47,7 +47,9 @@ where
         model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> &mut Self {
         let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
-        <Self as SetColumn<C>>::set_column(self, primary_key);
+        if let Some(primary_key) = primary_key.into() {
+            <Self as SetColumn<C>>::set_column(self, primary_key);
+        }
         let columns = model.get_nested_columns();
         let converted_columns = columns.nested_tuple_into();
         self.set_nested_columns(converted_columns)
@@ -114,12 +116,13 @@ where
         &mut self,
         model: &<<C as ForeignPrimaryKey>::ReferencedTable as TableExt>::Model,
     ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
-        let primary_key: C::ColumnType =
-            model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
+        let primary_key = model.get_column::<<C::ReferencedTable as Table>::PrimaryKey>();
         let columns = model.get_nested_columns();
         let converted_columns = columns.nested_tuple_into();
         self.validate_nested_columns(&converted_columns)?;
-        <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
+        if let Some(primary_key) = primary_key.into() {
+            <Self as TrySetColumn<C>>::try_set_column(self, primary_key)?;
+        }
         self.try_set_nested_columns(converted_columns)
     }
 }

@@ -134,8 +134,8 @@ where
             typenum::U0,
             ReferencedColumns::Nested,
             ReferencedColumns,
-            NestedTupleColumnType: NestedTupleFrom<
-                <ReferencedColumns::Nested as TypedNestedTuple>::NestedTupleColumnType,
+            NestedTupleValueType: NestedTupleFrom<
+                <ReferencedColumns::Nested as TypedNestedTuple>::NestedTupleValueType,
             >,
         >,
     >,
@@ -152,8 +152,8 @@ pub trait NestedForeignKeyTail<
     FullReferencedIndex,
 >:
     NonEmptyNestedProjection<
-    NestedTupleColumnType: NestedTupleFrom<
-        <ReferencedColumns as TypedNestedTuple>::NestedTupleColumnType,
+    NestedTupleValueType: NestedTupleFrom<
+        <ReferencedColumns as TypedNestedTuple>::NestedTupleValueType,
     >,
 >
 {
@@ -162,7 +162,7 @@ pub trait NestedForeignKeyTail<
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
     H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<ColumnType = <H1 as Typed>::ColumnType> + IndexedColumn<typenum::U0, (F1,)>,
+    F1: TypedColumn<ValueType = <H1 as Typed>::ValueType> + IndexedColumn<typenum::U0, (F1,)>,
 {
 }
 
@@ -175,11 +175,10 @@ where
     (Hhead, Htail): NonEmptyNestedProjection<Table = Hhead::Table>,
     (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
-    Fhead: TypedColumn<ColumnType = <Hhead as Typed>::ColumnType>,
-    Htail::NestedTupleColumnType:
-        NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleColumnType>,
-    <(Hhead, Htail) as TypedNestedTuple>::NestedTupleColumnType:
-        NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleColumnType>,
+    Fhead: TypedColumn<ValueType = <Hhead as Typed>::ValueType>,
+    Htail::NestedTupleValueType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleValueType>,
+    <(Hhead, Htail) as TypedNestedTuple>::NestedTupleValueType:
+        NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleValueType>,
 {
 }
 
@@ -199,7 +198,7 @@ pub trait HostColumn<
 /// relationships to tables with a singleton primary key.
 pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
-    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<ColumnType = <Self as Typed>::ColumnType>>
+    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<ValueType = <Self as Typed>::ValueType>>
         + Descendant
         + diesel::query_source::TableNotEqual<Self::Table>;
 }
