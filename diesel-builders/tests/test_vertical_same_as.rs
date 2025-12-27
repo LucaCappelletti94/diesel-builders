@@ -104,9 +104,8 @@ impl ValidateColumn<parent_table_checked::parent_field>
     for <parent_table_checked::table as TableExt>::NewValues
 {
     type Error = ParentCheckedError;
-    type Borrowed = str;
 
-    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+    fn validate_column(value: &String) -> Result<(), Self::Error> {
         if value.is_empty() {
             return Err(ParentCheckedError::EmptyField);
         }
@@ -157,9 +156,8 @@ impl ValidateColumn<child_table_checked::child_field>
     for <child_table_checked::table as TableExt>::NewValues
 {
     type Error = ChildCheckedError;
-    type Borrowed = str;
 
-    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+    fn validate_column(value: &String) -> Result<(), Self::Error> {
         if value.len() > 50 {
             return Err(ChildCheckedError::ExcessiveLength);
         }

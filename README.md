@@ -369,7 +369,6 @@ pub enum UserError {
 
 impl ValidateColumn<users::age> for <users::table as TableExt>::NewValues {
     type Error = UserError;
-    type Borrowed = i32;
     
     fn validate_column(value: &i32) -> Result<(), Self::Error> {
         if *value < 18 { return Err(UserError::AgeTooYoung); }

@@ -1,6 +1,5 @@
 //! Submodule for the completed table builder and related impls.
 
-use std::borrow::Borrow;
 use std::ops::Sub;
 
 use crate::builder_bundle::RecursiveBundleInsert;
@@ -120,10 +119,9 @@ where
     TableBuilder<T>: ValidateColumn<C>,
 {
     type Error = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
-    type Borrowed = <CompletedTableBuilderBundle<C::Table> as ValidateColumn<C>>::Borrowed;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
         self.nested_bundles
             .nested_index()
             .validate_column_in_context(value)
@@ -137,7 +135,7 @@ where
             Element = CompletedTableBuilderBundle<C::Table>,
         >,
     T: BuildableTable + DescendantOf<C::Table>,
-    C: VerticalSameAsGroup<ValueType: Borrow<Self::Borrowed>>,
+    C: VerticalSameAsGroup,
     C::Table: AncestorOfIndex<T, Idx: Sub<Depth>> + BundlableTable,
     CompletedTableBuilderBundle<C::Table>: TrySetColumn<C>,
     TableBuilder<T>: TrySetColumn<C>,
@@ -150,7 +148,7 @@ where
     ) -> Result<&mut Self, Self::Error> {
         let value: C::ColumnType = value.into();
         if let Some(value_ref) = value.as_optional_ref() {
-            self.validate_column_in_context(value_ref.borrow())?;
+            self.validate_column_in_context(value_ref)?;
         }
         // We try to set eventual vertically-same-as columns in nested builders first.
         self.try_set_homogeneous_nested_columns(&value)?;

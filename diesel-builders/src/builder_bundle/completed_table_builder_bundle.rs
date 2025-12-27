@@ -1,7 +1,5 @@
 //! Submodule for the completed table builder bundle and related impls.
 
-use std::borrow::Borrow;
-
 use diesel::{Column, Insertable, RunQueryDsl, associations::HasTable};
 use tuplities::prelude::*;
 
@@ -47,10 +45,9 @@ where
     T::NewValues: ValidateColumn<C>,
 {
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
-    type Borrowed = <T::NewValues as ValidateColumn<C>>::Borrowed;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &Self::Borrowed) -> Result<(), Self::Error> {
+    fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
         self.insertable_model.validate_column_in_context(value)
     }
 }
@@ -58,7 +55,7 @@ where
 impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: HorizontalSameAsGroupExt<ValueType: Borrow<Self::Borrowed>>,
+    C: HorizontalSameAsGroupExt,
     Self: TrySetDiscretionarySameAsNestedColumns<
             C::ValueType,
             <T::NewValues as ValidateColumn<C>>::Error,
@@ -79,7 +76,7 @@ where
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
         if let Some(value_ref) = value.as_optional_ref() {
-            self.validate_column_in_context(value_ref.borrow())?;
+            self.validate_column_in_context(value_ref)?;
         }
         self.try_set_discretionary_same_as_nested_columns(&value)?;
         self.try_set_mandatory_same_as_nested_columns(&value)?;

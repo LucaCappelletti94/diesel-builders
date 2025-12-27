@@ -67,9 +67,8 @@ impl ValidateColumn<child_with_satellite_table::remote_field>
     for <child_with_satellite_table::table as TableExt>::NewValues
 {
     type Error = ErrorB;
-    type Borrowed = str;
 
-    fn validate_column(value: &Self::Borrowed) -> Result<(), Self::Error> {
+    fn validate_column(value: &String) -> Result<(), Self::Error> {
         if value.is_empty() {
             return Err(ErrorB::EmptyRemoteColumnC);
         }

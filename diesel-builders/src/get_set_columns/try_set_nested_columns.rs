@@ -1,5 +1,4 @@
 //! Trait for fallibly setting multiple nested columns.
-use std::borrow::Borrow;
 
 use tuplities::prelude::IntoNestedTupleOption;
 
@@ -22,12 +21,12 @@ impl<C1, T, Error> ValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
     T: ValidateColumn<C1>,
-    C1: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    C1: TypedColumn,
 {
     #[inline]
     fn validate_nested_columns(&self, (head,): &(C1::ColumnType,)) -> Result<(), Error> {
         if let Some(head) = head.as_optional_ref() {
-            self.validate_column_in_context(head.borrow())?;
+            self.validate_column_in_context(head)?;
         }
         Ok(())
     }
@@ -35,7 +34,7 @@ where
 
 impl<CHead, CTail, T, Error> ValidateNestedColumns<Error, (CHead, CTail)> for T
 where
-    CHead: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    CHead: TypedColumn,
     CTail: NestedColumns,
     (CHead, CTail):
         NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
@@ -48,7 +47,7 @@ where
         (head, tail): &(CHead::ColumnType, CTail::NestedTupleColumnType),
     ) -> Result<(), Error> {
         if let Some(head) = head.as_optional_ref() {
-            self.validate_column_in_context(head.borrow())?;
+            self.validate_column_in_context(head)?;
         }
         self.validate_nested_columns(tail)?;
         Ok(())
@@ -72,7 +71,7 @@ impl<C1, T, Error> MayValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
     T: ValidateColumn<C1>,
-    C1: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    C1: TypedColumn,
 {
     #[inline]
     fn may_validate_nested_columns(
@@ -80,7 +79,7 @@ where
         (head,): &(Option<C1::ColumnType>,),
     ) -> Result<(), Error> {
         if let Some(v1) = head.as_ref().and_then(|v| v.as_optional_ref()) {
-            self.validate_column_in_context(v1.borrow())?;
+            self.validate_column_in_context(v1)?;
         }
         Ok(())
     }
@@ -88,7 +87,7 @@ where
 
 impl<CHead, CTail, T, Error> MayValidateNestedColumns<Error, (CHead, CTail)> for T
 where
-    CHead: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    CHead: TypedColumn,
     CTail: NestedColumns,
     (CHead, CTail):
         NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
@@ -104,7 +103,7 @@ where
         ),
     ) -> Result<(), Error> {
         if let Some(head) = head.as_ref().and_then(|v| v.as_optional_ref()) {
-            self.validate_column_in_context(head.borrow())?;
+            self.validate_column_in_context(head)?;
         }
         self.may_validate_nested_columns(tail)?;
         Ok(())
@@ -134,7 +133,7 @@ impl<T, Error> TrySetNestedColumns<Error, ()> for T {
 impl<C1, T, Error> TrySetNestedColumns<Error, (C1,)> for T
 where
     T: TrySetColumn<C1>,
-    C1: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    C1: TypedColumn,
     Error: From<<T as ValidateColumn<C1>>::Error>,
 {
     #[inline]
@@ -146,7 +145,7 @@ where
 
 impl<CHead, CTail, T, Error> TrySetNestedColumns<Error, (CHead, CTail)> for T
 where
-    CHead: TypedColumn<ValueType: Borrow<T::Borrowed>>,
+    CHead: TypedColumn,
     CTail: NestedColumns,
     (CHead, CTail):
         NestedColumns<NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType)>,
