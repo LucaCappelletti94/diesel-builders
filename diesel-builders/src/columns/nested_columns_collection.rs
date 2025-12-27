@@ -2,13 +2,10 @@
 
 use crate::TypedNestedTupleCollection;
 
-use super::{ColumnsCollection, NestedColumns};
+use super::NestedColumns;
 
 /// A trait representing a nested collection of nested Diesel columns.
-pub trait NestedColumnsCollection:
-    TypedNestedTupleCollection<FlattenedMatrix: ColumnsCollection>
-{
-}
+pub trait NestedColumnsCollection: TypedNestedTupleCollection {}
 
 impl NestedColumnsCollection for () {}
 

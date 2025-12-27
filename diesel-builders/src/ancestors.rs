@@ -311,7 +311,7 @@ pub trait NestedAncestorsOf<T: Descendant<Ancestors = <Self as FlattenNestedTupl
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableExt {
     /// The ancestor tables of this table.
-    type Ancestors: Tables<Nested: NestedAncestorsOf<Self> + NestedTuplePushBack<Self>>;
+    type Ancestors: Tables<Nested: NestedAncestorsOf<Self, Flattened = Self::Ancestors> + NestedTuplePushBack<Self>>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
     type Root: Root<NestedPrimaryKeyColumns: TypedNestedTuple<
