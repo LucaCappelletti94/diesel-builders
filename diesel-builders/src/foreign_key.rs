@@ -198,8 +198,12 @@ pub trait HostColumn<
 /// relationships to tables with a singleton primary key.
 pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
-    type ReferencedTable: HasPrimaryKeyColumn<PrimaryKey: PrimaryKeyColumn<ValueType = <Self as Typed>::ValueType>>
-        + Descendant
+    type ReferencedTable: HasPrimaryKeyColumn<
+            PrimaryKey: PrimaryKeyColumn<
+                ValueType = <Self as Typed>::ValueType,
+                ColumnType = <Self as Typed>::ValueType,
+            >,
+        > + Descendant
         + diesel::query_source::TableNotEqual<Self::Table>;
 }
 
