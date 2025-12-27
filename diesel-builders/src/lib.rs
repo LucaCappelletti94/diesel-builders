@@ -96,7 +96,7 @@ pub mod prelude {
 
     // Re-export commonly used macros from diesel_builders_derive
     // Note: GetColumn is now automatically implemented by TableModel derive
-    pub use diesel_builders_derive::{TableModel, fk, fpk, index, unique_index};
+    pub use diesel_builders_derive::{TableModel, fk, fpk, index, unique_index, const_validator};
 
     pub use crate::get_foreign::GetForeignExt;
 
