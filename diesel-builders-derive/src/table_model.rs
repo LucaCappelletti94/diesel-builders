@@ -76,10 +76,10 @@ fn process_fields(
         let is_pk = primary_key_columns.iter().any(|pk| pk == field_name);
 
         if is_pk {
-            if extract_field_default_value(field).is_some() {
+            if extract_field_default_value(field).is_some() && attributes.surrogate_key {
                 return Err(syn::Error::new_spanned(
                     field,
-                    "Primary key cannot have a `default` value",
+                    "Surrogate primary key cannot have a `default` value",
                 ));
             }
 
