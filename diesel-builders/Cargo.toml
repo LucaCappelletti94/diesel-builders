@@ -32,7 +32,7 @@ trybuild = "1.0.114"
 workspace = true
 
 [features]
-default = ["serde", "size-16"]
+default = ["serde", "size-32"]
 size-16 = ["diesel-builders-derive/size-16", "tuplities/size-16"]
 size-32 = ["diesel-builders-derive/size-32", "tuplities/size-32"]
 size-48 = ["diesel-builders-derive/size-48", "tuplities/size-48"]
