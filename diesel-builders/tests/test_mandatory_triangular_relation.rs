@@ -26,7 +26,7 @@ pub struct ChildWithMandatory {
     mandatory_id: i32,
     #[infallible]
     /// Column B value.
-    child_field: String,
+    r#type: String,
     #[same_as(satellite_table::field)]
     /// The remote `field` value from table C that B references via `mandatory_id`.
     remote_field: Option<String>,
@@ -87,7 +87,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         "CREATE TABLE child_with_satellite_table (
             id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
             mandatory_id INTEGER NOT NULL REFERENCES satellite_table(id),
-            child_field TEXT NOT NULL,
+            type TEXT NOT NULL,
             remote_field TEXT CHECK (remote_field <> ''),
             another_remote_column TEXT,
 			FOREIGN KEY (mandatory_id, id) REFERENCES satellite_table(id, parent_id),
@@ -144,7 +144,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     child_builder
         .try_mandatory_ref(mandatory_builder.clone())?
-        .child_field_ref("Value B");
+        .type_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
     let child = child_builder
@@ -288,7 +288,7 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder with mandatory triangular relation
     let builder = child_with_satellite_table::table::builder()
-        .child_field("Serialized B")
+        .r#type("Serialized B")
         .try_remote_field("Serialized C".to_string())?;
 
     // Serialize to JSON
@@ -301,7 +301,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Verify the values match
     assert_eq!(
         deserialized
-            .may_get_column_ref::<child_with_satellite_table::child_field>()
+            .may_get_column_ref::<child_with_satellite_table::r#type>()
             .map(String::as_str),
         Some("Serialized B")
     );

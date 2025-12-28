@@ -41,7 +41,9 @@ fn generate_field_traits(
 ) -> TokenStream {
     use crate::table_model::attribute_parsing::{is_field_discretionary, is_field_mandatory};
 
-    let camel_cased_field_name = snake_to_camel_case(&field_name.to_string());
+    let field_name_str = field_name.to_string();
+    let clean_field_name = field_name_str.trim_start_matches("r#");
+    let camel_cased_field_name = snake_to_camel_case(clean_field_name);
 
     // Generate getter trait only for non-id fields
     let maybe_getter_impl = (field_name != "id").then(|| {
@@ -62,6 +64,7 @@ fn generate_field_traits(
         if primary_key_columns.len() == 1 && (is_mandatory || is_discretionary) {
             Some(generate_triangular_relation_traits(
                 field_name,
+                clean_field_name,
                 table_module,
                 struct_ident,
                 &camel_cased_field_name,
@@ -74,12 +77,14 @@ fn generate_field_traits(
 
     let set_trait = generate_set_trait(
         field_name,
+        clean_field_name,
         table_module,
         struct_ident,
         &camel_cased_field_name,
     );
     let try_set_trait = generate_try_set_trait(
         field_name,
+        clean_field_name,
         table_module,
         struct_ident,
         &camel_cased_field_name,
@@ -128,6 +133,7 @@ fn generate_getter_trait(
 /// Generate the `SetColumn` trait for a field.
 fn generate_set_trait(
     field_name: &Ident,
+    clean_field_name: &str,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
@@ -136,8 +142,10 @@ fn generate_set_trait(
         &format!("Set{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let field_name_ref =
-        syn::Ident::new(&format!("{field_name}_ref"), proc_macro2::Span::call_site());
+    let field_name_ref = syn::Ident::new(
+        &format!("{clean_field_name}_ref"),
+        proc_macro2::Span::call_site(),
+    );
 
     let set_trait_doc_comment =
         format!("Trait to set the `{field_name}` column on a [`{table_module}`] table builder.");
@@ -178,6 +186,7 @@ fn generate_set_trait(
 /// Generate the `TrySetColumn` trait for a field.
 fn generate_try_set_trait(
     field_name: &Ident,
+    clean_field_name: &str,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
@@ -186,10 +195,12 @@ fn generate_try_set_trait(
         &format!("TrySet{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let try_field_name =
-        syn::Ident::new(&format!("try_{field_name}"), proc_macro2::Span::call_site());
+    let try_field_name = syn::Ident::new(
+        &format!("try_{clean_field_name}"),
+        proc_macro2::Span::call_site(),
+    );
     let try_field_name_ref = syn::Ident::new(
-        &format!("try_{field_name}_ref"),
+        &format!("try_{clean_field_name}_ref"),
         proc_macro2::Span::call_site(),
     );
 
@@ -280,6 +291,7 @@ fn extract_option_inner_type(field_type: &syn::Type) -> Option<TokenStream> {
 /// Only generates traits relevant to the field's mandatory/discretionary status.
 fn generate_triangular_relation_traits(
     field_name: &Ident,
+    clean_field_name: &str,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
@@ -301,57 +313,65 @@ fn generate_triangular_relation_traits(
             s
         }
     };
+    let clean_base_field_name = {
+        let s = clean_field_name;
+        if let Some(stripped) = s.strip_suffix("_id") {
+            stripped
+        } else {
+            s
+        }
+    };
     let is_id_col = field_name.to_string().ends_with("_id");
     // For model methods, always use `{base}_model` (even for `_id` columns) to avoid
     // generating the same method name for both builder and model methods which would
     // cause ambiguous trait method resolution in Rust.
     let set_field_name_model_method = syn::Ident::new(
-        &format!("{base_field_name}_model"),
+        &format!("{clean_base_field_name}_model"),
         proc_macro2::Span::call_site(),
     );
     let set_field_name_model_method_ref = syn::Ident::new(
-        &format!("{base_field_name}_model_ref"),
+        &format!("{clean_base_field_name}_model_ref"),
         proc_macro2::Span::call_site(),
     );
     let try_set_field_name_model_method = syn::Ident::new(
-        &format!("try_{base_field_name}_model"),
+        &format!("try_{clean_base_field_name}_model"),
         proc_macro2::Span::call_site(),
     );
     let try_set_field_name_model_method_ref = syn::Ident::new(
-        &format!("try_{base_field_name}_model_ref"),
+        &format!("try_{clean_base_field_name}_model_ref"),
         proc_macro2::Span::call_site(),
     );
     let set_field_name_builder_method_name = if is_id_col {
-        base_field_name.clone()
+        base_field_name
     } else {
-        format!("{base_field_name}_builder")
+        format!("{clean_base_field_name}_builder")
     };
     let set_field_name_builder_method = syn::Ident::new(
         &set_field_name_builder_method_name,
         proc_macro2::Span::call_site(),
     );
     let set_field_name_builder_method_ref_name = if is_id_col {
-        format!("{base_field_name}_ref")
+        format!("{clean_base_field_name}_ref")
     } else {
-        format!("{base_field_name}_builder_ref")
+        format!("{clean_base_field_name}_builder_ref")
     };
     let set_field_name_builder_method_ref = syn::Ident::new(
         &set_field_name_builder_method_ref_name,
         proc_macro2::Span::call_site(),
     );
     let try_set_field_name_builder_method_name = if is_id_col {
-        format!("try_{base_field_name}")
+        format!("try_{clean_base_field_name}")
     } else {
-        format!("try_{base_field_name}_builder")
+        format!("try_{clean_base_field_name}_builder")
     };
     let try_set_field_name_builder_method = syn::Ident::new(
         &try_set_field_name_builder_method_name,
         proc_macro2::Span::call_site(),
     );
     let try_set_field_name_builder_method_ref_name = if is_id_col {
-        format!("try_{base_field_name}_ref")
+        format!("try_{clean_base_field_name}_ref")
     } else {
-        format!("try_{base_field_name}_builder_ref")
+        format!("try_{clean_base_field_name}_builder_ref")
     };
     let try_set_field_name_builder_method_ref = syn::Ident::new(
         &try_set_field_name_builder_method_ref_name,
