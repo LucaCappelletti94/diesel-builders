@@ -4,6 +4,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Field, Ident, Type};
 
+use crate::table_model::attribute_parsing::extract_sql_name;
 use crate::utils::is_option;
 
 /// Extracts the first generic type argument from a type path, if it exists.
@@ -149,8 +150,13 @@ pub fn generate_table_macro(
             .iter()
             .filter(|attr| attr.path().is_ident("doc"));
 
+        let sql_name_attr = extract_sql_name(field).map(|name| {
+            quote! { #[sql_name = #name] }
+        });
+
         column_defs.push(quote! {
             #(#doc_attrs)*
+            #sql_name_attr
             #field_name -> #sql_type,
         });
     }

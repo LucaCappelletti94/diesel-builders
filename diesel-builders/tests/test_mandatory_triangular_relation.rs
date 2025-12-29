@@ -28,8 +28,11 @@ pub struct ChildWithMandatory {
     /// Column B value.
     r#type: String,
     #[same_as(satellite_table::field)]
+    #[table_model(sql_name = "columns")]
     /// The remote `field` value from table C that B references via `mandatory_id`.
-    remote_field: Option<String>,
+    /// This field is called `columns` to ensure that fields that have collisions
+    /// with diesel keywords are handled correctly.
+    __columns: Option<String>,
     /// Another remote column from `satellite_table`.
     #[infallible]
     #[same_as(shared_triangular::satellite_table::another_field)]
@@ -63,7 +66,7 @@ impl From<Infallible> for ErrorChildWithMandatory {
     }
 }
 
-impl ValidateColumn<child_with_satellite_table::remote_field>
+impl ValidateColumn<child_with_satellite_table::__columns>
     for <child_with_satellite_table::table as TableExt>::NewValues
 {
     type Error = ErrorChildWithMandatory;
@@ -88,10 +91,10 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
             id INTEGER PRIMARY KEY NOT NULL REFERENCES parent_table(id),
             mandatory_id INTEGER NOT NULL REFERENCES satellite_table(id),
             type TEXT NOT NULL,
-            remote_field TEXT CHECK (remote_field <> ''),
+            columns TEXT CHECK (columns <> ''),
             another_remote_column TEXT,
 			FOREIGN KEY (mandatory_id, id) REFERENCES satellite_table(id, parent_id),
-            FOREIGN KEY (mandatory_id, remote_field) REFERENCES satellite_table(id, field),
+            FOREIGN KEY (mandatory_id, columns) REFERENCES satellite_table(id, field),
             FOREIGN KEY (mandatory_id, another_remote_column) REFERENCES satellite_table(id, another_field)
         )",
     )
@@ -151,7 +154,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .try_mandatory(mandatory_builder)?
         // Overriding the another_remote_column value set in the mandatory builder
         .another_remote_column("Another remote field".to_owned())
-        .try_remote_field("After setting mandatory".to_owned())?
+        .try_columns("After setting mandatory".to_owned())?
         .try_another_remote_column("Another remote field".to_owned())?
         .insert(&mut conn)
         .unwrap();
@@ -289,7 +292,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     // Create a builder with mandatory triangular relation
     let builder = child_with_satellite_table::table::builder()
         .r#type("Serialized B")
-        .try_remote_field("Serialized C".to_string())?;
+        .try_columns("Serialized C".to_string())?;
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;
@@ -306,7 +309,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
         Some("Serialized B")
     );
     assert_eq!(
-        deserialized.may_get_column_ref::<child_with_satellite_table::remote_field>(),
+        deserialized.may_get_column_ref::<child_with_satellite_table::__columns>(),
         Some(&Some("Serialized C".to_string()))
     );
 

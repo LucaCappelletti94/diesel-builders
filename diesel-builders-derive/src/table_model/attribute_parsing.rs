@@ -216,6 +216,29 @@ pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
     default_values.into_iter().next()
 }
 
+/// Extract the SQL name from `#[table_model(sql_name = "...")]` attribute on a field.
+pub fn extract_sql_name(field: &syn::Field) -> Option<String> {
+    let mut sql_name = None;
+
+    for attr in &field.attrs {
+        if !attr.path().is_ident("table_model") {
+            continue;
+        }
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("sql_name") {
+                let value = meta.value()?;
+                let lit: syn::LitStr = value.parse()?;
+                sql_name = Some(lit.value());
+                Ok(())
+            } else {
+                Ok(())
+            }
+        });
+    }
+
+    sql_name
+}
+
 /// Count occurrences of a specific attribute on a field.
 fn count_attribute(field: &syn::Field, attr_name: &str) -> usize {
     field

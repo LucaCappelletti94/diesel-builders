@@ -43,12 +43,18 @@ fn generate_field_traits(
 
     let field_name_str = field_name.to_string();
     let clean_field_name = field_name_str.trim_start_matches("r#");
-    let camel_cased_field_name = snake_to_camel_case(clean_field_name);
+
+    let method_name_str = clean_field_name.trim_start_matches('_').to_string();
+    let method_name_ident = syn::parse_str::<syn::Ident>(&method_name_str)
+        .unwrap_or_else(|_| syn::Ident::new_raw(&method_name_str, proc_macro2::Span::call_site()));
+
+    let camel_cased_field_name = snake_to_camel_case(&method_name_str);
 
     // Generate getter trait only for non-id fields
     let maybe_getter_impl = (field_name != "id").then(|| {
         generate_getter_trait(
             field_name,
+            &method_name_ident,
             table_module,
             struct_ident,
             &camel_cased_field_name,
@@ -64,7 +70,7 @@ fn generate_field_traits(
         if primary_key_columns.len() == 1 && (is_mandatory || is_discretionary) {
             Some(generate_triangular_relation_traits(
                 field_name,
-                clean_field_name,
+                &method_name_str,
                 table_module,
                 struct_ident,
                 &camel_cased_field_name,
@@ -77,14 +83,15 @@ fn generate_field_traits(
 
     let set_trait = generate_set_trait(
         field_name,
-        clean_field_name,
+        &method_name_str,
+        &method_name_ident,
         table_module,
         struct_ident,
         &camel_cased_field_name,
     );
     let try_set_trait = generate_try_set_trait(
         field_name,
-        clean_field_name,
+        &method_name_str,
         table_module,
         struct_ident,
         &camel_cased_field_name,
@@ -103,6 +110,7 @@ fn generate_field_traits(
 /// Generate the getter trait for a field.
 fn generate_getter_trait(
     field_name: &Ident,
+    method_name: &Ident,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
@@ -122,7 +130,7 @@ fn generate_getter_trait(
         pub trait #get_field_name: diesel_builders::GetColumn<#table_module::#field_name> {
             #[inline]
             #[doc = #get_field_name_method_doc_comment]
-            fn #field_name(&self) -> &<#table_module::#field_name as diesel_builders::Typed>::ColumnType {
+            fn #method_name(&self) -> &<#table_module::#field_name as diesel_builders::Typed>::ColumnType {
                 self.get_column_ref()
             }
         }
@@ -134,6 +142,7 @@ fn generate_getter_trait(
 fn generate_set_trait(
     field_name: &Ident,
     clean_field_name: &str,
+    method_name_ident: &Ident,
     table_module: &syn::Ident,
     struct_ident: &Ident,
     camel_cased_field_name: &str,
@@ -146,6 +155,7 @@ fn generate_set_trait(
         &format!("{clean_field_name}_ref"),
         proc_macro2::Span::call_site(),
     );
+    let method_name = method_name_ident;
 
     let set_trait_doc_comment =
         format!("Trait to set the `{field_name}` column on a [`{table_module}`] table builder.");
@@ -170,7 +180,7 @@ fn generate_set_trait(
             #[inline]
             #[must_use]
             #[doc = #field_name_method_doc_comment]
-            fn #field_name(
+            fn #method_name(
                 self,
                 value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
             ) -> Self {
