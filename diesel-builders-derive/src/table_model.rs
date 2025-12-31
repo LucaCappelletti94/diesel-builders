@@ -703,21 +703,33 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
 
         let key_column = &key.key_column;
+
+        // We check that the key has at least one host and one foreign column, or
+        // raise an appropriate compile-time error.
+        if key.host_columns.is_empty() {
+            return Err(syn::Error::new_spanned(
+                key_column,
+                "Horizontal key must have at least one host column. \
+                 No host columns were found for this key. \
+                 Please ensure that at least one field in this struct has a `#[same_as(...)]` attribute referencing this key.",
+            ));
+        }
+
+        if key.foreign_columns.is_empty() {
+            return Err(syn::Error::new_spanned(
+                key_column,
+                "Horizontal key must have at least one foreign column. \
+                 No foreign columns were found for this key. \
+                 Please ensure that at least one field in this struct has a `#[same_as(...)]` attribute referencing this key.",
+            ));
+        }
+
         let host_cols: Vec<_> = key
             .host_columns
             .iter()
             .map(|f| quote::quote!(#table_module::#f))
             .collect();
         let foreign_cols = &key.foreign_columns;
-
-        assert!(
-            !host_cols.is_empty(),
-            "Horizontal key must have at least one host column"
-        );
-        assert!(
-            !foreign_cols.is_empty(),
-            "Horizontal key must have at least one foreign column"
-        );
 
         horizontal_key_impls.push(quote! {
             impl diesel_builders::HorizontalKey for #key_column {
