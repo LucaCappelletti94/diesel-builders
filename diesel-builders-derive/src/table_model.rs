@@ -269,6 +269,8 @@ fn generate_triangular_fpk_impls(
 
 /// Information about a horizontal key.
 struct HorizontalKeyInfo {
+    /// The field representing the key.
+    field: syn::Ident,
     /// The path to the key column.
     key_column: syn::Path,
     /// Whether the key is mandatory.
@@ -592,6 +594,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             horizontal_keys_map.insert(
                 key_field,
                 HorizontalKeyInfo {
+                    field: (*key_field).clone(),
                     key_column: syn::parse_quote!(#table_module::#key_field),
                     is_mandatory: *is_mandatory,
                     host_columns: Vec::new(),
@@ -708,7 +711,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         // raise an appropriate compile-time error.
         if key.host_columns.is_empty() {
             return Err(syn::Error::new_spanned(
-                key_column,
+                key.field.clone(),
                 "Horizontal key must have at least one host column. \
                  No host columns were found for this key. \
                  Please ensure that at least one field in this struct has a `#[same_as(...)]` attribute referencing this key.",
@@ -717,7 +720,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         if key.foreign_columns.is_empty() {
             return Err(syn::Error::new_spanned(
-                key_column,
+                key.field.clone(),
                 "Horizontal key must have at least one foreign column. \
                  No foreign columns were found for this key. \
                  Please ensure that at least one field in this struct has a `#[same_as(...)]` attribute referencing this key.",
