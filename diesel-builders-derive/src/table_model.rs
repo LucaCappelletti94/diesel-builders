@@ -289,7 +289,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Parse attributes
     let table_module_opt = extract_table_module(input);
     let primary_key_columns = extract_primary_key_columns(input);
-    let attributes = extract_table_model_attributes(input);
+    let attributes = extract_table_model_attributes(input)?;
 
     let table_module = if let Some(module) = table_module_opt {
         module
@@ -803,6 +803,72 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Generate foreign key implementations for triangular relations
     let foreign_key_impls = generate_foreign_key_impls(fields, &table_module)?;
 
+    // Generate BuildableTable implementation with default overrides
+    let mut overrides = Vec::new();
+    for (col_path, value) in &attributes.struct_defaults {
+        let segments: Vec<_> = col_path.segments.iter().collect();
+        if segments.len() < 2 {
+            return Err(syn::Error::new_spanned(
+                col_path,
+                "Column path in `default(...)` must be in the format `Table::Column`",
+            ));
+        }
+        let table_ident = &segments[segments.len() - 2].ident;
+
+        let mut found_idx = None;
+        let mut ancestor_count = 0;
+
+        if let Some(ancestors) = &attributes.ancestors {
+            ancestor_count = ancestors.len();
+            for (i, ancestor_path) in ancestors.iter().enumerate() {
+                if let Some(last_segment) = ancestor_path.segments.last()
+                    && last_segment.ident == *table_ident
+                {
+                    found_idx = Some(i);
+                    break;
+                }
+            }
+        }
+
+        if found_idx.is_none() && table_module == *table_ident {
+            found_idx = Some(ancestor_count);
+        }
+
+        if found_idx.is_some() {
+            overrides.push(quote! {
+                {
+                    use diesel_builders::TrySetColumn;
+                    diesel_builders::TrySetColumn::<#col_path>::try_set_column(
+                        &mut builder,
+                        (#value).to_owned()
+                    ).expect(concat!("Invalid default value for column ", stringify!(#col_path)));
+                }
+            });
+        } else {
+            return Err(syn::Error::new_spanned(
+                col_path,
+                format!("Table `{table_ident}` not found in ancestors or self"),
+            ));
+        }
+    }
+
+    let buildable_table_impl = quote! {
+        impl diesel_builders::BuildableTable for #table_module::table {
+            type NestedAncestorBuilders =
+                <<#table_module::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
+            type NestedCompletedAncestorBuilders =
+                <<#table_module::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
+
+            fn default_bundles() -> Self::NestedAncestorBuilders {
+                #[allow(unused_mut)]
+                let mut bundles = <Self::NestedAncestorBuilders as Default>::default();
+                let mut builder = diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
+                #(#overrides)*
+                builder.into_bundles()
+            }
+        }
+    };
+
     // Generate final output
     Ok(quote! {
         #table_macro
@@ -814,6 +880,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #infallible_validate_column_impls
         #descendant_impls
         #bundlable_table_impl
+        #buildable_table_impl
         #(#mandatory_same_as_impls)*
         #(#discretionary_same_as_impls)*
         #(#column_horizontal_impls)*

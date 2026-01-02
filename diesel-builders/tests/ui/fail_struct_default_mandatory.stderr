@@ -1,0 +1,18 @@
+error: Table `satellite` not found in ancestors or self
+  --> tests/ui/fail_struct_default_mandatory.rs:18:23
+   |
+18 | #[table_model(default(satellite::info, "Default Info".to_string()))]
+   |                       ^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `main_table`
+  --> tests/ui/fail_struct_default_mandatory.rs:16:23
+   |
+16 | #[diesel(table_name = main_table)]
+   |                       ^^^^^^^^^^ use of unresolved module or unlinked crate `main_table`
+   |
+   = help: if you wanted to use a crate named `main_table`, use `cargo add main_table` to add it to your `Cargo.toml`
+help: a struct with a similar name exists
+   |
+16 - #[diesel(table_name = main_table)]
+16 + #[diesel(table_name = MainTable)]
+   |

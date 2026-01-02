@@ -134,6 +134,7 @@ impl diesel_builders::ValidateColumn<animals::description>
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel, Clone)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
+#[table_model(default(animals::description, "A generic dog"))]
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.

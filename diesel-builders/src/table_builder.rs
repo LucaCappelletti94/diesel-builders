@@ -23,7 +23,19 @@ use crate::{
 /// ancestors.
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
-    bundles: T::NestedAncestorBuilders,
+    pub(crate) bundles: T::NestedAncestorBuilders,
+}
+
+impl<T: BuildableTable> TableBuilder<T> {
+    /// Creates a new `TableBuilder` from the given bundles.
+    pub fn from_bundles(bundles: T::NestedAncestorBuilders) -> Self {
+        Self { bundles }
+    }
+
+    /// Consumes the builder and returns the nested ancestor bundles.
+    pub fn into_bundles(self) -> T::NestedAncestorBuilders {
+        self.bundles
+    }
 }
 
 impl<T> HasTable for TableBuilder<T>

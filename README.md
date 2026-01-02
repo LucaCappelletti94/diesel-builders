@@ -85,6 +85,8 @@ pub struct Dog {
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = puppies)]
 #[table_model(ancestors(animals, dogs))]
+// Descendants can override ancestor defaults
+#[table_model(default(dogs::dog_notes, "A cute little puppy"))]
 pub struct Puppy {
     id: i32,
     #[table_model(default = 6)]
@@ -101,7 +103,6 @@ diesel::sql_query("CREATE TABLE puppies (id INTEGER PRIMARY KEY REFERENCES dogs(
 let puppy = puppies::table::builder()
     .name("Buddy")
     .breed("Labrador")
-    .dog_notes("A cute little puppy".to_owned())
     .age_months(3)
     .insert(&mut conn)?;
 
@@ -111,10 +112,18 @@ let loaded_puppy: Puppy = Puppy::find(puppy.id(), &mut conn)?;
 // Access ancestor records
 let animal: Animal = puppy.ancestor(&mut conn)?;
 assert_eq!(animal.name(), "Buddy");
-assert_eq!(animal.description().as_deref(), Some("A cute little puppy"));
+assert_eq!(
+    animal.description().as_deref(),
+    Some("A cute little puppy"),
+    "Description should be propagated from Puppy to Animal"
+);
 let dog: Dog = puppy.ancestor(&mut conn)?;
 assert_eq!(dog.breed(), "Labrador");
-assert_eq!(dog.dog_notes().as_deref(), Some("A cute little puppy"));
+assert_eq!(
+    dog.dog_notes().as_deref(),
+    Some("A cute little puppy"),
+    "dog_notes should be propagated from Puppy to Dog"
+);
 assert_eq!(*puppy.age_months(), 3);
 
 puppy.delete(&mut conn)?;

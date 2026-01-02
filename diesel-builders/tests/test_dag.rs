@@ -39,6 +39,11 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     // Test GetColumn derive on descendant table
     assert_eq!(dog.id(), dog.id());
     assert_eq!(dog.breed(), "Golden Retriever");
+    let loaded_animal: Animal = dog.ancestor(&mut conn)?;
+    assert_eq!(
+        loaded_animal.description().as_deref(),
+        Some("A generic dog")
+    );
 
     // Insert into cats table (extends animals)
     let cat_builder = cats::table::builder()

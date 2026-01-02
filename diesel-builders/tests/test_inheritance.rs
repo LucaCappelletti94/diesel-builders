@@ -50,6 +50,10 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     // Test GetColumn derive on both parent and child models
     assert_eq!(loaded_animal.id(), dog.id());
     assert_eq!(loaded_animal.name(), "Max");
+    assert_eq!(
+        loaded_animal.description().as_deref(),
+        Some("A generic dog")
+    );
     assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
 

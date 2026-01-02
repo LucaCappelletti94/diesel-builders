@@ -1,0 +1,13 @@
+error: Table `cats` not found in ancestors or self
+  --> tests/ui/fail_struct_default_not_ancestor.rs:15:23
+   |
+15 | #[table_model(default(cats::description, "A cat?".to_string()))]
+   |                       ^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `dogs`
+  --> tests/ui/fail_struct_default_not_ancestor.rs:13:23
+   |
+13 | #[diesel(table_name = dogs)]
+   |                       ^^^^ use of unresolved module or unlinked crate `dogs`
+   |
+   = help: if you wanted to use a crate named `dogs`, use `cargo add dogs` to add it to your `Cargo.toml`
