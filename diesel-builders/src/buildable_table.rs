@@ -18,9 +18,7 @@ pub trait BuildableTable: BundlableTableExt + DescendantWithSelf {
 
     #[must_use]
     /// Returns the default ancestor builders for this table.
-    fn default_bundles() -> Self::NestedAncestorBuilders {
-        Self::NestedAncestorBuilders::default()
-    }
+    fn default_bundles() -> Self::NestedAncestorBuilders;
 
     /// Returns a new instance of a builder for the current table.
     #[inline]
