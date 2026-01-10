@@ -22,3 +22,4 @@ target
 rustc-ice-*
 cobertura.xml
 build_rs_cov.profraw
+coverage

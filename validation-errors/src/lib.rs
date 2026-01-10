@@ -89,6 +89,12 @@ impl From<Infallible> for ValidationError {
     }
 }
 
+impl From<ValidationError> for diesel_builders::BuilderError<ValidationError> {
+    fn from(error: ValidationError) -> Self {
+        diesel_builders::BuilderError::Validation(error)
+    }
+}
+
 impl From<ValidationError> for diesel::result::Error {
     fn from(error: ValidationError) -> Self {
         diesel::result::Error::DatabaseError(
@@ -702,6 +708,25 @@ mod tests {
             assert_eq!(info.message(), "Field must not be empty");
             assert_eq!(info.table_name(), Some("table"));
             assert_eq!(info.column_name(), Some("field"));
+        }
+    }
+
+    #[test]
+    fn test_from_validation_error_to_builder_error() {
+        let validation_err = ValidationError::empty("table", "field");
+        let builder_err: diesel_builders::BuilderError<ValidationError> = validation_err.into();
+
+        assert!(matches!(
+            builder_err,
+            diesel_builders::BuilderError::Validation(_)
+        ));
+
+        if let diesel_builders::BuilderError::Validation(inner_err) = builder_err {
+            assert_eq!(inner_err.table(), "table");
+            assert!(matches!(
+                inner_err.kind(),
+                ValidationErrorKind::MustNotBeEmpty("field")
+            ));
         }
     }
 }

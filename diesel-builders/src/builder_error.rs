@@ -1,5 +1,7 @@
 //! Helper functions for creating builder-related errors.
 
+use diesel::result::DatabaseErrorInformation;
+
 /// Error type for incomplete builder operations.
 #[derive(Debug)]
 pub enum BuilderError<E> {
@@ -71,5 +73,61 @@ impl<E> From<diesel::result::Error> for BuilderError<E> {
 impl<E> From<IncompleteBuilderError> for BuilderError<E> {
     fn from(error: IncompleteBuilderError) -> Self {
         BuilderError::Incomplete(error)
+    }
+}
+
+impl DatabaseErrorInformation for IncompleteBuilderError {
+    fn message(&self) -> &str {
+        match self {
+            IncompleteBuilderError::MissingMandatoryTriangularField(_) => {
+                "Missing mandatory triangular builder field"
+            }
+            IncompleteBuilderError::MissingMandatoryField(_) => "Missing mandatory field",
+        }
+    }
+
+    fn details(&self) -> Option<&str> {
+        None
+    }
+
+    fn hint(&self) -> Option<&str> {
+        None
+    }
+
+    fn table_name(&self) -> Option<&str> {
+        None
+    }
+
+    fn column_name(&self) -> Option<&str> {
+        match self {
+            IncompleteBuilderError::MissingMandatoryTriangularField(field_name)
+            | IncompleteBuilderError::MissingMandatoryField(field_name) => Some(field_name),
+        }
+    }
+
+    fn constraint_name(&self) -> Option<&str> {
+        None
+    }
+
+    fn statement_position(&self) -> Option<i32> {
+        None
+    }
+}
+
+impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
+    for diesel::result::Error
+{
+    fn from(error: BuilderError<E>) -> Self {
+        match error {
+            BuilderError::Diesel(e) => e,
+            BuilderError::Incomplete(e) => diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::CheckViolation,
+                Box::new(e),
+            ),
+            BuilderError::Validation(e) => diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::CheckViolation,
+                Box::new(e),
+            ),
+        }
     }
 }

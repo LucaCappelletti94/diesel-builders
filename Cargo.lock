@@ -1025,6 +1025,7 @@ name = "validation-errors"
 version = "0.1.0"
 dependencies = [
  "diesel",
+ "diesel-builders",
  "thiserror",
 ]
 
