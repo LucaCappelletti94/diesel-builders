@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["diesel-builders", "diesel-builders-derive"]
+members = ["diesel-builders", "diesel-builders-derive", "validation-errors"]
 
 [workspace.package]
 authors = ["Luca Cappelletti"]
