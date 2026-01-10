@@ -1,5 +1,5 @@
 [package]
-name = "validation_errors"
+name = "validation-errors"
 version = "0.1.0"
 edition.workspace = true
 
