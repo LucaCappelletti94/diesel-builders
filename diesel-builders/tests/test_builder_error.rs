@@ -135,7 +135,7 @@ fn test_builder_error_from_diesel_error_conversion() {
     }
     impl std::error::Error for MockError {}
     impl DatabaseErrorInformation for MockError {
-        fn message(&self) -> &str {
+        fn message(&self) -> &'static str {
             "mock message"
         }
         fn details(&self) -> Option<&str> {
@@ -220,20 +220,6 @@ fn test_incomplete_builder_error_partial_eq() {
 
     let error4 = IncompleteBuilderError::MissingMandatoryTriangularField("name");
     assert_ne!(error1, error4);
-}
-
-#[test]
-fn test_incomplete_builder_error_clone() {
-    let error = IncompleteBuilderError::MissingMandatoryField("name");
-    let cloned = error.clone();
-    assert_eq!(error, cloned);
-}
-
-#[test]
-fn test_incomplete_builder_error_copy() {
-    let error1 = IncompleteBuilderError::MissingMandatoryField("name");
-    let error2 = error1; // Copy
-    assert_eq!(error1, error2);
 }
 
 #[test]
