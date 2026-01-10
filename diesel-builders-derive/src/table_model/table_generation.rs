@@ -98,6 +98,11 @@ fn get_column_sql_type(field: &Field) -> syn::Result<TokenStream> {
     }
 
     if let Some(sql_type) = found_sql_type {
+        // If the field is an Option<T>, we should wrap the provided SQL type in Nullable<...>.
+        // This assumes the user provided the "inner" SQL type in the attribute.
+        if is_option(&field.ty) {
+            return Ok(quote! { diesel::sql_types::Nullable<#sql_type> });
+        }
         return Ok(sql_type);
     }
 

@@ -59,6 +59,10 @@ pub struct User {
     // Use crate:: because this is an integration test and the type is at the root
     #[diesel(sql_type = crate::MyCustomSqlType)]
     custom_field: MyCustomType,
+    /// Optional custom field
+    // Use crate:: because this is an integration test and the type is at the root
+    #[diesel(sql_type = crate::MyCustomSqlType)]
+    another_custom_field: Option<MyCustomType>,
     /// Binary data
     binary_data: Vec<u8>,
 }
@@ -67,7 +71,7 @@ pub struct User {
 fn test_custom_type_compiles() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;
 
-    diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, custom_field INTEGER NOT NULL, binary_data BLOB NOT NULL)")
+    diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, custom_field INTEGER NOT NULL, another_custom_field INTEGER, binary_data BLOB NOT NULL)")
         .execute(&mut conn)?;
 
     let user = users::table::builder()
