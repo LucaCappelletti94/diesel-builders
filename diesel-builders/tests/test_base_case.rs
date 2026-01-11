@@ -6,6 +6,8 @@ mod shared;
 mod shared_animals;
 use diesel_builders::prelude::*;
 use shared_animals::*;
+use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
@@ -192,4 +194,49 @@ fn completed_table_builder_bundle_has_table() {
         typenum::U0,
         (),
     > as HasTable>::table();
+}
+
+#[test]
+fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    setup_animal_tables(&mut conn)?;
+
+    let mut builder = animals::table::builder();
+    builder.try_name_ref("Test Animal")?;
+    builder.try_description_ref(Some("A test description".to_string()))?;
+    let animal = builder.insert(&mut conn)?;
+
+    // Test reference blanket impl
+    let animal_ref = &animal;
+    assert_eq!(animal_ref.get_column::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_ref.get_column::<animals::description>(),
+        Some("A test description".to_string())
+    );
+
+    // Test Box blanket impl
+    let animal_box = Box::new(animal.clone());
+    assert_eq!(animal_box.get_column::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_box.get_column::<animals::description>(),
+        Some("A test description".to_string())
+    );
+
+    // Test Rc blanket impl
+    let animal_rc = Rc::new(animal.clone());
+    assert_eq!(animal_rc.get_column::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_rc.get_column::<animals::description>(),
+        Some("A test description".to_string())
+    );
+
+    // Test Arc blanket impl
+    let arc_animal = Arc::new(animal.clone());
+    assert_eq!(arc_animal.get_column::<animals::name>(), "Test Animal");
+    assert_eq!(
+        arc_animal.get_column::<animals::description>(),
+        Some("A test description".to_string())
+    );
+
+    Ok(())
 }
