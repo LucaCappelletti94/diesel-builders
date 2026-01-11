@@ -213,6 +213,11 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
         animal_ref.get_column::<animals::description>(),
         Some("A test description".to_string())
     );
+    assert_eq!(animal_ref.get_column_ref::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_ref.get_column_ref::<animals::description>(),
+        &Some("A test description".to_string())
+    );
 
     // Test Box blanket impl
     let animal_box = Box::new(animal.clone());
@@ -220,6 +225,11 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         animal_box.get_column::<animals::description>(),
         Some("A test description".to_string())
+    );
+    assert_eq!(animal_box.get_column_ref::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_box.get_column_ref::<animals::description>(),
+        &Some("A test description".to_string())
     );
 
     // Test Rc blanket impl
@@ -229,6 +239,11 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
         animal_rc.get_column::<animals::description>(),
         Some("A test description".to_string())
     );
+    assert_eq!(animal_rc.get_column_ref::<animals::name>(), "Test Animal");
+    assert_eq!(
+        animal_rc.get_column_ref::<animals::description>(),
+        &Some("A test description".to_string())
+    );
 
     // Test Arc blanket impl
     let arc_animal = Arc::new(animal.clone());
@@ -236,6 +251,11 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
         arc_animal.get_column::<animals::description>(),
         Some("A test description".to_string())
+    );
+    assert_eq!(arc_animal.get_column_ref::<animals::name>(), "Test Animal");
+    assert_eq!(
+        arc_animal.get_column_ref::<animals::description>(),
+        &Some("A test description".to_string())
     );
 
     Ok(())
