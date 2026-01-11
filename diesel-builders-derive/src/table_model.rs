@@ -375,8 +375,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let typed_column_impls =
         generate_typed_column_impls(fields, &table_module, struct_ident, &primary_key_columns);
     let get_column_impls = generate_get_column_impls(fields, &table_module, struct_ident);
-    let indexed_column_impls =
-        generate_indexed_column_impls(&table_module, struct_ident, &primary_key_columns, fields);
+    let indexed_column_impls = generate_indexed_column_impls(&table_module, &primary_key_columns);
     let nested_primary_keys = format_as_nested_tuple(
         primary_key_columns
             .iter()
