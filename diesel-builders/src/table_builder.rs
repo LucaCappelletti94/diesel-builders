@@ -21,6 +21,14 @@ use crate::{
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
+///
+/// This struct provides a fluent API for building complex database records
+/// that may have inheritance relationships or triangular dependencies. It
+/// tracks the state of all required fields and ensures proper insertion order.
+///
+/// # Type Parameters
+///
+/// * `T`: The table type this builder is for, must implement `BuildableTable`
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
     pub(crate) bundles: T::NestedAncestorBuilders,

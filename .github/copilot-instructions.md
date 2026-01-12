@@ -86,6 +86,14 @@ pub struct Animal {
       .name("Buddy")
       .insert(&mut conn)?;
   ```
+- For triangular relations, use nested builders:
+  ```rust
+  let child = child_table::table::builder()
+      .parent_field("Parent value")
+      .child_field("Child value")
+      .mandatory(mandatory_table::table::builder().mandatory_field("Value"))
+      .insert(&mut conn)?;
+  ```
 
 ## Integration Points
 - **Diesel**: The library is tightly coupled with Diesel. It relies on Diesel's `Table`, `Column`, and connection traits.
@@ -95,3 +103,5 @@ pub struct Animal {
 - **Schema Definitions**: Ensure your `diesel::sql_query` or `table!` definitions match the struct fields exactly.
 - **Order of Operations**: The builder handles insertion order automatically, but circular dependencies in the schema (without proper `same_as` usage) can lead to issues.
 - **Macro Attributes**: Pay close attention to the syntax of `#[table_model(...)]` and `#[same_as(...)]`. Misspellings or incorrect paths will cause compile errors.
+- **Triangular Relations**: Use `#[mandatory(...)]` for required side-tables and `#[discretionary(...)]` for optional ones. Ensure foreign key relationships are properly defined with `fpk!` and `unique_index!`.
+- **Validation**: Use `#[table_model(error = CustomError)]` to enable validation, and implement `ValidateColumn` for fields that need custom checks. Use `#[infallible]` for fields that are always valid.

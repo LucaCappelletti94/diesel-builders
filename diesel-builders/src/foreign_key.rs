@@ -203,8 +203,7 @@ pub trait ForeignPrimaryKey: TypedColumn {
                 ValueType = <Self as Typed>::ValueType,
                 ColumnType = <Self as Typed>::ValueType,
             >,
-        > + Descendant
-        + diesel::query_source::TableNotEqual<Self::Table>;
+        > + Descendant;
 }
 
 impl<C>

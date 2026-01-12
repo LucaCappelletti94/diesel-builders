@@ -240,7 +240,7 @@ unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_table)]
-#[table_model(ancestors = parent_table)]
+#[table_model(ancestors(parent_table))]
 pub struct Child {
     #[same_as(mandatory_table::parent_id)]
     id: i32,
@@ -308,7 +308,7 @@ unique_index!(discretionary_table::id, discretionary_table::parent_id);
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_with_discretionary_table)]
-#[table_model(ancestors = parent_table)]
+#[table_model(ancestors(parent_table))]
 pub struct Child {
     #[same_as(discretionary_table::parent_id)]
     id: i32,

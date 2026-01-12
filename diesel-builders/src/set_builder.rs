@@ -8,26 +8,56 @@ use crate::{
 use diesel::Table;
 use tuplities::prelude::NestedTupleInto;
 
-/// Trait attempting to set a specific Diesel column, which may fail.
+/// Trait for setting a mandatory triangular builder relationship.
+///
+/// Mandatory relationships require that a related record is created whenever
+/// the main record is created. This ensures referential integrity in triangular
+/// dependencies where a child table references both a parent and a side table.
+///
+/// # Type Parameters
+///
+/// * `Key`: The foreign key relationship defining the mandatory link
 pub trait SetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>> {
-    /// Attempt to set the value of the specified column.
+    /// Sets the mandatory builder for the specified relationship.
+    ///
+    /// This associates a builder for the related table that will be created
+    /// atomically with the main record.
     fn set_mandatory_builder(&mut self, builder: TableBuilder<Key::ReferencedTable>) -> &mut Self;
 }
 
-/// Trait attempting to set a specific Diesel discretionary triangular builder,
-/// which may fail.
+/// Trait for setting a discretionary triangular builder relationship.
+///
+/// Discretionary relationships allow optional related records. You can either
+/// provide a new builder to create a related record, or reference an existing
+/// model that was created previously.
+///
+/// # Type Parameters
+///
+/// * `Key`: The foreign key relationship defining the discretionary link
 pub trait SetDiscretionaryBuilder<Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>> {
-    /// Attempt to set the value of the specified column.
+    /// Sets the discretionary builder for the specified relationship.
+    ///
+    /// This associates a builder for the related table that will be created
+    /// along with the main record.
     fn set_discretionary_builder(
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
     ) -> &mut Self;
 }
 
-/// Trait attempting to set a specific Diesel discretionary triangular model,
-/// which may fail.
+/// Trait for setting a discretionary relationship using an existing model.
+///
+/// This allows linking to an existing record in a discretionary relationship
+/// rather than creating a new one.
+///
+/// # Type Parameters
+///
+/// * `Key`: The foreign key relationship defining the discretionary link
 pub trait SetDiscretionaryModel<Key: DiscretionarySameAsIndex> {
-    /// Attempt to set the values associated to the provided model.
+    /// Sets the relationship to reference an existing model.
+    ///
+    /// This copies the relevant field values from the existing model
+    /// to establish the relationship.
     fn set_discretionary_model(
         &mut self,
         model: &<Key::ReferencedTable as TableExt>::Model,
@@ -127,10 +157,15 @@ where
 /// Extension trait for `SetMandatoryBuilder` that allows specifying the column
 /// at the method level.
 ///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
+/// This trait provides a cleaner API where the relationship type is specified as a
+/// type parameter on the method rather than on the trait itself. It enables
+/// method chaining with mandatory relationships.
 pub trait SetMandatoryBuilderExt: Sized {
-    /// Set the mandatory builder for the specified column.
+    /// Sets the mandatory builder for the specified column.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `Key`: The specific mandatory relationship to set
     #[inline]
     fn set_mandatory_builder_ref<Key>(
         &mut self,
@@ -143,9 +178,16 @@ pub trait SetMandatoryBuilderExt: Sized {
         <Self as SetMandatoryBuilder<Key>>::set_mandatory_builder(self, builder)
     }
 
+    /// Sets the mandatory builder for the specified column (consuming version).
+    ///
+    /// This is a convenience method that consumes self and returns it,
+    /// enabling fluent chaining.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `Key`: The specific mandatory relationship to set
     #[inline]
     #[must_use]
-    /// Set the mandatory builder for the specified column.
     fn set_mandatory_builder<Key>(mut self, builder: TableBuilder<Key::ReferencedTable>) -> Self
     where
         Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
@@ -195,15 +237,19 @@ impl<T> SetDiscretionaryBuilderExt for T {}
 /// Extension trait for `TrySetMandatoryBuilder` that allows specifying the
 /// column at the method level.
 ///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
+/// This trait provides a failable API for setting mandatory relationships.
+/// Use this when you need to handle validation errors during relationship setup.
 pub trait TrySetMandatoryBuilderExt: HasTableExt {
-    /// Attempt to set the mandatory builder for the specified column.
+    /// Attempts to set the mandatory builder for the specified column.
     ///
     /// # Errors
     ///
     /// Returns an error if the builder cannot be set for the mandatory
-    /// relationship.
+    /// relationship (e.g., validation failures).
+    ///
+    /// # Type Parameters
+    ///
+    /// * `Key`: The specific mandatory relationship to set
     #[inline]
     fn try_set_mandatory_builder_ref<Key>(
         &mut self,
@@ -216,13 +262,17 @@ pub trait TrySetMandatoryBuilderExt: HasTableExt {
         <Self as TrySetMandatoryBuilder<Key>>::try_set_mandatory_builder(self, builder)
     }
 
-    #[inline]
-    /// Attempt to set the mandatory builder for the specified column.
+    /// Attempts to set the mandatory builder for the specified column (consuming version).
     ///
     /// # Errors
     ///
     /// Returns an error if the builder cannot be set for the mandatory
     /// relationship.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `Key`: The specific mandatory relationship to set
+    #[inline]
     fn try_set_mandatory_builder<Key>(
         mut self,
         builder: TableBuilder<Key::ReferencedTable>,

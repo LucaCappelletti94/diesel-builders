@@ -32,6 +32,16 @@ where
 }
 
 /// A trait for Diesel columns that define horizontal same-as relationships.
+///
+/// Horizontal same-as relationships occur when columns in different tables
+/// should maintain the same values due to foreign key relationships.
+/// This is commonly used in triangular dependencies where a child table
+/// references both a parent and a side table.
+///
+/// # Type Parameters
+///
+/// * `HostColumns`: Columns in the current table that mirror values from foreign columns
+/// * `ForeignColumns`: Columns in referenced tables that provide the source values
 pub trait HorizontalKey:
     ForeignPrimaryKey<ReferencedTable: DescendantWithSelf, Table: HasPrimaryKeyColumn>
 {
