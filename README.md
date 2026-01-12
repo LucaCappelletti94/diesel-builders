@@ -7,9 +7,9 @@
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity. It provides fluent APIs for getting/setting column values and associated builders and models, executing foreign key queries, and [`serde`](https://github.com/serde-rs/serde) support.
 
-[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types that implement the required Diesel traits (`AsExpression`, `FromSql`, `ToSql`).
+[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types [that implement the required Diesel traits](https://github.com/diesel-rs/diesel/blob/main/guide_drafts/custom_types.md).
 
-The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions. Furthermore, its also automatically keeps track of foreign key relationships to generate `allow_tables_to_appear_in_same_query!` declarations as needed. You will still need to specify `allow_tables_to_appear_in_same_query` for second-order joins (i.e., joins involving three or more tables).
+The `TableModel` derive macro generates Diesel's [`table!`](https://docs.rs/diesel/latest/diesel/macro.table.html) macro, eliminating manual schema definitions. Furthermore, its also automatically keeps track of foreign key relationships to generate [`allow_tables_to_appear_in_same_query!`](https://docs.rs/diesel/latest/diesel/macro.allow_tables_to_appear_in_same_query.html) declarations as needed. You will still need to specify [`allow_tables_to_appear_in_same_query`](https://docs.rs/diesel/latest/diesel/macro.allow_tables_to_appear_in_same_query.html) for second-order joins (i.e., joins involving three or more tables).
 
 ## Installation
 
