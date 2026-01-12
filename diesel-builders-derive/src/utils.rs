@@ -82,7 +82,7 @@ pub(crate) fn camel_to_snake_case(s: &str) -> String {
 /// Helper to determine if we should generate `allow_tables_to_appear_in_same_query`.
 ///
 /// Returns `true` if this pair hasn't been generated yet.
-/// Uses a static lookup struct (Mutex<HashSet>) to track pairs.
+/// Uses a static lookup struct to track pairs.
 pub(crate) fn should_generate_allow_tables_to_appear_in_same_query(
     t1: &syn::Path,
     t2: &syn::Path,
