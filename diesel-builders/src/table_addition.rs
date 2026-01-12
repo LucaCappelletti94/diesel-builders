@@ -14,6 +14,8 @@ pub trait TableExt:
     + Default
     + Copy
 {
+    /// Name of the table as a static string.
+    const TABLE_NAME: &'static str;
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
     /// The nested columns necessary to execute insert operations for this table.

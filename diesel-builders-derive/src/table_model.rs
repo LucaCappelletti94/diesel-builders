@@ -452,6 +452,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
     // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors and triangular relations
+    let table_name = table_module.to_string();
     let table_module_path: syn::Path = table_module.clone().into();
     let allow_same_query_calls = attributes
         .ancestors
@@ -907,6 +908,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         // Auto-implement TableExt for the table associated with this model.
         impl ::diesel_builders::TableExt for #table_module::table {
+            const TABLE_NAME: &'static str = #table_name;
             type NewRecord = #new_record;
             type NewValues = #new_record_type;
             type Model = #struct_ident;
