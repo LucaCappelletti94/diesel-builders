@@ -58,7 +58,11 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Path) -> Option<Token
         }
 
         #[doc = #trait_doc]
-        pub trait #trait_ident<Conn>: diesel_builders::GetForeignExt<Conn> {
+        pub trait #trait_ident<Conn>: diesel_builders::GetForeign<
+            Conn,
+            (#column,),
+            (<#referenced_table::table as diesel::Table>::PrimaryKey,),
+        > {
             #[doc = #method_doc]
             #[doc = ""]
             #[doc = "# Arguments"]
@@ -72,12 +76,6 @@ pub fn generate_fpk_impl(column: &Path, referenced_table: &Path) -> Option<Token
                 &self,
                 conn: &mut Conn,
             ) -> diesel::QueryResult<<#referenced_table::table as diesel_builders::TableExt>::Model>
-            where
-                Self: diesel_builders::GetForeign<
-                    Conn,
-                    (#column,),
-                    (<#referenced_table::table as diesel::Table>::PrimaryKey,),
-                >,
             {
                 <Self as diesel_builders::GetForeign<
                     Conn,
