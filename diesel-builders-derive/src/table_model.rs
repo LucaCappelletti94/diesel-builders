@@ -448,18 +448,26 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Collect tables referenced by triangular relations
     let triangular_relation_tables = collect_unique_triangular_relation_tables(fields)?;
 
-    // Generate fpk! implementations for triangular relation fields
+    // Generate `fpk!` implementations for triangular relation fields
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
-    // Generate allow_tables_to_appear_in_same_query! macro calls for ancestors and triangular relations
+    // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors and triangular relations
+    let table_module_path: syn::Path = table_module.clone().into();
     let allow_same_query_calls = attributes
         .ancestors
         .iter()
         .flat_map(|paths| paths.iter())
         .chain(triangular_relation_tables.iter())
-        .map(|other| {
-            quote! {
-                diesel::allow_tables_to_appear_in_same_query!(#table_module, #other);
+        .filter_map(|other| {
+            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(
+                &table_module_path,
+                other,
+            ) {
+                Some(quote! {
+                    ::diesel::allow_tables_to_appear_in_same_query!(#table_module, #other);
+                })
+            } else {
+                None
             }
         })
         .collect::<Vec<_>>();
@@ -469,7 +477,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let new_record_type = format_as_nested_tuple(
         new_record_columns
             .iter()
-            .map(|col| quote::quote! { Option<<#col as diesel_builders::Typed>::ColumnType> }),
+            .map(|col| quote::quote! { Option<<#col as ::diesel_builders::Typed>::ColumnType> }),
     );
     let may_get_column_impls =
         may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_module);
@@ -500,7 +508,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             crate::descendant::generate_auxiliary_descendant_impls(&table_type, &ancestor_tables);
 
         quote! {
-            impl diesel_builders::Descendant for #table_type {
+            impl ::diesel_builders::Descendant for #table_type {
                 type Ancestors = (#(#ancestor_tables,)*);
                 type Root = #root;
             }
@@ -512,9 +520,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         let aux_impls = crate::descendant::generate_auxiliary_descendant_impls(&table_type, &[]);
 
         quote! {
-            impl diesel_builders::Root for #table_type {}
+            impl ::diesel_builders::Root for #table_type {}
 
-            impl diesel_builders::Descendant for #table_type {
+            impl ::diesel_builders::Descendant for #table_type {
                 type Ancestors = ();
                 type Root = Self;
             }
@@ -524,7 +532,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     };
 
     let bundlable_table_impl = quote! {
-        impl diesel_builders::BundlableTable for #table_module::table {
+        impl ::diesel_builders::BundlableTable for #table_module::table {
             type MandatoryTriangularColumns = (#(#mandatory_columns,)*);
             type DiscretionaryTriangularColumns = (#(#discretionary_columns,)*);
         }
@@ -537,8 +545,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         .map(|(i, column)| {
             let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
-                impl diesel_builders::MandatorySameAsIndex for #column {
-                    type Idx = diesel_builders::typenum::#idx;
+                impl ::diesel_builders::MandatorySameAsIndex for #column {
+                    type Idx = ::diesel_builders::typenum::#idx;
                 }
             }
         })
@@ -551,8 +559,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         .map(|(i, column)| {
             let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
             quote! {
-                impl diesel_builders::DiscretionarySameAsIndex for #column {
-                    type Idx = diesel_builders::typenum::#idx;
+                impl ::diesel_builders::DiscretionarySameAsIndex for #column {
+                    type Idx = ::diesel_builders::typenum::#idx;
                 }
             }
         })
@@ -735,7 +743,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         let foreign_cols = &key.foreign_columns;
 
         horizontal_key_impls.push(quote! {
-            impl diesel_builders::HorizontalKey for #key_column {
+            impl ::diesel_builders::HorizontalKey for #key_column {
                 type HostColumns = (#(#host_cols,)*);
                 type ForeignColumns = (#(#foreign_cols,)*);
             }
@@ -777,13 +785,13 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
             let idx_type = if let Some(i) = idx {
                 let idx_ident = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
-                quote! { diesel_builders::typenum::#idx_ident }
+                quote! { ::diesel_builders::typenum::#idx_ident }
             } else {
-                quote! { diesel_builders::typenum::U0 }
+                quote! { ::diesel_builders::typenum::U0 }
             };
 
             Some(quote! {
-                impl diesel_builders::HorizontalSameAsGroup for #table_module::#field_name {
+                impl ::diesel_builders::HorizontalSameAsGroup for #table_module::#field_name {
                     type Idx = #idx_type;
                     type MandatoryHorizontalKeys = (#(#mandatory_keys,)*);
                     type DiscretionaryHorizontalKeys = (#(#discretionary_keys,)*);
@@ -837,8 +845,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         if found_idx.is_some() {
             overrides.push(quote! {
                 {
-                    use diesel_builders::TrySetColumn;
-                    diesel_builders::TrySetColumn::<#col_path>::try_set_column(
+                    use ::diesel_builders::TrySetColumn;
+                    ::diesel_builders::TrySetColumn::<#col_path>::try_set_column(
                         &mut builder,
                         (#value).to_owned()
                     ).expect(concat!("Invalid default value for column ", stringify!(#col_path)));
@@ -853,16 +861,16 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     let buildable_table_impl = quote! {
-        impl diesel_builders::BuildableTable for #table_module::table {
+        impl ::diesel_builders::BuildableTable for #table_module::table {
             type NestedAncestorBuilders =
-                <<#table_module::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
+                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
             type NestedCompletedAncestorBuilders =
-                <<#table_module::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
+                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
 
             fn default_bundles() -> Self::NestedAncestorBuilders {
                 #[allow(unused_mut)]
                 let mut bundles = <Self::NestedAncestorBuilders as Default>::default();
-                let mut builder = diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
+                let mut builder = ::diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
                 #(#overrides)*
                 builder.into_bundles()
             }
@@ -898,7 +906,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#warnings)*
 
         // Auto-implement TableExt for the table associated with this model.
-        impl diesel_builders::TableExt for #table_module::table {
+        impl ::diesel_builders::TableExt for #table_module::table {
             type NewRecord = #new_record;
             type NewValues = #new_record_type;
             type Model = #struct_ident;

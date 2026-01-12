@@ -9,7 +9,7 @@ A type-safe builder pattern library for [Diesel](https://diesel.rs) handling com
 
 [Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types that implement the required Diesel traits (`AsExpression`, `FromSql`, `ToSql`).
 
-The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions.
+The `TableModel` derive macro generates Diesel's `table!` macro, eliminating manual schema definitions. Furthermore, its also automatically keeps track of foreign key relationships to generate `allow_tables_to_appear_in_same_query!` declarations as needed. You will still need to specify `allow_tables_to_appear_in_same_query` for second-order joins (i.e., joins involving three or more tables).
 
 ## Installation
 
@@ -234,7 +234,6 @@ pub struct Mandatory {
     mandatory_field: String,
 }
 
-diesel::allow_tables_to_appear_in_same_query!(parent_table, mandatory_table);
 fpk!(mandatory_table::parent_id -> parent_table);
 unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
 unique_index!(mandatory_table::id, mandatory_table::parent_id);
@@ -303,7 +302,6 @@ pub struct Discretionary {
     discretionary_field: String,
 }
 
-diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table);
 fpk!(discretionary_table::parent_id -> parent_table);
 unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
 unique_index!(discretionary_table::id, discretionary_table::parent_id);

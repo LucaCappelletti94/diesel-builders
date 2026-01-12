@@ -89,11 +89,36 @@ pub fn fk(input: TokenStream) -> TokenStream {
     if host_cols.len() != ref_cols.len() {
         return syn::Error::new_spanned(
             &fk_def.host_columns,
-            "Number of host columns must match number of referenced columns",
+            format!(
+                "Mismatched number of host and referenced columns: {} host columns vs {} referenced columns",
+                host_cols.len(),
+                ref_cols.len()
+            ),
         )
         .to_compile_error()
         .into();
     }
+
+    // Try to extract table paths from first columns for allow_tables_to_appear_in_same_query
+    let host_table = if let Some(syn::Type::Path(p)) = host_cols.last() {
+        crate::utils::extract_table_path_from_column(&p.path)
+    } else {
+        None
+    };
+
+    let ref_table = if let Some(syn::Type::Path(p)) = ref_cols.last() {
+        crate::utils::extract_table_path_from_column(&p.path)
+    } else {
+        None
+    };
+
+    let allow_same_query = if let (Some(h), Some(r)) = (&host_table, &ref_table)
+        && crate::utils::should_generate_allow_tables_to_appear_in_same_query(h, r)
+    {
+        Some(quote! { ::diesel::allow_tables_to_appear_in_same_query!(#h, #r); })
+    } else {
+        None
+    };
 
     // Generate HostColumn implementation for each column at its index
     let impls = host_cols.iter().enumerate().map(|(idx, host_col)| {
@@ -108,6 +133,7 @@ pub fn fk(input: TokenStream) -> TokenStream {
     });
 
     quote! {
+        #allow_same_query
         #(#impls)*
     }
     .into()
@@ -163,8 +189,20 @@ pub fn fpk(input: TokenStream) -> TokenStream {
     let column = &fpk_def.column;
     let referenced_table = &fpk_def.referenced_table;
 
+    // Try to extract host table for allow_tables_to_appear_in_same_query
+    let host_table = crate::utils::extract_table_path_from_column(column);
+
+    let allow_same_query = if let Some(h) = &host_table
+        && crate::utils::should_generate_allow_tables_to_appear_in_same_query(h, referenced_table)
+    {
+        Some(quote! { ::diesel::allow_tables_to_appear_in_same_query!(#h, #referenced_table); })
+    } else {
+        None
+    };
+
     let stream = fpk::generate_fpk_impl(column, referenced_table);
     quote! {
+        #allow_same_query
         #stream
     }
     .into()

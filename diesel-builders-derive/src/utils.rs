@@ -1,6 +1,15 @@
 //! Submodule with utilities for the diesel-builders macros.
 
 use quote::ToTokens;
+use std::collections::HashSet;
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::sync::{Mutex, OnceLock};
+
+/// Static lookup struct to track which table pairs have already had
+/// `diesel::allow_tables_to_appear_in_same_query!` generated.
+/// This prevents duplicate macro invocations which would cause compile errors.
+static GENERATED_LINKS: OnceLock<Mutex<HashSet<u64>>> = OnceLock::new();
 
 /// Convert a `snake_case` string to `CamelCase`.
 ///
@@ -68,4 +77,53 @@ pub(crate) fn camel_to_snake_case(s: &str) -> String {
         }
     }
     result
+}
+
+/// Helper to determine if we should generate `allow_tables_to_appear_in_same_query`.
+///
+/// Returns `true` if this pair hasn't been generated yet.
+/// Uses a static lookup struct (Mutex<HashSet>) to track pairs.
+pub(crate) fn should_generate_allow_tables_to_appear_in_same_query(
+    t1: &syn::Path,
+    t2: &syn::Path,
+) -> bool {
+    // Initialize the static map if needed
+    let map = GENERATED_LINKS.get_or_init(|| Mutex::new(HashSet::new()));
+
+    let Some(s1) = t1.segments.last().map(|seg| &seg.ident) else {
+        return false;
+    };
+    let Some(s2) = t2.segments.last().map(|seg| &seg.ident) else {
+        return false;
+    };
+
+    // Same table, no need to generate
+    if s1 == s2 {
+        return false;
+    }
+
+    // Sort to handle symmetry (A, B) == (B, A)
+    let pair = if s1 < s2 { (s1, s2) } else { (s2, s1) };
+
+    let hash = {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        pair.hash(&mut hasher);
+        hasher.finish()
+    };
+
+    let mut lock = map.lock().unwrap();
+    lock.insert(hash)
+}
+
+/// Extracts the table path from a column path.
+/// Assumes standard Diesel format `Module::Table::Column`.
+/// Returns the path without the last segment.
+pub(crate) fn extract_table_path_from_column(path: &syn::Path) -> Option<syn::Path> {
+    if path.segments.len() < 2 {
+        return None;
+    }
+    let mut table_path = path.clone();
+    table_path.segments.pop();
+    table_path.segments.pop_punct();
+    Some(table_path)
 }
