@@ -1,6 +1,8 @@
 //! Submodule defining a `ForeignKey` trait for Diesel tables.
 
 use tuplities::prelude::*;
+mod iter_foreign_key;
+pub use iter_foreign_key::{IterForeignKey, IterForeignKeyExt};
 
 use crate::{
     Descendant, GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple,

@@ -113,6 +113,7 @@ pub mod prelude {
     pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadManySorted};
     pub use crate::{
         builder_bundle::BundlableTable,
+        foreign_key::IterForeignKeyExt,
         get_foreign::GetForeignExt,
         nested_insert::Insert,
         set_builder::{
