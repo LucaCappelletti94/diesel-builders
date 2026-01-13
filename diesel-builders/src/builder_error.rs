@@ -117,14 +117,18 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
     fn from(error: BuilderError<E>) -> Self {
         match error {
             BuilderError::Diesel(e) => e,
-            BuilderError::Incomplete(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
-            BuilderError::Validation(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
+            BuilderError::Incomplete(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
+            BuilderError::Validation(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
         }
     }
 }
