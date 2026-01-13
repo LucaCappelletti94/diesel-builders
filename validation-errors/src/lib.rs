@@ -389,19 +389,9 @@ mod tests {
     use core::error::Error;
 
     // Dummy error for testing
-    #[derive(Debug)]
+    #[derive(Debug, thiserror::Error)]
+    #[error("dummy error")]
     struct DummyError;
-
-    impl core::fmt::Display for DummyError {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            write!(f, "dummy error")
-        }
-    }
-
-    impl core::error::Error for DummyError {}
-
-    unsafe impl Send for DummyError {}
-    unsafe impl Sync for DummyError {}
 
     #[test]
     fn test_validation_error_kind_display() {

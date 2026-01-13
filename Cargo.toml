@@ -49,6 +49,7 @@ unreachable_patterns = "forbid"
 unused_import_braces = "forbid"
 unused_must_use = "forbid"
 dead_code = "deny"
+unsafe_code = "deny"
 
 [workspace.lints.clippy]
 unreadable_literal = "allow"
