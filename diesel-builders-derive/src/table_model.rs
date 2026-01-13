@@ -21,7 +21,10 @@ use attribute_parsing::{
     extract_table_module, is_field_discretionary, is_field_infallible, is_field_mandatory,
     validate_field_attributes,
 };
-use foreign_keys::{generate_explicit_foreign_key_impls, generate_foreign_key_impls};
+use foreign_keys::{
+    generate_explicit_foreign_key_impls, generate_foreign_key_impls,
+    generate_iter_foreign_key_impls,
+};
 use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
 use proc_macro2::TokenStream;
@@ -317,17 +320,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Extract fields
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        input,
-                        "TableModel can only be derived for structs with named fields",
-                    ));
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    input,
+                    "TableModel can only be derived for structs with named fields",
+                ));
             }
-        }
+        },
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
@@ -800,6 +801,14 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let explicit_foreign_key_impls =
         generate_explicit_foreign_key_impls(&attributes.foreign_keys, &table_module)?;
 
+    // Generate IterForeignKey implementations
+    let iter_foreign_key_impls = generate_iter_foreign_key_impls(
+        fields,
+        &attributes.foreign_keys,
+        &table_module,
+        struct_ident,
+    )?;
+
     // Generate BuildableTable implementation with default overrides
     let mut overrides = Vec::new();
     for (col_path, value) in &attributes.struct_defaults {
@@ -885,6 +894,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#vertical_same_as_impls)*
         #(#foreign_key_impls)*
         #(#explicit_foreign_key_impls)*
+        #(#iter_foreign_key_impls)*
 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*

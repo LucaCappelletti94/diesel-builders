@@ -1,7 +1,7 @@
 //! Submodule defining a trait to iterate the foreign keys in a table
 //! which reference the same foreign index in another table.
 
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestTupleRef};
+use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleRef};
 
 use crate::{TypedNestedTuple, UniqueTableIndex};
 
@@ -13,13 +13,15 @@ use crate::{TypedNestedTuple, UniqueTableIndex};
 /// the in-memory representation of the table model. It does not query the
 /// database.
 pub trait IterForeignKey<
-    Idx: UniqueTableIndex<Nested: TypedNestedTuple<NestedTupleValueType: NestTupleRef>>,
+    Idx: for<'a> UniqueTableIndex<
+        Nested: TypedNestedTuple<NestedTupleValueType: NestedTupleRef<Ref<'a>: FlattenNestedTuple>>,
+    >,
 >
 {
     /// The iterator constructed by this trait, which must yield the tuples of
     /// column values corresponding to the foreign keys.
     type ForeignKeysIter<'a>: Iterator<
-        Item = <<<<Idx as NestTuple>::Nested as TypedNestedTuple>::NestedTupleValueType as NestTupleRef>::NestedRef<'a> as FlattenNestedTuple>::Flattened,
+        Item = <<<<Idx as NestTuple>::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as FlattenNestedTuple>::Flattened,
     > where
 		Idx: 'a,
 		Self: 'a;
@@ -36,7 +38,11 @@ pub trait IterForeignKeyExt {
     /// the given foreign index.
     fn iter_foreign_key<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeysIter<'_>
     where
-        Idx: UniqueTableIndex<Nested: TypedNestedTuple<NestedTupleValueType: NestTupleRef>>,
+        Idx: for<'a> UniqueTableIndex<
+            Nested: TypedNestedTuple<
+                NestedTupleValueType: NestedTupleRef<Ref<'a>: FlattenNestedTuple>,
+            >,
+        >,
         Self: IterForeignKey<Idx>,
     {
         IterForeignKey::iter_foreign_key(self)

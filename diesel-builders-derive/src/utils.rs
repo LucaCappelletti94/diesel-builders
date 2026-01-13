@@ -45,14 +45,14 @@ pub(crate) fn format_as_nested_tuple<
 >(
     items: I,
 ) -> proc_macro2::TokenStream {
-    let mut rev_items = items.into_iter().rev();
-    if let Some(first) = rev_items.next() {
-        rev_items.fold(quote::quote! { (#first,) }, |acc, item| {
-            quote::quote! { (#item, #acc) }
-        })
-    } else {
-        quote::quote! { () }
-    }
+    let mut items = items.into_iter();
+    let Some(last) = items.next_back() else {
+        return quote::quote! { () };
+    };
+
+    items.rev().fold(quote::quote! { (#last,) }, |acc, item| {
+        quote::quote! { (#item, #acc) }
+    })
 }
 
 /// Checks if the given type is an `Option`.

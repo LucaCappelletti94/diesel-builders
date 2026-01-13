@@ -350,7 +350,45 @@ assert_eq!(discretionary2, discretionary);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 6. Validation with Check Constraints
+### 6. Iterating Foreign Keys
+
+[Iterating over foreign keys](diesel-builders/tests/test_iter_foreign_key.rs) grouping by referred index.
+
+```rust
+use diesel_builders::prelude::*;
+use diesel_builders::IterForeignKeyExt;
+
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = nodes)]
+#[table_model(surrogate_key)]
+pub struct Node {
+    id: i32,
+    name: String,
+}
+
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[diesel(table_name = edges)]
+#[table_model(surrogate_key)]
+#[table_model(foreign_key(source_id, (nodes::id)))]
+#[table_model(foreign_key(target_id, (nodes::id)))]
+pub struct Edge {
+    id: i32,
+    source_id: i32,
+    target_id: i32,
+}
+
+let edge = Edge { id: 1, source_id: 10, target_id: 20 };
+
+// Iterate foreign keys pointing to nodes::id
+// The result is a list of references to the foreign key values (flattened tuples)
+let refs: Vec<_> = edge.iter_foreign_key::<(nodes::id,)>().collect();
+
+assert_eq!(refs.len(), 2);
+assert!(refs.contains(&(&10,)));
+assert!(refs.contains(&(&20,)));
+```
+
+### 7. Validation with Check Constraints
 
 [Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints.
 

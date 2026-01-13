@@ -193,3 +193,62 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     Ok(())
 }
+
+#[test]
+fn test_mixed_triangular_iter_foreign_key_coverage() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    let b_model = child_with_mixed_table::table::builder()
+        .parent_field("Value A for B")
+        .child_field("Value B")
+        .mandatory(satellite_table::table::builder().field("Value C"))
+        .discretionary(satellite_table::table::builder().field("Value D"))
+        .insert(&mut conn)?;
+
+    // 1. Verify (satellite_table::id, satellite_table::parent_id)
+    // This index corresponds to the FK (mandatory_id, id) and (discretionary_id,
+    // id) because `id` is `same_as(satellite_table::parent_id)`.
+
+    // We expect the iterator to yield flat tuples of references: (&i32, &i32)
+    {
+        use diesel_builders::IterForeignKey;
+        type Idx = (satellite_table::id, satellite_table::parent_id);
+
+        // Explicitly specifying the trait to call
+        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_key(&b_model);
+        let values: Vec<_> = iter.collect();
+
+        assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, parent_id)");
+
+        let ref_mandatory = (&b_model.mandatory_id, &b_model.id);
+        let ref_discretionary = (&b_model.discretionary_id, &b_model.id);
+
+        assert!(values.contains(&ref_mandatory));
+        assert!(values.contains(&ref_discretionary));
+    }
+
+    // 2. Verify (satellite_table::id, satellite_table::field)
+    // This corresponds to (mandatory_id, remote_mandatory_field) and
+    // (discretionary_id, remote_discretionary_field)
+    {
+        use diesel_builders::IterForeignKey;
+        type Idx = (satellite_table::id, satellite_table::field);
+
+        // Explicitly specifying the trait to call
+        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_key(&b_model);
+        let values: Vec<_> = iter.collect();
+
+        assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, field)");
+
+        let ref_mandatory =
+            (&b_model.mandatory_id, b_model.remote_mandatory_field.as_ref().unwrap());
+        let ref_discretionary =
+            (&b_model.discretionary_id, b_model.remote_discretionary_field.as_ref().unwrap());
+
+        assert!(values.contains(&ref_mandatory));
+        assert!(values.contains(&ref_discretionary));
+    }
+
+    Ok(())
+}

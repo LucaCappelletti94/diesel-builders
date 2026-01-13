@@ -3,7 +3,7 @@
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
-/// A taxonomy table with an optional parent_id that references itself
+/// A taxonomy table with an optional `parent_id` that references itself
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = taxonomy)]
 #[table_model(surrogate_key)]
@@ -81,6 +81,11 @@ fn test_taxonomy_with_parent() {
 
     // Verify parent relationship
     assert_eq!(child.parent_id(), &Some(*root.id()));
+
+    // Test iter_foreign_key - self-referential FK
+    let refs: Vec<_> = child.iter_foreign_key::<(taxonomy::id,)>().collect();
+    assert_eq!(refs.len(), 1);
+    assert!(refs.contains(&(root.id(),)));
 }
 
 #[test]
