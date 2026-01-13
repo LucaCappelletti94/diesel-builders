@@ -2,14 +2,12 @@
 
 mod shared;
 mod shared_triangular;
-use shared_triangular::*;
-
 use std::convert::Infallible;
 
-use diesel::associations::HasTable;
-use diesel::prelude::*;
+use diesel::{associations::HasTable, prelude::*};
 use diesel_builders::{IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*};
 use diesel_builders_derive::TableModel;
+use shared_triangular::*;
 
 #[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
@@ -29,9 +27,9 @@ pub struct ChildWithMandatory {
     r#type: String,
     #[same_as(satellite_table::field)]
     #[table_model(sql_name = "columns")]
-    /// The remote `field` value from table C that B references via `mandatory_id`.
-    /// This field is called `columns` to ensure that fields that have collisions
-    /// with diesel keywords are handled correctly.
+    /// The remote `field` value from table C that B references via
+    /// `mandatory_id`. This field is called `columns` to ensure that fields
+    /// that have collisions with diesel keywords are handled correctly.
     __columns: Option<String>,
     /// Another remote column from `satellite_table`.
     #[infallible]
@@ -101,10 +99,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder()
-        .parent_field("Value A")
-        .insert(&mut conn)
-        .unwrap();
+    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
 
     assert_eq!(parent.parent_field(), "Value A");
 
@@ -116,10 +111,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         .unwrap();
 
     assert_eq!(mandatory.field(), "Value C");
-    assert_eq!(
-        *mandatory.parent_id(),
-        parent.get_column::<parent_table::id>()
-    );
+    assert_eq!(*mandatory.parent_id(), parent.get_column::<parent_table::id>());
 
     let mut mandatory_builder =
         satellite_table::table::builder().another_field("Original another remote field".to_owned());
@@ -145,9 +137,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     // have remained unchanged.
     assert_eq!(child_builder, saved_child_builder);
 
-    child_builder
-        .try_mandatory_ref(mandatory_builder.clone())?
-        .type_ref("Value B");
+    child_builder.try_mandatory_ref(mandatory_builder.clone())?.type_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
     let child = child_builder
@@ -164,10 +154,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     let associated_mandatory: Satellite = child.mandatory(&mut conn)?;
     assert_eq!(associated_mandatory.field(), "After setting mandatory");
-    assert_eq!(
-        associated_mandatory.another_field().as_deref(),
-        Some("Another remote field")
-    );
+    assert_eq!(associated_mandatory.another_field().as_deref(), Some("Another remote field"));
     assert_eq!(
         *associated_mandatory.parent_id(),
         child.get_column::<child_with_satellite_table::id>()
@@ -200,10 +187,7 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder()
-        .parent_field("Value A")
-        .insert(&mut conn)
-        .unwrap();
+    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
 
     assert_eq!(parent.parent_field(), "Value A");
 
@@ -215,10 +199,7 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
         .unwrap();
 
     assert_eq!(mandatory.field(), "Value C");
-    assert_eq!(
-        *mandatory.parent_id(),
-        parent.get_column::<parent_table::id>()
-    );
+    assert_eq!(*mandatory.parent_id(), parent.get_column::<parent_table::id>());
 
     let mut mandatory_builder =
         satellite_table::table::builder().another_field("Original another remote field".to_owned());
@@ -240,10 +221,7 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     child_builder.try_mandatory_ref(mandatory_builder.clone())?;
 
     // Using the generated trait method for more ergonomic code
-    let child = child_builder
-        .try_mandatory(mandatory_builder)?
-        .insert(&mut conn)
-        .unwrap();
+    let child = child_builder.try_mandatory(mandatory_builder)?.insert(&mut conn).unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");
@@ -268,8 +246,9 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
 
 #[test]
 fn test_mandatory_triangular_relation_missing_builder_error() {
-    use diesel_builders::{CompletedTableBuilderBundle, TableBuilderBundle};
     use std::convert::TryFrom;
+
+    use diesel_builders::{CompletedTableBuilderBundle, TableBuilderBundle};
 
     // Create a TableBuilderBundle without setting the mandatory associated builder
     let b_bundle = TableBuilderBundle::<child_with_satellite_table::table>::default();
@@ -280,10 +259,7 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
 
     // Verify that the conversion fails with the expected error message
     let err = result.unwrap_err();
-    assert_eq!(
-        err,
-        IncompleteBuilderError::MissingMandatoryTriangularField("mandatory_id")
-    );
+    assert_eq!(err, IncompleteBuilderError::MissingMandatoryTriangularField("mandatory_id"));
 }
 
 #[test]
@@ -303,9 +279,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match
     assert_eq!(
-        deserialized
-            .may_get_column_ref::<child_with_satellite_table::r#type>()
-            .map(String::as_str),
+        deserialized.may_get_column_ref::<child_with_satellite_table::r#type>().map(String::as_str),
         Some("Serialized B")
     );
     assert_eq!(

@@ -1,12 +1,13 @@
 //! Submodule providing the `SetBuilder` trait.
 
+use diesel::Table;
+use tuplities::prelude::NestedTupleInto;
+
 use crate::{
     BuildableTable, DiscretionarySameAsIndex, ForeignPrimaryKey, GetColumnExt, GetNestedColumns,
     HasTableExt, MandatorySameAsIndex, SetColumn, SetNestedColumns, TableBuilder, TableExt,
     TrySetColumn, TrySetNestedColumns, TypedColumn, ValidateColumn, ValidateNestedColumns,
 };
-use diesel::Table;
-use tuplities::prelude::NestedTupleInto;
 
 /// Trait for setting a mandatory triangular builder relationship.
 ///
@@ -157,9 +158,9 @@ where
 /// Extension trait for `SetMandatoryBuilder` that allows specifying the column
 /// at the method level.
 ///
-/// This trait provides a cleaner API where the relationship type is specified as a
-/// type parameter on the method rather than on the trait itself. It enables
-/// method chaining with mandatory relationships.
+/// This trait provides a cleaner API where the relationship type is specified
+/// as a type parameter on the method rather than on the trait itself. It
+/// enables method chaining with mandatory relationships.
 pub trait SetMandatoryBuilderExt: Sized {
     /// Sets the mandatory builder for the specified column.
     ///
@@ -238,7 +239,8 @@ impl<T> SetDiscretionaryBuilderExt for T {}
 /// column at the method level.
 ///
 /// This trait provides a failable API for setting mandatory relationships.
-/// Use this when you need to handle validation errors during relationship setup.
+/// Use this when you need to handle validation errors during relationship
+/// setup.
 pub trait TrySetMandatoryBuilderExt: HasTableExt {
     /// Attempts to set the mandatory builder for the specified column.
     ///
@@ -262,7 +264,8 @@ pub trait TrySetMandatoryBuilderExt: HasTableExt {
         <Self as TrySetMandatoryBuilder<Key>>::try_set_mandatory_builder(self, builder)
     }
 
-    /// Attempts to set the mandatory builder for the specified column (consuming version).
+    /// Attempts to set the mandatory builder for the specified column
+    /// (consuming version).
     ///
     /// # Errors
     ///

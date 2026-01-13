@@ -2,21 +2,18 @@
 
 use std::ops::Sub;
 
-use crate::builder_bundle::RecursiveBundleInsert;
-use crate::{
-    BuilderError, GetNestedColumns, HasNestedTables, HasTableExt, Insert, NestedTables,
-    OptionalRef, TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection,
-    TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
-};
-use diesel::Table;
-use diesel::associations::HasTable;
+use diesel::{Table, associations::HasTable};
 use tuplities::prelude::{
     FlattenNestedTuple, NestTuple, NestedTupleIndex, NestedTupleIndexMut, NestedTupleTryFrom,
 };
 
 use crate::{
-    AncestorOfIndex, BuildableTable, BuilderResult, BundlableTable, CompletedTableBuilderBundle,
-    DescendantOf, IncompleteBuilderError, TableBuilder, TableExt, TrySetColumn, TypedColumn,
+    AncestorOfIndex, BuildableTable, BuilderError, BuilderResult, BundlableTable,
+    CompletedTableBuilderBundle, DescendantOf, GetNestedColumns, HasNestedTables, HasTableExt,
+    IncompleteBuilderError, Insert, NestedTables, OptionalRef, TableBuilder, TableExt,
+    TrySetColumn, TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection,
+    TypedColumn, TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
+    builder_bundle::RecursiveBundleInsert,
 };
 
 /// A completed builder for creating insertable models for a Diesel table and
@@ -29,15 +26,13 @@ pub struct RecursiveTableBuilder<T: diesel::Table, Depth, NestedBundles> {
 }
 
 impl<T: diesel::Table, Depth, NestedBundles> RecursiveTableBuilder<T, Depth, NestedBundles> {
-    /// Create a new `RecursiveTableBuilder` from the provided nested builder bundles.
+    /// Create a new `RecursiveTableBuilder` from the provided nested builder
+    /// bundles.
     ///
-    /// This is a private convenience constructor used during `TryFrom` conversions
-    /// when assembling a builder from its nested parts.
+    /// This is a private convenience constructor used during `TryFrom`
+    /// conversions when assembling a builder from its nested parts.
     fn from_nested_bundles(nested_bundles: NestedBundles) -> Self {
-        RecursiveTableBuilder {
-            nested_bundles,
-            _markers: std::marker::PhantomData,
-        }
+        RecursiveTableBuilder { nested_bundles, _markers: std::marker::PhantomData }
     }
 }
 
@@ -122,9 +117,7 @@ where
 
     #[inline]
     fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
-        self.nested_bundles
-            .nested_index()
-            .validate_column_in_context(value)
+        self.nested_bundles.nested_index().validate_column_in_context(value)
     }
 }
 
@@ -152,9 +145,7 @@ where
         }
         // We try to set eventual vertically-same-as columns in nested builders first.
         self.try_set_homogeneous_nested_columns(&value)?;
-        self.nested_bundles
-            .nested_index_mut()
-            .try_set_column(value)?;
+        self.nested_bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)
     }
 }
@@ -176,7 +167,8 @@ where
     }
 }
 
-// Recursive case: nested 2-tuple (Head, Tail) where Tail is itself a nested tuple
+// Recursive case: nested 2-tuple (Head, Tail) where Tail is itself a nested
+// tuple
 impl<T, Depth, Error, Conn, Head, Tail> RecursiveBuilderInsert<Error, Conn>
     for RecursiveTableBuilder<T, Depth, (Head, Tail)>
 where

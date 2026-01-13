@@ -1,12 +1,13 @@
-//! Submodule defining and implementing traits for non-composite primary key tables.
+//! Submodule defining and implementing traits for non-composite primary key
+//! tables.
 
+use tuplities::prelude::*;
+
+use super::{NestedTables, Tables};
 use crate::{
     Columns, HasPrimaryKeyColumn, TupleGetNestedColumns, TupleMayGetNestedColumns,
     columns::NestedColumns,
 };
-use tuplities::prelude::*;
-
-use super::{NestedTables, Tables};
 
 /// Trait for nested tables that have non-composite primary keys.
 pub trait NonCompositePrimaryKeyNestedTables:

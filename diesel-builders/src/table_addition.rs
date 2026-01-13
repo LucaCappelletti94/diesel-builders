@@ -18,7 +18,8 @@ pub trait TableExt:
     const TABLE_NAME: &'static str;
     /// The associated Diesel model type for this table.
     type Model: TableModel<Table = Self>;
-    /// The nested columns necessary to execute insert operations for this table.
+    /// The nested columns necessary to execute insert operations for this
+    /// table.
     type NewRecord: NonEmptyNestedProjection<
             Table = Self,
             NestedTupleColumnType: IntoNestedTupleOption<IntoOptions = Self::NewValues>,

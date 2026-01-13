@@ -1,8 +1,7 @@
 //! Reproduction case for generic insert type mismatch.
 
 use diesel::associations::HasTable;
-use diesel_builders::prelude::*;
-use diesel_builders::{BuilderResult, TableBuilder};
+use diesel_builders::{BuilderResult, TableBuilder, prelude::*};
 
 /// Generic insert function using `TableBuilder`
 ///

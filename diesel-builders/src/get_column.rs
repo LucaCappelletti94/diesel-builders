@@ -14,7 +14,8 @@ pub trait GetColumn<Column: TypedColumn> {
 
 /// Trait providing a failable getter for a specific Diesel column.
 pub trait MayGetColumn<C: TypedColumn> {
-    /// Get the reference of the specified column, returning `None` if not present.
+    /// Get the reference of the specified column, returning `None` if not
+    /// present.
     fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
     where
         C::Table: 'a;
@@ -78,7 +79,8 @@ pub trait MayGetColumnExt {
         <Self as MayGetColumn<Column>>::may_get_column_ref(self)
     }
 
-    /// Get the owned value of the specified column, returning `None` if not present.
+    /// Get the owned value of the specified column, returning `None` if not
+    /// present.
     fn may_get_column<Column>(&self) -> Option<Column::ColumnType>
     where
         Column: TypedColumn,

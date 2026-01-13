@@ -1,4 +1,5 @@
-//! Submodule defining and implementing traits for tuples of `TableModel` structs.
+//! Submodule defining and implementing traits for tuples of `TableModel`
+//! structs.
 
 use tuplities::prelude::*;
 

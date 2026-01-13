@@ -30,10 +30,7 @@ impl core::fmt::Display for IncompleteBuilderError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             IncompleteBuilderError::MissingMandatoryTriangularField(horizontal_key_name) => {
-                write!(
-                    f,
-                    "Missing mandatory triangular builder field: `{horizontal_key_name}`"
-                )
+                write!(f, "Missing mandatory triangular builder field: `{horizontal_key_name}`")
             }
             IncompleteBuilderError::MissingMandatoryField(field_name) => {
                 write!(f, "Missing mandatory field: `{field_name}`")
@@ -120,14 +117,18 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
     fn from(error: BuilderError<E>) -> Self {
         match error {
             BuilderError::Diesel(e) => e,
-            BuilderError::Incomplete(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
-            BuilderError::Validation(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
+            BuilderError::Incomplete(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
+            BuilderError::Validation(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
         }
     }
 }

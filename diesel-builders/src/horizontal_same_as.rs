@@ -1,8 +1,7 @@
 //! Submodule defining an `HorizontalSameAs` trait for Diesel columns.
 
-use typenum::Unsigned;
-
 use tuplities::prelude::*;
+use typenum::Unsigned;
 
 use crate::{
     ForeignPrimaryKey, HasPrimaryKeyColumn, NestedBuildableTables, TableExt, TypedNestedTuple,
@@ -40,8 +39,10 @@ where
 ///
 /// # Type Parameters
 ///
-/// * `HostColumns`: Columns in the current table that mirror values from foreign columns
-/// * `ForeignColumns`: Columns in referenced tables that provide the source values
+/// * `HostColumns`: Columns in the current table that mirror values from
+///   foreign columns
+/// * `ForeignColumns`: Columns in referenced tables that provide the source
+///   values
 pub trait HorizontalKey:
     ForeignPrimaryKey<ReferencedTable: DescendantWithSelf, Table: HasPrimaryKeyColumn>
 {
@@ -116,9 +117,11 @@ pub trait HorizontalNestedKeys<T>: NestedColumns {
                 SameDepth = <Self as NestedColumns>::NestedColumnNames,
             >,
         >;
-    /// Tuple of tuples of host columns associated to each horizontal same-as key.
+    /// Tuple of tuples of host columns associated to each horizontal same-as
+    /// key.
     type NestedHostColumnsMatrix: NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>;
-    /// Tuple of tuples of foreign columns associated to each horizontal same-as key.
+    /// Tuple of tuples of foreign columns associated to each horizontal same-as
+    /// key.
     type NestedForeignColumnsMatrix: NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>;
 }
 

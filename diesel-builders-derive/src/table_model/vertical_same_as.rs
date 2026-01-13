@@ -4,8 +4,10 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::punctuated::Punctuated;
 
-use super::attribute_parsing::{TableModelAttributes, extract_same_as_columns};
-use super::tokens_to_string;
+use super::{
+    attribute_parsing::{TableModelAttributes, extract_same_as_columns},
+    tokens_to_string,
+};
 use crate::utils::format_as_nested_tuple;
 
 /// Generate `VerticalSameAsGroup` implementations for all columns in the table.
@@ -72,7 +74,8 @@ pub fn generate_vertical_same_as_impls(
                     continue;
                 }
 
-                // Extract the table name from the column path (e.g., parent_table from parent_table::column)
+                // Extract the table name from the column path (e.g., parent_table from
+                // parent_table::column)
                 if column_path.segments.len() < 2 {
                     return Err(syn::Error::new_spanned(
                         column_path,

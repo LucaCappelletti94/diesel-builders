@@ -14,17 +14,13 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     setup_animal_tables(&mut conn)?;
 
     // Insert into animals table
-    let animal = animals::table::builder()
-        .try_name("Generic Animal")?
-        .insert(&mut conn)?;
+    let animal = animals::table::builder().try_name("Generic Animal")?.insert(&mut conn)?;
 
     assert_eq!(animal.name(), "Generic Animal");
 
     // Insert into dogs table (extends animals)
-    let dog = dogs::table::builder()
-        .try_name("Max")?
-        .breed("Golden Retriever")
-        .insert(&mut conn)?;
+    let dog =
+        dogs::table::builder().try_name("Max")?.breed("Golden Retriever").insert(&mut conn)?;
 
     assert_eq!(dog.breed(), "Golden Retriever");
 
@@ -92,7 +88,8 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a builder for a Puppy that extends Dogs which extends Animals (chain inheritance)
+    // Create a builder for a Puppy that extends Dogs which extends Animals (chain
+    // inheritance)
     let builder = puppies::table::builder()
         .try_name("Serialized Puppy")?
         .breed("Beagle")
@@ -106,10 +103,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
         serde_json::from_str(&serialized)?;
 
     // Verify the values match - age_months is the only field directly in NewPuppy
-    assert_eq!(
-        deserialized.may_get_column_ref::<puppies::age_months>(),
-        Some(&6)
-    );
+    assert_eq!(deserialized.may_get_column_ref::<puppies::age_months>(), Some(&6));
 
     Ok(())
 }

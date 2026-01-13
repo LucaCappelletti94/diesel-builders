@@ -15,7 +15,13 @@ diesel::table! {
     }
 }
 
-// 2 columns vs 1 column
-fk!((posts::user_id, posts::title) -> (users::id));
+#[derive(TableModel, Queryable, Selectable, Identifiable)]
+#[diesel(table_name = posts)]
+#[table_model(foreign_key((user_id, title), (users::id)))]
+pub struct Post {
+    pub id: i32,
+    pub user_id: i32,
+    pub title: String,
+}
 
 fn main() {}

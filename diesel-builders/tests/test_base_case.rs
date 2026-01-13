@@ -4,10 +4,10 @@
 
 mod shared;
 mod shared_animals;
+use std::{rc::Rc, sync::Arc};
+
 use diesel_builders::prelude::*;
 use shared_animals::*;
-use std::rc::Rc;
-use std::sync::Arc;
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
@@ -19,25 +19,14 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test MayGetColumn derive - optional fields start as None
     assert_eq!(builder.may_get_column_ref::<animals::name>(), None);
-    assert_eq!(
-        builder.may_get_column_ref::<animals::description>(),
-        Some(&None)
-    );
+    assert_eq!(builder.may_get_column_ref::<animals::description>(), Some(&None));
 
     // Test generated TrySetAnimalsName helper trait - fallible setter by reference
     builder.try_name_ref("Max")?;
 
     // Test MayGetColumn derive - verifying field is set after mutation
-    assert_eq!(
-        builder
-            .may_get_column_ref::<animals::name>()
-            .map(String::as_str),
-        Some("Max")
-    );
-    assert_eq!(
-        builder.may_get_column_ref::<animals::description>(),
-        Some(&None)
-    );
+    assert_eq!(builder.may_get_column_ref::<animals::name>().map(String::as_str), Some("Max"));
+    assert_eq!(builder.may_get_column_ref::<animals::description>(), Some(&None));
 
     let mut animal = builder.insert(&mut conn)?;
 
@@ -57,27 +46,21 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         .try_description("A friendly dog".to_owned())?
         .insert(&mut conn)?;
 
-    assert_eq!(
-        animal_with_desc.description().as_deref(),
-        Some("A friendly dog")
-    );
+    assert_eq!(animal_with_desc.description().as_deref(), Some("A friendly dog"));
 
     // Test with description explicitly set to None (NULL in database)
-    let animal_no_desc = animals::table::builder()
-        .try_name("Whiskers")?
-        .try_description(None)?
-        .insert(&mut conn)?;
+    let animal_no_desc =
+        animals::table::builder().try_name("Whiskers")?.try_description(None)?.insert(&mut conn)?;
 
     assert!(animal_no_desc.description().is_none());
 
-    // We attempt to query the inserted animal to ensure everything worked correctly.
+    // We attempt to query the inserted animal to ensure everything worked
+    // correctly.
     let queried_animal: Animal = Animal::find(animal.id(), &mut conn)?;
     assert_eq!(animal, queried_animal);
 
     // Test chained builder pattern with GetColumn derive
-    let another_animal = animals::table::builder()
-        .try_name("Charlie")?
-        .insert(&mut conn)?;
+    let another_animal = animals::table::builder().try_name("Charlie")?.insert(&mut conn)?;
 
     // Test GetColumn derive on multiple fields
     assert_eq!(another_animal.name(), "Charlie");
@@ -147,10 +130,7 @@ fn test_description_too_long_rejected() {
 fn test_none_description_allowed() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = animals::table::builder();
     builder.try_description_ref(None)?;
-    assert_eq!(
-        builder.may_get_column_ref::<animals::description>(),
-        Some(&None)
-    );
+    assert_eq!(builder.may_get_column_ref::<animals::description>(), Some(&None));
     Ok(())
 }
 
@@ -171,9 +151,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match
     assert_eq!(
-        deserialized
-            .may_get_column_ref::<animals::name>()
-            .map(String::as_str),
+        deserialized.may_get_column_ref::<animals::name>().map(String::as_str),
         Some("Serialized Animal")
     );
     assert_eq!(

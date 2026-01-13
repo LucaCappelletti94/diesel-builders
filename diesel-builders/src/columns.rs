@@ -17,7 +17,6 @@ pub use non_empty_nested_projection::NonEmptyNestedProjection;
 pub use non_empty_projection::NonEmptyProjection;
 pub use tuple_eq_all::TupleEqAll;
 pub use tuple_to_order::TupleToOrder;
-
 use tuplities::prelude::*;
 
 use crate::TypedNestedTuple;

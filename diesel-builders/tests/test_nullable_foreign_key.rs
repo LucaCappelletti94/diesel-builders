@@ -29,9 +29,7 @@ fn test_nullable_foreign_key_not_found() -> Result<(), Box<dyn std::error::Error
         .execute(&mut conn)?;
     diesel::sql_query("CREATE TABLE child_table (id INTEGER PRIMARY KEY NOT NULL, parent_id INTEGER REFERENCES parent_table(id))").execute(&mut conn)?;
 
-    let child = child_table::table::builder()
-        .parent_id(None)
-        .insert(&mut conn)?;
+    let child = child_table::table::builder().parent_id(None).insert(&mut conn)?;
 
     // This should fail with NotFound because parent_id is None
     let result = child.foreign::<(child_table::parent_id,), (parent_table::id,)>(&mut conn);

@@ -50,8 +50,7 @@ pub mod nested_buildable_tables;
 pub mod table_builder;
 pub use buildable_table::*;
 pub use nested_buildable_tables::*;
-pub use table_builder::RecursiveBuilderInsert;
-pub use table_builder::TableBuilder;
+pub use table_builder::{RecursiveBuilderInsert, TableBuilder};
 pub mod set_builder;
 pub use set_builder::*;
 pub mod nested_insert;
@@ -96,9 +95,7 @@ pub mod prelude {
 
     // Re-export commonly used macros from diesel_builders_derive
     // Note: GetColumn is now automatically implemented by TableModel derive
-    pub use diesel_builders_derive::{TableModel, fk, fpk, index, unique_index};
-
-    pub use crate::get_foreign::GetForeignExt;
+    pub use diesel_builders_derive::{TableModel, index, unique_index};
 
     // Table relationship traits
     pub use crate::ancestors::{
@@ -114,13 +111,14 @@ pub mod prelude {
     // Builder setter extension traits (always use Ext variants)
     /// Query loading traits
     pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadManySorted};
-    pub use crate::set_builder::{
-        SetDiscretionaryBuilderExt, SetDiscretionaryModelExt, SetMandatoryBuilderExt,
-        TrySetDiscretionaryBuilderExt, TrySetDiscretionaryModelExt, TrySetMandatoryBuilderExt,
-    };
     pub use crate::{
         builder_bundle::BundlableTable,
+        get_foreign::GetForeignExt,
         nested_insert::Insert,
+        set_builder::{
+            SetDiscretionaryBuilderExt, SetDiscretionaryModelExt, SetMandatoryBuilderExt,
+            TrySetDiscretionaryBuilderExt, TrySetDiscretionaryModelExt, TrySetMandatoryBuilderExt,
+        },
         set_column::{SetColumnExt, TrySetColumnExt, ValidateColumn},
         table_addition::TableExt,
     };

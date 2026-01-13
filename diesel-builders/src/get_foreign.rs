@@ -1,14 +1,12 @@
 //! Submodule defining the `GetForeign` trait for Diesel table models.
 
-use tuplities::prelude::NestedTupleInto;
-use tuplities::prelude::{IntoNestedTupleOption, NestedTupleOption};
+use tuplities::prelude::{IntoNestedTupleOption, NestedTupleInto, NestedTupleOption};
 
-use crate::TypedNestedTuple;
-use crate::UniqueTableIndex;
-use crate::columns::NonEmptyNestedProjection;
-use crate::columns::NonEmptyProjection;
-use crate::load_query_builder::LoadFirst;
-use crate::{GetNestedColumns, TableExt};
+use crate::{
+    GetNestedColumns, TableExt, TypedNestedTuple, UniqueTableIndex,
+    columns::{NonEmptyNestedProjection, NonEmptyProjection},
+    load_query_builder::LoadFirst,
+};
 
 /// The `GetForeign` trait allows retrieving the foreign table
 /// model curresponding to specified foreign columns from a host table model.
@@ -23,12 +21,13 @@ pub trait GetForeign<
     ///
     /// # Arguments
     ///
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query.
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails or if no matching record is found.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
     fn foreign(
         &self,
         conn: &mut Conn,
@@ -68,12 +67,13 @@ pub trait GetForeignExt<Conn> {
     ///
     /// # Arguments
     ///
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query.
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails or if no matching record is found.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
     fn foreign<HostColumns, ForeignColumns>(
         &self,
         conn: &mut Conn,

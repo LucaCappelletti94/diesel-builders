@@ -43,8 +43,8 @@ pub trait ValidateColumn<C: Typed> {
     }
 
     #[inline]
-    /// Validate the value of the specified column, given the context of the entire
-    /// new record being built.
+    /// Validate the value of the specified column, given the context of the
+    /// entire new record being built.
     ///
     /// # Errors
     ///

@@ -98,9 +98,7 @@ where
 
     #[inline]
     fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
-        self.bundles
-            .nested_index()
-            .validate_column_in_context(value)
+        self.bundles.nested_index().validate_column_in_context(value)
     }
 }
 
@@ -181,9 +179,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_validate_nested_columns(&converted_columns)?;
-        self.bundles
-            .nested_index_mut()
-            .try_set_mandatory_builder(builder)?;
+        self.bundles.nested_index_mut().try_set_mandatory_builder(builder)?;
         self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
@@ -212,9 +208,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_set_nested_columns(converted_columns);
-        self.bundles
-            .nested_index_mut()
-            .set_mandatory_builder(builder);
+        self.bundles.nested_index_mut().set_mandatory_builder(builder);
         self
     }
 }
@@ -243,9 +237,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_validate_nested_columns(&converted_columns)?;
-        self.bundles
-            .nested_index_mut()
-            .try_set_discretionary_builder(builder)?;
+        self.bundles.nested_index_mut().try_set_discretionary_builder(builder)?;
         self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
@@ -273,9 +265,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_set_nested_columns(converted_columns);
-        self.bundles
-            .nested_index_mut()
-            .set_discretionary_builder(builder);
+        self.bundles.nested_index_mut().set_discretionary_builder(builder);
         self
     }
 }

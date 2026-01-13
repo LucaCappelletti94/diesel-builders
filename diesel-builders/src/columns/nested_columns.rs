@@ -2,8 +2,9 @@
 
 use std::fmt::Debug;
 
-use crate::{TypedColumn, TypedNestedTuple};
 use tuplities::prelude::FlattenNestedTuple;
+
+use crate::{TypedColumn, TypedNestedTuple};
 
 /// Trait representing a nested tuple of columns.
 ///
@@ -14,7 +15,8 @@ pub trait NestedColumns: TypedNestedTuple + Default + Copy {
     type NestedTables: FlattenNestedTuple;
     /// The of the columns as a nested tuple of strings.
     type NestedColumnNames: FlattenNestedTuple + Debug;
-    /// Const representing the names of the columns as a nested tuple of strings.
+    /// Const representing the names of the columns as a nested tuple of
+    /// strings.
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames;
 }
 

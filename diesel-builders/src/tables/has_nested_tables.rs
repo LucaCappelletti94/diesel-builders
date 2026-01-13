@@ -2,9 +2,8 @@
 
 use diesel::associations::HasTable;
 
-use crate::TableExt;
-
 use super::NestedTables;
+use crate::TableExt;
 
 /// Trait for objects that have an associated nested tables structure.
 pub trait HasNestedTables {

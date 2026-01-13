@@ -142,10 +142,11 @@ where
 {
 }
 
-/// A trait for Diesel nested columns collections that are a tail of a foreign key from
-/// the beginning up to a given index. For instance, if the index is [`U0`](typenum::U0), then the
-/// tail includes all columns; if the index is [`U1`](typenum::U1), then the tail includes all columns
-/// except the first one, and so on.
+/// A trait for Diesel nested columns collections that are a tail of a foreign
+/// key from the beginning up to a given index. For instance, if the index is
+/// [`U0`](typenum::U0), then the tail includes all columns; if the index is
+/// [`U1`](typenum::U1), then the tail includes all columns except the first
+/// one, and so on.
 pub trait NestedForeignKeyTail<
     Idx,
     ReferencedColumns: NestedTableIndexTail<Idx, FullReferencedIndex>,

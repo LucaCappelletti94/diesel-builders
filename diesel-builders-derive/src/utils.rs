@@ -1,10 +1,12 @@
 //! Submodule with utilities for the diesel-builders macros.
 
+use std::{
+    collections::HashSet,
+    hash::{Hash, Hasher},
+    sync::{Mutex, OnceLock},
+};
+
 use quote::ToTokens;
-use std::collections::HashSet;
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::sync::{Mutex, OnceLock};
 
 /// Static lookup struct to track which table pairs have already had
 /// `diesel::allow_tables_to_appear_in_same_query!` generated.
@@ -79,7 +81,8 @@ pub(crate) fn camel_to_snake_case(s: &str) -> String {
     result
 }
 
-/// Helper to determine if we should generate `allow_tables_to_appear_in_same_query`.
+/// Helper to determine if we should generate
+/// `allow_tables_to_appear_in_same_query`.
 ///
 /// Returns `true` if this pair hasn't been generated yet.
 /// Uses a static lookup struct to track pairs.

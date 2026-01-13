@@ -16,6 +16,7 @@ pub struct Parent {
 #[derive(Queryable, Selectable, Identifiable, TableModel, PartialEq, Eq, Debug)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = satellite_table)]
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
 /// Model for mandatory table.
 pub struct Satellite {
     /// Primary key.
@@ -32,7 +33,6 @@ pub struct Satellite {
 unique_index!(satellite_table::id, satellite_table::field);
 unique_index!(satellite_table::id, satellite_table::another_field);
 unique_index!(satellite_table::id, satellite_table::parent_id);
-fk!((satellite_table::parent_id) -> (parent_table::id));
 
 /// Setups the triangular relation tables in the given connection.
 ///

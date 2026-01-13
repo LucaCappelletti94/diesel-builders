@@ -1,8 +1,7 @@
 //! Submodule defining and implementing the `NonEmptyNestedProjection` trait.
 
-use crate::TypedColumn;
-
 use super::NestedColumns;
+use crate::TypedColumn;
 
 /// Trait for nested columns tuples that represent non-empty projections.
 pub trait NonEmptyNestedProjection: NestedColumns {

@@ -2,34 +2,24 @@
 //! a table record new values and its mandatory and discretionary associated
 //! builders.
 
-use diesel::Column;
-use diesel::associations::HasTable;
+use diesel::{Column, associations::HasTable};
 
 mod completed_table_builder_bundle;
 mod serde;
-pub use completed_table_builder_bundle::CompletedTableBuilderBundle;
-pub use completed_table_builder_bundle::RecursiveBundleInsert;
+pub use completed_table_builder_bundle::{CompletedTableBuilderBundle, RecursiveBundleInsert};
+use tuplities::prelude::*;
 
-use crate::OptionalRef;
-use crate::SetColumn;
-use crate::SetDiscretionarySameAsNestedColumns;
-use crate::SetMandatorySameAsNestedColumns;
-use crate::TrySetDiscretionarySameAsColumn;
-use crate::TrySetDiscretionarySameAsNestedColumns;
-use crate::TrySetMandatorySameAsColumn;
-use crate::TrySetMandatorySameAsNestedColumns;
-use crate::ValidateColumn;
-use crate::columns::NestedColumns;
-use crate::horizontal_same_as_group::HorizontalSameAsGroupExt;
-use crate::tables::NonCompositePrimaryKeyNestedTables;
 use crate::{
     BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
-    MandatorySameAsIndex, NestedBuildableTables, NestedTableModels, NestedTables,
-    SetDiscretionaryBuilder, SetMandatoryBuilder, TableBuilder, TrySetDiscretionaryBuilder,
-    TrySetMandatoryBuilder, TupleMayGetNestedColumns, TypedNestedTuple,
+    MandatorySameAsIndex, MayGetColumn, NestedBuildableTables, NestedTableModels, NestedTables,
+    OptionalRef, SetColumn, SetDiscretionaryBuilder, SetDiscretionarySameAsNestedColumns,
+    SetMandatoryBuilder, SetMandatorySameAsNestedColumns, TableBuilder, TableExt, TrySetColumn,
+    TrySetDiscretionaryBuilder, TrySetDiscretionarySameAsColumn,
+    TrySetDiscretionarySameAsNestedColumns, TrySetMandatoryBuilder, TrySetMandatorySameAsColumn,
+    TrySetMandatorySameAsNestedColumns, TupleGetNestedColumns, TupleMayGetNestedColumns,
+    TypedColumn, TypedNestedTuple, ValidateColumn, columns::NestedColumns,
+    horizontal_same_as_group::HorizontalSameAsGroupExt, tables::NonCompositePrimaryKeyNestedTables,
 };
-use crate::{MayGetColumn, TableExt, TrySetColumn, TupleGetNestedColumns, TypedColumn};
-use tuplities::prelude::*;
 
 /// Trait representing a Diesel table with associated mandatory and
 /// discretionary triangular same-as columns.
@@ -313,10 +303,8 @@ where
         &mut self,
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
-        if let Some(builder) = self
-            .nested_discretionary_associated_builders
-            .nested_index_mut()
-            .as_mut()
+        if let Some(builder) =
+            self.nested_discretionary_associated_builders.nested_index_mut().as_mut()
         {
             builder.try_set_column(value)?;
         }
@@ -376,9 +364,7 @@ where
         &mut self,
         builder: TableBuilder<C::ReferencedTable>,
     ) -> &mut Self {
-        *self
-            .nested_discretionary_associated_builders
-            .nested_index_mut() = Some(builder);
+        *self.nested_discretionary_associated_builders.nested_index_mut() = Some(builder);
         self
     }
 }
@@ -398,9 +384,7 @@ where
         &mut self,
         builder: TableBuilder<Key::ReferencedTable>,
     ) -> Result<&mut Self, <Self::Table as TableExt>::Error> {
-        *self
-            .nested_discretionary_associated_builders
-            .nested_index_mut() = Some(builder);
+        *self.nested_discretionary_associated_builders.nested_index_mut() = Some(builder);
         Ok(self)
     }
 }

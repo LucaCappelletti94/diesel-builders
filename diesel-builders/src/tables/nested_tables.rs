@@ -1,7 +1,8 @@
 //! Submodule defining and implementing the `NestedTables` trait.
 
-use crate::{HasNestedTables, NestedTableModels, TableExt, columns::NestedColumnsCollection};
 use tuplities::prelude::*;
+
+use crate::{HasNestedTables, NestedTableModels, TableExt, columns::NestedColumnsCollection};
 
 /// Trait for recursive definition of the `Tables` trait.
 pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
@@ -49,16 +50,12 @@ where
     (Option<Head::Model>, Tail::OptionalNestedModels):
         FlattenNestedTuple + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
     (Head::NewValues, Tail::NestedNewValues): FlattenNestedTuple,
-    (
-        Head::NestedPrimaryKeyColumns,
-        Tail::NestedPrimaryKeyColumnsCollection,
-    ): NestedColumnsCollection,
+    (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection):
+        NestedColumnsCollection,
 {
     type NestedModels = (Head::Model, Tail::NestedModels);
     type OptionalNestedModels = (Option<Head::Model>, Tail::OptionalNestedModels);
     type NestedNewValues = (Head::NewValues, Tail::NestedNewValues);
-    type NestedPrimaryKeyColumnsCollection = (
-        Head::NestedPrimaryKeyColumns,
-        Tail::NestedPrimaryKeyColumnsCollection,
-    );
+    type NestedPrimaryKeyColumnsCollection =
+        (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection);
 }

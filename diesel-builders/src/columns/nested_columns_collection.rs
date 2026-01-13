@@ -1,8 +1,7 @@
 //! Submodule defining and implementing the `NestedColumnsCollection` trait.
 
-use crate::TypedNestedTupleCollection;
-
 use super::NestedColumns;
+use crate::TypedNestedTupleCollection;
 
 /// A trait representing a nested collection of nested Diesel columns.
 pub trait NestedColumnsCollection: TypedNestedTupleCollection {}

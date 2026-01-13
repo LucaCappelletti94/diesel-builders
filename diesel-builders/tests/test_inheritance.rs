@@ -4,10 +4,9 @@
 
 mod shared;
 mod shared_animals;
-use shared_animals::*;
-
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
+use shared_animals::*;
 
 #[test]
 fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,9 +14,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // We create an animal without a dog entry - demonstrating Root derive
-    let animal = animals::table::builder()
-        .try_name("Generic Animal")?
-        .insert(&mut conn)?;
+    let animal = animals::table::builder().try_name("Generic Animal")?.insert(&mut conn)?;
 
     let loaded_animal: Animal = Animal::find(animal.id(), &mut conn)?;
     assert_eq!(loaded_animal, animal.clone());
@@ -50,10 +47,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     // Test GetColumn derive on both parent and child models
     assert_eq!(loaded_animal.id(), dog.id());
     assert_eq!(loaded_animal.name(), "Max");
-    assert_eq!(
-        loaded_animal.description().as_deref(),
-        Some("A generic dog")
-    );
+    assert_eq!(loaded_animal.description().as_deref(), Some("A generic dog"));
     assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
 
@@ -80,9 +74,7 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     setup_animal_tables(&mut conn)?;
 
     // Now create a cat (which also creates an animal entry via inheritance)
-    let cat_builder = cats::table::builder()
-        .try_name("Whiskers")?
-        .try_color("Orange")?;
+    let cat_builder = cats::table::builder().try_name("Whiskers")?.try_color("Orange")?;
 
     // Test MayGetColumn derive on builder to verify state
     let color_value = cat_builder.may_get_column_ref::<cats::color>();
@@ -124,9 +116,7 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder for a Dog that extends Animals
-    let builder = dogs::table::builder()
-        .try_name("Serialized Dog")?
-        .breed("German Shepherd");
+    let builder = dogs::table::builder().try_name("Serialized Dog")?.breed("German Shepherd");
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;
@@ -137,9 +127,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match - breed is the only field directly in NewDog
     assert_eq!(
-        deserialized
-            .may_get_column_ref::<dogs::breed>()
-            .map(String::as_str),
+        deserialized.may_get_column_ref::<dogs::breed>().map(String::as_str),
         Some("German Shepherd")
     );
 

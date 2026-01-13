@@ -5,19 +5,15 @@
 //! procedural macros.
 
 mod descendant;
-/// Foreign primary key generation.
-mod fpk;
 mod table_model;
 mod utils;
 use proc_macro::TokenStream;
-use quote::quote;
-
 /// Derive macro to automatically implement `TypedColumn` for all table columns.
 ///
 /// This macro should be derived on Model structs to automatically generate
 /// `TypedColumn` implementations for each column based on the struct's field
-/// types. It also automatically implements `GetColumn` for all fields, replacing
-/// the need for a separate `GetColumn` derive.
+/// types. It also automatically implements `GetColumn` for all fields,
+/// replacing the need for a separate `GetColumn` derive.
 ///
 /// Supports a helper attribute to override the insertable model name:
 /// ```ignore
@@ -38,176 +34,6 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Define a foreign key relationship using SQL-like syntax.
-///
-/// This macro generates `HostColumn` implementations for each column in the foreign key.
-/// The `ForeignKey` trait implementation is automatically provided by the `#[impl_foreign_key]`
-/// procedural macro when all columns implement `HostColumn`.
-#[proc_macro]
-pub fn fk(input: TokenStream) -> TokenStream {
-    use quote::quote;
-    use syn::{
-        Token, Type,
-        parse::{Parse, ParseStream},
-        punctuated::Punctuated,
-    };
-
-    /// Parsed representation of a `FOREIGN KEY` specification provided to
-    /// the `fk!()` macro. `host_columns` are the columns on the local table,
-    /// while `ref_columns` are the corresponding columns on the foreign table.
-    struct ForeignKey {
-        /// The host/source columns that form the foreign key on the local table.
-        host_columns: Punctuated<Type, Token![,]>,
-        /// The referenced/target columns that the host columns point to.
-        ref_columns: Punctuated<Type, Token![,]>,
-    }
-
-    impl Parse for ForeignKey {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            // Parse: ( host_cols ) -> ( ref_cols )
-            let host_content;
-            syn::parenthesized!(host_content in input);
-            let host_columns = Punctuated::parse_terminated(&host_content)?;
-
-            input.parse::<Token![->]>()?;
-
-            let ref_content;
-            syn::parenthesized!(ref_content in input);
-            let ref_columns = Punctuated::parse_terminated(&ref_content)?;
-
-            Ok(ForeignKey {
-                host_columns,
-                ref_columns,
-            })
-        }
-    }
-
-    let fk_def = syn::parse_macro_input!(input as ForeignKey);
-    let host_cols: Vec<_> = fk_def.host_columns.iter().collect();
-    let ref_cols: Vec<_> = fk_def.ref_columns.iter().collect();
-
-    if host_cols.len() != ref_cols.len() {
-        return syn::Error::new_spanned(
-            &fk_def.host_columns,
-            format!(
-                "Mismatched number of host and referenced columns: {} host columns vs {} referenced columns",
-                host_cols.len(),
-                ref_cols.len()
-            ),
-        )
-        .to_compile_error()
-        .into();
-    }
-
-    // Try to extract table paths from first columns for allow_tables_to_appear_in_same_query
-    let host_table = if let Some(syn::Type::Path(p)) = host_cols.last() {
-        crate::utils::extract_table_path_from_column(&p.path)
-    } else {
-        None
-    };
-
-    let ref_table = if let Some(syn::Type::Path(p)) = ref_cols.last() {
-        crate::utils::extract_table_path_from_column(&p.path)
-    } else {
-        None
-    };
-
-    let allow_same_query = if let (Some(h), Some(r)) = (&host_table, &ref_table)
-        && crate::utils::should_generate_allow_tables_to_appear_in_same_query(h, r)
-    {
-        Some(quote! { ::diesel::allow_tables_to_appear_in_same_query!(#h, #r); })
-    } else {
-        None
-    };
-
-    // Generate HostColumn implementation for each column at its index
-    let impls = host_cols.iter().enumerate().map(|(idx, host_col)| {
-        let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
-        quote! {
-            impl diesel_builders::HostColumn<
-                diesel_builders::typenum::#idx_type,
-                ( #(#host_cols,)* ),
-                ( #(#ref_cols,)* )
-            > for #host_col {}
-        }
-    });
-
-    quote! {
-        #allow_same_query
-        #(#impls)*
-    }
-    .into()
-}
-
-/// Define a foreign primary key relationship using SQL-like syntax.
-///
-/// This macro generates a `ForeignPrimaryKey` implementation for a single column
-/// that references a table's primary key, along with a helper trait method to
-/// fetch the foreign record.
-///
-/// # Syntax
-///
-/// ```ignore
-/// fpk!(column_path -> referenced_table);
-/// ```
-///
-/// # Example
-///
-/// ```ignore
-/// fpk!(discretionary_table::parent_id -> parent_table);
-/// ```
-#[proc_macro]
-pub fn fpk(input: TokenStream) -> TokenStream {
-    use syn::{
-        Path, Token,
-        parse::{Parse, ParseStream},
-    };
-
-    /// Parsed representation of a foreign primary key specification.
-    struct ForeignPrimaryKey {
-        /// The column that is the foreign key.
-        column: Path,
-        /// The referenced table.
-        referenced_table: Path,
-    }
-
-    impl Parse for ForeignPrimaryKey {
-        fn parse(input: ParseStream) -> syn::Result<Self> {
-            // Parse: column_path -> referenced_table
-            let column: Path = input.parse()?;
-            input.parse::<Token![->]>()?;
-            let referenced_table: Path = input.parse()?;
-
-            Ok(ForeignPrimaryKey {
-                column,
-                referenced_table,
-            })
-        }
-    }
-
-    let fpk_def = syn::parse_macro_input!(input as ForeignPrimaryKey);
-    let column = &fpk_def.column;
-    let referenced_table = &fpk_def.referenced_table;
-
-    // Try to extract host table for allow_tables_to_appear_in_same_query
-    let host_table = crate::utils::extract_table_path_from_column(column);
-
-    let allow_same_query = if let Some(h) = &host_table
-        && crate::utils::should_generate_allow_tables_to_appear_in_same_query(h, referenced_table)
-    {
-        Some(quote! { ::diesel::allow_tables_to_appear_in_same_query!(#h, #referenced_table); })
-    } else {
-        None
-    };
-
-    let stream = fpk::generate_fpk_impl(column, referenced_table);
-    quote! {
-        #allow_same_query
-        #stream
-    }
-    .into()
-}
-
 /// Parsed representation of an index macro invocation.
 struct IndexDefinition {
     /// The columns that form the index.
@@ -221,7 +47,8 @@ impl syn::parse::Parse for IndexDefinition {
     }
 }
 
-/// Helper function to generate index implementations for each column in the index.
+/// Helper function to generate index implementations for each column in the
+/// index.
 fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream) -> TokenStream {
     let index_def = syn::parse_macro_input!(input as IndexDefinition);
     let cols: Vec<_> = index_def.columns.iter().collect();
@@ -244,18 +71,17 @@ fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream
 
 /// Define a table UNIQUE index using SQL-like syntax.
 ///
-/// This macro generates `UniquelyIndexedColumn` implementations for each column in the index.
+/// This macro generates `UniquelyIndexedColumn` implementations for each column
+/// in the index.
 #[proc_macro]
 pub fn unique_index(input: TokenStream) -> TokenStream {
-    generate_index_impl(
-        input,
-        &quote::quote!(diesel_builders::UniquelyIndexedColumn),
-    )
+    generate_index_impl(input, &quote::quote!(diesel_builders::UniquelyIndexedColumn))
 }
 
 /// Define a table index using SQL-like syntax.
 ///
-/// This macro generates `IndexedColumn` implementations for each column in the index.
+/// This macro generates `IndexedColumn` implementations for each column in the
+/// index.
 #[proc_macro]
 pub fn index(input: TokenStream) -> TokenStream {
     generate_index_impl(input, &quote::quote!(diesel_builders::IndexedColumn))

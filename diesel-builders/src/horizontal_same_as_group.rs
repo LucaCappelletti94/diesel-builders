@@ -1,11 +1,12 @@
 //! Column which is associated to a group of horizontal same-as columns.
 
+use tuplities::prelude::{NestTuple, NestedTupleRow};
+use typenum::Unsigned;
+
 use crate::{
     Columns, HorizontalNestedKeys, TypedColumn,
     columns::{HomogeneouslyTypedNestedColumns, NestedColumns},
 };
-use tuplities::prelude::{NestTuple, NestedTupleRow};
-use typenum::Unsigned;
 
 /// A trait for Diesel columns that are associated with a group of horizontal
 /// same-as columns.
@@ -41,9 +42,11 @@ pub trait HorizontalSameAsGroupExt:
         DiscretionaryHorizontalKeys: NestTuple<Nested = Self::NestedDiscretionaryHorizontalKeys>,
     >
 {
-    /// The nested mandatory foreign columns associated with this horizontal same-as group.
+    /// The nested mandatory foreign columns associated with this horizontal
+    /// same-as group.
     type NestedMandatoryForeignColumns: HomogeneouslyTypedNestedColumns<Self::ValueType>;
-    /// The nested discretionary foreign columns associated with this horizontal same-as group.
+    /// The nested discretionary foreign columns associated with this horizontal
+    /// same-as group.
     type NestedDiscretionaryForeignColumns: HomogeneouslyTypedNestedColumns<Self::ValueType>;
     /// The nested mandatory horizontal keys.
     type NestedMandatoryHorizontalKeys: HorizontalNestedKeys<Self::Table>;

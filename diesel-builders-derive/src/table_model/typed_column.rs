@@ -1,11 +1,13 @@
 //! `TypedColumn` trait implementations and associated setter/getter traits.
 
-use crate::utils::snake_to_camel_case;
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{Field, Ident, Token, punctuated::Punctuated};
 
-/// Generate `TypedColumn` implementations and associated setter/getter traits for all fields.
+use crate::utils::snake_to_camel_case;
+
+/// Generate `TypedColumn` implementations and associated setter/getter traits
+/// for all fields.
 pub fn generate_typed_column_impls(
     fields: &Punctuated<Field, Token![,]>,
     table_module: &syn::Ident,
@@ -65,7 +67,8 @@ fn generate_field_traits(
     let is_mandatory = is_field_mandatory(field);
     let is_discretionary = is_field_discretionary(field);
 
-    // Generate triangular relation traits only for single primary key tables and if field is marked
+    // Generate triangular relation traits only for single primary key tables and if
+    // field is marked
     let maybe_triangular_impls =
         if primary_key_columns.len() == 1 && (is_mandatory || is_discretionary) {
             Some(generate_triangular_relation_traits(
@@ -151,10 +154,8 @@ fn generate_set_trait(
         &format!("Set{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let field_name_ref = syn::Ident::new(
-        &format!("{clean_field_name}_ref"),
-        proc_macro2::Span::call_site(),
-    );
+    let field_name_ref =
+        syn::Ident::new(&format!("{clean_field_name}_ref"), proc_macro2::Span::call_site());
     let method_name = method_name_ident;
 
     let set_trait_doc_comment =
@@ -205,14 +206,10 @@ fn generate_try_set_trait(
         &format!("TrySet{struct_ident}{camel_cased_field_name}"),
         proc_macro2::Span::call_site(),
     );
-    let try_field_name = syn::Ident::new(
-        &format!("try_{clean_field_name}"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_field_name_ref = syn::Ident::new(
-        &format!("try_{clean_field_name}_ref"),
-        proc_macro2::Span::call_site(),
-    );
+    let try_field_name =
+        syn::Ident::new(&format!("try_{clean_field_name}"), proc_macro2::Span::call_site());
+    let try_field_name_ref =
+        syn::Ident::new(&format!("try_{clean_field_name}_ref"), proc_macro2::Span::call_site());
 
     let try_set_trait_doc_comment =
         format!("Trait to try to set the `{field_name}` column on a table builder.");
@@ -298,7 +295,8 @@ fn extract_option_inner_type(field_type: &syn::Type) -> Option<TokenStream> {
 
 #[allow(clippy::too_many_lines)]
 /// Generate triangular relation traits for a field.
-/// Only generates traits relevant to the field's mandatory/discretionary status.
+/// Only generates traits relevant to the field's mandatory/discretionary
+/// status.
 fn generate_triangular_relation_traits(
     field_name: &Ident,
     clean_field_name: &str,
@@ -313,32 +311,23 @@ fn generate_triangular_relation_traits(
         proc_macro2::Span::call_site(),
     );
     // Base method name: if column ends with `_id` strip it (e.g., `c_id` -> `c`).
-    // If it's an `_id` column, use the base name for model/builder methods (e.g., `.c()`),
-    // otherwise generate `{field_name}_model` and `{field_name}_builder`.
+    // If it's an `_id` column, use the base name for model/builder methods (e.g.,
+    // `.c()`), otherwise generate `{field_name}_model` and
+    // `{field_name}_builder`.
     let base_field_name = {
         let s = field_name.to_string();
-        if let Some(stripped) = s.strip_suffix("_id") {
-            stripped.to_string()
-        } else {
-            s
-        }
+        if let Some(stripped) = s.strip_suffix("_id") { stripped.to_string() } else { s }
     };
     let clean_base_field_name = {
         let s = clean_field_name;
-        if let Some(stripped) = s.strip_suffix("_id") {
-            stripped
-        } else {
-            s
-        }
+        if let Some(stripped) = s.strip_suffix("_id") { stripped } else { s }
     };
     let is_id_col = field_name.to_string().ends_with("_id");
-    // For model methods, always use `{base}_model` (even for `_id` columns) to avoid
-    // generating the same method name for both builder and model methods which would
-    // cause ambiguous trait method resolution in Rust.
-    let set_field_name_model_method = syn::Ident::new(
-        &format!("{clean_base_field_name}_model"),
-        proc_macro2::Span::call_site(),
-    );
+    // For model methods, always use `{base}_model` (even for `_id` columns) to
+    // avoid generating the same method name for both builder and model methods
+    // which would cause ambiguous trait method resolution in Rust.
+    let set_field_name_model_method =
+        syn::Ident::new(&format!("{clean_base_field_name}_model"), proc_macro2::Span::call_site());
     let set_field_name_model_method_ref = syn::Ident::new(
         &format!("{clean_base_field_name}_model_ref"),
         proc_macro2::Span::call_site(),
@@ -351,33 +340,24 @@ fn generate_triangular_relation_traits(
         &format!("try_{clean_base_field_name}_model_ref"),
         proc_macro2::Span::call_site(),
     );
-    let set_field_name_builder_method_name = if is_id_col {
-        base_field_name
-    } else {
-        format!("{clean_base_field_name}_builder")
-    };
-    let set_field_name_builder_method = syn::Ident::new(
-        &set_field_name_builder_method_name,
-        proc_macro2::Span::call_site(),
-    );
+    let set_field_name_builder_method_name =
+        if is_id_col { base_field_name } else { format!("{clean_base_field_name}_builder") };
+    let set_field_name_builder_method =
+        syn::Ident::new(&set_field_name_builder_method_name, proc_macro2::Span::call_site());
     let set_field_name_builder_method_ref_name = if is_id_col {
         format!("{clean_base_field_name}_ref")
     } else {
         format!("{clean_base_field_name}_builder_ref")
     };
-    let set_field_name_builder_method_ref = syn::Ident::new(
-        &set_field_name_builder_method_ref_name,
-        proc_macro2::Span::call_site(),
-    );
+    let set_field_name_builder_method_ref =
+        syn::Ident::new(&set_field_name_builder_method_ref_name, proc_macro2::Span::call_site());
     let try_set_field_name_builder_method_name = if is_id_col {
         format!("try_{clean_base_field_name}")
     } else {
         format!("try_{clean_base_field_name}_builder")
     };
-    let try_set_field_name_builder_method = syn::Ident::new(
-        &try_set_field_name_builder_method_name,
-        proc_macro2::Span::call_site(),
-    );
+    let try_set_field_name_builder_method =
+        syn::Ident::new(&try_set_field_name_builder_method_name, proc_macro2::Span::call_site());
     let try_set_field_name_builder_method_ref_name = if is_id_col {
         format!("try_{clean_base_field_name}_ref")
     } else {

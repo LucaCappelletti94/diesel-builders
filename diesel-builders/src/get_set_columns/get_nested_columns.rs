@@ -44,10 +44,7 @@ where
     #[inline]
     fn get_nested_column_refs(
         &self,
-    ) -> (
-        &CHead::ColumnType,
-        <CTail::NestedTupleColumnType as NestedTupleRef>::Ref<'_>,
-    ) {
+    ) -> (&CHead::ColumnType, <CTail::NestedTupleColumnType as NestedTupleRef>::Ref<'_>) {
         (self.get_column_ref(), self.get_nested_column_refs())
     }
 }

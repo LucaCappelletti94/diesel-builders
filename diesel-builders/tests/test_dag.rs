@@ -7,9 +7,8 @@
 
 mod shared;
 mod shared_animals;
-use shared_animals::*;
-
 use diesel_builders::{BuilderError, prelude::*};
+use shared_animals::*;
 
 #[test]
 fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,9 +16,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // Insert into animals table
-    let animal: Animal = animals::table::builder()
-        .try_name("Generic Animal")?
-        .insert(&mut conn)?;
+    let animal: Animal = animals::table::builder().try_name("Generic Animal")?.insert(&mut conn)?;
 
     assert_eq!(animal.name(), "Generic Animal");
 
@@ -40,15 +37,10 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(dog.id(), dog.id());
     assert_eq!(dog.breed(), "Golden Retriever");
     let loaded_animal: Animal = dog.ancestor(&mut conn)?;
-    assert_eq!(
-        loaded_animal.description().as_deref(),
-        Some("A generic dog")
-    );
+    assert_eq!(loaded_animal.description().as_deref(), Some("A generic dog"));
 
     // Insert into cats table (extends animals)
-    let cat_builder = cats::table::builder()
-        .try_name("Whiskers the Cat")?
-        .try_color("Orange")?;
+    let cat_builder = cats::table::builder().try_name("Whiskers the Cat")?.try_color("Orange")?;
 
     // Test MayGetColumn derive - checking if optional fields are set
     let color_value = cat_builder.may_get_column_ref::<cats::color>();
@@ -144,9 +136,7 @@ fn test_diesel_error() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;
 
     // Attempting to create a cat with an empty color should fail validation
-    let result = cats::table::builder()
-        .try_name("Whiskers")?
-        .insert(&mut conn);
+    let result = cats::table::builder().try_name("Whiskers")?.insert(&mut conn);
 
     let err = result.unwrap_err();
     assert!(matches!(err, BuilderError::Diesel(_)));
@@ -173,9 +163,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     // Verify the values match - owner_name is the only field directly in NewPet
     assert_eq!(
-        deserialized
-            .may_get_column_ref::<pets::owner_name>()
-            .map(String::as_str),
+        deserialized.may_get_column_ref::<pets::owner_name>().map(String::as_str),
         Some("Test Owner")
     );
 
@@ -188,9 +176,7 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // 1. Upsert on Root (Animal)
-    let animal = animals::table::builder()
-        .try_name("Original Animal")?
-        .insert(&mut conn)?;
+    let animal = animals::table::builder().try_name("Original Animal")?.insert(&mut conn)?;
 
     let mut animal_update = animal.clone();
     animal_update.name = "Updated Animal".to_string();
@@ -204,10 +190,7 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Upsert on Descendant (Dog)
     // Note: upsert currently only updates the specific table columns.
     // If we update a field belonging to Dog (breed), it should work.
-    let dog = dogs::table::builder()
-        .try_name("Original Dog")?
-        .breed("Poodle")
-        .insert(&mut conn)?;
+    let dog = dogs::table::builder().try_name("Original Dog")?.breed("Poodle").insert(&mut conn)?;
 
     let mut dog_update = dog.clone();
     dog_update.breed = "Standard Poodle".to_string();

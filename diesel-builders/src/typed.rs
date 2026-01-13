@@ -13,7 +13,8 @@ pub use homogeneously_typed_nested_tuple::*;
 pub trait Typed {
     /// The value type associated with this object, as it appears in queries.
     type ValueType: Clone;
-    /// The column type associated with this object, which may be an `Option` of the value type.
+    /// The column type associated with this object, which may be an `Option` of
+    /// the value type.
     type ColumnType: Clone
         + Debug
         + From<Self::ValueType>
@@ -39,13 +40,14 @@ impl<T> OptionalRef<T> for Option<T> {
     }
 }
 
-/// Trait representing an object whose `ValueType` and `ColumnType` are the same,
-/// and therefore cannot be optional.
+/// Trait representing an object whose `ValueType` and `ColumnType` are the
+/// same, and therefore cannot be optional.
 pub trait NonOptionalTyped: Typed<ValueType = <Self as Typed>::ColumnType> {}
 
 impl<T> NonOptionalTyped for T where T: Typed<ValueType = <T as Typed>::ColumnType> {}
 
-/// Trait representing an object whose `ColumnType` is an `Option` of its `ValueType`.
+/// Trait representing an object whose `ColumnType` is an `Option` of its
+/// `ValueType`.
 pub trait OptionalTyped: Typed<ColumnType = Option<<Self as Typed>::ValueType>> {}
 
 impl<T> OptionalTyped for T where T: Typed<ColumnType = Option<<T as Typed>::ValueType>> {}

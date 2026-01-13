@@ -1,4 +1,5 @@
-//! Test verifying the correct functioning of the `TryFrom` between `RecursiveTableBuilder` and `TableBuilder`
+//! Test verifying the correct functioning of the `TryFrom` between
+//! `RecursiveTableBuilder` and `TableBuilder`
 use diesel_builders::{
     IncompleteBuilderError, TableBuilder, prelude::*, table_builder::RecursiveTableBuilder,
 };

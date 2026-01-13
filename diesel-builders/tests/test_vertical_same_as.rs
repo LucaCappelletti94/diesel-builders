@@ -61,9 +61,7 @@ fn test_inheritance_vertical_same_as() -> Result<(), Box<dyn std::error::Error>>
     )
     .execute(&mut conn)?;
 
-    let child = child_table::table::builder()
-        .child_field("Child Value")
-        .insert(&mut conn)?;
+    let child = child_table::table::builder().child_field("Child Value").insert(&mut conn)?;
 
     let parent: Parent = child.ancestor(&mut conn)?;
     assert_eq!(parent.parent_field(), &Some("Child Value".to_owned()));
@@ -145,10 +143,7 @@ pub struct ChildChecked {
     /// Primary key.
     id: i32,
     /// Child specific field.
-    #[same_as(
-        parent_table_checked::parent_field,
-        parent_table_checked::another_field
-    )]
+    #[same_as(parent_table_checked::parent_field, parent_table_checked::another_field)]
     child_field: String,
 }
 
@@ -200,19 +195,16 @@ fn test_inheritance_vertical_same_as_checked() -> Result<(), Box<dyn std::error:
     ));
     assert_eq!(parent_err.to_string(), "Field cannot be empty");
 
-    // If we try to set an excessively long value, it should fail validation from the child.
+    // If we try to set an excessively long value, it should fail validation from
+    // the child.
     let child_err = builder
         .try_child_field_ref("This is a very long string that exceeds the maximum allowed length for the child field.")
         .unwrap_err();
     assert!(matches!(child_err, ChildCheckedError::ExcessiveLength));
-    assert_eq!(
-        child_err.to_string(),
-        "Field length exceeds maximum allowed length"
-    );
+    assert_eq!(child_err.to_string(), "Field length exceeds maximum allowed length");
 
-    let child = child_table_checked::table::builder()
-        .try_child_field("Child Value")?
-        .insert(&mut conn)?;
+    let child =
+        child_table_checked::table::builder().try_child_field("Child Value")?.insert(&mut conn)?;
 
     let parent: ParentChecked = child.ancestor(&mut conn)?;
     assert_eq!(parent.parent_field(), "Child Value");

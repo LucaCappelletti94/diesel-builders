@@ -2,12 +2,11 @@
 
 mod shared;
 mod shared_triangular;
-use shared_triangular::*;
-
 use std::convert::Infallible;
 
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
+use shared_triangular::*;
 
 // Table B models
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
@@ -26,11 +25,13 @@ pub struct ChildWithDiscretionary {
     #[infallible]
     /// Some other column in the child table.
     child_field: String,
-    /// The remote `field` value from discretionary table that B references via `discretionary_id`.
+    /// The remote `field` value from discretionary table that B references via
+    /// `discretionary_id`.
     #[same_as(satellite_table::field)]
     #[table_model(default = "Some default value")]
     remote_field: Option<String>,
-    /// The remote `parent_id` value from discretionary table that B references via `discretionary_id`.
+    /// The remote `parent_id` value from discretionary table that B references
+    /// via `discretionary_id`.
     #[infallible]
     #[same_as(shared_triangular::satellite_table::another_field)]
     another_remote_column: Option<String>,
@@ -96,9 +97,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder()
-        .parent_field("Value A")
-        .insert(&mut conn)?;
+    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn)?;
 
     assert_eq!(parent.parent_field(), "Value A");
 
@@ -109,17 +108,15 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         .insert(&mut conn)?;
 
     assert_eq!(discretionary.field(), "Value C");
-    assert_eq!(
-        *discretionary.parent_id(),
-        parent.get_column::<parent_table::id>()
-    );
+    assert_eq!(*discretionary.parent_id(), parent.get_column::<parent_table::id>());
 
     let mut discretionary_builder = satellite_table::table::builder();
     discretionary_builder.field_ref("Value C for B");
 
     // Insert into table B (extends C and references A)
-    // The discretionary triangular relation means we can set the C builder or reference an existing C model
-    // Using generated trait methods like try_discretionary_ref for type-safe builders
+    // The discretionary triangular relation means we can set the C builder or
+    // reference an existing C model Using generated trait methods like
+    // try_discretionary_ref for type-safe builders
     let mut child_builder =
         child_with_satellite_table::table::builder().parent_field("Value A for B");
 
@@ -152,7 +149,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     assert_eq!(associated_parent.parent_field(), "Value A for B");
 
     // We can also reference an existing model using the _model variant
-    // Example: triangular_b_builder.discretionary_id_model_ref(&c) would reference the existing c model
+    // Example: triangular_b_builder.discretionary_id_model_ref(&c) would reference
+    // the existing c model
 
     let associated_discretionary: Satellite = child.discretionary(&mut conn)?;
     assert_eq!(
@@ -209,10 +207,7 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder()
-        .parent_field("Value A")
-        .insert(&mut conn)
-        .unwrap();
+    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
 
     assert_eq!(parent.parent_field(), "Value A");
 
@@ -224,19 +219,17 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
         .unwrap();
 
     assert_eq!(discretionary.field(), "Value C");
-    assert_eq!(
-        *discretionary.parent_id(),
-        parent.get_column::<parent_table::id>()
-    );
+    assert_eq!(*discretionary.parent_id(), parent.get_column::<parent_table::id>());
 
     let mut discretionary_builder =
         satellite_table::table::builder().another_field("Original another remote field".to_owned());
     discretionary_builder.field_ref("Value C");
 
     // Insert into table B (extends C and references A)
-    // The discretionary triangular relation means B's parent_id should automatically
-    // match C's parent_id when we only set C's columns
-    // Using generated trait methods like try_discretionary_ref for type-safe builders
+    // The discretionary triangular relation means B's parent_id should
+    // automatically match C's parent_id when we only set C's columns
+    // Using generated trait methods like try_discretionary_ref for type-safe
+    // builders
     let mut child_builder = simple_child_with_satellite_table::table::builder()
         .parent_field("Value A for B")
         .discretionary_model(&discretionary)
@@ -251,10 +244,7 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     child_builder.try_discretionary_ref(discretionary_builder.clone())?;
 
     // Using the generated trait method for more ergonomic code
-    let child = child_builder
-        .try_discretionary(discretionary_builder)?
-        .insert(&mut conn)
-        .unwrap();
+    let child = child_builder.try_discretionary(discretionary_builder)?.insert(&mut conn).unwrap();
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");

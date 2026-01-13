@@ -1,8 +1,9 @@
 //! Tests for `BuilderError` Display and Error trait implementations.
 
+use std::{error::Error, num::ParseIntError};
+
 use diesel::result::{DatabaseErrorInformation, DatabaseErrorKind};
 use diesel_builders::{BuilderError, IncompleteBuilderError};
-use std::{error::Error, num::ParseIntError};
 
 #[test]
 fn test_builder_error_diesel_display() {
@@ -20,10 +21,7 @@ fn test_builder_error_incomplete_display() {
         BuilderError::Incomplete(incomplete_error);
 
     let display_string = format!("{builder_error}");
-    assert_eq!(
-        display_string,
-        "Missing mandatory triangular builder field: `c_id`"
-    );
+    assert_eq!(display_string, "Missing mandatory triangular builder field: `c_id`");
 }
 
 #[test]
@@ -32,10 +30,7 @@ fn test_builder_error_validation_display() {
     let builder_error = BuilderError::Validation(validation_error);
 
     let display_string = format!("{builder_error}");
-    assert_eq!(
-        display_string,
-        "Validation error: invalid digit found in string"
-    );
+    assert_eq!(display_string, "Validation error: invalid digit found in string");
 }
 
 #[test]
@@ -55,10 +50,7 @@ fn test_builder_error_incomplete_source() {
 
     let source = builder_error.source();
     assert!(source.is_some());
-    assert_eq!(
-        source.unwrap().to_string(),
-        "Missing mandatory triangular builder field: `c_id`"
-    );
+    assert_eq!(source.unwrap().to_string(), "Missing mandatory triangular builder field: `c_id`");
 }
 
 #[test]
@@ -75,10 +67,7 @@ fn test_builder_error_validation_source() {
 fn test_incomplete_builder_error_display() {
     let error = IncompleteBuilderError::MissingMandatoryTriangularField("c_id");
     let display_string = format!("{error}");
-    assert_eq!(
-        display_string,
-        "Missing mandatory triangular builder field: `c_id`"
-    );
+    assert_eq!(display_string, "Missing mandatory triangular builder field: `c_id`");
 
     let error = IncompleteBuilderError::MissingMandatoryField("name");
     let display_string = format!("{error}");
@@ -88,10 +77,7 @@ fn test_incomplete_builder_error_display() {
 #[test]
 fn test_incomplete_builder_error_database_error_information() {
     let error = IncompleteBuilderError::MissingMandatoryTriangularField("c_id");
-    assert_eq!(
-        error.message(),
-        "Missing mandatory triangular builder field"
-    );
+    assert_eq!(error.message(), "Missing mandatory triangular builder field");
     assert_eq!(error.details(), None);
     assert_eq!(error.hint(), None);
     assert_eq!(error.table_name(), None);
@@ -163,10 +149,7 @@ fn test_builder_error_from_diesel_error_conversion() {
 
     // Convert back to diesel error
     let diesel_error: diesel::result::Error = builder_error.into();
-    assert!(matches!(
-        diesel_error,
-        diesel::result::Error::DatabaseError(_, _)
-    ));
+    assert!(matches!(diesel_error, diesel::result::Error::DatabaseError(_, _)));
 
     if let diesel::result::Error::DatabaseError(kind, info) = diesel_error {
         assert_eq!(kind, DatabaseErrorKind::CheckViolation);

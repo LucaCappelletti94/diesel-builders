@@ -1,11 +1,11 @@
-//! Generates the `diesel::table!` macro for a given struct representing a table model.
+//! Generates the `diesel::table!` macro for a given struct representing a table
+//! model.
 
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Field, Ident, Type};
 
-use crate::table_model::attribute_parsing::extract_sql_name;
-use crate::utils::is_option;
+use crate::{table_model::attribute_parsing::extract_sql_name, utils::is_option};
 
 /// Extracts the first generic type argument from a type path, if it exists.
 fn extract_first_generic_arg(ty: &Type) -> Option<&Type> {
@@ -76,7 +76,8 @@ fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
     }
 }
 
-/// Extracts the SQL type from the `#[diesel(sql_type = ...)]` attribute or infers it.
+/// Extracts the SQL type from the `#[diesel(sql_type = ...)]` attribute or
+/// infers it.
 fn get_column_sql_type(field: &Field) -> syn::Result<TokenStream> {
     let mut found_sql_type = None;
 
@@ -98,10 +99,11 @@ fn get_column_sql_type(field: &Field) -> syn::Result<TokenStream> {
     }
 
     if let Some(sql_type) = found_sql_type {
-        // If the field is an Option<T>, we should wrap the provided SQL type in Nullable<...>.
-        // This assumes the user provided the "inner" SQL type in the attribute.
+        // If the field is an Option<T>, we should wrap the provided SQL type in
+        // Nullable<...>. This assumes the user provided the "inner" SQL type in
+        // the attribute.
         if is_option(&field.ty) {
-            return Ok(quote! { diesel::sql_types::Nullable<#sql_type> });
+            return Ok(quote! { ::diesel::sql_types::Nullable<#sql_type> });
         }
         return Ok(sql_type);
     }
@@ -124,15 +126,17 @@ pub fn generate_table_macro(
     primary_key_columns: &[Ident],
 ) -> syn::Result<TokenStream> {
     let fields = match &input.data {
-        syn::Data::Struct(data) => match &data.fields {
-            syn::Fields::Named(fields) => &fields.named,
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    input,
-                    "TableModel can only be derived for structs with named fields",
-                ));
+        syn::Data::Struct(data) => {
+            match &data.fields {
+                syn::Fields::Named(fields) => &fields.named,
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        input,
+                        "TableModel can only be derived for structs with named fields",
+                    ));
+                }
             }
-        },
+        }
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
@@ -150,10 +154,7 @@ pub fn generate_table_macro(
         let sql_type = get_column_sql_type(field)?;
 
         // Preserve documentation
-        let doc_attrs = field
-            .attrs
-            .iter()
-            .filter(|attr| attr.path().is_ident("doc"));
+        let doc_attrs = field.attrs.iter().filter(|attr| attr.path().is_ident("doc"));
 
         let sql_name_attr = extract_sql_name(field).map(|name| {
             quote! { #[sql_name = #name] }
@@ -166,10 +167,7 @@ pub fn generate_table_macro(
         });
     }
 
-    let struct_doc_attrs = input
-        .attrs
-        .iter()
-        .filter(|attr| attr.path().is_ident("doc"));
+    let struct_doc_attrs = input.attrs.iter().filter(|attr| attr.path().is_ident("doc"));
 
     // Use the module identifier as the table name for definition
     Ok(quote! {

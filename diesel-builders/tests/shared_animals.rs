@@ -1,7 +1,8 @@
 //! Common utilities and shared table definitions for tests.
 
-use diesel_builders::prelude::*;
 use std::convert::Infallible;
+
+use diesel_builders::prelude::*;
 
 /// Setups the animal hierarchy tables in the given `SQLite` connection.
 ///
@@ -113,7 +114,8 @@ impl diesel_builders::ValidateColumn<animals::name>
     }
 }
 
-/// Validation for animal description - when Some, must be non-empty, max 500 chars.
+/// Validation for animal description - when Some, must be non-empty, max 500
+/// chars.
 impl diesel_builders::ValidateColumn<animals::description>
     for <animals::table as diesel_builders::TableExt>::NewValues
 {

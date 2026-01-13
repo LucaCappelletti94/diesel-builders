@@ -15,21 +15,18 @@ mod vertical_same_as;
 
 use std::collections::HashMap;
 
-use proc_macro2::TokenStream;
-use quote::quote;
-use syn::spanned::Spanned;
-use syn::{DeriveInput, Ident};
-
 use attribute_parsing::{
     extract_discretionary_table, extract_field_default_value, extract_mandatory_table,
     extract_primary_key_columns, extract_same_as_columns, extract_table_model_attributes,
     extract_table_module, is_field_discretionary, is_field_infallible, is_field_mandatory,
     validate_field_attributes,
 };
-
-use foreign_keys::generate_foreign_key_impls;
+use foreign_keys::{generate_explicit_foreign_key_impls, generate_foreign_key_impls};
 use get_column::generate_get_column_impls;
 use primary_key::generate_indexed_column_impls;
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{DeriveInput, Ident, spanned::Spanned};
 use table_generation::generate_table_macro;
 use typed_column::generate_typed_column_impls;
 use vertical_same_as::generate_vertical_same_as_impls;
@@ -153,12 +150,7 @@ fn process_fields(
         default_values.push(default_val);
     }
 
-    Ok(ProcessedFields {
-        new_record_columns,
-        infallible_records,
-        default_values,
-        warnings,
-    })
+    Ok(ProcessedFields { new_record_columns, infallible_records, default_values, warnings })
 }
 
 /// Collect mandatory and discretionary triangular relation columns.
@@ -258,10 +250,7 @@ fn generate_triangular_fpk_impls(
     for (field_name, triangular_table) in collect_triangular_relation_tables(fields)? {
         // Generate fpk implementation using the fpk generation function
         let column_path: syn::Path = syn::parse_quote!(#table_module::#field_name);
-        fpk_impls.extend(crate::fpk::generate_fpk_impl(
-            &column_path,
-            &triangular_table,
-        ));
+        fpk_impls.extend(foreign_keys::generate_fpk_impl(&column_path, &triangular_table));
     }
 
     Ok(fpk_impls)
@@ -314,10 +303,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             }
 
             if !seen.insert(ancestor_str) {
-                return Err(syn::Error::new_spanned(
-                    ancestor,
-                    "Duplicate `ancestor` in hierarchy",
-                ));
+                return Err(syn::Error::new_spanned(ancestor, "Duplicate `ancestor` in hierarchy"));
             }
         }
     }
@@ -331,15 +317,17 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Extract fields
     let fields = match &input.data {
-        syn::Data::Struct(data) => match &data.fields {
-            syn::Fields::Named(fields) => &fields.named,
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    input,
-                    "TableModel can only be derived for structs with named fields",
-                ));
+        syn::Data::Struct(data) => {
+            match &data.fields {
+                syn::Fields::Named(fields) => &fields.named,
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        input,
+                        "TableModel can only be derived for structs with named fields",
+                    ));
+                }
             }
-        },
+        }
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
@@ -365,7 +353,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     }
 
-    // Validate fields before generation to ensure unsupported attributes are reported correctly
+    // Validate fields before generation to ensure unsupported attributes are
+    // reported correctly
     for field in fields {
         validate_field_attributes(field)?;
     }
@@ -377,17 +366,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let get_column_impls = generate_get_column_impls(fields, &table_module, struct_ident);
     let indexed_column_impls = generate_indexed_column_impls(&table_module, &primary_key_columns);
     let nested_primary_keys = format_as_nested_tuple(
-        primary_key_columns
-            .iter()
-            .map(|col| quote::quote! { #table_module::#col }),
+        primary_key_columns.iter().map(|col| quote::quote! { #table_module::#col }),
     );
 
-    let ProcessedFields {
-        new_record_columns,
-        infallible_records,
-        default_values,
-        warnings,
-    } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
+    let ProcessedFields { new_record_columns, infallible_records, default_values, warnings } =
+        process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
 
     // Collect triangular relation columns for BundlableTable implementation
     let (mandatory_columns, discretionary_columns) =
@@ -409,11 +392,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         if is_field_mandatory(field)
             && let Some(mandatory_table) = extract_mandatory_table(field)?
         {
-            // Check if ALL primary key columns have a same_as pointing to this mandatory table
+            // Check if ALL primary key columns have a same_as pointing to this mandatory
+            // table
             for pk_col_name in &primary_key_columns {
-                let pk_field = fields
-                    .iter()
-                    .find(|f| f.ident.as_ref() == Some(pk_col_name));
+                let pk_field = fields.iter().find(|f| f.ident.as_ref() == Some(pk_col_name));
 
                 if let Some(pk_field) = pk_field {
                     let same_as_cols_groups = extract_same_as_columns(pk_field)?;
@@ -451,7 +433,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Generate `fpk!` implementations for triangular relation fields
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
-    // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors and triangular relations
+    // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors
+    // and triangular relations
     let table_name = table_module.to_string();
     let table_module_path: syn::Path = table_module.clone().into();
     let allow_same_query_calls = attributes
@@ -500,10 +483,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let descendant_impls = if let Some(ref ancestors) = attributes.ancestors {
         let table_type: syn::Type = syn::parse_quote!(#table_module::table);
         // Convert ancestor module paths to table types for the trait implementation
-        let ancestor_tables: Vec<syn::Type> = ancestors
-            .iter()
-            .map(|a| syn::parse_quote!(#a::table))
-            .collect();
+        let ancestor_tables: Vec<syn::Type> =
+            ancestors.iter().map(|a| syn::parse_quote!(#a::table)).collect();
         let root: &syn::Type = ancestor_tables.first().unwrap();
         let aux_impls =
             crate::descendant::generate_auxiliary_descendant_impls(&table_type, &ancestor_tables);
@@ -568,7 +549,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         .collect();
 
     // Collect Horizontal Keys
-    // Map from TargetTable (last segment ident) to list of (KeyField, IsMandatory, TargetTablePath)
+    // Map from TargetTable (last segment ident) to list of (KeyField, IsMandatory,
+    // TargetTablePath)
     let mut potential_keys: HashMap<syn::Ident, Vec<(&syn::Ident, bool, syn::Path)>> =
         HashMap::new();
 
@@ -588,10 +570,11 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         if let Some(target_table) = target_table
             && let Some(last_segment) = target_table.segments.last()
         {
-            potential_keys
-                .entry(last_segment.ident.clone())
-                .or_default()
-                .push((field_name, is_mandatory, target_table));
+            potential_keys.entry(last_segment.ident.clone()).or_default().push((
+                field_name,
+                is_mandatory,
+                target_table,
+            ));
         }
     }
 
@@ -692,8 +675,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     let horizontal_keys: Vec<_> = horizontal_keys_map.into_values().collect();
-    // We do not filter out keys with no columns, as they still need to implement HorizontalKey
-    // to satisfy BundlableTable bounds, even if they don't propagate any values.
+    // We do not filter out keys with no columns, as they still need to implement
+    // HorizontalKey to satisfy BundlableTable bounds, even if they don't
+    // propagate any values.
 
     // Generate HorizontalKey implementations
     let mut horizontal_key_impls = Vec::with_capacity(horizontal_keys.len());
@@ -736,11 +720,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             ));
         }
 
-        let host_cols: Vec<_> = key
-            .host_columns
-            .iter()
-            .map(|f| quote::quote!(#table_module::#f))
-            .collect();
+        let host_cols: Vec<_> =
+            key.host_columns.iter().map(|f| quote::quote!(#table_module::#f)).collect();
         let foreign_cols = &key.foreign_columns;
 
         horizontal_key_impls.push(quote! {
@@ -766,10 +747,13 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 if let Some(pos) = key.host_columns.iter().position(|f| f == field_name) {
                     if let Some(existing_idx) = idx {
                         if existing_idx != pos {
-                            // Index mismatch - this is a limitation of HorizontalSameAsGroup
-                            // For now, we can't support this case easily without more complex logic
+                            // Index mismatch - this is a limitation of
+                            // HorizontalSameAsGroup
+                            // For now, we can't support this case easily
+                            // without more complex logic
                             // But usually fields are in consistent order.
-                            // We'll just use the first one found and hope for the best or error?
+                            // We'll just use the first one found and hope for
+                            // the best or error?
                             // Let's assume consistency for now.
                         }
                     } else {
@@ -811,6 +795,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Generate foreign key implementations for triangular relations
     let foreign_key_impls = generate_foreign_key_impls(fields, &table_module)?;
+
+    // Generate explicit foreign key implementations
+    let explicit_foreign_key_impls =
+        generate_explicit_foreign_key_impls(&attributes.foreign_keys, &table_module)?;
 
     // Generate BuildableTable implementation with default overrides
     let mut overrides = Vec::new();
@@ -896,6 +884,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#horizontal_key_impls)*
         #(#vertical_same_as_impls)*
         #(#foreign_key_impls)*
+        #(#explicit_foreign_key_impls)*
 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*

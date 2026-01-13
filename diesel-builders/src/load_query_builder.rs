@@ -1,14 +1,11 @@
-//! Module providing a helper trait to construct a load query to be further specialized
-//! and completed by other traits.
+//! Module providing a helper trait to construct a load query to be further
+//! specialized and completed by other traits.
 
-use diesel::Table;
-use diesel::expression_methods::EqAll;
-use diesel::query_dsl::methods::FilterDsl;
-use diesel::query_dsl::methods::LimitDsl;
-use diesel::query_dsl::methods::LoadQuery;
-use diesel::query_dsl::methods::OffsetDsl;
-use diesel::query_dsl::methods::OrderDsl;
-use diesel::query_dsl::methods::SelectDsl;
+use diesel::{
+    Table,
+    expression_methods::EqAll,
+    query_dsl::methods::{FilterDsl, LimitDsl, LoadQuery, OffsetDsl, OrderDsl, SelectDsl},
+};
 use tuplities::prelude::{FlattenNestedTuple, NestedTupleInto};
 
 use crate::{
@@ -26,7 +23,8 @@ pub trait LoadQueryBuilder: NonEmptyNestedProjection {
     ///
     /// # Arguments
     ///
-    /// * `values` - A nested tuple of values corresponding to the foreign columns.
+    /// * `values` - A nested tuple of values corresponding to the foreign
+    ///   columns.
     fn load_query(values: impl NestedTupleInto<Self::NestedTupleValueType>) -> Self::LoadQuery;
 }
 
@@ -68,13 +66,15 @@ pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// # Arguments
     ///
-    /// * `values` - A nested tuple of values corresponding to the foreign columns.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    /// * `values` - A nested tuple of values corresponding to the foreign
+    ///   columns.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails or if no matching record is found.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
     fn load_first(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -104,13 +104,15 @@ pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// # Arguments
     ///
-    /// * `values` - A nested tuple of values corresponding to the foreign columns.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    /// * `values` - A nested tuple of values corresponding to the foreign
+    ///   columns.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails.
     fn load_many(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -133,19 +135,21 @@ where
     }
 }
 
-/// The `LoadManySorted` trait allows retrieving several records from a load query, sorted by a given expression.
+/// The `LoadManySorted` trait allows retrieving several records from a load
+/// query, sorted by a given expression.
 pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// Constructs a load query.
     ///
     /// # Arguments
     ///
     /// * `values` - The values to filter the load query by.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails or if no matching record is found.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
     fn load_many_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -175,8 +179,9 @@ where
     }
 }
 
-/// The `LoadManySortedPaginated` trait allows retrieving several records from a load query,
-/// sorted by a given expression with offset and limit for pagination.
+/// The `LoadManySortedPaginated` trait allows retrieving several records from a
+/// load query, sorted by a given expression with offset and limit for
+/// pagination.
 pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// Constructs a paginated load query.
     ///
@@ -185,12 +190,13 @@ pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// * `values` - The values to filter the load query by.
     /// * `offset` - The number of records to skip.
     /// * `limit` - The maximum number of records to return.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the query
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error
-    ///   if the query fails.
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails.
     fn load_many_sorted_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
@@ -226,10 +232,7 @@ where
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
         let order =
             <NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns::default().to_order();
-        let query = Self::load_query(values)
-            .order(order)
-            .limit(limit)
-            .offset(offset);
+        let query = Self::load_query(values).order(order).limit(limit).offset(offset);
         diesel::query_dsl::RunQueryDsl::load::<<Self::Table as TableExt>::Model>(query, conn)
     }
 }

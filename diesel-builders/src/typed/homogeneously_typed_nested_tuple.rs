@@ -1,4 +1,5 @@
-//! Submodule defining and implementing the `HomogeneouslyTypedNestedTuple` trait.
+//! Submodule defining and implementing the `HomogeneouslyTypedNestedTuple`
+//! trait.
 
 use crate::{Typed, TypedNestedTuple};
 

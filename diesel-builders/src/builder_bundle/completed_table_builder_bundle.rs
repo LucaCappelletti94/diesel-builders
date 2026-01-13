@@ -3,17 +3,17 @@
 use diesel::{Column, Insertable, RunQueryDsl, associations::HasTable};
 use tuplities::prelude::*;
 
-use crate::columns::TupleEqAll;
 use crate::{
     BuildableTable, BuilderError, BuilderResult, DiscretionarySameAsIndex, HasNestedTables,
     HasTableExt, IncompleteBuilderError, MandatorySameAsIndex, NestedColumns, NestedTables,
-    RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt, TryMaySetNestedColumns,
-    TrySetColumn, TrySetDiscretionarySameAsColumn, TrySetDiscretionarySameAsNestedColumns,
-    TrySetMandatorySameAsColumn, TrySetMandatorySameAsNestedColumns, TrySetNestedColumns,
-    TupleGetNestedColumns, TupleMayGetNestedColumns, TypedColumn,
-    builder_bundle::BundlableTableExt, horizontal_same_as_group::HorizontalSameAsGroupExt,
+    OptionalRef, RecursiveBuilderInsert, TableBuilder, TableBuilderBundle, TableExt,
+    TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionarySameAsColumn,
+    TrySetDiscretionarySameAsNestedColumns, TrySetMandatorySameAsColumn,
+    TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
+    TupleMayGetNestedColumns, TypedColumn, TypedNestedTuple, ValidateColumn,
+    builder_bundle::BundlableTableExt, columns::TupleEqAll,
+    horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
-use crate::{OptionalRef, TypedNestedTuple, ValidateColumn};
 
 #[derive(Debug)]
 /// The build-ready variant of a table builder bundle.
@@ -100,9 +100,7 @@ where
         &mut self,
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
-        self.nested_mandatory_associated_builders
-            .nested_index_mut()
-            .try_set_column(value)?;
+        self.nested_mandatory_associated_builders.nested_index_mut().try_set_column(value)?;
         Ok(self)
     }
 }
@@ -122,10 +120,8 @@ where
         &mut self,
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
-        if let Some(builder) = self
-            .nested_discretionary_associated_builders
-            .nested_index_mut()
-            .as_mut()
+        if let Some(builder) =
+            self.nested_discretionary_associated_builders.nested_index_mut().as_mut()
         {
             builder.try_set_column(value)?;
         }

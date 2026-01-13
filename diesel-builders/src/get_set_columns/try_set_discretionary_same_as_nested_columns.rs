@@ -122,7 +122,6 @@ where
         &mut self,
         value: &impl OptionalRef<Type>,
     ) -> &mut Self {
-        self.try_set_discretionary_same_as_nested_columns(value)
-            .unwrap_or_else(|err| match err {})
+        self.try_set_discretionary_same_as_nested_columns(value).unwrap_or_else(|err| match err {})
     }
 }

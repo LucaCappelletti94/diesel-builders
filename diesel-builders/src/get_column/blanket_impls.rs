@@ -1,7 +1,6 @@
 //! Blanket implementations for `GetColumn` on smart pointers.
 
-use crate::TypedColumn;
-use crate::get_column::GetColumn;
+use crate::{TypedColumn, get_column::GetColumn};
 
 impl<C, T> GetColumn<C> for &T
 where

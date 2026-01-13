@@ -227,6 +227,7 @@ pub struct Parent {
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = mandatory_table)]
 #[table_model(surrogate_key)]
+#[table_model(foreign_key(parent_id, parent_table))]
 pub struct Mandatory {
     id: i32,
     parent_id: i32,
@@ -234,7 +235,6 @@ pub struct Mandatory {
     mandatory_field: String,
 }
 
-fpk!(mandatory_table::parent_id -> parent_table);
 unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
 unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
@@ -296,13 +296,13 @@ pub struct Parent {
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = discretionary_table)]
 #[table_model(surrogate_key)]
+#[table_model(foreign_key(parent_id, parent_table))]
 pub struct Discretionary {
     id: i32,
     parent_id: i32,
     discretionary_field: String,
 }
 
-fpk!(discretionary_table::parent_id -> parent_table);
 unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
 unique_index!(discretionary_table::id, discretionary_table::parent_id);
 

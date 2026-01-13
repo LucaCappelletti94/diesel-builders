@@ -1,4 +1,5 @@
-//! Generates auxiliary implementations for descendant tables in Diesel Builders.
+//! Generates auxiliary implementations for descendant tables in Diesel
+//! Builders.
 
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -6,10 +7,7 @@ use syn::Type;
 
 /// Generates the auxiliary implementations required for a `Descendant` table.
 pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]) -> TokenStream {
-    assert!(
-        !ancestors.contains(table_type),
-        "Table cannot be its own ancestor"
-    );
+    assert!(!ancestors.contains(table_type), "Table cannot be its own ancestor");
 
     let num_ancestors = ancestors.len();
 

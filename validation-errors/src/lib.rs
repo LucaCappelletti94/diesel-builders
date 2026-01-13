@@ -183,10 +183,7 @@ impl ValidationError {
     /// A `ValidationError` indicating that the specified field is empty.
     #[must_use]
     pub fn empty(table: &'static str, field: &'static str) -> Self {
-        ValidationError {
-            table,
-            kind: ValidationErrorKind::MustNotBeEmpty(field),
-        }
+        ValidationError { table, kind: ValidationErrorKind::MustNotBeEmpty(field) }
     }
 
     /// Creates a new validation error for two fields that must not be equal.
@@ -233,10 +230,7 @@ impl ValidationError {
     /// * `value` - The value that the field should be smaller than or equal to.
     #[must_use]
     pub fn smaller_than_value(table: &'static str, field: &'static str, value: f64) -> Self {
-        ValidationError {
-            table,
-            kind: ValidationErrorKind::MustBeSmallerThanScalar(field, value),
-        }
+        ValidationError { table, kind: ValidationErrorKind::MustBeSmallerThanScalar(field, value) }
     }
 
     /// Creates a new validation error for a field who should be greater than a
@@ -269,10 +263,7 @@ impl ValidationError {
     /// * `value` - The value that the field should be greater than or equal to.
     #[must_use]
     pub fn greater_than_value(table: &'static str, field: &'static str, value: f64) -> Self {
-        ValidationError {
-            table,
-            kind: ValidationErrorKind::MustBeGreaterThanScalar(field, value),
-        }
+        ValidationError { table, kind: ValidationErrorKind::MustBeGreaterThanScalar(field, value) }
     }
 
     /// Creates a new validation error for a field who should be strictly
@@ -376,17 +367,15 @@ impl ValidationError {
         fields: Vec<&'static str>,
         error: Box<dyn core::error::Error + Send + Sync>,
     ) -> Self {
-        ValidationError {
-            table,
-            kind: ValidationErrorKind::Generic { fields, error },
-        }
+        ValidationError { table, kind: ValidationErrorKind::Generic { fields, error } }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use core::error::Error;
+
+    use super::*;
 
     // Dummy error for testing
     #[derive(Debug, thiserror::Error)]
@@ -476,10 +465,7 @@ mod tests {
 
         // Generic should have source
         let dummy = DummyError;
-        let err = ValidationErrorKind::Generic {
-            fields: vec!["field"],
-            error: Box::new(dummy),
-        };
+        let err = ValidationErrorKind::Generic { fields: vec!["field"], error: Box::new(dummy) };
         assert!(err.source().is_some());
     }
 
@@ -501,14 +487,8 @@ mod tests {
 
         // Generic kind should chain source
         let dummy = DummyError;
-        let kind = ValidationErrorKind::Generic {
-            fields: vec!["field"],
-            error: Box::new(dummy),
-        };
-        let err = ValidationError {
-            table: "table",
-            kind,
-        };
+        let kind = ValidationErrorKind::Generic { fields: vec!["field"], error: Box::new(dummy) };
+        let err = ValidationError { table: "table", kind };
         assert!(err.source().is_some());
     }
 
@@ -516,10 +496,7 @@ mod tests {
     fn test_validation_error_methods() {
         let err = ValidationError::empty("mytable", "myfield");
         assert_eq!(err.table(), "mytable");
-        assert!(matches!(
-            err.kind(),
-            ValidationErrorKind::MustNotBeEmpty("myfield")
-        ));
+        assert!(matches!(err.kind(), ValidationErrorKind::MustNotBeEmpty("myfield")));
     }
 
     #[test]
@@ -527,24 +504,15 @@ mod tests {
         // Test empty
         let err = ValidationError::empty("table", "field");
         assert_eq!(err.table(), "table");
-        assert!(matches!(
-            err.kind(),
-            ValidationErrorKind::MustNotBeEmpty("field")
-        ));
+        assert!(matches!(err.kind(), ValidationErrorKind::MustNotBeEmpty("field")));
 
         // Test equal
         let err = ValidationError::equal("table", "field1", "field2");
-        assert!(matches!(
-            err.kind(),
-            ValidationErrorKind::MustBeDistinct("field1", "field2")
-        ));
+        assert!(matches!(err.kind(), ValidationErrorKind::MustBeDistinct("field1", "field2")));
 
         // Test smaller_than
         let err = ValidationError::smaller_than("table", "small", "big");
-        assert!(matches!(
-            err.kind(),
-            ValidationErrorKind::MustBeSmallerThan("small", "big")
-        ));
+        assert!(matches!(err.kind(), ValidationErrorKind::MustBeSmallerThan("small", "big")));
 
         // Test smaller_than_value
         let err = ValidationError::smaller_than_value("table", "field", 10.0);
@@ -554,10 +522,7 @@ mod tests {
 
         // Test greater_than
         let err = ValidationError::greater_than("table", "big", "small");
-        assert!(matches!(
-            err.kind(),
-            ValidationErrorKind::MustBeGreaterThan("big", "small")
-        ));
+        assert!(matches!(err.kind(), ValidationErrorKind::MustBeGreaterThan("big", "small")));
 
         // Test greater_than_value
         let err = ValidationError::greater_than_value("table", "field", 10.0);
@@ -648,19 +613,13 @@ mod tests {
         assert_eq!(err.as_ref(), "Field must be strictly smaller than another");
 
         let err = ValidationErrorKind::MustBeSmallerThan("a", "b");
-        assert_eq!(
-            err.as_ref(),
-            "Field must be smaller than or equal to another"
-        );
+        assert_eq!(err.as_ref(), "Field must be smaller than or equal to another");
 
         let err = ValidationErrorKind::MustBeStrictlyGreaterThan("a", "b");
         assert_eq!(err.as_ref(), "Field must be strictly greater than another");
 
         let err = ValidationErrorKind::MustBeGreaterThan("a", "b");
-        assert_eq!(
-            err.as_ref(),
-            "Field must be greater than or equal to another"
-        );
+        assert_eq!(err.as_ref(), "Field must be greater than or equal to another");
 
         let err = ValidationErrorKind::MustBeStrictlySmallerThanScalar("field", 1.0);
         assert_eq!(err.as_ref(), "Field must be strictly smaller than value");
@@ -675,10 +634,7 @@ mod tests {
         assert_eq!(err.as_ref(), "Field must be greater than or equal to value");
 
         let dummy = DummyError;
-        let err = ValidationErrorKind::Generic {
-            fields: vec!["field"],
-            error: Box::new(dummy),
-        };
+        let err = ValidationErrorKind::Generic { fields: vec!["field"], error: Box::new(dummy) };
         assert_eq!(err.as_ref(), "Generic validation error");
     }
 
@@ -687,10 +643,7 @@ mod tests {
         let validation_err = ValidationError::empty("table", "field");
         let diesel_err: diesel::result::Error = validation_err.into();
 
-        assert!(matches!(
-            diesel_err,
-            diesel::result::Error::DatabaseError(_, _)
-        ));
+        assert!(matches!(diesel_err, diesel::result::Error::DatabaseError(_, _)));
 
         if let diesel::result::Error::DatabaseError(kind, info) = diesel_err {
             assert_eq!(kind, diesel::result::DatabaseErrorKind::Unknown);
@@ -706,17 +659,11 @@ mod tests {
         let validation_err = ValidationError::empty("table", "field");
         let builder_err: diesel_builders::BuilderError<ValidationError> = validation_err.into();
 
-        assert!(matches!(
-            builder_err,
-            diesel_builders::BuilderError::Validation(_)
-        ));
+        assert!(matches!(builder_err, diesel_builders::BuilderError::Validation(_)));
 
         if let diesel_builders::BuilderError::Validation(inner_err) = builder_err {
             assert_eq!(inner_err.table(), "table");
-            assert!(matches!(
-                inner_err.kind(),
-                ValidationErrorKind::MustNotBeEmpty("field")
-            ));
+            assert!(matches!(inner_err.kind(), ValidationErrorKind::MustNotBeEmpty("field")));
         }
     }
 }

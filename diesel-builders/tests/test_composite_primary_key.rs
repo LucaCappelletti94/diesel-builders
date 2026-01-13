@@ -2,8 +2,10 @@
 //! a single table with a composite primary key.
 
 mod shared;
-use diesel_builders::load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated};
-use diesel_builders::prelude::*;
+use diesel_builders::{
+    load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated},
+    prelude::*,
+};
 use diesel_builders_derive::TableModel;
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
@@ -37,34 +39,19 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 
     assert_eq!(builder.may_get_column_ref::<user_roles::user_id>(), None);
     assert_eq!(builder.may_get_column_ref::<user_roles::role_id>(), None);
-    assert_eq!(
-        builder.may_get_column_ref::<user_roles::assigned_at>(),
-        None
-    );
+    assert_eq!(builder.may_get_column_ref::<user_roles::assigned_at>(), None);
 
     builder.try_user_id_ref(1)?;
 
-    assert_eq!(
-        builder.may_get_column_ref::<user_roles::user_id>(),
-        Some(&1)
-    );
+    assert_eq!(builder.may_get_column_ref::<user_roles::user_id>(), Some(&1));
     assert_eq!(builder.may_get_column_ref::<user_roles::role_id>(), None);
-    assert_eq!(
-        builder.may_get_column_ref::<user_roles::assigned_at>(),
-        None
-    );
+    assert_eq!(builder.may_get_column_ref::<user_roles::assigned_at>(), None);
 
     builder.try_role_id_ref(10)?;
     builder.try_assigned_at_ref("2025-01-01")?;
 
-    assert_eq!(
-        builder.may_get_column_ref::<user_roles::user_id>(),
-        Some(&1)
-    );
-    assert_eq!(
-        builder.may_get_column_ref::<user_roles::role_id>(),
-        Some(&10)
-    );
+    assert_eq!(builder.may_get_column_ref::<user_roles::user_id>(), Some(&1));
+    assert_eq!(builder.may_get_column_ref::<user_roles::role_id>(), Some(&10));
     assert_eq!(
         builder.may_get_column_ref::<user_roles::assigned_at>(),
         Some(&"2025-01-01".to_string())
@@ -109,10 +96,7 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder with composite primary key values
-    let builder = user_roles::table::builder()
-        .user_id(42)
-        .role_id(100)
-        .assigned_at("2025-12-04");
+    let builder = user_roles::table::builder().user_id(42).role_id(100).assigned_at("2025-12-04");
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;
@@ -122,18 +106,10 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
         serde_json::from_str(&serialized)?;
 
     // Verify the values match
+    assert_eq!(deserialized.may_get_column_ref::<user_roles::user_id>(), Some(&42));
+    assert_eq!(deserialized.may_get_column_ref::<user_roles::role_id>(), Some(&100));
     assert_eq!(
-        deserialized.may_get_column_ref::<user_roles::user_id>(),
-        Some(&42)
-    );
-    assert_eq!(
-        deserialized.may_get_column_ref::<user_roles::role_id>(),
-        Some(&100)
-    );
-    assert_eq!(
-        deserialized
-            .may_get_column_ref::<user_roles::assigned_at>()
-            .map(String::as_str),
+        deserialized.may_get_column_ref::<user_roles::assigned_at>().map(String::as_str),
         Some("2025-12-04")
     );
 
@@ -245,14 +221,11 @@ fn test_upsert_composite() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_role.assigned_at, "2025-01-02");
 
     // 3. Upsert (Insert)
-    // We need to construct a UserRole manually since we don't have a builder that returns a struct without inserting.
-    // But we can use the struct constructor since fields are public now.
-    // TODO: We will add support for upsert via builder in the future.
-    let new_role = UserRole {
-        user_id: 2,
-        role_id: 20,
-        assigned_at: "2025-02-01".to_string(),
-    };
+    // We need to construct a UserRole manually since we don't have a builder that
+    // returns a struct without inserting. But we can use the struct constructor
+    // since fields are public now. TODO: We will add support for upsert via
+    // builder in the future.
+    let new_role = UserRole { user_id: 2, role_id: 20, assigned_at: "2025-02-01".to_string() };
 
     let inserted_role = new_role.upsert(&mut conn)?;
     assert_eq!(inserted_role.user_id, 2);

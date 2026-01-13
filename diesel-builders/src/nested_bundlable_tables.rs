@@ -41,14 +41,9 @@ where
     Ttail: NestedBundlableTables,
     (Thead, Ttail): NestedTables,
     (TableBuilderBundle<Thead>, Ttail::NestedBundleBuilders): FlattenNestedTuple,
-    (
-        CompletedTableBuilderBundle<Thead>,
-        Ttail::NestedCompletedBundleBuilders,
-    ): FlattenNestedTuple,
+    (CompletedTableBuilderBundle<Thead>, Ttail::NestedCompletedBundleBuilders): FlattenNestedTuple,
 {
     type NestedBundleBuilders = (TableBuilderBundle<Thead>, Ttail::NestedBundleBuilders);
-    type NestedCompletedBundleBuilders = (
-        CompletedTableBuilderBundle<Thead>,
-        Ttail::NestedCompletedBundleBuilders,
-    );
+    type NestedCompletedBundleBuilders =
+        (CompletedTableBuilderBundle<Thead>, Ttail::NestedCompletedBundleBuilders);
 }

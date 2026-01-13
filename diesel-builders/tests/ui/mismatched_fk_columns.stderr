@@ -1,5 +1,5 @@
-error: Mismatched number of host and referenced columns: 2 host columns vs 1 referenced columns
-  --> tests/ui/mismatched_fk_columns.rs:19:6
+error: Mismatched number of host and referenced columns.
+  --> tests/ui/mismatched_fk_columns.rs:20:46
    |
-19 | fk!((posts::user_id, posts::title) -> (users::id));
-   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+20 | #[table_model(foreign_key((user_id, title), (users::id)))]
+   |                                              ^^^^^^^^^

@@ -1,4 +1,5 @@
-//! Test for a child table with multiple mandatory and discretionary triangular relations.
+//! Test for a child table with multiple mandatory and discretionary triangular
+//! relations.
 
 mod shared;
 mod shared_triangular;
@@ -102,9 +103,8 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
     )
     .execute(&mut conn)?;
 
-    let other_parent = parent_table::table::builder()
-        .parent_field("Other parent")
-        .insert(&mut conn)?;
+    let other_parent =
+        parent_table::table::builder().parent_field("Other parent").insert(&mut conn)?;
 
     let discretionary = satellite_table::table::builder()
         .parent_id(other_parent.get_column::<parent_table::id>())

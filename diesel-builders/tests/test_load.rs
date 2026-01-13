@@ -2,8 +2,10 @@
 
 mod shared;
 use diesel::prelude::*;
-use diesel_builders::load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated};
-use diesel_builders::prelude::*;
+use diesel_builders::{
+    load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated},
+    prelude::*,
+};
 use diesel_builders_derive::TableModel;
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
@@ -33,18 +35,9 @@ fn test_load_many() -> Result<(), Box<dyn std::error::Error>> {
     create_tables(&mut conn)?;
 
     // Insert Items
-    let item1 = items::table::builder()
-        .category(1)
-        .val(10)
-        .insert(&mut conn)?;
-    let item2 = items::table::builder()
-        .category(1)
-        .val(20)
-        .insert(&mut conn)?;
-    let _item3 = items::table::builder()
-        .category(2)
-        .val(30)
-        .insert(&mut conn)?;
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
+    let _item3 = items::table::builder().category(2).val(30).insert(&mut conn)?;
 
     // Test LoadMany
     let loaded_items: Vec<Item> = <(items::category,)>::load_many((1,), &mut conn)?;
@@ -66,20 +59,11 @@ fn test_load_many_sorted() -> Result<(), Box<dyn std::error::Error>> {
     create_tables(&mut conn)?;
 
     // Insert Items
-    let item1 = items::table::builder()
-        .category(1)
-        .val(10)
-        .insert(&mut conn)?;
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
 
-    let item2 = items::table::builder()
-        .category(1)
-        .val(20)
-        .insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
 
-    let _item3 = items::table::builder()
-        .category(2)
-        .val(30)
-        .insert(&mut conn)?;
+    let _item3 = items::table::builder().category(2).val(30).insert(&mut conn)?;
 
     // Test LoadManySorted
     // Should be sorted by Primary Key (id)
@@ -101,25 +85,13 @@ fn test_load_many_sorted_paginated() -> Result<(), Box<dyn std::error::Error>> {
     create_tables(&mut conn)?;
 
     // Insert Items
-    let item1 = items::table::builder()
-        .category(1)
-        .val(10)
-        .insert(&mut conn)?;
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
 
-    let item2 = items::table::builder()
-        .category(1)
-        .val(20)
-        .insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
 
-    let item3 = items::table::builder()
-        .category(1)
-        .val(30)
-        .insert(&mut conn)?;
+    let item3 = items::table::builder().category(1).val(30).insert(&mut conn)?;
 
-    let _item4 = items::table::builder()
-        .category(2)
-        .val(40)
-        .insert(&mut conn)?;
+    let _item4 = items::table::builder().category(2).val(40).insert(&mut conn)?;
 
     // Test LoadManySortedPaginated - get all with limit
     let paginated_items: Vec<Item> =

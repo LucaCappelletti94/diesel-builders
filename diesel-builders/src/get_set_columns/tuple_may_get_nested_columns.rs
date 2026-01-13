@@ -44,9 +44,6 @@ where
         Option<CHead::ColumnType>,
         <CTail::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,
     ) {
-        (
-            self.0.may_get_column(),
-            self.1.tuple_may_get_nested_columns(),
-        )
+        (self.0.may_get_column(), self.1.tuple_may_get_nested_columns())
     }
 }

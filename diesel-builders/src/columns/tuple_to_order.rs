@@ -1,4 +1,5 @@
-//! Submodule providing a nested tuple version of the `ToOrder` trait for Diesel columns.
+//! Submodule providing a nested tuple version of the `ToOrder` trait for Diesel
+//! columns.
 
 use diesel::{Expression, expression::AsExpression, sql_types::SingleValue};
 use tuplities::prelude::FlattenNestedTuple;

@@ -1,4 +1,5 @@
-//! Test case for a table with both mandatory and discretionary triangular relations.
+//! Test case for a table with both mandatory and discretionary triangular
+//! relations.
 
 mod shared;
 mod shared_triangular;
@@ -68,27 +69,19 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
         .discretionary(satellite_table::table::builder().field("Value D"))
         .insert(&mut conn)?;
 
+    assert_eq!(b.get_column::<child_with_mixed_table::child_field>(), "Value B");
     assert_eq!(
-        b.get_column::<child_with_mixed_table::child_field>(),
-        "Value B"
-    );
-    assert_eq!(
-        b.get_column::<child_with_mixed_table::remote_mandatory_field>()
-            .as_deref(),
+        b.get_column::<child_with_mixed_table::remote_mandatory_field>().as_deref(),
         Some("Value C")
     );
     assert_eq!(
-        b.get_column::<child_with_mixed_table::remote_discretionary_field>()
-            .as_deref(),
+        b.get_column::<child_with_mixed_table::remote_discretionary_field>().as_deref(),
         Some("Value D")
     );
 
     // Verify associated C
     let c: Satellite = b.mandatory(&mut conn)?;
-    assert_eq!(
-        c.parent_id(),
-        b.get_column_ref::<child_with_mixed_table::id>()
-    );
+    assert_eq!(c.parent_id(), b.get_column_ref::<child_with_mixed_table::id>());
     assert_eq!(c.get_column::<satellite_table::field>(), "Value C");
 
     // Verify associated D
@@ -117,38 +110,25 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     // Use GetForeignExt directly for primary-key based foreign key
     let c_pk: Satellite =
         b.foreign::<(child_with_mixed_table::mandatory_id,), (satellite_table::id,)>(&mut conn)?;
-    assert_eq!(
-        c_pk.get_column_ref::<satellite_table::id>(),
-        b.mandatory_id()
-    );
+    assert_eq!(c_pk.get_column_ref::<satellite_table::id>(), b.mandatory_id());
     assert_eq!(c_pk.get_column::<satellite_table::field>(), "Value C");
     let c_pk2: Satellite = b.foreign::<(
         child_with_mixed_table::mandatory_id,
         child_with_mixed_table::remote_mandatory_field,
     ), (satellite_table::id, satellite_table::field)>(&mut conn)?;
-    assert_eq!(
-        c_pk2.get_column_ref::<satellite_table::id>(),
-        b.mandatory_id()
-    );
+    assert_eq!(c_pk2.get_column_ref::<satellite_table::id>(), b.mandatory_id());
 
-    // Use GetForeignExt directly for composite foreign key mapping (non-nullable types)
-    let c_horizontal: Satellite =
-        b.foreign::<(
-            child_with_mixed_table::mandatory_id,
-            child_with_mixed_table::id,
-        ), (satellite_table::id, satellite_table::parent_id)>(&mut conn)?;
-    assert_eq!(
-        c_horizontal.get_column_ref::<satellite_table::id>(),
-        b.mandatory_id()
-    );
-    assert_eq!(
-        c_horizontal.parent_id(),
-        b.get_column_ref::<child_with_mixed_table::id>()
-    );
-    assert_eq!(
-        c_horizontal.get_column::<satellite_table::field>(),
-        "Value C"
-    );
+    // Use GetForeignExt directly for composite foreign key mapping (non-nullable
+    // types)
+    let c_horizontal: Satellite = b.foreign::<(
+        child_with_mixed_table::mandatory_id,
+        child_with_mixed_table::id,
+    ), (satellite_table::id, satellite_table::parent_id)>(
+        &mut conn
+    )?;
+    assert_eq!(c_horizontal.get_column_ref::<satellite_table::id>(), b.mandatory_id());
+    assert_eq!(c_horizontal.parent_id(), b.get_column_ref::<child_with_mixed_table::id>());
+    assert_eq!(c_horizontal.get_column::<satellite_table::field>(), "Value C");
 
     Ok(())
 }
@@ -158,9 +138,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
-    let parent_table = parent_table::table::builder()
-        .parent_field("Value A")
-        .insert(&mut conn)?;
+    let parent_table = parent_table::table::builder().parent_field("Value A").insert(&mut conn)?;
 
     let satellite_table = satellite_table::table::builder()
         .parent_id(parent_table.get_column::<parent_table::id>())
@@ -176,10 +154,7 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
         .discretionary_model(&satellite_table)
         .insert(&mut conn);
 
-    assert!(matches!(
-        result.unwrap_err(),
-        diesel_builders::BuilderError::Incomplete(_)
-    ));
+    assert!(matches!(result.unwrap_err(), diesel_builders::BuilderError::Incomplete(_)));
 
     Ok(())
 }

@@ -48,14 +48,8 @@ fn test_defaults() -> Result<(), Box<dyn std::error::Error>> {
     let builder = users::table::builder();
 
     // Check defaults in builder
-    assert_eq!(
-        builder.may_get_column::<users::name>(),
-        Some("Guest".to_string())
-    );
-    assert_eq!(
-        builder.may_get_column::<users::role>(),
-        Some("User".to_string())
-    );
+    assert_eq!(builder.may_get_column::<users::name>(), Some("Guest".to_string()));
+    assert_eq!(builder.may_get_column::<users::role>(), Some("User".to_string()));
     assert_eq!(builder.may_get_column::<users::active>(), Some(true));
 
     // For nullable column `bio`, default is `Some(None)`.
@@ -84,9 +78,7 @@ fn test_defaults() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Set email and insert
-    let user = builder
-        .try_email("test@example.com".to_string())?
-        .insert(&mut conn)?;
+    let user = builder.try_email("test@example.com".to_string())?.insert(&mut conn)?;
 
     assert_eq!(user.name, "Guest");
     assert_eq!(user.role, "User");

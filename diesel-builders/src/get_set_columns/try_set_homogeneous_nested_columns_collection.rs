@@ -1,10 +1,11 @@
 //! Submodule providing the `TrySetHomogeneousNestedColumnsCollection` trait.
 
+use tuplities::prelude::NestedTupleReplicate;
+
 use crate::{
     TypedNestedTupleCollection, columns::NestedColumnsCollection,
     get_set_columns::TrySetColumnsCollection,
 };
-use tuplities::prelude::NestedTupleReplicate;
 
 /// Trait indicating a builder can try to set multiple homogeneous
 /// columns.
