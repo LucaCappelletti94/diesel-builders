@@ -132,21 +132,21 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
     let d3 = child.d3(&mut conn)?;
     assert_eq!(d3, discretionary);
 
-    // Test iter_foreign_key - Child has 6 foreign keys to satellite_table (m1, m2,
+    // Test iter_foreign_keys - Child has 6 foreign keys to satellite_table (m1, m2,
     // m3, d1, d2, d3) Using composite index (satellite_table::id,
     // satellite_table::field)
-    let m1 = child.m1(&mut conn)?;
-    let m2 = child.m2(&mut conn)?;
-    let m3 = child.m3(&mut conn)?;
+    let _m1 = child.m1(&mut conn)?;
+    let _m2 = child.m2(&mut conn)?;
+    let _m3 = child.m3(&mut conn)?;
     let refs: Vec<_> =
-        child.iter_foreign_key::<(satellite_table::id, satellite_table::field)>().collect();
+        child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 6);
-    assert!(refs.contains(&(&m1.get_column::<satellite_table::id>(), m1.field())));
-    assert!(refs.contains(&(&m2.get_column::<satellite_table::id>(), m2.field())));
-    assert!(refs.contains(&(&m3.get_column::<satellite_table::id>(), m3.field())));
-    assert!(refs.contains(&(&d1.get_column::<satellite_table::id>(), d1.field())));
-    assert!(refs.contains(&(&d2.get_column::<satellite_table::id>(), d2.field())));
-    assert!(refs.contains(&(&d3.get_column::<satellite_table::id>(), d3.field())));
+    assert!(refs.contains(&(child.m1_id(), &child.m1_field)));
+    assert!(refs.contains(&(child.m2_id(), &child.m2_field)));
+    assert!(refs.contains(&(child.m3_id(), &child.m3_field)));
+    assert!(refs.contains(&(child.d1_id(), &child.d1_field)));
+    assert!(refs.contains(&(child.d2_id(), &child.d2_field)));
+    assert!(refs.contains(&(child.d3_id(), &child.d3_field)));
 
     Ok(())
 }

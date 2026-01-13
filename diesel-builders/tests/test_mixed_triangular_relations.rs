@@ -195,7 +195,7 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 }
 
 #[test]
-fn test_mixed_triangular_iter_foreign_key_coverage() -> Result<(), Box<dyn std::error::Error>> {
+fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
@@ -216,7 +216,7 @@ fn test_mixed_triangular_iter_foreign_key_coverage() -> Result<(), Box<dyn std::
         type Idx = (satellite_table::id, satellite_table::parent_id);
 
         // Explicitly specifying the trait to call
-        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_key(&b_model);
+        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_keys(&b_model);
         let values: Vec<_> = iter.collect();
 
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, parent_id)");
@@ -236,15 +236,13 @@ fn test_mixed_triangular_iter_foreign_key_coverage() -> Result<(), Box<dyn std::
         type Idx = (satellite_table::id, satellite_table::field);
 
         // Explicitly specifying the trait to call
-        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_key(&b_model);
+        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_keys(&b_model);
         let values: Vec<_> = iter.collect();
 
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, field)");
 
-        let ref_mandatory =
-            (&b_model.mandatory_id, b_model.remote_mandatory_field.as_ref().unwrap());
-        let ref_discretionary =
-            (&b_model.discretionary_id, b_model.remote_discretionary_field.as_ref().unwrap());
+        let ref_mandatory = (&b_model.mandatory_id, &b_model.remote_mandatory_field);
+        let ref_discretionary = (&b_model.discretionary_id, &b_model.remote_discretionary_field);
 
         assert!(values.contains(&ref_mandatory));
         assert!(values.contains(&ref_discretionary));

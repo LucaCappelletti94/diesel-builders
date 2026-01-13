@@ -320,8 +320,6 @@ struct CapturedForeignKey {
     host_fields: Vec<syn::Ident>,
     /// Referenced column paths in the target table
     ref_cols: Vec<TokenStream>,
-    /// Whether each host field should be unwrapped if it's an `Option`
-    unwrap_if_option: Vec<bool>,
     /// Unique key for grouping foreign keys that reference the same index
     grouping_key: String,
 }
@@ -343,28 +341,27 @@ pub fn generate_iter_foreign_key_impls(
     table_module: &Ident,
     model_ident: &Ident,
 ) -> syn::Result<Vec<TokenStream>> {
-    let captured_keys = collect_foreign_keys(fields, foreign_keys, table_module)?;
+    let captured_keys = collect_foreign_keys(fields, foreign_keys)?;
 
     // Group foreign keys by their referenced index
     let groups = group_by_referenced_index(captured_keys);
 
     // Generate an IterForeignKey impl for each unique referenced index
-    Ok(generate_impls_for_groups(groups, fields, model_ident))
+    Ok(generate_impls_for_groups(groups, table_module, model_ident))
 }
 
 /// Collects all foreign key relationships (both implicit and explicit).
 fn collect_foreign_keys(
     fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
-    table_module: &Ident,
 ) -> syn::Result<Vec<CapturedForeignKey>> {
     let mut captured_keys = Vec::new();
 
     // Collect implicit foreign keys from triangular relations
-    collect_triangular_foreign_keys(fields, table_module, &mut captured_keys)?;
+    collect_triangular_foreign_keys(fields, &mut captured_keys)?;
 
     // Collect explicit foreign keys from attributes
-    collect_explicit_foreign_keys(foreign_keys, table_module, &mut captured_keys);
+    collect_explicit_foreign_keys(foreign_keys, &mut captured_keys);
 
     Ok(captured_keys)
 }
@@ -372,7 +369,6 @@ fn collect_foreign_keys(
 /// Collects foreign keys from mandatory/discretionary triangular relations.
 fn collect_triangular_foreign_keys(
     fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
-    _table_module: &Ident,
     captured_keys: &mut Vec<CapturedForeignKey>,
 ) -> syn::Result<()> {
     for field in fields {
@@ -437,8 +433,6 @@ fn collect_triangular_foreign_keys(
                         captured_keys.push(CapturedForeignKey {
                             host_fields: vec![field_name.clone(), other_field_name.clone()],
                             ref_cols: vec![ref_pk, quote!(#ref_col)],
-                            // Both columns must be unwrapped if Option for triangular relations
-                            unwrap_if_option: vec![true, true],
                             grouping_key,
                         });
                     }
@@ -454,7 +448,6 @@ fn collect_triangular_foreign_keys(
 /// attributes.
 fn collect_explicit_foreign_keys(
     foreign_keys: &[ForeignKeyAttribute],
-    _table_module: &Ident,
     captured_keys: &mut Vec<CapturedForeignKey>,
 ) {
     for fk in foreign_keys {
@@ -473,7 +466,6 @@ fn collect_explicit_foreign_keys(
                     captured_keys.push(CapturedForeignKey {
                         host_fields: vec![host_col.clone()],
                         ref_cols: vec![ref_pk],
-                        unwrap_if_option: vec![true],
                         grouping_key,
                     });
                 }
@@ -501,7 +493,6 @@ fn collect_explicit_foreign_keys(
                     captured_keys.push(CapturedForeignKey {
                         host_fields: fk.host_columns.clone(),
                         ref_cols: ref_cols_tokens,
-                        unwrap_if_option: vec![true; fk.host_columns.len()],
                         grouping_key,
                     });
                 }
@@ -533,33 +524,78 @@ fn group_by_referenced_index(
 /// keys.
 fn generate_impls_for_groups(
     groups: std::collections::HashMap<String, (Vec<TokenStream>, Vec<CapturedForeignKey>)>,
-    fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    table_module: &Ident,
     model_ident: &Ident,
 ) -> Vec<TokenStream> {
     let mut impls = Vec::new();
-    let field_map: std::collections::HashMap<_, _> =
-        fields.iter().map(|f| (f.ident.as_ref().unwrap(), f)).collect();
 
     for (_, (ref_cols, keys)) in groups {
         let idx_type = quote! {( #(#ref_cols,)* )};
 
-        // Type of individual iterator items (flattened nested tuple of references)
-        let item_type = quote! {
-            <<<<#idx_type as ::diesel_builders::tuplities::NestTuple>::Nested
-                as ::diesel_builders::TypedNestedTuple>::NestedTupleValueType
+        // Collect all host columns that need GetColumn bounds
+        let mut host_columns = Vec::new();
+        for key in &keys {
+            for field_ident in &key.host_fields {
+                let host_col = quote!(#table_module::#field_ident);
+                if !host_columns
+                    .iter()
+                    .any(|existing: &TokenStream| existing.to_string() == host_col.to_string())
+                {
+                    host_columns.push(host_col);
+                }
+            }
+        }
+
+        // Build the item type from the first key's host columns structure
+        // All keys in this group reference the same index, so they should all have
+        // the same number/structure of host columns
+        assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
+        let first_key = &keys[0];
+        let host_column_tuple: Vec<_> =
+            first_key.host_fields.iter().map(|f| quote!(#table_module::#f)).collect();
+
+        // Always wrap in a tuple, even for single columns, because NestTuple is
+        // implemented for tuples
+        let host_columns_nested = quote!((#(#host_column_tuple,)*));
+
+        // Type of individual iterator items for ForeignKeysIter (flattened nested tuple
+        // of COLUMN references) Use the HOST columns (from the current table)
+        // not the referenced columns
+        let match_simple_item_type = quote! {
+            <<<<#host_columns_nested as ::diesel_builders::tuplities::NestTuple>::Nested
+                as ::diesel_builders::TypedNestedTuple>::NestedTupleColumnType
                 as ::diesel_builders::tuplities::NestedTupleRef>::Ref<'a>
                 as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
         };
 
-        // Build the chained iterator type and expression
-        let (chain_iter_type, chain_expr) = build_chain_iterator(&keys, &field_map, &item_type);
+        // Build the chained iterator type and expression (no filtering, no unwrapping)
+        let (match_simple_chain_iter_type, match_simple_chain_expr) =
+            build_chain_iterator(&keys, &match_simple_item_type, table_module);
+
+        // Build ForeignKeyItemType as a tuple of column types (not trait objects)
+        // Each item is just the column type itself
+        let foreign_key_item_type = quote! {( #(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<ValueType = <#ref_cols as ::diesel_builders::Typed>::ValueType>>,)* )};
+
+        // Build ForeignKeysIter expression: map each key group to boxed columns
+        let foreign_keys_expr = build_foreign_keys_iterator(&keys, &ref_cols, table_module);
 
         impls.push(quote! {
             impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
-                type ForeignKeysIter<'a> = #chain_iter_type;
+                type ForeignKeysIter<'a> = #match_simple_chain_iter_type
+                where
+                    #idx_type: 'a,
+                    Self: 'a;
 
-                fn iter_foreign_key(&self) -> Self::ForeignKeysIter<'_> {
-                    #chain_expr
+                type ForeignKeyItemType = #foreign_key_item_type;
+
+                type ForeignKeyColumnsIter = ::std::vec::IntoIter<Self::ForeignKeyItemType>;
+
+                fn iter_foreign_keys(&self) -> Self::ForeignKeysIter<'_> {
+                    #match_simple_chain_expr
+                }
+
+                fn iter_foreign_key_columns(&self) -> Self::ForeignKeyColumnsIter {
+                    #foreign_keys_expr
                 }
             }
         });
@@ -572,14 +608,14 @@ fn generate_impls_for_groups(
 /// instances.
 fn build_chain_iterator(
     keys: &[CapturedForeignKey],
-    field_map: &std::collections::HashMap<&syn::Ident, &Field>,
     item_type: &TokenStream,
+    table_module: &Ident,
 ) -> (TokenStream, TokenStream) {
     let mut chain_iter_type = quote!(::std::iter::Empty<#item_type>);
     let mut chain_expr = quote!(::std::iter::empty());
 
     for key in keys {
-        let (iter_expr, iter_type) = build_single_key_iterator(key, field_map, item_type);
+        let (iter_expr, iter_type) = build_single_key_iterator(key, item_type, table_module);
 
         chain_iter_type = quote!(::std::iter::Chain<#chain_iter_type, #iter_type>);
         chain_expr = quote!(#chain_expr.chain(#iter_expr));
@@ -591,63 +627,54 @@ fn build_chain_iterator(
 /// Builds an iterator expression and type for a single foreign key instance.
 fn build_single_key_iterator(
     key: &CapturedForeignKey,
-    field_map: &std::collections::HashMap<&syn::Ident, &Field>,
     item_type: &TokenStream,
+    table_module: &Ident,
 ) -> (TokenStream, TokenStream) {
-    // Identify which fields are Options that need unwrapping
-    let options_to_filter: Vec<_> = key
+    // Build the tuple of values - just get column references as-is
+    let value_tokens: Vec<_> = key
         .host_fields
         .iter()
-        .enumerate()
-        .filter(|(i, f_ident)| {
-            let field = field_map[f_ident];
-            key.unwrap_if_option[*i] && crate::utils::is_option(&field.ty)
+        .map(|f_ident| {
+            let col_path = quote!(#table_module::#f_ident);
+            quote!(::diesel_builders::GetColumn::<#col_path>::get_column_ref(self))
         })
-        .map(|(_, f_ident)| f_ident)
         .collect();
 
-    let has_options = !options_to_filter.is_empty();
+    let tuple_expr = quote!((#(#value_tokens,)*));
+    let iter_expr = quote!(::std::iter::once(#tuple_expr));
+    let iter_type = quote!(::std::iter::Once<#item_type>);
 
-    if has_options {
-        // Build a chain of .zip() calls to combine all Options
-        let mut zip_expr = quote!(Some(()));
-        let mut map_pattern = quote!(());
+    (iter_expr, iter_type)
+}
 
-        for opt_ident in &options_to_filter {
-            zip_expr = quote!(#zip_expr.zip(self.#opt_ident.as_ref()));
-            map_pattern = quote!((#map_pattern, #opt_ident));
-        }
+/// Builds an iterator expression that returns column tuples.
+fn build_foreign_keys_iterator(
+    keys: &[CapturedForeignKey],
+    ref_cols: &[TokenStream],
+    table_module: &syn::Ident,
+) -> TokenStream {
+    let mut items = Vec::new();
 
-        // Build the tuple of values, using unwrapped values where applicable
-        let value_tokens: Vec<_> = key
+    for key in keys {
+        // For each foreign key, create a tuple of HOST table column instances
+        // These are boxed as DynTypedColumn with the value type from the referenced
+        // index
+        let host_columns: Vec<_> = key
             .host_fields
             .iter()
-            .map(|f_ident| {
-                if options_to_filter.contains(&f_ident) {
-                    quote!(#f_ident) // Use unwrapped value from map pattern
-                } else {
-                    quote!(&self.#f_ident) // Use field directly
+            .zip(ref_cols.iter())
+            .map(|(host_field, ref_col)| {
+                let host_col = quote!(#table_module::#host_field);
+                quote! {
+                    ::std::boxed::Box::new(#host_col) as ::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<ValueType = <#ref_col as ::diesel_builders::Typed>::ValueType>>
                 }
             })
             .collect();
 
-        let tuple_expr = quote!((#(#value_tokens,)*));
+        items.push(quote! { (#(#host_columns,)*) });
+    }
 
-        let iter_expr = quote! {
-            #zip_expr.map(|#map_pattern| #tuple_expr).into_iter()
-        };
-        let iter_type = quote!(::std::option::IntoIter<#item_type>);
-
-        (iter_expr, iter_type)
-    } else {
-        // No Options to filter - yield a single item with all field references
-        let value_tokens: Vec<_> =
-            key.host_fields.iter().map(|f_ident| quote!(&self.#f_ident)).collect();
-
-        let tuple_expr = quote!((#(#value_tokens,)*));
-        let iter_expr = quote!(::std::iter::once(#tuple_expr));
-        let iter_type = quote!(::std::iter::Once<#item_type>);
-
-        (iter_expr, iter_type)
+    quote! {
+        ::std::vec![#(#items),*].into_iter()
     }
 }

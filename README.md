@@ -356,7 +356,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ```rust
 use diesel_builders::prelude::*;
-use diesel_builders::IterForeignKeyExt;
+use diesel_builders::DynTypedColumn;
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]
@@ -379,13 +379,22 @@ pub struct Edge {
 
 let edge = Edge { id: 1, source_id: 10, target_id: 20 };
 
-// Iterate foreign keys pointing to nodes::id
+// Iterate over foreign key values pointing to nodes::id
 // The result is a list of references to the foreign key values (flattened tuples)
-let refs: Vec<_> = edge.iter_foreign_key::<(nodes::id,)>().collect();
+let refs: Vec<_> = edge.iter_foreign_keys::<(nodes::id,)>().collect();
 
 assert_eq!(refs.len(), 2);
 assert!(refs.contains(&(&10,)));
 assert!(refs.contains(&(&20,)));
+
+// Iterate over foreign key columns as dynamic trait objects
+// The result is a list of boxed host table columns with value types from the referenced index
+let keys: Vec<(Box<dyn DynTypedColumn<ValueType = i32>>,)> = 
+    edge.iter_foreign_key_columns::<(nodes::id,)>().collect();
+
+assert_eq!(keys.len(), 2);
+assert_eq!(keys[0].0.column_name(), edges::source_id.column_name());
+assert_eq!(keys[1].0.column_name(), edges::target_id.column_name());
 ```
 
 ### 7. Validation with Check Constraints

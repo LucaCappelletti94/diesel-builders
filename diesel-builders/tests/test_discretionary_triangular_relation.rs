@@ -187,23 +187,20 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         *discretionary.parent_id()
     );
 
-    // Test iter_foreign_key with composite index (satellite_table::id,
+    // Test iter_foreign_keys with composite index (satellite_table::id,
     // satellite_table::field)
     let refs: Vec<_> =
-        child.iter_foreign_key::<(satellite_table::id, satellite_table::field)>().collect();
+        child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 1);
-    assert!(refs.contains(&(
-        &associated_discretionary.get_column::<satellite_table::id>(),
-        associated_discretionary.field()
-    )));
+    assert!(refs.contains(&(child.discretionary_id(), &child.remote_field)));
 
     let refs_independent: Vec<_> = independent_child
-        .iter_foreign_key::<(satellite_table::id, satellite_table::field)>()
+        .iter_foreign_keys::<(satellite_table::id, satellite_table::field)>()
         .collect();
     assert_eq!(refs_independent.len(), 1);
     assert!(
         refs_independent
-            .contains(&(&discretionary.get_column::<satellite_table::id>(), discretionary.field()))
+            .contains(&(independent_child.discretionary_id(), &independent_child.remote_field))
     );
 
     Ok(())
@@ -283,10 +280,10 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
         associated_parent.get_column::<parent_table::id>()
     );
 
-    // Test iter_foreign_key with composite index (satellite_table::id,
+    // Test iter_foreign_keys with composite index (satellite_table::id,
     // satellite_table::parent_id)
     let refs: Vec<_> =
-        child.iter_foreign_key::<(satellite_table::id, satellite_table::parent_id)>().collect();
+        child.iter_foreign_keys::<(satellite_table::id, satellite_table::parent_id)>().collect();
     assert_eq!(refs.len(), 1);
     assert!(refs.contains(&(
         &associated_discretionary.get_column::<satellite_table::id>(),

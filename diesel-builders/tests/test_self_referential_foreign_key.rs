@@ -82,10 +82,10 @@ fn test_taxonomy_with_parent() {
     // Verify parent relationship
     assert_eq!(child.parent_id(), &Some(*root.id()));
 
-    // Test iter_foreign_key - self-referential FK
-    let refs: Vec<_> = child.iter_foreign_key::<(taxonomy::id,)>().collect();
+    // Test iter_foreign_keys - self-referential FK
+    let refs: Vec<_> = child.iter_foreign_keys::<(taxonomy::id,)>().collect();
     assert_eq!(refs.len(), 1);
-    assert!(refs.contains(&(root.id(),)));
+    assert!(refs.contains(&(&Some(*root.id()),)));
 }
 
 #[test]

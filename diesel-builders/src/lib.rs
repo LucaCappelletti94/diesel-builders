@@ -16,7 +16,7 @@ pub use table_models::NestedTableModels;
 pub mod typed;
 pub use typed::*;
 pub mod typed_column;
-pub use typed_column::TypedColumn;
+pub use typed_column::{DynTypedColumn, TypedColumn};
 pub mod get_column;
 pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
 pub mod get_set_columns;

@@ -98,11 +98,11 @@ fn test_mandatory_vertical_same_as() -> Result<(), Box<dyn std::error::Error>> {
     let parent: Parent = child.ancestor(&mut conn)?;
     assert_eq!(parent.parent_field(), "Mandatory Value");
 
-    // Test iter_foreign_key with composite index (satellite_table::id,
+    // Test iter_foreign_keys with composite index (satellite_table::id,
     // satellite_table::parent_id)
     let mandatory = child.mandatory(&mut conn)?;
     let refs: Vec<_> =
-        child.iter_foreign_key::<(satellite_table::id, satellite_table::parent_id)>().collect();
+        child.iter_foreign_keys::<(satellite_table::id, satellite_table::parent_id)>().collect();
     assert_eq!(refs.len(), 1);
     assert!(
         refs.contains(&(&mandatory.get_column::<satellite_table::id>(), mandatory.parent_id()))
