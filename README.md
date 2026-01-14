@@ -357,6 +357,8 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ```rust
 use diesel_builders::prelude::*;
 use diesel_builders::DynTypedColumn;
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]
@@ -368,7 +370,6 @@ pub struct Node {
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edges)]
-#[table_model(surrogate_key)]
 #[table_model(foreign_key(source_id, (nodes::id)))]
 #[table_model(foreign_key(target_id, (nodes::id)))]
 pub struct Edge {
@@ -377,15 +378,28 @@ pub struct Edge {
     target_id: i32,
 }
 
-let edge = Edge { id: 1, source_id: 10, target_id: 20 };
+let mut conn = SqliteConnection::establish(":memory:")?;
+
+diesel::sql_query("CREATE TABLE nodes (id INTEGER PRIMARY KEY, name TEXT NOT NULL);").execute(&mut conn)?;
+diesel::sql_query("CREATE TABLE edges (id INTEGER PRIMARY KEY, source_id INTEGER NOT NULL REFERENCES nodes(id), target_id INTEGER NOT NULL REFERENCES nodes(id));").execute(&mut conn)?;
+
+let node1 = nodes::table::builder().name("Node 1").insert(&mut conn)?;
+let node2 = nodes::table::builder().name("Node 2").insert(&mut conn)?;
+let node3 = nodes::table::builder().name("Node 3").insert(&mut conn)?;
+
+let edge = edges::table::builder()
+    .id(1)
+    .source_id(*node1.id())
+    .target_id(*node2.id())
+    .insert(&mut conn)?;
 
 // Iterate over foreign key values pointing to nodes::id
 // The result is a list of references to the foreign key values (flattened tuples)
 let refs: Vec<_> = edge.iter_foreign_keys::<(nodes::id,)>().collect();
 
 assert_eq!(refs.len(), 2);
-assert!(refs.contains(&(&10,)));
-assert!(refs.contains(&(&20,)));
+assert!(refs.contains(&(&node1.id(),)));
+assert!(refs.contains(&(&node2.id(),)));
 
 // Iterate over foreign key columns as dynamic trait objects
 // The result is a list of boxed host table columns with value types from the referenced index
@@ -395,6 +409,18 @@ let keys: Vec<_> =
 assert_eq!(keys.len(), 2);
 assert_eq!(keys[0].0.column_name(), edges::source_id.column_name());
 assert_eq!(keys[1].0.column_name(), edges::target_id.column_name());
+
+// We can dynamically set the values of the columns using `TrySetDynamicColumn::try_set_dynamic_column`
+let mut edge_builder = edges::table::builder().id(2);
+for ((column,), (value_ref,)) in keys.iter().zip(refs.iter()) {
+    edge_builder.try_set_dynamic_column_ref::<edges::table, i32>(column, **value_ref)?;
+}
+let edge2 = edge_builder.insert(&mut conn)?;
+
+assert_eq!(edge2.source_id(), edge.source_id());
+assert_eq!(edge2.target_id(), edge.target_id());
+
+Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ### 7. Validation with Check Constraints
