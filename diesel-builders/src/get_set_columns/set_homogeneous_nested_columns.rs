@@ -39,7 +39,7 @@ where
     CTail: HomogeneouslyTypedNestedColumns<Type>,
     CHead::ColumnType: From<Type>,
     (CHead, CTail): NonEmptyNestedProjection<
-        NestedTupleColumnType = (CHead::ColumnType, CTail::NestedTupleColumnType),
+        NestedTupleValueType = (CHead::ValueType, CTail::NestedTupleValueType),
     >,
     T: SetColumn<CHead> + SetHomogeneousNestedColumns<Type, CTail>,
 {

@@ -4,7 +4,7 @@ use tuplities::prelude::{
     FlattenNestedTuple, IntoNestedTupleOption, NestedTupleFrom, NestedTupleInto, NestedTupleRef,
 };
 
-use crate::Typed;
+use crate::ColumnTyped;
 
 /// Trait for recursive definition of the `Typed` trait.
 pub trait TypedNestedTuple: FlattenNestedTuple {
@@ -25,7 +25,7 @@ impl TypedNestedTuple for () {
 
 impl<T> TypedNestedTuple for (T,)
 where
-    T: Typed,
+    T: ColumnTyped,
     (T,): FlattenNestedTuple,
     (T::ColumnType,): FlattenNestedTuple,
 {
@@ -35,7 +35,7 @@ where
 
 impl<Head, Tail> TypedNestedTuple for (Head, Tail)
 where
-    Head: Typed,
+    Head: ColumnTyped,
     Tail: TypedNestedTuple,
     (Head, Tail): FlattenNestedTuple,
     (Head::ColumnType, Tail::NestedTupleColumnType): FlattenNestedTuple,

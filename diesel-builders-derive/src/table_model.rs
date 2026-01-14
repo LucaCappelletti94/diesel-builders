@@ -320,17 +320,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     // Extract fields
     let fields = match &input.data {
-        syn::Data::Struct(data) => {
-            match &data.fields {
-                syn::Fields::Named(fields) => &fields.named,
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        input,
-                        "TableModel can only be derived for structs with named fields",
-                    ));
-                }
+        syn::Data::Struct(data) => match &data.fields {
+            syn::Fields::Named(fields) => &fields.named,
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    input,
+                    "TableModel can only be derived for structs with named fields",
+                ));
             }
-        }
+        },
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
@@ -366,6 +364,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let table_macro = generate_table_macro(input, &table_module, &primary_key_columns)?;
     let typed_column_impls =
         generate_typed_column_impls(fields, &table_module, struct_ident, &primary_key_columns);
+    let nested_columns_by_type_impls =
+        typed_column::generate_nested_columns_by_type_impls(fields, &table_module);
     let get_column_impls = generate_get_column_impls(fields, &table_module, struct_ident);
     let indexed_column_impls = generate_indexed_column_impls(&table_module, &primary_key_columns);
     let nested_primary_keys = format_as_nested_tuple(
@@ -461,11 +461,10 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
-    let new_record_type = format_as_nested_tuple(
-        new_record_columns
-            .iter()
-            .map(|col| quote::quote! { Option<<#col as ::diesel_builders::Typed>::ColumnType> }),
-    );
+    let new_record_type =
+        format_as_nested_tuple(new_record_columns.iter().map(
+            |col| quote::quote! { Option<<#col as ::diesel_builders::ColumnTyped>::ColumnType> },
+        ));
     let may_get_column_impls =
         may_get_columns::generate_may_get_column_impls(&new_record_columns, &table_module);
 
@@ -881,6 +880,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     Ok(quote! {
         #table_macro
         #typed_column_impls
+        #nested_columns_by_type_impls
         #get_column_impls
         #(#indexed_column_impls)*
         #may_get_column_impls

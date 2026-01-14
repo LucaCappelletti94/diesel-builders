@@ -1,5 +1,7 @@
 //! Helper functions for creating builder-related errors.
 
+use std::fmt::Display;
+
 use diesel::result::DatabaseErrorInformation;
 
 /// Error type for incomplete builder operations.
@@ -21,6 +23,36 @@ pub enum IncompleteBuilderError {
     MissingMandatoryTriangularField(&'static str),
     /// A field required for insertion is missing.
     MissingMandatoryField(&'static str),
+}
+
+/// Specific error indicating that a dynamic setting operation
+/// has failed due to an incompatible/unknown column.
+#[derive(Debug)]
+pub enum DynamicSetColumnError<E> {
+    /// The specified column is not part of the table.
+    UnknownColumn(&'static str),
+    /// Validation error when setting the column.
+    Validation(E),
+}
+
+impl<E: Display> Display for DynamicSetColumnError<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DynamicSetColumnError::UnknownColumn(column_name) => {
+                write!(f, "Unknown column: `{column_name}`")
+            }
+            DynamicSetColumnError::Validation(e) => write!(f, "Validation error: {e}"),
+        }
+    }
+}
+
+impl<E: std::error::Error + 'static> std::error::Error for DynamicSetColumnError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            DynamicSetColumnError::UnknownColumn(_) => None,
+            DynamicSetColumnError::Validation(e) => Some(e),
+        }
+    }
 }
 
 /// A specialized `Result` type for builder operations.
@@ -117,18 +149,14 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
     fn from(error: BuilderError<E>) -> Self {
         match error {
             BuilderError::Diesel(e) => e,
-            BuilderError::Incomplete(e) => {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::CheckViolation,
-                    Box::new(e),
-                )
-            }
-            BuilderError::Validation(e) => {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::CheckViolation,
-                    Box::new(e),
-                )
-            }
+            BuilderError::Incomplete(e) => diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::CheckViolation,
+                Box::new(e),
+            ),
+            BuilderError::Validation(e) => diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::CheckViolation,
+                Box::new(e),
+            ),
         }
     }
 }

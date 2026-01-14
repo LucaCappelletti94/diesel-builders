@@ -86,6 +86,8 @@ where
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
+///
+/// Extends [`HasTableExt`].
 pub trait TrySetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>>:
     HasTableExt
 {
@@ -101,6 +103,8 @@ pub trait TrySetMandatoryBuilder<Key: MandatorySameAsIndex<ReferencedTable: Buil
 }
 
 /// Trait attempting to set a specific Diesel column, which may fail.
+///
+/// Extends [`HasTableExt`].
 pub trait TrySetDiscretionaryBuilder<Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>>:
     HasTableExt
 {
@@ -117,6 +121,8 @@ pub trait TrySetDiscretionaryBuilder<Key: DiscretionarySameAsIndex<ReferencedTab
 
 /// Trait attempting to set a specific Diesel discretionary triangular model,
 /// which may fail.
+///
+/// Extends [`HasTableExt`].
 pub trait TrySetDiscretionaryModel<Key: DiscretionarySameAsIndex>: HasTableExt {
     /// Attempt to set the values associated to the provided model.
     ///
@@ -155,8 +161,8 @@ where
     }
 }
 
-/// Extension trait for `SetMandatoryBuilder` that allows specifying the column
-/// at the method level.
+/// Extension trait for [`SetMandatoryBuilder`] that allows specifying the
+/// column at the method level.
 ///
 /// This trait provides a cleaner API where the relationship type is specified
 /// as a type parameter on the method rather than on the trait itself. It
@@ -201,7 +207,7 @@ pub trait SetMandatoryBuilderExt: Sized {
 
 impl<T> SetMandatoryBuilderExt for T {}
 
-/// Extension trait for `SetDiscretionaryBuilder` that allows specifying the
+/// Extension trait for [`SetDiscretionaryBuilder`] that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
@@ -235,7 +241,7 @@ pub trait SetDiscretionaryBuilderExt: Sized {
 
 impl<T> SetDiscretionaryBuilderExt for T {}
 
-/// Extension trait for `TrySetMandatoryBuilder` that allows specifying the
+/// Extension trait for [`TrySetMandatoryBuilder`] that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a failable API for setting mandatory relationships.
@@ -291,8 +297,8 @@ pub trait TrySetMandatoryBuilderExt: HasTableExt {
 
 impl<T: HasTableExt> TrySetMandatoryBuilderExt for T {}
 
-/// Extension trait for `TrySetDiscretionaryBuilder` that allows specifying the
-/// column at the method level.
+/// Extension trait for [`TrySetDiscretionaryBuilder`] that allows specifying
+/// the column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
 /// type parameter on the method rather than on the trait itself.
@@ -337,7 +343,7 @@ pub trait TrySetDiscretionaryBuilderExt: HasTableExt {
 
 impl<T: HasTableExt> TrySetDiscretionaryBuilderExt for T {}
 
-/// Extension trait for `SetDiscretionaryModel` that allows specifying the
+/// Extension trait for [`SetDiscretionaryModel`] that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
@@ -374,7 +380,7 @@ pub trait SetDiscretionaryModelExt: Sized {
 
 impl<T> SetDiscretionaryModelExt for T {}
 
-/// Extension trait for `TrySetDiscretionaryModel` that allows specifying the
+/// Extension trait for [`TrySetDiscretionaryModel`] that allows specifying the
 /// column at the method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a

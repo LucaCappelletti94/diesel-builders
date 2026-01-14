@@ -6,7 +6,7 @@ mod shared;
 mod shared_animals;
 use std::{rc::Rc, sync::Arc};
 
-use diesel_builders::prelude::*;
+use diesel_builders::{DynTypedColumn, prelude::*};
 use shared_animals::*;
 
 #[test]
@@ -84,6 +84,19 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let remaining_animals: Vec<Animal> = animals::table.load(&mut conn)?;
     assert!(!remaining_animals.contains(&animal));
     assert!(remaining_animals.contains(&another_animal));
+
+    // We attempt to dynamically set the description column using
+    // TrySetDynamicColumnExt
+    let dyn_desc_column: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
+        Box::new(animals::description);
+    let dyn_desc_name: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
+        Box::new(animals::name);
+    let animal = animals::table::builder()
+        .try_set_dynamic_column(dyn_desc_name, "Dynamic Name")?
+        .try_set_dynamic_column(dyn_desc_column, "Dynamically set description")?
+        .insert(&mut conn)?;
+    assert_eq!(animal.description().as_deref(), Some("Dynamically set description"));
+    assert_eq!(animal.name(), "Dynamic Name");
 
     Ok(())
 }

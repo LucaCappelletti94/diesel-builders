@@ -60,7 +60,7 @@ pub trait HorizontalKey:
     >>;
 }
 
-/// Extension trait for `HorizontalKey` to access nested host and foreign
+/// Extension trait for [`HorizontalKey`] to access nested host and foreign
 /// columns.
 pub trait HorizontalKeyExt: HorizontalKey {
     /// The nested host columns.

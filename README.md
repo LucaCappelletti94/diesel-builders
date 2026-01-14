@@ -389,7 +389,7 @@ assert!(refs.contains(&(&20,)));
 
 // Iterate over foreign key columns as dynamic trait objects
 // The result is a list of boxed host table columns with value types from the referenced index
-let keys: Vec<(Box<dyn DynTypedColumn<ValueType = i32>>,)> = 
+let keys: Vec<_> = 
     edge.iter_foreign_key_columns::<(nodes::id,)>().collect();
 
 assert_eq!(keys.len(), 2);

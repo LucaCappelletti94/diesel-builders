@@ -107,8 +107,7 @@ fn test_iter_foreign_keys() {
     let edge_instance = Edge { id: 0, source_id: 1, target_id: 2 };
 
     // iter_foreign_key_columns returns boxed host table columns
-    let keys: Vec<(Box<dyn DynTypedColumn<ValueType = i32>>,)> =
-        edge_instance.iter_foreign_key_columns::<(nodes::id,)>().collect();
+    let keys: Vec<_> = edge_instance.iter_foreign_key_columns::<(nodes::id,)>().collect();
 
     // Should have 2 foreign keys (source_id and target_id both reference nodes::id)
     assert_eq!(keys.len(), 2);
@@ -124,8 +123,7 @@ fn test_iter_foreign_key_columns_with_optional_edges() {
     let edge_instance = OptionalEdge { id: 0, source_id: Some(1), target_id: Some(2) };
 
     // iter_foreign_key_columns returns the same column tuples regardless of values
-    let keys: Vec<(Box<dyn DynTypedColumn<ValueType = i32>>,)> =
-        edge_instance.iter_foreign_key_columns::<(nodes::id,)>().collect();
+    let keys: Vec<_> = edge_instance.iter_foreign_key_columns::<(nodes::id,)>().collect();
 
     // Should have 2 foreign keys
     assert_eq!(keys.len(), 2);

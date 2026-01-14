@@ -5,7 +5,7 @@ mod iter_foreign_key;
 pub use iter_foreign_key::{IterForeignKey, IterForeignKeyExt};
 
 use crate::{
-    Descendant, GetColumn, TableExt, Typed, TypedColumn, TypedNestedTuple,
+    Descendant, GetColumn, TableExt, TypedColumn, TypedNestedTuple, ValueTyped,
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
@@ -165,7 +165,7 @@ pub trait NestedForeignKeyTail<
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
     H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<ValueType = <H1 as Typed>::ValueType> + IndexedColumn<typenum::U0, (F1,)>,
+    F1: TypedColumn<ValueType = <H1 as ValueTyped>::ValueType> + IndexedColumn<typenum::U0, (F1,)>,
 {
 }
 
@@ -178,7 +178,7 @@ where
     (Hhead, Htail): NonEmptyNestedProjection<Table = Hhead::Table>,
     (Fhead, Ftail): NestedTableIndexTail<Idx, FullReferencedIndex>,
     Hhead: TypedColumn,
-    Fhead: TypedColumn<ValueType = <Hhead as Typed>::ValueType>,
+    Fhead: TypedColumn<ValueType = <Hhead as ValueTyped>::ValueType>,
     Htail::NestedTupleValueType: NestedTupleFrom<<Ftail as TypedNestedTuple>::NestedTupleValueType>,
     <(Hhead, Htail) as TypedNestedTuple>::NestedTupleValueType:
         NestedTupleFrom<<(Fhead, Ftail) as TypedNestedTuple>::NestedTupleValueType>,
@@ -203,8 +203,8 @@ pub trait ForeignPrimaryKey: TypedColumn {
     /// The referenced table.
     type ReferencedTable: HasPrimaryKeyColumn<
             PrimaryKey: PrimaryKeyColumn<
-                ValueType = <Self as Typed>::ValueType,
-                ColumnType = <Self as Typed>::ValueType,
+                ValueType = <Self as ValueTyped>::ValueType,
+                ColumnType = <Self as ValueTyped>::ValueType,
             >,
         > + Descendant;
 }

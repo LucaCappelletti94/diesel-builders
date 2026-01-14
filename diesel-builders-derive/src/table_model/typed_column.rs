@@ -130,14 +130,14 @@ fn generate_getter_trait(
 
     quote! {
         #[doc = #get_trait_doc_comment]
-        pub trait #get_field_name: diesel_builders::GetColumn<#table_module::#field_name> {
+        pub trait #get_field_name: ::diesel_builders::GetColumn<#table_module::#field_name> {
             #[inline]
             #[doc = #get_field_name_method_doc_comment]
-            fn #method_name(&self) -> &<#table_module::#field_name as diesel_builders::Typed>::ColumnType {
+            fn #method_name(&self) -> &<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType {
                 self.get_column_ref()
             }
         }
-        impl<T> #get_field_name for T where T: diesel_builders::GetColumn<#table_module::#field_name> {}
+        impl<T> #get_field_name for T where T: ::diesel_builders::GetColumn<#table_module::#field_name> {}
     }
 }
 
@@ -173,7 +173,7 @@ fn generate_set_trait(
             #[doc = #field_name_ref_method_doc_comment]
             fn #field_name_ref(
                 &mut self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
+                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
             ) -> &mut Self {
                 use diesel_builders::SetColumnExt;
                 self.set_column_ref::<#table_module::#field_name>(value)
@@ -183,7 +183,7 @@ fn generate_set_trait(
             #[doc = #field_name_method_doc_comment]
             fn #method_name(
                 self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType>
+                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
             ) -> Self {
                 use diesel_builders::SetColumnExt;
                 self.set_column::<#table_module::#field_name>(value)
@@ -229,7 +229,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the column check constraints are not respected."]
             fn #try_field_name_ref(
                 &mut self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType> + Clone
+                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
             ) -> Result<&mut Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column_ref::<#table_module::#field_name>(value)
@@ -242,7 +242,7 @@ fn generate_try_set_trait(
             #[doc = "Returns an error if the value cannot be converted to the column type."]
             fn #try_field_name(
                 self,
-                value: impl Into<<#table_module::#field_name as diesel_builders::Typed>::ColumnType> + Clone
+                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
             ) -> Result<Self, Self::Error> {
                 use diesel_builders::TrySetColumnExt;
                 self.try_set_column::<#table_module::#field_name>(value)
@@ -264,8 +264,10 @@ fn generate_typed_impl(
     let value_type = extract_option_inner_type(field_type).unwrap_or(quote::quote! { #field_type });
 
     quote! {
-        impl diesel_builders::Typed for #table_module::#field_name {
+        impl ::diesel_builders::ValueTyped for #table_module::#field_name {
             type ValueType = #value_type;
+        }
+        impl ::diesel_builders::ColumnTyped for #table_module::#field_name {
             type ColumnType = #field_type;
         }
     }
@@ -637,5 +639,55 @@ fn generate_triangular_relation_traits(
     quote! {
         #discretionary_traits
         #mandatory_traits
+    }
+}
+
+/// Generate `NestedColumnsByValueType` trait implementations for a table.
+/// Groups columns by their `ValueType` (ignoring `Option` wrapper).
+pub fn generate_nested_columns_by_type_impls(
+    fields: &Punctuated<Field, Token![,]>,
+    table_module: &syn::Ident,
+) -> TokenStream {
+    use std::collections::HashMap;
+
+    use crate::utils::format_as_nested_tuple;
+
+    // Group columns by their ValueType
+    let mut columns_by_type: HashMap<String, Vec<&Ident>> = HashMap::new();
+
+    for field in fields {
+        if let Some(field_name) = &field.ident {
+            let field_type = &field.ty;
+            let value_type = extract_option_inner_type(field_type)
+                .unwrap_or_else(|| quote::quote! { #field_type });
+
+            let type_string = value_type.to_string();
+            columns_by_type.entry(type_string).or_default().push(field_name);
+        }
+    }
+
+    // Generate an impl for each ValueType group
+    let impls: Vec<TokenStream> = columns_by_type
+        .into_iter()
+        .filter(|(_, columns)| !columns.is_empty())
+        .map(|(type_str, columns)| {
+            // Parse the type string back to a Type
+            let value_type: syn::Type = syn::parse_str(&type_str)
+                .unwrap_or_else(|_| panic!("Failed to parse type: {}", type_str));
+            // Build the nested columns tuple using format_as_nested_tuple
+            let nested_columns = format_as_nested_tuple(
+                columns.iter().map(|col| quote::quote! { #table_module::#col })
+            );
+
+            quote! {
+                impl ::diesel_builders::NestedColumnsByValueType<#value_type> for #table_module::table {
+                    type NestedColumns = #nested_columns;
+                }
+            }
+        })
+        .collect();
+
+    quote! {
+        #(#impls)*
     }
 }

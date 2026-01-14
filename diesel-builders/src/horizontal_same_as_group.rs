@@ -10,6 +10,8 @@ use crate::{
 
 /// A trait for Diesel columns that are associated with a group of horizontal
 /// same-as columns.
+///
+/// Extends [`TypedColumn`].
 pub trait HorizontalSameAsGroup: TypedColumn {
     /// The index of the column in the host column.
     type Idx: Unsigned;
@@ -34,7 +36,7 @@ pub trait HorizontalSameAsGroup: TypedColumn {
     >;
 }
 
-/// Extension trait for `HorizontalSameAsGroup` to provide associated types
+/// Extension trait for [`HorizontalSameAsGroup`] to provide associated types
 /// for mandatory and discretionary host and foreign columns.
 pub trait HorizontalSameAsGroupExt:
     HorizontalSameAsGroup<

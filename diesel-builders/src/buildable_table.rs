@@ -15,6 +15,8 @@ use crate::{
 /// dependencies. It ensures that all required related records are created in
 /// the correct order.
 ///
+/// Extends [`BundlableTableExt`] and [`DescendantWithSelf`].
+///
 /// # Type Parameters
 ///
 /// * `NestedAncestorBuilders`: A nested tuple of builder bundles for ancestor

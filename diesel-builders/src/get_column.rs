@@ -39,7 +39,7 @@ where
     }
 }
 
-/// Extension trait for `GetColumn` that allows specifying the column at the
+/// Extension trait for [`GetColumn`] that allows specifying the column at the
 /// method level.
 ///
 /// This trait provides a cleaner API where the column marker is specified as a
@@ -66,8 +66,8 @@ pub trait GetColumnExt {
 
 impl<T> GetColumnExt for T {}
 
-/// Extension trait for `MayGetColumn` that allows specifying the column at the
-/// method level.
+/// Extension trait for [`MayGetColumn`] that allows specifying the column at
+/// the method level.
 pub trait MayGetColumnExt {
     /// Get a reference to specified column, returning `None` if not present.
     fn may_get_column_ref<'a, Column>(&'a self) -> Option<&'a Column::ColumnType>

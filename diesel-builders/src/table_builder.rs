@@ -9,12 +9,12 @@ mod serde;
 pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder};
 
 use crate::{
-    AncestorOfIndex, BundlableTable, DescendantOf, DiscretionarySameAsIndex, ForeignPrimaryKey,
-    MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
+    AncestorOfIndex, BundlableTable, ColumnTyped, DescendantOf, DiscretionarySameAsIndex,
+    ForeignPrimaryKey, MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
     MayValidateNestedColumns, NestedColumns, SetColumn, SetDiscretionaryBuilder,
     SetHomogeneousNestedColumns, SetMandatoryBuilder, TableBuilderBundle, TableExt,
     TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
-    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, Typed, TypedColumn, ValidateColumn,
+    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, TypedColumn, ValidateColumn,
     buildable_table::BuildableTable, vertical_same_as_group::VerticalSameAsGroup,
 };
 
@@ -155,7 +155,9 @@ where
         + DescendantOf<
             Key::Table,
             NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleColumnType = (<<Key::Table as Table>::PrimaryKey as Typed>::ColumnType,),
+                NestedTupleColumnType = (
+                    <<Key::Table as Table>::PrimaryKey as ColumnTyped>::ColumnType,
+                ),
             >,
         >,
     Key: MandatorySameAsIndex,

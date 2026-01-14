@@ -15,7 +15,7 @@ pub fn generate_get_column_impls(
         let field_name = field.ident.as_ref()?;
         Some(quote! {
             impl ::diesel_builders::GetColumn<#table_module::#field_name> for #struct_ident {
-                fn get_column_ref(&self) -> &<#table_module::#field_name as ::diesel_builders::Typed>::ColumnType {
+                fn get_column_ref(&self) -> &<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType {
                     &self.#field_name
                 }
             }

@@ -30,7 +30,7 @@ pub trait BundlableTable: Sized {
     type DiscretionaryTriangularColumns: Columns<Nested: HorizontalNestedKeys<Self>>;
 }
 
-/// Extension trait for `BundlableTable`.
+/// Extension trait for [`BundlableTable`].
 pub trait BundlableTableExt:
     BundlableTable + TableExt<NewValues: NestedTupleOption<Transposed = Self::CompletedNewValues>>
 {

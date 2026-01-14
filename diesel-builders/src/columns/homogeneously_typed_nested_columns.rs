@@ -6,12 +6,12 @@ use crate::{HomogeneouslyTypedNestedTuple, TypedColumn};
 
 /// Trait representing a nested tuple of columns where all columns have the same
 /// associated Type.
-pub trait HomogeneouslyTypedNestedColumns<CT>:
-    NestedColumns + HomogeneouslyTypedNestedTuple<CT>
+pub trait HomogeneouslyTypedNestedColumns<VT>:
+    NestedColumns + HomogeneouslyTypedNestedTuple<VT>
 {
 }
 
-impl<CT> HomogeneouslyTypedNestedColumns<CT> for () {}
+impl<VT> HomogeneouslyTypedNestedColumns<VT> for () {}
 
 impl<Type, C1: TypedColumn> HomogeneouslyTypedNestedColumns<Type> for (C1,) {}
 

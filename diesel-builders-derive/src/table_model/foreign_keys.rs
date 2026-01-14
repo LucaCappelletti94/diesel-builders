@@ -556,13 +556,13 @@ fn generate_impls_for_groups(
 
         // Always wrap in a tuple, even for single columns, because NestTuple is
         // implemented for tuples
-        let host_columns_nested = quote!((#(#host_column_tuple,)*));
+        let host_columns = quote!((#(#host_column_tuple,)*));
 
         // Type of individual iterator items for ForeignKeysIter (flattened nested tuple
         // of COLUMN references) Use the HOST columns (from the current table)
         // not the referenced columns
         let match_simple_item_type = quote! {
-            <<<<#host_columns_nested as ::diesel_builders::tuplities::NestTuple>::Nested
+            <<<<#host_columns as ::diesel_builders::tuplities::NestTuple>::Nested
                 as ::diesel_builders::TypedNestedTuple>::NestedTupleColumnType
                 as ::diesel_builders::tuplities::NestedTupleRef>::Ref<'a>
                 as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
@@ -574,10 +574,13 @@ fn generate_impls_for_groups(
 
         // Build ForeignKeyItemType as a tuple of column types (not trait objects)
         // Each item is just the column type itself
-        let foreign_key_item_type = quote! {( #(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<ValueType = <#ref_cols as ::diesel_builders::Typed>::ValueType>>,)* )};
+        let foreign_key_item_type = quote! {( #(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
+            ValueType = <#host_column_tuple as ::diesel_builders::ValueTyped>::ValueType,
+            Table = #table_module::table,
+        >>,)* )};
 
         // Build ForeignKeysIter expression: map each key group to boxed columns
-        let foreign_keys_expr = build_foreign_keys_iterator(&keys, &ref_cols, table_module);
+        let foreign_keys_expr = build_foreign_keys_iterator(&keys, table_module);
 
         impls.push(quote! {
             impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
@@ -650,7 +653,6 @@ fn build_single_key_iterator(
 /// Builds an iterator expression that returns column tuples.
 fn build_foreign_keys_iterator(
     keys: &[CapturedForeignKey],
-    ref_cols: &[TokenStream],
     table_module: &syn::Ident,
 ) -> TokenStream {
     let mut items = Vec::new();
@@ -662,11 +664,13 @@ fn build_foreign_keys_iterator(
         let host_columns: Vec<_> = key
             .host_fields
             .iter()
-            .zip(ref_cols.iter())
-            .map(|(host_field, ref_col)| {
+            .map(|host_field| {
                 let host_col = quote!(#table_module::#host_field);
                 quote! {
-                    ::std::boxed::Box::new(#host_col) as ::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<ValueType = <#ref_col as ::diesel_builders::Typed>::ValueType>>
+                    ::std::boxed::Box::new(#host_col) as ::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
+                    ValueType = <#host_col as ::diesel_builders::ValueTyped>::ValueType,
+                    Table = #table_module::table,
+                >>
                 }
             })
             .collect();

@@ -14,7 +14,7 @@ pub(super) fn generate_set_column_impls(
         quote::quote! {
             impl ::diesel_builders::SetColumn<#new_record_column> for <#table_module::table as ::diesel_builders::TableExt>::NewValues {
                 #[inline]
-                fn set_column(&mut self, value: impl Into<<#new_record_column as ::diesel_builders::Typed>::ColumnType>) -> &mut Self {
+                fn set_column(&mut self, value: impl Into<<#new_record_column as ::diesel_builders::ColumnTyped>::ColumnType>) -> &mut Self {
                     use ::diesel_builders::tuplities::NestedTupleIndexMut;
                     *<Self as NestedTupleIndexMut<#index_path>>::nested_index_mut(self) = Some(value.into());
                     self
