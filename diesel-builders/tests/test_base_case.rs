@@ -6,8 +6,32 @@ mod shared;
 mod shared_animals;
 use std::{rc::Rc, sync::Arc};
 
-use diesel_builders::{DynTypedColumn, prelude::*};
+use diesel_builders::{
+    ColumnTyped, DynTypedColumn, ValueTyped, builder_error::DynamicSetColumnError, prelude::*,
+};
 use shared_animals::*;
+
+#[derive(Debug, PartialEq, Eq, Default)]
+/// A cursed column marker explicitly designed to cause the error case
+/// in `TrySetDynamicColumn`.
+struct CursedColumn;
+
+impl Expression for CursedColumn {
+    type SqlType = diesel::sql_types::Text;
+}
+
+impl Column for CursedColumn {
+    type Table = animals::table;
+    const NAME: &'static str = "cursed_column";
+}
+
+impl ValueTyped for CursedColumn {
+    type ValueType = String;
+}
+
+impl ColumnTyped for CursedColumn {
+    type ColumnType = String;
+}
 
 #[test]
 fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
@@ -91,10 +115,19 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(animals::description);
     let dyn_desc_name: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
         Box::new(animals::name);
-    let animal = animals::table::builder()
+    let dyn_cursed_column: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
+        Box::new(CursedColumn);
+
+    let mut animal_builder = animals::table::builder()
         .try_set_dynamic_column(dyn_desc_name, "Dynamic Name")?
-        .try_set_dynamic_column(dyn_desc_column, "Dynamically set description")?
-        .insert(&mut conn)?;
+        .try_set_dynamic_column(dyn_desc_column, "Dynamically set description")?;
+
+    assert_eq!(
+        animal_builder.try_set_dynamic_column_ref(dyn_cursed_column, "This will fail"),
+        Err(DynamicSetColumnError::UnknownColumn(<CursedColumn as Column>::NAME))
+    );
+
+    animal = animal_builder.insert(&mut conn)?;
     assert_eq!(animal.description().as_deref(), Some("Dynamically set description"));
     assert_eq!(animal.name(), "Dynamic Name");
 

@@ -672,8 +672,7 @@ pub fn generate_nested_columns_by_type_impls(
         .filter(|(_, columns)| !columns.is_empty())
         .map(|(type_str, columns)| {
             // Parse the type string back to a Type
-            let value_type: syn::Type = syn::parse_str(&type_str)
-                .unwrap_or_else(|_| panic!("Failed to parse type: {}", type_str));
+            let value_type: syn::Type = syn::parse_str(&type_str).unwrap();
             // Build the nested columns tuple using format_as_nested_tuple
             let nested_columns = format_as_nested_tuple(
                 columns.iter().map(|col| quote::quote! { #table_module::#col })

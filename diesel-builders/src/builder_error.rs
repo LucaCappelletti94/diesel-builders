@@ -27,7 +27,7 @@ pub enum IncompleteBuilderError {
 
 /// Specific error indicating that a dynamic setting operation
 /// has failed due to an incompatible/unknown column.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub enum DynamicSetColumnError<E> {
     /// The specified column is not part of the table.
     UnknownColumn(&'static str),
@@ -149,14 +149,18 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
     fn from(error: BuilderError<E>) -> Self {
         match error {
             BuilderError::Diesel(e) => e,
-            BuilderError::Incomplete(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
-            BuilderError::Validation(e) => diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::CheckViolation,
-                Box::new(e),
-            ),
+            BuilderError::Incomplete(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
+            BuilderError::Validation(e) => {
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    Box::new(e),
+                )
+            }
         }
     }
 }

@@ -31,7 +31,7 @@ where
     }
 }
 
-/// Trait for Diesel Tables grouping typed columns by their ValueType.
+/// Trait for Diesel Tables grouping typed columns by their `ValueType`.
 pub trait NestedColumnsByValueType<ValueType>: Table {
     /// Associated nested columns type.
     type NestedColumns: HomogeneouslyTypedNestedColumns<ValueType>

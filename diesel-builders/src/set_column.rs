@@ -333,7 +333,7 @@ where
             <Self as TrySetColumn<Head>>::try_set_column(self, value.into())
                 .map_err(|e| DynamicSetColumnError::Validation(e.into()))
         } else {
-            return Err(DynamicSetColumnError::UnknownColumn(column.column_name()));
+            Err(DynamicSetColumnError::UnknownColumn(column.column_name()))
         }
     }
 }

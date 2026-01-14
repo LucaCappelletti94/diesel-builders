@@ -5,7 +5,9 @@ mod shared_triangular;
 use std::convert::Infallible;
 
 use diesel::{associations::HasTable, prelude::*};
-use diesel_builders::{IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*};
+use diesel_builders::{
+    DynTypedColumn, IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*,
+};
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
@@ -173,6 +175,22 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 1);
     assert!(refs.contains(&(child.mandatory_id(), &child.__columns)));
+
+    // Create a child with mandatory using dynamic column setting
+    let dyn_type_column: Box<
+        dyn DynTypedColumn<Table = child_with_satellite_table::table, ValueType = String>,
+    > = Box::new(child_with_satellite_table::r#type);
+
+    let satellite_builder = satellite_table::table::builder().field("Dynamic Field");
+
+    let child = child_with_satellite_table::table::builder()
+        .try_set_dynamic_column(dyn_type_column, "Dynamic Type")?
+        .parent_field("Parent for Dynamic Child")
+        .try_mandatory(satellite_builder)?
+        .insert(&mut conn)?;
+
+    assert_eq!(child.r#type(), "Dynamic Type");
+    assert_eq!(child.columns().as_deref(), Some("Dynamic Field"));
 
     Ok(())
 }

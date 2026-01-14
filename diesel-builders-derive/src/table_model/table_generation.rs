@@ -126,15 +126,17 @@ pub fn generate_table_macro(
     primary_key_columns: &[Ident],
 ) -> syn::Result<TokenStream> {
     let fields = match &input.data {
-        syn::Data::Struct(data) => match &data.fields {
-            syn::Fields::Named(fields) => &fields.named,
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    input,
-                    "TableModel can only be derived for structs with named fields",
-                ));
+        syn::Data::Struct(data) => {
+            match &data.fields {
+                syn::Fields::Named(fields) => &fields.named,
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        input,
+                        "TableModel can only be derived for structs with named fields",
+                    ));
+                }
             }
-        },
+        }
         _ => {
             return Err(syn::Error::new_spanned(
                 input,
