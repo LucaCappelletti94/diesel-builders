@@ -9,7 +9,7 @@ use crate::columns::NonEmptyProjection;
 /// This trait does NOT require a `Conn` type parameter, as it only operates on
 /// the in-memory representation of the table model. It does not query the
 /// database.
-pub trait IterForeignKey<T, Idx: NonEmptyProjection<Table = T>> {
+pub trait IterForeignKey<Idx: NonEmptyProjection> {
     /// Iterator yielding the tuples of column values corresponding to the
     /// foreign keys. When the foreign key contains any `None`, those keys are
     /// NOT skipped.
@@ -41,23 +41,19 @@ pub trait IterForeignKey<T, Idx: NonEmptyProjection<Table = T>> {
 pub trait IterForeignKeyExt {
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
-    fn iter_foreign_keys<Idx>(
-        &self,
-    ) -> <Self as IterForeignKey<Idx::Table, Idx>>::ForeignKeysIter<'_>
+    fn iter_foreign_keys<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeysIter<'_>
     where
         Idx: NonEmptyProjection,
-        Self: IterForeignKey<Idx::Table, Idx>,
+        Self: IterForeignKey<Idx>,
     {
         IterForeignKey::iter_foreign_keys(self)
     }
 
     /// Returns an iterator over the foreign keys in this table.
-    fn iter_foreign_key_columns<Idx>(
-        &self,
-    ) -> <Self as IterForeignKey<Idx::Table, Idx>>::ForeignKeyColumnsIter
+    fn iter_foreign_key_columns<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeyColumnsIter
     where
         Idx: NonEmptyProjection,
-        Self: IterForeignKey<Idx::Table, Idx>,
+        Self: IterForeignKey<Idx>,
     {
         IterForeignKey::iter_foreign_key_columns(self)
     }
