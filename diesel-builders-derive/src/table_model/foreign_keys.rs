@@ -315,9 +315,9 @@ pub fn generate_fpk_impl(column: &syn::Path, referenced_table: &syn::Path) -> Op
 }
 /// Metadata for a captured foreign key relationship used in `IterForeignKey`
 /// generation.
-struct CapturedForeignKey {
+struct CapturedForeignKey<'a> {
     /// Host table field identifiers forming the foreign key
-    host_fields: Vec<syn::Ident>,
+    host_fields: Vec<&'a Field>,
     /// Referenced column paths in the target table
     ref_cols: Vec<TokenStream>,
     /// Unique key for grouping foreign keys that reference the same index
@@ -353,25 +353,25 @@ pub fn generate_iter_foreign_key_impls(
 }
 
 /// Collects all foreign key relationships (both implicit and explicit).
-fn collect_foreign_keys(
-    fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
+fn collect_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
-) -> syn::Result<Vec<CapturedForeignKey>> {
+) -> syn::Result<Vec<CapturedForeignKey<'a>>> {
     let mut captured_keys = Vec::new();
 
     // Collect implicit foreign keys from triangular relations
     collect_triangular_foreign_keys(fields, &mut captured_keys)?;
 
     // Collect explicit foreign keys from attributes
-    collect_explicit_foreign_keys(foreign_keys, &mut captured_keys)?;
+    collect_explicit_foreign_keys(fields, foreign_keys, &mut captured_keys)?;
 
     Ok(captured_keys)
 }
 
 /// Collects foreign keys from mandatory/discretionary triangular relations.
-fn collect_triangular_foreign_keys(
-    fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
-    captured_keys: &mut Vec<CapturedForeignKey>,
+fn collect_triangular_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
 ) -> syn::Result<()> {
     for field in fields {
         let Some(field_name) = &field.ident else {
@@ -433,7 +433,7 @@ fn collect_triangular_foreign_keys(
                         let grouping_key = format!("{ref_table_name}::{col_name}");
 
                         captured_keys.push(CapturedForeignKey {
-                            host_fields: vec![field_name.clone(), other_field_name.clone()],
+                            host_fields: vec![field, other_field],
                             ref_cols: vec![ref_pk, quote!(#ref_col)],
                             grouping_key,
                             referenced_table: ref_table.clone(),
@@ -449,16 +449,28 @@ fn collect_triangular_foreign_keys(
 
 /// Collects foreign keys from explicit `#[table_model(foreign_key)]`
 /// attributes.
-fn collect_explicit_foreign_keys(
+fn collect_explicit_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
-    captured_keys: &mut Vec<CapturedForeignKey>,
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
 ) -> syn::Result<()> {
     for fk in foreign_keys {
         match &fk.target {
             ForeignKeyTarget::Table(table_path) => {
                 // Foreign Primary Key: single column -> table's primary key
                 if fk.host_columns.len() == 1 {
-                    let host_col = &fk.host_columns[0];
+                    let host_col_ident = &fk.host_columns[0];
+
+                    let host_field = fields
+                        .iter()
+                        .find(|f| f.ident.as_ref() == Some(host_col_ident))
+                        .ok_or_else(|| {
+                            syn::Error::new_spanned(
+                                host_col_ident,
+                                "Host field not found in struct definition.",
+                            )
+                        })?;
+
                     let ref_pk = quote!(
                         <#table_path::table as ::diesel::Table>::PrimaryKey
                     );
@@ -467,7 +479,7 @@ fn collect_explicit_foreign_keys(
                     let grouping_key = format!("{table_name}::PrimaryKey");
 
                     captured_keys.push(CapturedForeignKey {
-                        host_fields: vec![host_col.clone()],
+                        host_fields: vec![host_field],
                         ref_cols: vec![ref_pk],
                         grouping_key,
                         referenced_table: table_path.clone(),
@@ -510,8 +522,22 @@ fn collect_explicit_foreign_keys(
                         ));
                     };
 
+                    let mut host_fields = Vec::new();
+                    for host_col_ident in &fk.host_columns {
+                        let host_field = fields
+                            .iter()
+                            .find(|f| f.ident.as_ref() == Some(host_col_ident))
+                            .ok_or_else(|| {
+                                syn::Error::new_spanned(
+                                    host_col_ident,
+                                    "Host field not found in struct definition.",
+                                )
+                            })?;
+                        host_fields.push(host_field);
+                    }
+
                     captured_keys.push(CapturedForeignKey {
-                        host_fields: fk.host_columns.clone(),
+                        host_fields,
                         ref_cols: ref_cols_tokens,
                         grouping_key,
                         referenced_table,
@@ -524,13 +550,18 @@ fn collect_explicit_foreign_keys(
 }
 
 /// Groups foreign keys by their referenced index.
-fn group_by_referenced_index(
-    captured_keys: &[CapturedForeignKey],
-) -> std::collections::HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)> {
+fn group_by_referenced_index<'a, 'b>(
+    captured_keys: &'b [CapturedForeignKey<'a>],
+) -> std::collections::HashMap<
+    &'b str,
+    (&'b syn::Path, &'b [TokenStream], Vec<&'b CapturedForeignKey<'a>>),
+> {
     use std::collections::HashMap;
 
-    let mut groups: HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)> =
-        HashMap::new();
+    let mut groups: HashMap<
+        &'b str,
+        (&'b syn::Path, &'b [TokenStream], Vec<&'b CapturedForeignKey<'a>>),
+    > = HashMap::new();
 
     for key in captured_keys {
         groups
@@ -545,8 +576,11 @@ fn group_by_referenced_index(
 
 /// Generates `IterForeignKey` trait implementations for each group of foreign
 /// keys.
-fn generate_impls_for_groups(
-    groups: std::collections::HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)>,
+fn generate_impls_for_groups<'b>(
+    groups: std::collections::HashMap<
+        &'b str,
+        (&'b syn::Path, &'b [TokenStream], Vec<&'b CapturedForeignKey<'_>>),
+    >,
     table_module: &Ident,
     model_ident: &Ident,
 ) -> Vec<TokenStream> {
@@ -555,10 +589,25 @@ fn generate_impls_for_groups(
     for (_, (index_table_module, ref_cols, keys)) in groups {
         let idx_type = quote! {( #(#ref_cols,)* )};
 
+        assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
+        let first_key = keys[0];
+        let num_fields = first_key.host_fields.len();
+
+        // Check if any key in the group has optional fields at each position
+        let mut is_optional_mask = vec![false; num_fields];
+        for key in &keys {
+            for (i, field) in key.host_fields.iter().enumerate() {
+                if crate::utils::is_option(&field.ty) {
+                    is_optional_mask[i] = true;
+                }
+            }
+        }
+
         // Collect all host columns that need GetColumn bounds
         let mut host_columns = Vec::new();
         for key in &keys {
-            for field_ident in &key.host_fields {
+            for field in &key.host_fields {
+                let field_ident = field.ident.as_ref().unwrap();
                 let host_col = quote!(#table_module::#field_ident);
                 if !host_columns
                     .iter()
@@ -569,34 +618,45 @@ fn generate_impls_for_groups(
             }
         }
 
-        // Build the item type from the first key's host columns structure
-        // All keys in this group reference the same index, so they should all have
-        // the same number/structure of host columns
-        assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
-        let first_key = &keys[0];
-        let host_column_tuple: Vec<_> =
-            first_key.host_fields.iter().map(|f| quote!(#table_module::#f)).collect();
+        // Build the common item type based on optionality mask
+        let mut common_item_types = Vec::new();
+        for (i, is_opt) in is_optional_mask.iter().enumerate() {
+            let field = keys[0].host_fields[i];
+            let ty = &field.ty;
 
-        // Always wrap in a tuple, even for single columns, because NestTuple is
-        // implemented for tuples
-        let host_columns = quote!((#(#host_column_tuple,)*));
+            if *is_opt {
+                if crate::utils::is_option(ty) {
+                    // Extract T from Option<T>
+                    if let syn::Type::Path(type_path) = ty
+                        && let Some(segment) = type_path.path.segments.last()
+                        && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+                        && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
+                    {
+                        common_item_types.push(quote!(::std::option::Option<&'a #inner_ty>));
+                    } else {
+                        common_item_types.push(quote!(::std::option::Option<&'a #ty>));
+                    }
+                } else {
+                    common_item_types.push(quote!(::std::option::Option<&'a #ty>));
+                }
+            } else {
+                common_item_types.push(quote!(&'a #ty));
+            }
+        }
 
-        // Type of individual iterator items for ForeignKeysIter (flattened nested tuple
-        // of COLUMN references) Use the HOST columns (from the current table)
-        // not the referenced columns
-        let match_simple_item_type = quote! {
-            <<<<#host_columns as ::diesel_builders::tuplities::NestTuple>::Nested
-                as ::diesel_builders::TypedNestedTuple>::NestedTupleColumnType
-                as ::diesel_builders::tuplities::NestedTupleRef>::Ref<'a>
-                as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
-        };
+        let common_item_type = quote!((#(#common_item_types,)*));
 
-        // Build the chained iterator type and expression (no filtering, no unwrapping)
+        // Build the chained iterator type and expression
         let (match_simple_chain_iter_type, match_simple_chain_expr) =
-            build_chain_iterator(&keys, &match_simple_item_type, table_module);
+            build_chain_iterator(&keys, &common_item_type, table_module, &is_optional_mask);
 
-        // Build ForeignKeyItemType as a tuple of column types (not trait objects)
-        // Each item is just the column type itself
+        // Build ForeignKeyItemType from the first key's columns
+        let first_key_fields_ident_iter =
+            keys[0].host_fields.iter().map(|f| f.ident.as_ref().unwrap());
+        let host_column_tuple: Vec<_> =
+            first_key_fields_ident_iter.map(|f| quote!(#table_module::#f)).collect();
+
+        // Used inside repetition, must be iterable (Vec)
         let foreign_key_item_type = quote! {( #(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
             ValueType = <#host_column_tuple as ::diesel_builders::ValueTyped>::ValueType,
             Table = #table_module::table,
@@ -633,15 +693,17 @@ fn generate_impls_for_groups(
 /// Builds a chained iterator type and expression for multiple foreign key
 /// instances.
 fn build_chain_iterator(
-    keys: &[&CapturedForeignKey],
+    keys: &[&CapturedForeignKey<'_>],
     item_type: &TokenStream,
     table_module: &Ident,
+    is_optional_mask: &[bool],
 ) -> (TokenStream, TokenStream) {
     let mut chain_iter_type = quote!(::std::iter::Empty<#item_type>);
     let mut chain_expr = quote!(::std::iter::empty());
 
     for key in keys {
-        let (iter_expr, iter_type) = build_single_key_iterator(key, item_type, table_module);
+        let (iter_expr, iter_type) =
+            build_single_key_iterator(key, item_type, table_module, is_optional_mask);
 
         chain_iter_type = quote!(::std::iter::Chain<#chain_iter_type, #iter_type>);
         chain_expr = quote!(#chain_expr.chain(#iter_expr));
@@ -652,19 +714,37 @@ fn build_chain_iterator(
 
 /// Builds an iterator expression and type for a single foreign key instance.
 fn build_single_key_iterator(
-    key: &CapturedForeignKey,
+    key: &CapturedForeignKey<'_>,
     item_type: &TokenStream,
     table_module: &Ident,
+    is_optional_mask: &[bool],
 ) -> (TokenStream, TokenStream) {
-    // Build the tuple of values - just get column references as-is
-    let value_tokens: Vec<_> = key
-        .host_fields
-        .iter()
-        .map(|f_ident| {
-            let col_path = quote!(#table_module::#f_ident);
-            quote!(::diesel_builders::GetColumn::<#col_path>::get_column_ref(self))
-        })
-        .collect();
+    // Build the tuple of values - transforming to common type
+
+    let mut value_tokens = Vec::new();
+
+    for (i, field) in key.host_fields.iter().enumerate() {
+        let field_ident = field.ident.as_ref().unwrap();
+        let col_path = quote!(#table_module::#field_ident);
+        let accessor = quote!(::diesel_builders::GetColumn::<#col_path>::get_column_ref(self));
+
+        let target_is_optional = is_optional_mask[i];
+        let self_is_optional = crate::utils::is_option(&field.ty);
+
+        if target_is_optional {
+            if self_is_optional {
+                // Already Option<&T> (wait, get_column_ref returns &Option<T>)
+                value_tokens.push(quote!(#accessor.as_ref()));
+            } else {
+                // Need to wrap in Option: Some(&T) -> Some(val)
+                value_tokens.push(quote!(::std::option::Option::Some(#accessor)));
+            }
+        } else {
+            // Target is not optional, self MUST not be optional (or we have a logic error
+            // because mask is OR of options)
+            value_tokens.push(quote!(#accessor));
+        }
+    }
 
     let tuple_expr = quote!((#(#value_tokens,)*));
     let iter_expr = quote!(::std::iter::once(#tuple_expr));
@@ -675,7 +755,7 @@ fn build_single_key_iterator(
 
 /// Builds an iterator expression that returns column tuples.
 fn build_foreign_keys_iterator(
-    keys: &[&CapturedForeignKey],
+    keys: &[&CapturedForeignKey<'_>],
     table_module: &syn::Ident,
 ) -> TokenStream {
     let mut items = Vec::new();
@@ -688,7 +768,8 @@ fn build_foreign_keys_iterator(
             .host_fields
             .iter()
             .map(|host_field| {
-                let host_col = quote!(#table_module::#host_field);
+                let name = host_field.ident.as_ref().unwrap();
+                let host_col = quote!(#table_module::#name);
                 quote! {
                     ::std::boxed::Box::new(#host_col) as ::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
                     ValueType = <#host_col as ::diesel_builders::ValueTyped>::ValueType,

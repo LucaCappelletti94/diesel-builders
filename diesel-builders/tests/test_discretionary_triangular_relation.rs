@@ -192,16 +192,16 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     let refs: Vec<_> =
         child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 1);
-    assert!(refs.contains(&(child.discretionary_id(), &child.remote_field)));
+    assert!(refs.contains(&(child.discretionary_id(), child.remote_field.as_ref())));
 
     let refs_independent: Vec<_> = independent_child
         .iter_foreign_keys::<(satellite_table::id, satellite_table::field)>()
         .collect();
     assert_eq!(refs_independent.len(), 1);
-    assert!(
-        refs_independent
-            .contains(&(independent_child.discretionary_id(), &independent_child.remote_field))
-    );
+    assert!(refs_independent.contains(&(
+        independent_child.discretionary_id(),
+        independent_child.remote_field.as_ref()
+    )));
 
     Ok(())
 }

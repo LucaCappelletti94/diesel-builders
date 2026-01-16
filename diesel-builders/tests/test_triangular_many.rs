@@ -141,12 +141,12 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
     let refs: Vec<_> =
         child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 6);
-    assert!(refs.contains(&(child.m1_id(), &child.m1_field)));
-    assert!(refs.contains(&(child.m2_id(), &child.m2_field)));
-    assert!(refs.contains(&(child.m3_id(), &child.m3_field)));
-    assert!(refs.contains(&(child.d1_id(), &child.d1_field)));
-    assert!(refs.contains(&(child.d2_id(), &child.d2_field)));
-    assert!(refs.contains(&(child.d3_id(), &child.d3_field)));
+    assert!(refs.contains(&(child.m1_id(), child.m1_field.as_ref())));
+    assert!(refs.contains(&(child.m2_id(), child.m2_field.as_ref())));
+    assert!(refs.contains(&(child.m3_id(), child.m3_field.as_ref())));
+    assert!(refs.contains(&(child.d1_id(), child.d1_field.as_ref())));
+    assert!(refs.contains(&(child.d2_id(), child.d2_field.as_ref())));
+    assert!(refs.contains(&(child.d3_id(), child.d3_field.as_ref())));
 
     Ok(())
 }

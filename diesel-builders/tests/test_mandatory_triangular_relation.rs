@@ -174,7 +174,7 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     let refs: Vec<_> =
         child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 1);
-    assert!(refs.contains(&(child.mandatory_id(), &child.__columns)));
+    assert!(refs.contains(&(child.mandatory_id(), child.__columns.as_ref())));
 
     // Create a child with mandatory using dynamic column setting
     let dyn_type_column: Box<
