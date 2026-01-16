@@ -37,7 +37,7 @@ typenum = "1"
 syn = { version = "2.0", features = ["full", "extra-traits"] }
 quote = "1.0"
 proc-macro2 = "1.0"
-tuplities = { git = "https://github.com/LucaCappelletti94/tuplities", branch = "main", default-features = false, features = [
+tuplities = { path = "../tupilities/tuplities", default-features = false, features = [
 	"flatten-nest",
 ] }
 

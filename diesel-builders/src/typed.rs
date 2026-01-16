@@ -12,7 +12,7 @@ pub use homogeneously_typed_nested_tuple::*;
 /// Trait representing an object with an associated value type.
 pub trait ValueTyped {
     /// The value type associated with this object.
-    type ValueType: Clone;
+    type ValueType: Clone + 'static;
 }
 
 /// Trait representing an object with an associated type.

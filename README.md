@@ -394,8 +394,8 @@ let edge = edges::table::builder()
     .insert(&mut conn)?;
 
 // Iterate over foreign key values pointing to nodes::id
-// The result is a list of references to the foreign key values (flattened tuples)
-let refs: Vec<_> = edge.iter_foreign_keys::<(nodes::id,)>().collect();
+// The result is a list of references to the foreign key values (nested tuples)
+let refs: Vec<_> = edge.iter_match_full::<(nodes::id,)>().collect();
 
 assert_eq!(refs.len(), 2);
 assert!(refs.contains(&(&node1.id(),)));

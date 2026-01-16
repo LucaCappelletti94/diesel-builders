@@ -210,16 +210,16 @@ fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std:
     // This index corresponds to the FK (mandatory_id, id) and (discretionary_id,
     // id) because `id` is `same_as(satellite_table::parent_id)`.
 
-    // We expect the iterator to yield flat tuples of references: (&i32, &i32)
+    // We expect the iterator to yield nested tuples of references: (&i32, (&i32,))
     {
         type Idx = (satellite_table::id, satellite_table::parent_id);
 
         // Explicitly specifying the trait to call
-        let values: Vec<_> = b_model.iter_foreign_keys::<Idx>().collect();
+        let values: Vec<_> = b_model.iter_match_full::<Idx>().collect();
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, parent_id)");
 
-        let ref_mandatory = (&b_model.mandatory_id, &b_model.id);
-        let ref_discretionary = (&b_model.discretionary_id, &b_model.id);
+        let ref_mandatory = (&b_model.mandatory_id, (&b_model.id,));
+        let ref_discretionary = (&b_model.discretionary_id, (&b_model.id,));
 
         assert!(values.contains(&ref_mandatory));
         assert!(values.contains(&ref_discretionary));
@@ -232,13 +232,15 @@ fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std:
         type Idx = (satellite_table::id, satellite_table::field);
 
         // Explicitly specifying the trait to call
-        let values: Vec<_> = b_model.iter_foreign_keys::<Idx>().collect();
+        let values: Vec<_> = b_model.iter_match_full::<Idx>().collect();
 
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, field)");
 
-        let ref_mandatory = (&b_model.mandatory_id, b_model.remote_mandatory_field.as_ref());
+        // Unwrapping safely because we know they are present in this test case
+        let ref_mandatory =
+            (&b_model.mandatory_id, (b_model.remote_mandatory_field.as_ref().unwrap(),));
         let ref_discretionary =
-            (&b_model.discretionary_id, b_model.remote_discretionary_field.as_ref());
+            (&b_model.discretionary_id, (b_model.remote_discretionary_field.as_ref().unwrap(),));
 
         assert!(values.contains(&ref_mandatory));
         assert!(values.contains(&ref_discretionary));

@@ -190,17 +190,17 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Test iter_foreign_keys with composite index (satellite_table::id,
     // satellite_table::field)
     let refs: Vec<_> =
-        child.iter_foreign_keys::<(satellite_table::id, satellite_table::field)>().collect();
+        child.iter_match_full::<(satellite_table::id, satellite_table::field)>().collect();
     assert_eq!(refs.len(), 1);
-    assert!(refs.contains(&(child.discretionary_id(), child.remote_field.as_ref())));
+    assert!(refs.contains(&(child.discretionary_id(), (child.remote_field.as_ref().unwrap(),))));
 
     let refs_independent: Vec<_> = independent_child
-        .iter_foreign_keys::<(satellite_table::id, satellite_table::field)>()
+        .iter_match_full::<(satellite_table::id, satellite_table::field)>()
         .collect();
     assert_eq!(refs_independent.len(), 1);
     assert!(refs_independent.contains(&(
         independent_child.discretionary_id(),
-        independent_child.remote_field.as_ref()
+        (independent_child.remote_field.as_ref().unwrap(),)
     )));
 
     Ok(())
@@ -283,11 +283,11 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     // Test iter_foreign_keys with composite index (satellite_table::id,
     // satellite_table::parent_id)
     let refs: Vec<_> =
-        child.iter_foreign_keys::<(satellite_table::id, satellite_table::parent_id)>().collect();
+        child.iter_match_full::<(satellite_table::id, satellite_table::parent_id)>().collect();
     assert_eq!(refs.len(), 1);
     assert!(refs.contains(&(
         &associated_discretionary.get_column::<satellite_table::id>(),
-        associated_discretionary.parent_id()
+        (associated_discretionary.parent_id(),)
     )));
 
     Ok(())

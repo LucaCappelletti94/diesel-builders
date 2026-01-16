@@ -1,7 +1,9 @@
 //! Submodule defining a trait to iterate the foreign keys in a table
 //! which reference the same foreign index in another table.
 
-use crate::columns::NonEmptyProjection;
+use tuplities::prelude::{IntoNestedTupleOption, NestedTupleRef};
+
+use crate::{TypedNestedTuple, columns::NonEmptyProjection};
 
 /// An iterator over foreign keys in a table which reference the same foreign
 /// index in another table.
@@ -13,7 +15,19 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
     /// Iterator yielding the tuples of column values corresponding to the
     /// foreign keys. When the foreign key contains any `None`, those keys are
     /// NOT skipped.
-    type ForeignKeysIter<'a>: Iterator
+    type MatchSimpleIter<'a>: Iterator<
+        Item = <<<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions
+    >
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    /// Iterator yielding the tuples of column values corresponding to the
+    /// foreign keys. When the foreign key contains any `None`, those keys
+    /// are skipped.
+    type MatchFullIter<'a>: Iterator<
+        Item = <<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
+    >
     where
         Idx: 'a,
         Self: 'a;
@@ -30,7 +44,11 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
 
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
-    fn iter_foreign_keys(&self) -> Self::ForeignKeysIter<'_>;
+    fn iter_match_simple(&self) -> Self::MatchSimpleIter<'_>;
+
+    /// Returns an iterator over the foreign keys in this table which reference
+    /// the given foreign index. Foreign keys with `None` values are skipped.
+    fn iter_match_full(&self) -> Self::MatchFullIter<'_>;
 
     /// Returns an iterator over the foreign keys in this table.
     fn iter_foreign_key_columns(&self) -> Self::ForeignKeyColumnsIter;
@@ -41,12 +59,22 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
 pub trait IterForeignKeyExt {
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
-    fn iter_foreign_keys<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeysIter<'_>
+    fn iter_match_simple<Idx>(&self) -> <Self as IterForeignKey<Idx>>::MatchSimpleIter<'_>
     where
         Idx: NonEmptyProjection,
         Self: IterForeignKey<Idx>,
     {
-        IterForeignKey::iter_foreign_keys(self)
+        IterForeignKey::iter_match_simple(self)
+    }
+
+    /// Returns an iterator over the foreign keys in this table which reference
+    /// the given foreign index. Foreign keys with `None` values are skipped.
+    fn iter_match_full<Idx>(&self) -> <Self as IterForeignKey<Idx>>::MatchFullIter<'_>
+    where
+        Idx: NonEmptyProjection,
+        Self: IterForeignKey<Idx>,
+    {
+        IterForeignKey::iter_match_full(self)
     }
 
     /// Returns an iterator over the foreign keys in this table.

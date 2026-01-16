@@ -574,83 +574,70 @@ fn generate_impls_for_groups<'b>(
 
         assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
         let first_key = keys[0];
-        let num_fields = first_key.host_fields.len();
 
-        // Check if any key in the group has optional fields at each position
-        let mut is_optional_mask = vec![false; num_fields];
-        for key in &keys {
-            for (i, field) in key.host_fields.iter().enumerate() {
-                if crate::utils::is_option(&field.ty) {
-                    is_optional_mask[i] = true;
-                }
-            }
-        }
-
-        // Collect all host columns that need GetColumn bounds
-        let mut host_columns = Vec::new();
-        for key in &keys {
-            for field in &key.host_fields {
-                let field_ident = field.ident.as_ref().unwrap();
-                let host_col = quote!(#table_module::#field_ident);
-                if !host_columns
-                    .iter()
-                    .any(|existing: &TokenStream| existing.to_string() == host_col.to_string())
-                {
-                    host_columns.push(host_col);
-                }
-            }
-        }
-
-        // Build the common item type based on optionality mask
-        let mut common_item_types = Vec::new();
-        for (i, is_opt) in is_optional_mask.iter().enumerate() {
-            let field = keys[0].host_fields[i];
+        // Determine base types (inner types T for T or Option<T>) of the host fields
+        // We use the first key as a template. All keys in group target same index,
+        // implies they have compatible types.
+        let mut base_types = Vec::new();
+        for field in &first_key.host_fields {
             let ty = &field.ty;
-
-            if *is_opt {
-                if crate::utils::is_option(ty) {
-                    // Extract T from Option<T>
-                    if let syn::Type::Path(type_path) = ty
-                        && let Some(segment) = type_path.path.segments.last()
-                        && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
-                        && let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first()
-                    {
-                        common_item_types.push(quote!(::std::option::Option<&'a #inner_ty>));
-                    } else {
-                        common_item_types.push(quote!(::std::option::Option<&'a #ty>));
-                    }
+            let inner_ty = if crate::utils::is_option(ty) {
+                if let syn::Type::Path(type_path) = ty
+                    && let Some(segment) = type_path.path.segments.last()
+                    && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
+                    && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
+                {
+                    inner
                 } else {
-                    common_item_types.push(quote!(::std::option::Option<&'a #ty>));
+                    ty // Fallback, shouldn't happen if is_option checks out
                 }
             } else {
-                common_item_types.push(quote!(&'a #ty));
-            }
+                ty
+            };
+            base_types.push(quote!(#inner_ty));
         }
 
-        let common_item_type = quote!((#(#common_item_types,)*));
+        // Build item types for the iterators (Nested Tuples)
 
-        // Build the chained iterator type and expression
-        let (match_simple_chain_iter_type, match_simple_chain_expr) =
-            build_chain_iterator(&keys, &common_item_type, table_module, &is_optional_mask);
+        // MatchSimpleIter: Nested tuple of Option<&T>
+        let simple_item_types: Vec<_> =
+            base_types.iter().map(|ty| quote!(::std::option::Option<&'a #ty>)).collect();
+        let simple_elem_ty = recursive_tuple_type(&simple_item_types);
 
-        // Build ForeignKeyItemType from the first key's columns
-        let first_key_fields_ident_iter =
-            keys[0].host_fields.iter().map(|f| f.ident.as_ref().unwrap());
-        let host_column_tuple: Vec<_> =
-            first_key_fields_ident_iter.map(|f| quote!(#table_module::#f)).collect();
+        // MatchFullIter: Nested tuple of &T
+        let full_item_types: Vec<_> = base_types.iter().map(|ty| quote!(&'a #ty)).collect();
+        let full_elem_ty = recursive_tuple_type(&full_item_types);
 
-        // Used inside repetition, must be iterable (Vec)
-        let foreign_key_item_type = quote! {( #(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
-            ValueType = <#host_column_tuple as ::diesel_builders::ValueTyped>::ValueType,
-            Table = #table_module::table,
-        >>,)* )};
+        // Build chains
+        // (type_simple, expr_simple, type_full, expr_full)
+        let (simple_iter_type, simple_iter_expr, full_iter_type, full_iter_expr) =
+            build_chain_iterators(&keys, &simple_elem_ty, &full_elem_ty, table_module);
 
-        // Build ForeignKeysIter expression: map each key group to boxed columns
+        // Build ForeignKeyItemType: Nested tuple of Box<dyn ...>
+        let boxed_column_types: Vec<_> = keys[0]
+            .host_fields
+            .iter()
+            .map(|f| {
+                let f_ident = f.ident.as_ref().unwrap();
+                let host_col = quote!(#table_module::#f_ident);
+                quote!(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
+                ValueType = <#host_col as ::diesel_builders::ValueTyped>::ValueType,
+                Table = #table_module::table,
+            >>)
+            })
+            .collect();
+        let foreign_key_item_type = recursive_tuple_type(&boxed_column_types);
+
         let foreign_keys_expr = build_foreign_keys_iterator(keys.as_slice(), table_module);
 
         impls.push(quote! {
             impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
-                type ForeignKeysIter<'a> = #match_simple_chain_iter_type
+                type MatchSimpleIter<'a> = #simple_iter_type
+                where
+                    #idx_type: 'a,
+                    Self: 'a;
+
+                type MatchFullIter<'a> = #full_iter_type
                 where
                     #idx_type: 'a,
                     Self: 'a;
@@ -659,8 +646,12 @@ fn generate_impls_for_groups<'b>(
 
                 type ForeignKeyColumnsIter = ::std::vec::IntoIter<Self::ForeignKeyItemType>;
 
-                fn iter_foreign_keys(&self) -> Self::ForeignKeysIter<'_> {
-                    #match_simple_chain_expr
+                fn iter_match_simple(&self) -> Self::MatchSimpleIter<'_> {
+                    #simple_iter_expr
+                }
+
+                fn iter_match_full(&self) -> Self::MatchFullIter<'_> {
+                    #full_iter_expr
                 }
 
                 fn iter_foreign_key_columns(&self) -> Self::ForeignKeyColumnsIter {
@@ -673,70 +664,101 @@ fn generate_impls_for_groups<'b>(
     impls
 }
 
-/// Builds a chained iterator type and expression for multiple foreign key
-/// instances.
-fn build_chain_iterator(
+/// Builds chained iterator types and expressions for multiple foreign key
+/// instances. Returns (`SimpleType`, `SimpleExpr`, `FullType`, `FullExpr`).
+fn build_chain_iterators(
     keys: &[&CapturedForeignKey<'_>],
-    item_type: &TokenStream,
+    simple_elem_ty: &TokenStream,
+    full_elem_ty: &TokenStream,
     table_module: &Ident,
-    is_optional_mask: &[bool],
-) -> (TokenStream, TokenStream) {
-    let mut chain_iter_type = quote!(::std::iter::Empty<#item_type>);
-    let mut chain_expr = quote!(::std::iter::empty());
+) -> (TokenStream, TokenStream, TokenStream, TokenStream) {
+    let mut simple_iter_type = quote!(::std::iter::Empty<#simple_elem_ty>);
+    let mut simple_iter_expr = quote!(::std::iter::empty());
+
+    let mut full_iter_type = quote!(::std::iter::Empty<#full_elem_ty>);
+    let mut full_iter_expr = quote!(::std::iter::empty());
 
     for key in keys {
-        let (iter_expr, iter_type) =
-            build_single_key_iterator(key, item_type, table_module, is_optional_mask);
+        let (s_expr, s_type, f_expr, f_type) =
+            build_single_key_iterators(key, simple_elem_ty, full_elem_ty, table_module);
 
-        chain_iter_type = quote!(::std::iter::Chain<#chain_iter_type, #iter_type>);
-        chain_expr = quote!(#chain_expr.chain(#iter_expr));
+        simple_iter_type = quote!(::std::iter::Chain<#simple_iter_type, #s_type>);
+        simple_iter_expr = quote!(#simple_iter_expr.chain(#s_expr));
+
+        full_iter_type = quote!(::std::iter::Chain<#full_iter_type, #f_type>);
+        full_iter_expr = quote!(#full_iter_expr.chain(#f_expr));
     }
 
-    (chain_iter_type, chain_expr)
+    (simple_iter_type, simple_iter_expr, full_iter_type, full_iter_expr)
 }
 
-/// Builds an iterator expression and type for a single foreign key instance.
-fn build_single_key_iterator(
+/// Builds iterator expressions and types for a single foreign key instance.
+fn build_single_key_iterators(
     key: &CapturedForeignKey<'_>,
-    item_type: &TokenStream,
+    simple_elem_ty: &TokenStream,
+    full_elem_ty: &TokenStream,
     table_module: &Ident,
-    is_optional_mask: &[bool],
-) -> (TokenStream, TokenStream) {
-    // Build the tuple of values - transforming to common type
+) -> (TokenStream, TokenStream, TokenStream, TokenStream) {
+    // Simple Iterator: Always yields `Option<&T>` (nested tuple).
+    let mut simple_val_tokens = Vec::new();
 
-    let mut value_tokens = Vec::new();
+    // Full Iterator: Yields `&T` or skips if any column is missing.
+    // We construct a match guard: (val1, val2) -> Some((v1, v2)) or None
+    let mut full_match_arms = Vec::new();
+    let mut full_construction_vars = Vec::new();
 
     for (i, field) in key.host_fields.iter().enumerate() {
         let field_ident = field.ident.as_ref().unwrap();
         let col_path = quote!(#table_module::#field_ident);
         let accessor = quote!(::diesel_builders::GetColumn::<#col_path>::get_column_ref(self));
+        // Note: accessors borrow self.
 
-        let target_is_optional = is_optional_mask[i];
-        let self_is_optional = crate::utils::is_option(&field.ty);
+        let is_optional = crate::utils::is_option(&field.ty);
 
-        if target_is_optional {
-            if self_is_optional {
-                // Already Option<&T> (wait, get_column_ref returns &Option<T>)
-                value_tokens.push(quote!(#accessor.as_ref()));
-            } else {
-                // Need to wrap in Option: Some(&T) -> Some(val)
-                value_tokens.push(quote!(::std::option::Option::Some(#accessor)));
-            }
+        let var_name = syn::Ident::new(&format!("v_{i}"), proc_macro2::Span::call_site());
+
+        if is_optional {
+            simple_val_tokens.push(quote!(#accessor.as_ref()));
+            full_match_arms
+                .push((quote!(#accessor), quote!(::std::option::Option::Some(#var_name))));
         } else {
-            // Target is not optional, self MUST not be optional (or we have a logic error
-            // because mask is OR of options)
-            value_tokens.push(quote!(#accessor));
+            simple_val_tokens.push(quote!(::std::option::Option::Some(#accessor)));
+            full_match_arms.push((quote!(#accessor), quote!(#var_name)));
         }
+        full_construction_vars.push(quote!(#var_name));
     }
 
-    let tuple_expr = quote!((#(#value_tokens,)*));
-    let iter_expr = quote!(::std::iter::once(#tuple_expr));
-    let iter_type = quote!(::std::iter::Once<#item_type>);
+    // Simple Iter
+    let simple_tuple_expr = recursive_tuple_expr(&simple_val_tokens);
+    let simple_iter_expr = quote!(::std::iter::once(#simple_tuple_expr));
+    let simple_iter_type = quote!(::std::iter::Once<#simple_elem_ty>);
 
-    (iter_expr, iter_type)
+    // Full Iter: match (...) { (Some(v), ...) => Some(nested_tuple), _ => None }
+    let match_exprs: Vec<_> = full_match_arms.iter().map(|(e, _)| e).collect();
+    let match_pats: Vec<_> = full_match_arms.iter().map(|(_, p)| p).collect();
+
+    // Tuple of expressions: (&self.f1, self.f2_ref, ...)
+    let match_target = quote!((#(#match_exprs,)*));
+    // Tuple pattern: (Some(v0), v1, ...)
+    let match_pattern = quote!((#(#match_pats,)*));
+
+    let full_tuple_val = recursive_tuple_expr(&full_construction_vars);
+
+    let full_opt_expr = quote! {
+        match #match_target {
+            #match_pattern => ::std::option::Option::Some(#full_tuple_val),
+            _ => ::std::option::Option::None,
+        }
+    };
+
+    let full_iter_expr = quote!(::std::option::Option::into_iter(#full_opt_expr));
+    let full_iter_type = quote!(::std::option::IntoIter<#full_elem_ty>);
+
+    (simple_iter_expr, simple_iter_type, full_iter_expr, full_iter_type)
 }
 
-/// Builds an iterator expression that returns column tuples.
+/// Builds an iterator expression that returns column tuples (Nested Tuples of
+/// Boxes).
 fn build_foreign_keys_iterator(
     keys: &[&CapturedForeignKey<'_>],
     table_module: &syn::Ident,
@@ -745,8 +767,6 @@ fn build_foreign_keys_iterator(
 
     for key in keys {
         // For each foreign key, create a tuple of HOST table column instances
-        // These are boxed as DynTypedColumn with the value type from the referenced
-        // index
         let host_columns: Vec<_> = key
             .host_fields
             .iter()
@@ -762,10 +782,41 @@ fn build_foreign_keys_iterator(
             })
             .collect();
 
-        items.push(quote! { (#(#host_columns,)*) });
+        items.push(recursive_tuple_expr(&host_columns));
     }
 
     quote! {
         ::std::vec![#(#items),*].into_iter()
+    }
+}
+
+// Helpers for nested tuples
+/// Recursively builds a nested tuple type from a slice of types.
+/// `[A, B, C]` -> `(A, (B, (C,)))` (with unit termination if needed, or
+/// specific structure) Actually implementation logic:
+/// `[]` -> `()`
+/// `[single]` -> `(single,)`
+/// `[head, tail...]` -> `(head, tail_recursion)`
+/// e.g. `[A, B, C]` -> `(A, (B, (C,)))`
+fn recursive_tuple_type(types: &[TokenStream]) -> TokenStream {
+    match types {
+        [] => quote!(()),
+        [single] => quote!((#single,)),
+        [head, tail @ ..] => {
+            let tail_tokens = recursive_tuple_type(tail);
+            quote!((#head, #tail_tokens))
+        }
+    }
+}
+
+/// Recursively builds a nested tuple expression from a slice of expressions.
+fn recursive_tuple_expr(exprs: &[TokenStream]) -> TokenStream {
+    match exprs {
+        [] => quote!(()),
+        [single] => quote!((#single,)),
+        [head, tail @ ..] => {
+            let tail_tokens = recursive_tuple_expr(tail);
+            quote!((#head, #tail_tokens))
+        }
     }
 }
