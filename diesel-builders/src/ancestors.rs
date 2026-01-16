@@ -1,14 +1,18 @@
 //! Submodule defining the `Descendant` trait.
 
+use std::any::type_name_of_val;
+
 use diesel::{
     AsChangeset, Identifiable, Insertable, QueryResult, RunQueryDsl, Table,
     associations::HasTable,
     connection::LoadConnection,
-    query_builder::{DeleteStatement, InsertStatement, IntoUpdateTarget},
-    query_dsl::{
-        DoUpdateDsl, OnConflictDsl,
-        methods::{ExecuteDsl, FindDsl, LoadQuery, SetUpdateDsl},
+    helper_types::Set,
+    internal::derives::insertable::UndecoratedInsertRecord,
+    query_builder::{
+        ConflictTarget, DeleteStatement, InsertStatement, IntoConflictValueClause,
+        IntoUpdateTarget, OnConflictTarget,
     },
+    query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery},
 };
 use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
@@ -278,18 +282,19 @@ where
     M: HasTable<Table: TableExt>
         + GetNestedColumns<<<M::Table as Table>::AllColumns as NestTuple>::Nested>,
     Conn: LoadConnection,
-    <<M::Table as Table>::AllColumns as NestTuple>::Nested:
-        TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<M::Table> + AsChangeset<Target = M::Table>>>,
-    for<'query> InsertStatement<
+    <<M::Table as Table>::AllColumns as NestTuple>::Nested: TupleEqAll<
+        EqAll: FlattenNestedTuple<
+            Flattened: Insertable<
+                M::Table,
+                Values: UndecoratedInsertRecord<M::Table> + IntoConflictValueClause,
+            > + AsChangeset<Target = M::Table>,
+        >,
+    >,
+    ConflictTarget<<M::Table as Table>::PrimaryKey>: OnConflictTarget<M::Table>,
+    InsertStatement<
         Self::Table,
         <<<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<Self::Table>>::Values,
-    >: OnConflictDsl<
-        <M::Table as Table>::PrimaryKey,
-        Output: DoUpdateDsl<Output: SetUpdateDsl<
-            <<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened,
-            Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
-        >>
-    >,
+    >: for<'conn> LoadQuery<'conn, Conn, <Self::Table as TableExt>::Model>,
 {
     fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
     where
@@ -298,7 +303,7 @@ where
         use diesel::Table;
         let table: M::Table = Default::default();
         let columns = <<M::Table as Table>::AllColumns as NestTuple>::Nested::default();
-        let results: Vec<<Self::Table as TableExt>::Model> = diesel::insert_into(table)
+        let results = diesel::insert_into(table)
             .values(columns.eq_all(self.get_nested_columns()).flatten())
             .on_conflict(table.primary_key())
             .do_update()
