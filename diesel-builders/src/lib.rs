@@ -123,5 +123,6 @@ pub mod prelude {
         },
         set_column::{SetColumnExt, TrySetColumnExt, TrySetDynamicColumnExt, ValidateColumn},
         table_addition::TableExt,
+        table_builder::TableBuilder,
     };
 }
