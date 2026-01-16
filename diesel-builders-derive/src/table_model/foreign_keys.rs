@@ -322,6 +322,8 @@ struct CapturedForeignKey {
     ref_cols: Vec<TokenStream>,
     /// Unique key for grouping foreign keys that reference the same index
     grouping_key: String,
+    /// The referenced table module path.
+    referenced_table: syn::Path,
 }
 
 /// Generates implementations of `IterForeignKey` for the table model.
@@ -344,7 +346,7 @@ pub fn generate_iter_foreign_key_impls(
     let captured_keys = collect_foreign_keys(fields, foreign_keys)?;
 
     // Group foreign keys by their referenced index
-    let groups = group_by_referenced_index(captured_keys);
+    let groups = group_by_referenced_index(captured_keys.as_slice());
 
     // Generate an IterForeignKey impl for each unique referenced index
     Ok(generate_impls_for_groups(groups, table_module, model_ident))
@@ -361,7 +363,7 @@ fn collect_foreign_keys(
     collect_triangular_foreign_keys(fields, &mut captured_keys)?;
 
     // Collect explicit foreign keys from attributes
-    collect_explicit_foreign_keys(foreign_keys, &mut captured_keys);
+    collect_explicit_foreign_keys(foreign_keys, &mut captured_keys)?;
 
     Ok(captured_keys)
 }
@@ -434,6 +436,7 @@ fn collect_triangular_foreign_keys(
                             host_fields: vec![field_name.clone(), other_field_name.clone()],
                             ref_cols: vec![ref_pk, quote!(#ref_col)],
                             grouping_key,
+                            referenced_table: ref_table.clone(),
                         });
                     }
                 }
@@ -449,7 +452,7 @@ fn collect_triangular_foreign_keys(
 fn collect_explicit_foreign_keys(
     foreign_keys: &[ForeignKeyAttribute],
     captured_keys: &mut Vec<CapturedForeignKey>,
-) {
+) -> syn::Result<()> {
     for fk in foreign_keys {
         match &fk.target {
             ForeignKeyTarget::Table(table_path) => {
@@ -467,6 +470,7 @@ fn collect_explicit_foreign_keys(
                         host_fields: vec![host_col.clone()],
                         ref_cols: vec![ref_pk],
                         grouping_key,
+                        referenced_table: table_path.clone(),
                     });
                 }
             }
@@ -490,30 +494,49 @@ fn collect_explicit_foreign_keys(
                         .collect();
                     let grouping_key = parts.join(", ");
 
+                    let mut referenced_table = None;
+                    for ref_col in ref_cols_paths {
+                        if let Some(extracted_table) =
+                            crate::utils::extract_table_path_from_column(ref_col)
+                        {
+                            referenced_table = Some(extracted_table);
+                            break;
+                        }
+                    }
+                    let Some(referenced_table) = referenced_table else {
+                        return Err(syn::Error::new_spanned(
+                            &ref_cols_paths[0],
+                            "Unable to extract referenced table from foreign key columns.",
+                        ));
+                    };
+
                     captured_keys.push(CapturedForeignKey {
                         host_fields: fk.host_columns.clone(),
                         ref_cols: ref_cols_tokens,
                         grouping_key,
+                        referenced_table,
                     });
                 }
             }
         }
     }
+    Ok(())
 }
 
 /// Groups foreign keys by their referenced index.
 fn group_by_referenced_index(
-    captured_keys: Vec<CapturedForeignKey>,
-) -> std::collections::HashMap<String, (Vec<TokenStream>, Vec<CapturedForeignKey>)> {
+    captured_keys: &[CapturedForeignKey],
+) -> std::collections::HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)> {
     use std::collections::HashMap;
 
-    let mut groups: HashMap<String, (Vec<TokenStream>, Vec<CapturedForeignKey>)> = HashMap::new();
+    let mut groups: HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)> =
+        HashMap::new();
 
     for key in captured_keys {
         groups
-            .entry(key.grouping_key.clone())
-            .or_insert_with(|| (key.ref_cols.clone(), Vec::new()))
-            .1
+            .entry(key.grouping_key.as_str())
+            .or_insert_with(|| (&key.referenced_table, key.ref_cols.as_slice(), Vec::new()))
+            .2
             .push(key);
     }
 
@@ -523,13 +546,13 @@ fn group_by_referenced_index(
 /// Generates `IterForeignKey` trait implementations for each group of foreign
 /// keys.
 fn generate_impls_for_groups(
-    groups: std::collections::HashMap<String, (Vec<TokenStream>, Vec<CapturedForeignKey>)>,
+    groups: std::collections::HashMap<&str, (&syn::Path, &[TokenStream], Vec<&CapturedForeignKey>)>,
     table_module: &Ident,
     model_ident: &Ident,
 ) -> Vec<TokenStream> {
     let mut impls = Vec::new();
 
-    for (_, (ref_cols, keys)) in groups {
+    for (_, (index_table_module, ref_cols, keys)) in groups {
         let idx_type = quote! {( #(#ref_cols,)* )};
 
         // Collect all host columns that need GetColumn bounds
@@ -580,10 +603,10 @@ fn generate_impls_for_groups(
         >>,)* )};
 
         // Build ForeignKeysIter expression: map each key group to boxed columns
-        let foreign_keys_expr = build_foreign_keys_iterator(&keys, table_module);
+        let foreign_keys_expr = build_foreign_keys_iterator(keys.as_slice(), table_module);
 
         impls.push(quote! {
-            impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
+            impl ::diesel_builders::IterForeignKey<#index_table_module::table, #idx_type> for #model_ident {
                 type ForeignKeysIter<'a> = #match_simple_chain_iter_type
                 where
                     #idx_type: 'a,
@@ -610,7 +633,7 @@ fn generate_impls_for_groups(
 /// Builds a chained iterator type and expression for multiple foreign key
 /// instances.
 fn build_chain_iterator(
-    keys: &[CapturedForeignKey],
+    keys: &[&CapturedForeignKey],
     item_type: &TokenStream,
     table_module: &Ident,
 ) -> (TokenStream, TokenStream) {
@@ -652,7 +675,7 @@ fn build_single_key_iterator(
 
 /// Builds an iterator expression that returns column tuples.
 fn build_foreign_keys_iterator(
-    keys: &[CapturedForeignKey],
+    keys: &[&CapturedForeignKey],
     table_module: &syn::Ident,
 ) -> TokenStream {
     let mut items = Vec::new();

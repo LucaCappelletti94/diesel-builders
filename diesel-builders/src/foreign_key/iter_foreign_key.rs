@@ -1,13 +1,15 @@
 //! Submodule defining a trait to iterate the foreign keys in a table
 //! which reference the same foreign index in another table.
 
+use crate::columns::NonEmptyProjection;
+
 /// An iterator over foreign keys in a table which reference the same foreign
 /// index in another table.
 ///
 /// This trait does NOT require a `Conn` type parameter, as it only operates on
 /// the in-memory representation of the table model. It does not query the
 /// database.
-pub trait IterForeignKey<Idx> {
+pub trait IterForeignKey<T, Idx: NonEmptyProjection<Table = T>> {
     /// Iterator yielding the tuples of column values corresponding to the
     /// foreign keys. When the foreign key contains any `None`, those keys are
     /// NOT skipped.
@@ -39,17 +41,23 @@ pub trait IterForeignKey<Idx> {
 pub trait IterForeignKeyExt {
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
-    fn iter_foreign_keys<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeysIter<'_>
+    fn iter_foreign_keys<Idx>(
+        &self,
+    ) -> <Self as IterForeignKey<Idx::Table, Idx>>::ForeignKeysIter<'_>
     where
-        Self: IterForeignKey<Idx>,
+        Idx: NonEmptyProjection,
+        Self: IterForeignKey<Idx::Table, Idx>,
     {
         IterForeignKey::iter_foreign_keys(self)
     }
 
     /// Returns an iterator over the foreign keys in this table.
-    fn iter_foreign_key_columns<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeyColumnsIter
+    fn iter_foreign_key_columns<Idx>(
+        &self,
+    ) -> <Self as IterForeignKey<Idx::Table, Idx>>::ForeignKeyColumnsIter
     where
-        Self: IterForeignKey<Idx>,
+        Idx: NonEmptyProjection,
+        Self: IterForeignKey<Idx::Table, Idx>,
     {
         IterForeignKey::iter_foreign_key_columns(self)
     }

@@ -212,13 +212,10 @@ fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std:
 
     // We expect the iterator to yield flat tuples of references: (&i32, &i32)
     {
-        use diesel_builders::IterForeignKey;
         type Idx = (satellite_table::id, satellite_table::parent_id);
 
         // Explicitly specifying the trait to call
-        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_keys(&b_model);
-        let values: Vec<_> = iter.collect();
-
+        let values: Vec<_> = b_model.iter_foreign_keys::<Idx>().collect();
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, parent_id)");
 
         let ref_mandatory = (&b_model.mandatory_id, &b_model.id);
@@ -232,12 +229,10 @@ fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std:
     // This corresponds to (mandatory_id, remote_mandatory_field) and
     // (discretionary_id, remote_discretionary_field)
     {
-        use diesel_builders::IterForeignKey;
         type Idx = (satellite_table::id, satellite_table::field);
 
         // Explicitly specifying the trait to call
-        let iter = <ChildWithMixed as IterForeignKey<Idx>>::iter_foreign_keys(&b_model);
-        let values: Vec<_> = iter.collect();
+        let values: Vec<_> = b_model.iter_foreign_keys::<Idx>().collect();
 
         assert_eq!(values.len(), 2, "Should find 2 foreign keys for (id, field)");
 
