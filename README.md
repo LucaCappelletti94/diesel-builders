@@ -227,7 +227,7 @@ pub struct Parent {
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = mandatory_table)]
 #[table_model(surrogate_key)]
-#[table_model(foreign_key(parent_id, parent_table))]
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
 pub struct Mandatory {
     id: i32,
     parent_id: i32,
@@ -296,7 +296,7 @@ pub struct Parent {
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = discretionary_table)]
 #[table_model(surrogate_key)]
-#[table_model(foreign_key(parent_id, parent_table))]
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
 pub struct Discretionary {
     id: i32,
     parent_id: i32,

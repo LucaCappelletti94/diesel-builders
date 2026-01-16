@@ -16,20 +16,12 @@ pub struct TableModelAttributes {
     pub foreign_keys: Vec<ForeignKeyAttribute>,
 }
 
-/// A target for a foreign key relationship.
-pub enum ForeignKeyTarget {
-    /// A reference to a table (implies foreign primary key).
-    Table(syn::Path),
-    /// A reference to specific columns in a table.
-    Columns(Vec<syn::Path>),
-}
-
 /// Definition of a foreign key.
 pub struct ForeignKeyAttribute {
     /// The host columns in the local table.
     pub host_columns: Vec<syn::Ident>,
     /// The target of the foreign key.
-    pub target: ForeignKeyTarget,
+    pub referenced_columns: Vec<syn::Path>,
 }
 
 /// Extract the table module name from the `#[diesel(table_name = ...)]`
@@ -157,17 +149,17 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> syn::Result<TableM
                 let _comma: syn::Token![,] = content.parse()?;
 
                 // Parse target
-                let target = if content.peek(syn::token::Paren) {
+                let referenced_columns = if content.peek(syn::token::Paren) {
                     let inner;
                     syn::parenthesized!(inner in content);
                     let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
                         syn::punctuated::Punctuated::parse_terminated(&inner)?;
-                    ForeignKeyTarget::Columns(punct.into_iter().collect())
+                    punct.into_iter().collect()
                 } else {
-                    ForeignKeyTarget::Table(content.parse()?)
+                    return Err(syn::Error::new(content.span(), "Expected list of columns"));
                 };
 
-                foreign_keys.push(ForeignKeyAttribute { host_columns, target });
+                foreign_keys.push(ForeignKeyAttribute { host_columns, referenced_columns });
             }
             Ok(())
         });
