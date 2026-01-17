@@ -9,11 +9,11 @@ use tuplities::prelude::{
 
 use crate::{
     AncestorOfIndex, BuildableTable, BuilderError, BuilderResult, BundlableTable,
-    CompletedTableBuilderBundle, DescendantOf, GetNestedColumns, HasNestedTables, HasTableExt,
-    IncompleteBuilderError, Insert, NestedTables, OptionalRef, TableBuilder, TableExt,
-    TrySetColumn, TrySetHomogeneousNestedColumns, TrySetHomogeneousNestedColumnsCollection,
-    TypedColumn, TypedNestedTuple, ValidateColumn, VerticalSameAsGroup,
-    builder_bundle::RecursiveBundleInsert,
+    CompletedTableBuilderBundle, DescendantOf, DescendantWithSelf, GetNestedColumns,
+    HasNestedTables, HasTableExt, IncompleteBuilderError, Insert, NestedTables, OptionalRef,
+    TableBuilder, TableExt, TrySetColumn, TrySetHomogeneousNestedColumns,
+    TrySetHomogeneousNestedColumnsCollection, TypedColumn, TypedNestedTuple, ValidateColumn,
+    VerticalSameAsGroup, builder_bundle::RecursiveBundleInsert,
 };
 
 /// A completed builder for creating insertable models for a Diesel table and
@@ -38,6 +38,9 @@ impl<T: diesel::Table, Depth, NestedBundles> RecursiveTableBuilder<T, Depth, Nes
 
 /// Trait defining the insertion of a builder into the database.
 pub trait RecursiveBuilderInsert<Error, Conn>: HasTableExt {
+    /// The nested model types returned after insertion.
+    type NestedModels;
+
     /// Insert the builder's data into the database using the provided
     /// connection.
     ///
@@ -53,6 +56,19 @@ pub trait RecursiveBuilderInsert<Error, Conn>: HasTableExt {
         self,
         conn: &mut Conn,
     ) -> BuilderResult<<Self::Table as TableExt>::Model, Error>;
+
+    /// Insert the builder's data into the database using the provided
+    /// connection, returning a nested tuple with all of the inserted models.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the database connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the insertion fails or if any database constraints
+    /// are violated.
+    fn recursive_insert_nested(self, conn: &mut Conn) -> BuilderResult<Self::NestedModels, Error>;
 }
 
 impl<T, Error, Conn> RecursiveBuilderInsert<Error, Conn> for TableBuilder<T>
@@ -60,16 +76,17 @@ where
     Conn: diesel::connection::LoadConnection,
     T: BuildableTable,
     T::NestedAncestorBuilders: NestTuple,
+    Self: HasTable<Table = T>,
     RecursiveTableBuilder<T, typenum::U0, T::NestedCompletedAncestorBuilders>:
         TryFrom<Self, Error = IncompleteBuilderError>
-            + RecursiveBuilderInsert<Error, Conn>
+            + RecursiveBuilderInsert<Error, Conn, Table=T, NestedModels=<<T as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>
             + HasTable<Table = T>,
 {
+    type NestedModels =
+        <<T as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels;
+
     #[inline]
-    fn recursive_insert(
-        self,
-        conn: &mut Conn,
-    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
+    fn recursive_insert(self, conn: &mut Conn) -> BuilderResult<T::Model, Error> {
         let completed_builder: RecursiveTableBuilder<
             T,
             typenum::U0,
@@ -77,11 +94,25 @@ where
         > = self.try_into()?;
         completed_builder.recursive_insert(conn)
     }
+
+    fn recursive_insert_nested(self, conn: &mut Conn) -> BuilderResult<Self::NestedModels, Error> {
+        let completed_builder: RecursiveTableBuilder<
+            T,
+            typenum::U0,
+            T::NestedCompletedAncestorBuilders,
+        > = self.try_into()?;
+        completed_builder.recursive_insert_nested(conn)
+    }
 }
 
-impl<T: BuildableTable, Conn> Insert<Conn> for TableBuilder<T>
+impl<T: BuildableTable + DescendantWithSelf, Conn> Insert<Conn> for TableBuilder<T>
 where
-    Self: RecursiveBuilderInsert<<Self::Table as TableExt>::Error, Conn>,
+    Self: RecursiveBuilderInsert<
+        <Self::Table as TableExt>::Error,
+        Conn,
+        Table=T,
+        NestedModels = <<Self::Table as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
+    > + HasTable<Table = T>,
 {
     #[inline]
     fn insert(
@@ -89,6 +120,13 @@ where
         conn: &mut Conn,
     ) -> BuilderResult<<Self::Table as TableExt>::Model, <Self::Table as TableExt>::Error> {
         self.recursive_insert(conn)
+    }
+
+    fn insert_nested(
+            self,
+            conn: &mut Conn,
+    ) -> BuilderResult<<<Self::Table as crate::DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels, <Self::Table as TableExt>::Error>{
+        self.recursive_insert_nested(conn)
     }
 }
 
@@ -158,12 +196,18 @@ where
     Head: RecursiveBundleInsert<Error, Conn>,
     Self: HasTableExt<Table = Head::Table>,
 {
+    type NestedModels = (<Head::Table as TableExt>::Model,);
+
     #[inline]
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
+    ) -> BuilderResult<<Head::Table as TableExt>::Model, Error> {
         self.nested_bundles.0.recursive_bundle_insert(conn)
+    }
+
+    fn recursive_insert_nested(self, conn: &mut Conn) -> BuilderResult<Self::NestedModels, Error> {
+        self.nested_bundles.0.recursive_bundle_insert(conn).map(|model| (model,))
     }
 }
 
@@ -181,18 +225,27 @@ where
     // Tail: HasNestedTables (moved into the combined bound above)
     Depth: core::ops::Add<typenum::U1>,
     RecursiveTableBuilder<T, typenum::Sum<Depth, typenum::U1>, Tail>:
-        RecursiveBuilderInsert<Error, Conn, Table = T>
+        RecursiveBuilderInsert<
+            Error, Conn,
+            Table=T,
+            NestedModels = <Tail::NestedTables as NestedTables>::NestedModels,
+        >
             + TrySetHomogeneousNestedColumnsCollection<
                 Error,
                 <<Head::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType,
                 <Tail::NestedTables as NestedTables>::NestedPrimaryKeyColumnsCollection,
             >,
 {
+    type NestedModels = (
+        <Head::Table as TableExt>::Model,
+        <Tail::NestedTables as NestedTables>::NestedModels,
+    );
+
     #[inline]
     fn recursive_insert(
         self,
         conn: &mut Conn,
-    ) -> BuilderResult<<Self::Table as TableExt>::Model, Error> {
+    ) -> BuilderResult<T::Model, Error> {
         // Insert the first table and get its model (with primary keys)
         let first = self.nested_bundles.0;
         let model: <Head::Table as TableExt>::Model =
@@ -204,6 +257,20 @@ where
             .map_err(BuilderError::Validation)?;
         // Recursively insert the tail
         tail_builder.recursive_insert(conn)
+    }
+
+    fn recursive_insert_nested(self, conn: &mut Conn) -> BuilderResult<Self::NestedModels, Error> {
+        // Insert the first table and get its model (with primary keys)
+        let first = self.nested_bundles.0;
+        let model: <Head::Table as TableExt>::Model =
+            first.recursive_bundle_insert(conn)?;
+        // Extract primary keys and set them in the tail builder
+        let mut tail_builder = RecursiveTableBuilder::from_nested_bundles(self.nested_bundles.1);
+        tail_builder
+            .try_set_homogeneous_nested_columns_collection(model.get_nested_columns())
+            .map_err(BuilderError::Validation)?;
+        // Recursively insert the tail
+        Ok((model, tail_builder.recursive_insert_nested(conn)?))
     }
 }
 

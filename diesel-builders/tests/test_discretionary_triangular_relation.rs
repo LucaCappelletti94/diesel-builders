@@ -97,15 +97,24 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn)?;
+    let builder = parent_table::table::builder().parent_field("Value A");
+    let builder_clone = builder.clone();
+    let parent = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.parent_field(), parent.parent_field());
 
     assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
-    let discretionary = satellite_table::table::builder()
+    let builder = satellite_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .field("Value C")
-        .insert(&mut conn)?;
+        .field("Value C");
+    let builder_clone = builder.clone();
+    let discretionary = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.field(), discretionary.field());
 
     assert_eq!(discretionary.field(), "Value C");
     assert_eq!(*discretionary.parent_id(), parent.get_column::<parent_table::id>());
@@ -138,12 +147,19 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // Debug formatting test
     let _formatted = format!("{child_builder:?}");
 
-    let child = child_builder
+    let builder = child_builder
         .try_discretionary(discretionary_builder)?
         .try_another_remote_column("After setting discretionary".to_owned())?
-        .another_remote_column("After setting discretionary".to_owned())
-        .insert(&mut conn)
-        .unwrap();
+        .another_remote_column("After setting discretionary".to_owned());
+
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+
+    assert_eq!(nested_models.child_field(), child.child_field());
+    assert_eq!(nested_models.remote_field(), child.remote_field());
+    assert_eq!(nested_models.another_remote_column(), child.another_remote_column());
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");
@@ -223,16 +239,24 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
+    let builder = parent_table::table::builder().parent_field("Value A");
+    let builder_clone = builder.clone();
+    let parent = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.parent_field(), parent.parent_field());
 
     assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
-    let discretionary = satellite_table::table::builder()
+    let builder = satellite_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .field("Value C")
-        .insert(&mut conn)
-        .unwrap();
+        .field("Value C");
+    let builder_clone = builder.clone();
+    let discretionary = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.field(), discretionary.field());
 
     assert_eq!(discretionary.field(), "Value C");
     assert_eq!(*discretionary.parent_id(), parent.get_column::<parent_table::id>());
@@ -260,7 +284,16 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     child_builder.try_discretionary_ref(discretionary_builder.clone())?;
 
     // Using the generated trait method for more ergonomic code
-    let child = child_builder.try_discretionary(discretionary_builder)?.insert(&mut conn).unwrap();
+    let builder = child_builder.try_discretionary(discretionary_builder)?;
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    // Since discretionary model is created new each time (via builder), the ID will
+    // differ. We verify the referenced model has correct data.
+    let disc_id = nested_models.discretionary_id();
+    let disc_model = satellite_table::table.find(disc_id).first::<Satellite>(&mut conn).unwrap();
+    assert_eq!(disc_model.field(), "Value C");
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");

@@ -1,6 +1,9 @@
 //! Submodule providing the `GetColumn` trait.
 
-use crate::TypedColumn;
+use diesel::associations::HasTable;
+use tuplities::prelude::{NestedTupleIndex, NestedTuplePopBack};
+
+use crate::{AncestorOfIndex, DescendantOf, HasTableExt, TypedColumn};
 
 /// Trait providing a getter for a specific Diesel column.
 pub trait GetColumn<Column: TypedColumn> {
@@ -9,6 +12,43 @@ pub trait GetColumn<Column: TypedColumn> {
     /// Get the owned value of the specified column.
     fn get_column(&self) -> Column::ColumnType {
         self.get_column_ref().clone()
+    }
+}
+
+impl<T, C> GetColumn<C> for (T,)
+where
+    C: TypedColumn,
+    T: GetColumn<C>,
+{
+    #[inline]
+    fn get_column_ref(&self) -> &C::ColumnType {
+        self.0.get_column_ref()
+    }
+
+    #[inline]
+    fn get_column(&self) -> C::ColumnType {
+        self.0.get_column()
+    }
+}
+
+impl<Head, Tail, C> GetColumn<C> for (Head, Tail)
+where
+    C: TypedColumn,
+    Tail: NestedTuplePopBack<Back: HasTableExt<Table: DescendantOf<C::Table>>>,
+    C::Table: AncestorOfIndex<<Tail::Back as HasTable>::Table>,
+    (Head, Tail): NestedTupleIndex<
+            <C::Table as AncestorOfIndex<<Tail::Back as HasTable>::Table>>::Idx,
+            Element: GetColumn<C>,
+        >,
+{
+    #[inline]
+    fn get_column_ref(&self) -> &C::ColumnType {
+        GetColumn::get_column_ref(self.nested_index())
+    }
+
+    #[inline]
+    fn get_column(&self) -> C::ColumnType {
+        GetColumn::get_column(self.nested_index())
     }
 }
 

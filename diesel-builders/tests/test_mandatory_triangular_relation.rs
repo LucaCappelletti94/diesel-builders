@@ -101,16 +101,24 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
+    let builder = parent_table::table::builder().parent_field("Value A");
+    let builder_clone = builder.clone();
+    let parent = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.parent_field(), parent.parent_field());
 
     assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
-    let mandatory = satellite_table::table::builder()
+    let builder = satellite_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .field("Value C")
-        .insert(&mut conn)
-        .unwrap();
+        .field("Value C");
+    let builder_clone = builder.clone();
+    let mandatory = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.field(), mandatory.field());
 
     assert_eq!(mandatory.field(), "Value C");
     assert_eq!(*mandatory.parent_id(), parent.get_column::<parent_table::id>());
@@ -142,14 +150,23 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     child_builder.try_mandatory_ref(mandatory_builder.clone())?.type_ref("Value B");
 
     // Using the generated trait method for more ergonomic code
-    let child = child_builder
+    let builder = child_builder
         .try_mandatory(mandatory_builder)?
         // Overriding the another_remote_column value set in the mandatory builder
         .another_remote_column("Another remote field".to_owned())
         .try_columns("After setting mandatory".to_owned())?
-        .try_another_remote_column("Another remote field".to_owned())?
-        .insert(&mut conn)
-        .unwrap();
+        .try_another_remote_column("Another remote field".to_owned())?;
+
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.r#type(), child.r#type());
+    assert_eq!(
+        // Note: __columns is special name
+        nested_models.columns(),
+        child.columns()
+    );
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");
@@ -183,11 +200,16 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
 
     let satellite_builder = satellite_table::table::builder().field("Dynamic Field");
 
-    let child = child_with_satellite_table::table::builder()
+    let builder = child_with_satellite_table::table::builder()
         .try_set_dynamic_column(dyn_type_column, "Dynamic Type")?
         .parent_field("Parent for Dynamic Child")
-        .try_mandatory(satellite_builder)?
-        .insert(&mut conn)?;
+        .try_mandatory(satellite_builder)?;
+
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.r#type(), child.r#type());
 
     assert_eq!(child.r#type(), "Dynamic Type");
     assert_eq!(child.columns().as_deref(), Some("Dynamic Field"));
@@ -212,16 +234,24 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     .execute(&mut conn)?;
 
     // Insert into table A
-    let parent = parent_table::table::builder().parent_field("Value A").insert(&mut conn).unwrap();
+    let builder = parent_table::table::builder().parent_field("Value A");
+    let builder_clone = builder.clone();
+    let parent = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.parent_field(), parent.parent_field());
 
     assert_eq!(parent.parent_field(), "Value A");
 
     // Insert into table C (references A)
-    let mandatory = satellite_table::table::builder()
+    let builder = satellite_table::table::builder()
         .parent_id(parent.get_column::<parent_table::id>())
-        .field("Value C")
-        .insert(&mut conn)
-        .unwrap();
+        .field("Value C");
+    let builder_clone = builder.clone();
+    let mandatory = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+    assert_eq!(nested_models.field(), mandatory.field());
 
     assert_eq!(mandatory.field(), "Value C");
     assert_eq!(*mandatory.parent_id(), parent.get_column::<parent_table::id>());
@@ -246,7 +276,17 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     child_builder.try_mandatory_ref(mandatory_builder.clone())?;
 
     // Using the generated trait method for more ergonomic code
-    let child = child_builder.try_mandatory(mandatory_builder)?.insert(&mut conn).unwrap();
+    let builder = child_builder.try_mandatory(mandatory_builder)?;
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn).unwrap();
+
+    let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
+
+    // Since mandatory model is created new each time (via builder), the ID will
+    // differ. We verify the referenced model has correct data.
+    let mand_id = nested_models.mandatory_id();
+    let mand_model = satellite_table::table.find(mand_id).first::<Satellite>(&mut conn).unwrap();
+    assert_eq!(mand_model.field(), "Value C");
 
     let associated_parent: Parent = child.ancestor::<Parent>(&mut conn)?;
     assert_eq!(associated_parent.parent_field(), "Value A for B");

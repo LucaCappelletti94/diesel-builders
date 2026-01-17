@@ -91,9 +91,13 @@ fn test_mandatory_vertical_same_as() -> Result<(), Box<dyn std::error::Error>> {
     )
     .execute(&mut conn)?;
 
-    let child = child_table::table::builder()
-        .mandatory(satellite_table::table::builder().field("Mandatory Value"))
-        .insert(&mut conn)?;
+    let builder = child_table::table::builder()
+        .mandatory(satellite_table::table::builder().field("Mandatory Value"));
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.child_field(), child.child_field());
 
     let parent: Parent = child.ancestor(&mut conn)?;
     assert_eq!(parent.parent_field(), "Mandatory Value");

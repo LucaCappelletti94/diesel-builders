@@ -52,7 +52,12 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(builder.may_get_column_ref::<animals::name>().map(String::as_str), Some("Max"));
     assert_eq!(builder.may_get_column_ref::<animals::description>(), Some(&None));
 
+    let builder_clone = builder.clone();
     let mut animal = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), animal.name());
+    assert_eq!(nested_models.description(), animal.description());
 
     assert_eq!(animal.name(), "Max");
     assert!(animal.description().is_none());
@@ -65,16 +70,27 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert!(animal.id() > &0);
 
     // Test with description set to Some value - using generated helper traits
-    let animal_with_desc = animals::table::builder()
+    let builder = animals::table::builder()
         .try_name("Buddy")?
-        .try_description("A friendly dog".to_owned())?
-        .insert(&mut conn)?;
+        .try_description("A friendly dog".to_owned())?;
+
+    let builder_clone = builder.clone();
+    let animal_with_desc = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), animal_with_desc.name());
+    assert_eq!(nested_models.description(), animal_with_desc.description());
 
     assert_eq!(animal_with_desc.description().as_deref(), Some("A friendly dog"));
 
     // Test with description explicitly set to None (NULL in database)
-    let animal_no_desc =
-        animals::table::builder().try_name("Whiskers")?.try_description(None)?.insert(&mut conn)?;
+    let builder = animals::table::builder().try_name("Whiskers")?.try_description(None)?;
+    let builder_clone = builder.clone();
+    let animal_no_desc = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), animal_no_desc.name());
+    assert_eq!(nested_models.description(), animal_no_desc.description());
 
     assert!(animal_no_desc.description().is_none());
 
@@ -84,7 +100,14 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(animal, queried_animal);
 
     // Test chained builder pattern with GetColumn derive
-    let another_animal = animals::table::builder().try_name("Charlie")?.insert(&mut conn)?;
+    let builder = animals::table::builder().try_name("Charlie")?;
+
+    let builder_clone = builder.clone();
+    let another_animal = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), another_animal.name());
+    assert_eq!(nested_models.description(), another_animal.description());
 
     // Test GetColumn derive on multiple fields
     assert_eq!(another_animal.name(), "Charlie");
@@ -93,7 +116,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(animal.id(), another_animal.id());
 
     // We try to change Animal and use directly Upsert:
-    animal.name = "Maximus".to_string();
+    animal.set_name("Maximus".to_string());
     let upserted_animal = animal.upsert(&mut conn)?;
     assert_eq!(upserted_animal.name(), "Maximus");
     assert_eq!(upserted_animal.id(), animal.id());
@@ -127,7 +150,12 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
         Err(DynamicSetColumnError::UnknownColumn(<CursedColumn as Column>::NAME))
     );
 
+    let builder_clone = animal_builder.clone();
     animal = animal_builder.insert(&mut conn)?;
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), animal.name());
+    assert_eq!(nested_models.description(), animal.description());
+
     assert_eq!(animal.description().as_deref(), Some("Dynamically set description"));
     assert_eq!(animal.name(), "Dynamic Name");
 
@@ -228,7 +256,13 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
     let mut builder = animals::table::builder();
     builder.try_name_ref("Test Animal")?;
     builder.try_description_ref(Some("A test description".to_string()))?;
+
+    let builder_clone = builder.clone();
     let animal = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.name(), animal.name());
+    assert_eq!(nested_models.description(), animal.description());
 
     // Test reference blanket impl
     let animal_ref = &animal;

@@ -62,27 +62,28 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert B with both mandatory C and discretionary D
     // Using generated trait methods for ergonomic builder setup
-    let b = child_with_mixed_table::table::builder()
+    let builder = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
         .mandatory(satellite_table::table::builder().field("Value C"))
-        .discretionary(satellite_table::table::builder().field("Value D"))
-        .insert(&mut conn)?;
+        .discretionary(satellite_table::table::builder().field("Value D"));
 
-    assert_eq!(b.get_column::<child_with_mixed_table::child_field>(), "Value B");
-    assert_eq!(
-        b.get_column::<child_with_mixed_table::remote_mandatory_field>().as_deref(),
-        Some("Value C")
-    );
-    assert_eq!(
-        b.get_column::<child_with_mixed_table::remote_discretionary_field>().as_deref(),
-        Some("Value D")
-    );
+    let builder_clone = builder.clone();
+    let b = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.child_field(), b.child_field());
+    assert_eq!(nested_models.remote_mandatory_field(), b.remote_mandatory_field());
+    assert_eq!(nested_models.remote_discretionary_field(), b.remote_discretionary_field());
+
+    assert_eq!(b.child_field(), "Value B");
+    assert_eq!(b.remote_mandatory_field().as_deref(), Some("Value C"));
+    assert_eq!(b.remote_discretionary_field().as_deref(), Some("Value D"));
 
     // Verify associated C
     let c: Satellite = b.mandatory(&mut conn)?;
     assert_eq!(c.parent_id(), b.get_column_ref::<child_with_mixed_table::id>());
-    assert_eq!(c.get_column::<satellite_table::field>(), "Value C");
+    assert_eq!(c.field(), "Value C");
 
     // Verify associated D
     let d: Satellite = b.discretionary(&mut conn)?;
@@ -90,7 +91,7 @@ fn test_mixed_triangular_relations() -> Result<(), Box<dyn std::error::Error>> {
         d.get_column::<satellite_table::parent_id>(),
         b.get_column::<child_with_mixed_table::id>()
     );
-    assert_eq!(d.get_column::<satellite_table::field>(), "Value D");
+    assert_eq!(d.field(), "Value D");
 
     Ok(())
 }
@@ -100,18 +101,25 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
-    let b = child_with_mixed_table::table::builder()
+    let builder = child_with_mixed_table::table::builder()
         .parent_field("Value A for B")
         .child_field("Value B")
         .mandatory(satellite_table::table::builder().field("Value C"))
-        .discretionary(satellite_table::table::builder().field("Value D"))
-        .insert(&mut conn)?;
+        .discretionary(satellite_table::table::builder().field("Value D"));
+
+    let builder_clone = builder.clone();
+    let b = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.child_field(), b.child_field());
+    assert_eq!(nested_models.remote_mandatory_field(), b.remote_mandatory_field());
+    assert_eq!(nested_models.remote_discretionary_field(), b.remote_discretionary_field());
 
     // Use GetForeignExt directly for primary-key based foreign key
     let c_pk: Satellite =
         b.foreign::<(child_with_mixed_table::mandatory_id,), (satellite_table::id,)>(&mut conn)?;
     assert_eq!(c_pk.get_column_ref::<satellite_table::id>(), b.mandatory_id());
-    assert_eq!(c_pk.get_column::<satellite_table::field>(), "Value C");
+    assert_eq!(c_pk.field(), "Value C");
     let c_pk2: Satellite = b.foreign::<(
         child_with_mixed_table::mandatory_id,
         child_with_mixed_table::remote_mandatory_field,
@@ -138,12 +146,21 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     let mut conn = shared::establish_connection()?;
     create_tables(&mut conn)?;
 
-    let parent_table = parent_table::table::builder().parent_field("Value A").insert(&mut conn)?;
+    let builder = parent_table::table::builder().parent_field("Value A");
+    let builder_clone = builder.clone();
+    let parent_table = builder.insert(&mut conn)?;
 
-    let satellite_table = satellite_table::table::builder()
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.parent_field(), parent_table.parent_field());
+
+    let builder = satellite_table::table::builder()
         .parent_id(parent_table.get_column::<parent_table::id>())
-        .field("Value D")
-        .insert(&mut conn)?;
+        .field("Value D");
+    let builder_clone = builder.clone();
+    let satellite_table = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.field(), satellite_table.field());
 
     // Try to create without mandatory C builder
     // Note: d_id_model references an existing model instead of creating a new one

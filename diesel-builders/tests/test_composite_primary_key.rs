@@ -57,7 +57,17 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
         Some(&"2025-01-01".to_string())
     );
 
+    let builder_clone = builder.clone();
     let user_role = builder.insert(&mut conn)?;
+
+    // We must modify the primary key to avoid unique constraint violation,
+    // as the builder still has user_id=1 and role_id=10
+    let nested_models = builder_clone.try_role_id(11)?.insert_nested(&mut conn)?;
+
+    // Verify non-PK fields align
+    assert_eq!(nested_models.assigned_at(), user_role.assigned_at());
+    // Verify part of PK that wasn't changed
+    assert_eq!(nested_models.user_id(), user_role.user_id());
 
     assert_eq!(user_role.user_id(), &1);
     assert_eq!(user_role.role_id(), &10);
@@ -72,11 +82,16 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(user_role, queried_user_role);
 
     // We test the chained variant.
-    let another_user_role = user_roles::table::builder()
-        .user_id(2)
-        .role_id(20)
-        .assigned_at("2025-02-01")
-        .insert(&mut conn)?;
+    let builder = user_roles::table::builder().user_id(2).role_id(20).assigned_at("2025-02-01");
+
+    let builder_clone = builder.clone();
+    let another_user_role = builder.insert(&mut conn)?;
+
+    // We must modify the primary key to avoid unique constraint violation
+    let nested_models = builder_clone.role_id(21).insert_nested(&mut conn)?;
+
+    assert_eq!(nested_models.assigned_at(), another_user_role.assigned_at());
+    assert_eq!(nested_models.user_id(), another_user_role.user_id());
 
     assert_eq!(another_user_role.user_id(), &2);
     assert_eq!(another_user_role.role_id(), &20);

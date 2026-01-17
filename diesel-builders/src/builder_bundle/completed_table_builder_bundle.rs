@@ -252,7 +252,7 @@ where
 impl<Error, Conn, T> InsertTuple<Error, Conn> for (T,)
 where
     Conn: diesel::connection::LoadConnection,
-    T: crate::RecursiveBuilderInsert<Error, Conn>,
+    T: crate::RecursiveBuilderInsert<Error, Conn> + HasTableExt,
 {
     #[inline]
     fn insert_tuple(
@@ -266,7 +266,7 @@ where
 impl<Error, Conn, Head, Tail> InsertTuple<Error, Conn> for (Head, Tail)
 where
     Conn: diesel::connection::LoadConnection,
-    Head: crate::RecursiveBuilderInsert<Error, Conn>,
+    Head: crate::RecursiveBuilderInsert<Error, Conn> + HasTableExt,
     Tail: InsertTuple<Error, Conn>,
     (Head, Tail): HasNestedTables,
     Self::NestedTables: NestedTables<

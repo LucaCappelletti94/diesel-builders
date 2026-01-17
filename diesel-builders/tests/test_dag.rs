@@ -179,13 +179,13 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     let animal = animals::table::builder().try_name("Original Animal")?.insert(&mut conn)?;
 
     let mut animal_update = animal.clone();
-    animal_update.name = "Updated Animal".to_string();
+    animal_update.set_name("Updated Animal".to_string());
 
     let updated_animal = animal_update.upsert(&mut conn)?;
-    assert_eq!(updated_animal.name, "Updated Animal");
+    assert_eq!(updated_animal.get_column::<animals::name>(), "Updated Animal");
 
-    let queried_animal: Animal = Animal::find(&animal.id, &mut conn)?;
-    assert_eq!(queried_animal.name, "Updated Animal");
+    let queried_animal: Animal = Animal::find(animal.get_column_ref::<animals::id>(), &mut conn)?;
+    assert_eq!(queried_animal.get_column::<animals::name>(), "Updated Animal");
 
     // 2. Upsert on Descendant (Dog)
     // Note: upsert currently only updates the specific table columns.
@@ -193,13 +193,13 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     let dog = dogs::table::builder().try_name("Original Dog")?.breed("Poodle").insert(&mut conn)?;
 
     let mut dog_update = dog.clone();
-    dog_update.breed = "Standard Poodle".to_string();
+    dog_update.set_breed("Standard Poodle".to_string());
 
     let updated_dog = dog_update.upsert(&mut conn)?;
-    assert_eq!(updated_dog.breed, "Standard Poodle");
+    assert_eq!(updated_dog.get_column::<dogs::breed>(), "Standard Poodle");
 
-    let queried_dog: Dog = Dog::find(&dog.id, &mut conn)?;
-    assert_eq!(queried_dog.breed, "Standard Poodle");
+    let queried_dog: Dog = Dog::find(dog.get_column_ref::<dogs::id>(), &mut conn)?;
+    assert_eq!(queried_dog.get_column::<dogs::breed>(), "Standard Poodle");
 
     // 3. Upsert on Multi-Descendant (Pet)
     // Pet extends Dog and Cat.
@@ -212,13 +212,13 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
         .insert(&mut conn)?;
 
     let mut pet_update = pet.clone();
-    pet_update.owner_name = "Updated Owner".to_string();
+    pet_update.set_owner_name("Updated Owner".to_string());
 
     let updated_pet = pet_update.upsert(&mut conn)?;
-    assert_eq!(updated_pet.owner_name, "Updated Owner");
+    assert_eq!(updated_pet.get_column::<pets::owner_name>(), "Updated Owner");
 
-    let queried_pet: Pet = Pet::find(&pet.id, &mut conn)?;
-    assert_eq!(queried_pet.owner_name, "Updated Owner");
+    let queried_pet: Pet = Pet::find(pet.get_column_ref::<pets::id>(), &mut conn)?;
+    assert_eq!(queried_pet.get_column::<pets::owner_name>(), "Updated Owner");
 
     Ok(())
 }

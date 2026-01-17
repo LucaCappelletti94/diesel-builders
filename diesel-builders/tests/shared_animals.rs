@@ -66,11 +66,18 @@ pub fn setup_animal_tables(
 /// Model for the animals table.
 pub struct Animal {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The name of the animal.
-    pub name: String,
+    name: String,
     /// Optional description.
-    pub description: Option<String>,
+    description: Option<String>,
+}
+
+impl Animal {
+    /// Sets the name of the animal, bypassing any validation.
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
 }
 
 /// Error variants for `NewAnimal` validation.
@@ -140,10 +147,17 @@ impl diesel_builders::ValidateColumn<animals::description>
 /// Model for the dogs table.
 pub struct Dog {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The breed of the dog.
     #[table_model(default = "Unknown")]
-    pub breed: String,
+    breed: String,
+}
+
+impl Dog {
+    /// Sets the breed of the dog, bypassing any validation.
+    pub fn set_breed(&mut self, breed: String) {
+        self.breed = breed;
+    }
 }
 
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
@@ -153,9 +167,9 @@ pub struct Dog {
 pub struct Cat {
     #[infallible]
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The color of the cat.
-    pub color: String,
+    color: String,
 }
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -220,10 +234,10 @@ impl diesel_builders::ValidateColumn<puppies::age_months>
 pub struct Puppy {
     #[infallible]
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The age in months of the puppy.
     #[table_model(default = 6)]
-    pub age_months: i32,
+    age_months: i32,
 }
 
 #[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel, Clone)]
@@ -232,7 +246,14 @@ pub struct Puppy {
 /// Model for the pets table.
 pub struct Pet {
     /// Primary key.
-    pub id: i32,
+    id: i32,
     /// The owner name of the pet.
-    pub owner_name: String,
+    owner_name: String,
+}
+
+impl Pet {
+    /// Sets the owner name of the pet, bypassing any validation.
+    pub fn set_owner_name(&mut self, owner_name: String) {
+        self.owner_name = owner_name;
+    }
 }

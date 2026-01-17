@@ -184,25 +184,28 @@ diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(
 diesel::sql_query("CREATE TABLE cats (id INTEGER PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE, color TEXT NOT NULL DEFAULT 'All cats are orange');").execute(&mut conn)?;
 diesel::sql_query("CREATE TABLE pets (id INTEGER PRIMARY KEY, owner_name TEXT NOT NULL, FOREIGN KEY (id) REFERENCES dogs(id) ON DELETE CASCADE, FOREIGN KEY (id) REFERENCES cats(id) ON DELETE CASCADE);").execute(&mut conn)?;
 
-let pet = pets::table::builder()
+let pet_graph = pets::table::builder()
     .name("Bellerophon")
     .breed("Hybrid Orange-Labrador")
     .color("Orange")
     .owner_name("Alice Smith")
-    .insert(&mut conn)?;
+    // insert_nested returns a nested structure containing all created/referenced models
+    .insert_nested(&mut conn)?;
 
-let animal: Animal = pet.ancestor(&mut conn)?;
-assert_eq!(animal.name(), "Bellerophon");
-let dog: Dog = pet.ancestor(&mut conn)?;
-assert_eq!(dog.breed(), "Hybrid Orange-Labrador");
-let cat: Cat = pet.ancestor(&mut conn)?;
-assert_eq!(cat.color(), "Orange");
+// Directly access fields from any ancestor in the hierarchy
+assert_eq!(pet_graph.name(), "Bellerophon");            // From Animal
+assert_eq!(pet_graph.breed(), "Hybrid Orange-Labrador"); // From Dog
+assert_eq!(pet_graph.color(), "Orange");                 // From Cat
+assert_eq!(pet_graph.owner_name(), "Alice Smith");       // From Pet
 
-pet.delete(&mut conn)?;
-assert!(!Pet::exists(pet.id(), &mut conn)?);
-assert!(!Dog::exists(pet.id(), &mut conn)?);
-assert!(!Cat::exists(pet.id(), &mut conn)?);
-assert!(!Animal::exists(pet.id(), &mut conn)?);
+// The returned structure is a nested tuple: (Animal, (Dog, (Cat, (Pet,))))
+// We can access the root model (Animal) to get the ID shared by all tables
+let pet_id = pet_graph.get_column::<animals::id>(); 
+Pet::find(&pet_id, &mut conn)?.delete(&mut conn)?;
+assert!(!Pet::exists(&pet_id, &mut conn)?);
+assert!(!Dog::exists(&pet_id, &mut conn)?);
+assert!(!Cat::exists(&pet_id, &mut conn)?);
+assert!(!Animal::exists(&pet_id, &mut conn)?);
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```

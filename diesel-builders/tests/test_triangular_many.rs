@@ -103,16 +103,22 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
     )
     .execute(&mut conn)?;
 
-    let other_parent =
-        parent_table::table::builder().parent_field("Other parent").insert(&mut conn)?;
+    let builder = parent_table::table::builder().parent_field("Other parent");
+    let builder_clone = builder.clone();
+    let other_parent = builder.insert(&mut conn)?;
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.parent_field(), other_parent.parent_field());
 
-    let discretionary = satellite_table::table::builder()
+    let builder = satellite_table::table::builder()
         .parent_id(other_parent.get_column::<parent_table::id>())
-        .field("Discretionary for Child")
-        .insert(&mut conn)?;
+        .field("Discretionary for Child");
+    let builder_clone = builder.clone();
+    let discretionary = builder.insert(&mut conn)?;
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.field(), discretionary.field());
 
     // Now single fluent insert for the child
-    let child = child_table::table::builder()
+    let builder = child_table::table::builder()
         .m1(satellite_table::table::builder().field("M1 for Child"))
         .m2(satellite_table::table::builder().field("M2 for Child"))
         .m3(satellite_table::table::builder().field("M3 for Child"))
@@ -120,8 +126,13 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
         .d2(satellite_table::table::builder().field("D2 for Child"))
         .d3_model(&discretionary)
         .payload("payload")
-        .parent_field("Parent of Child")
-        .insert(&mut conn)?;
+        .parent_field("Parent of Child");
+
+    let builder_clone = builder.clone();
+    let child = builder.insert(&mut conn)?;
+
+    let nested_models = builder_clone.insert_nested(&mut conn)?;
+    assert_eq!(nested_models.payload(), child.payload());
 
     // Validate insertion
     assert_eq!(child.payload(), "payload");
