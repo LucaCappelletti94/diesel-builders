@@ -44,14 +44,135 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
 
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
-    fn iter_match_simple(&self) -> Self::MatchSimpleIter<'_>;
+    fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
+    where
+        Idx: 'a;
 
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are skipped.
-    fn iter_match_full(&self) -> Self::MatchFullIter<'_>;
+    fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
+    where
+        Idx: 'a;
 
     /// Returns an iterator over the foreign keys in this table.
     fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter;
+}
+
+impl<Idx: NonEmptyProjection> IterForeignKey<Idx> for () {
+    type MatchSimpleIter<'a> = std::iter::Empty<<<<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions>
+        where
+            Idx: 'a,
+            Self: 'a;
+
+    type MatchFullIter<'a>
+        = std::iter::Empty<
+        <<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
+    >
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    type ForeignKeyItemType = ();
+
+    type ForeignKeyColumnsIter = std::iter::Empty<()>;
+
+    fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
+    where
+        Idx: 'a,
+    {
+        std::iter::empty()
+    }
+
+    fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
+    where
+        Idx: 'a,
+    {
+        std::iter::empty()
+    }
+
+    fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
+        std::iter::empty()
+    }
+}
+
+impl<Idx: NonEmptyProjection, T> IterForeignKey<Idx> for (T,)
+where
+    T: IterForeignKey<Idx>,
+{
+    type MatchSimpleIter<'a>
+        = T::MatchSimpleIter<'a>
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    type MatchFullIter<'a>
+        = T::MatchFullIter<'a>
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    type ForeignKeyItemType = T::ForeignKeyItemType;
+
+    type ForeignKeyColumnsIter = T::ForeignKeyColumnsIter;
+
+    fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
+    where
+        Idx: 'a,
+    {
+        self.0.iter_match_simple()
+    }
+
+    fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
+    where
+        Idx: 'a,
+    {
+        self.0.iter_match_full()
+    }
+
+    fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
+        T::iter_foreign_key_columns()
+    }
+}
+
+impl<Idx: NonEmptyProjection, Head, Tail> IterForeignKey<Idx> for (Head, Tail)
+where
+    Head: IterForeignKey<Idx>,
+    Tail: IterForeignKey<Idx>,
+{
+    type MatchSimpleIter<'a>
+        = std::iter::Chain<Head::MatchSimpleIter<'a>, Tail::MatchSimpleIter<'a>>
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    type MatchFullIter<'a>
+        = std::iter::Chain<Head::MatchFullIter<'a>, Tail::MatchFullIter<'a>>
+    where
+        Idx: 'a,
+        Self: 'a;
+
+    type ForeignKeyItemType = (Head::ForeignKeyItemType, Tail::ForeignKeyItemType);
+
+    type ForeignKeyColumnsIter =
+        std::iter::Zip<Head::ForeignKeyColumnsIter, Tail::ForeignKeyColumnsIter>;
+
+    fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
+    where
+        Idx: 'a,
+    {
+        self.0.iter_match_simple().chain(self.1.iter_match_simple())
+    }
+
+    fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
+    where
+        Idx: 'a,
+    {
+        self.0.iter_match_full().chain(self.1.iter_match_full())
+    }
+
+    fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
+        std::iter::zip(Head::iter_foreign_key_columns(), Tail::iter_foreign_key_columns())
+    }
 }
 
 /// An extension of the `IterForeignKey` trait moving the generic parameter

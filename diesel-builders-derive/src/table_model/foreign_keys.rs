@@ -646,11 +646,15 @@ fn generate_impls_for_groups<'b>(
 
                 type ForeignKeyColumnsIter = ::std::vec::IntoIter<Self::ForeignKeyItemType>;
 
-                fn iter_match_simple(&self) -> Self::MatchSimpleIter<'_> {
+                fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
+                    where #idx_type: 'a
+                {
                     #simple_iter_expr
                 }
 
-                fn iter_match_full(&self) -> Self::MatchFullIter<'_> {
+                fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
+                    where #idx_type: 'a
+                {
                     #full_iter_expr
                 }
 
