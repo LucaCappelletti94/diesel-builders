@@ -51,7 +51,7 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
     fn iter_match_full(&self) -> Self::MatchFullIter<'_>;
 
     /// Returns an iterator over the foreign keys in this table.
-    fn iter_foreign_key_columns(&self) -> Self::ForeignKeyColumnsIter;
+    fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter;
 }
 
 /// An extension of the `IterForeignKey` trait moving the generic parameter
@@ -77,13 +77,14 @@ pub trait IterForeignKeyExt {
         IterForeignKey::iter_match_full(self)
     }
 
+    #[must_use]
     /// Returns an iterator over the foreign keys in this table.
-    fn iter_foreign_key_columns<Idx>(&self) -> <Self as IterForeignKey<Idx>>::ForeignKeyColumnsIter
+    fn iter_foreign_key_columns<Idx>() -> <Self as IterForeignKey<Idx>>::ForeignKeyColumnsIter
     where
         Idx: NonEmptyProjection,
         Self: IterForeignKey<Idx>,
     {
-        IterForeignKey::iter_foreign_key_columns(self)
+        <Self as IterForeignKey<Idx>>::iter_foreign_key_columns()
     }
 }
 

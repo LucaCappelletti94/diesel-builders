@@ -654,7 +654,7 @@ fn generate_impls_for_groups<'b>(
                     #full_iter_expr
                 }
 
-                fn iter_foreign_key_columns(&self) -> Self::ForeignKeyColumnsIter {
+                fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
                     #foreign_keys_expr
                 }
             }

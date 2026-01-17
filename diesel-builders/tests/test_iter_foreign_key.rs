@@ -144,11 +144,9 @@ fn test_mixed_optional_edge() {
 
 #[test]
 fn test_iter_foreign_key_columns() {
-    let edge_instance = Edge { id: 0, source_id: 1, target_id: 2 };
-
     // iter_foreign_key_columns matches both iterators logic in iteration order
     // But returns nested tuples of boxed columns
-    let keys: Vec<_> = edge_instance.iter_foreign_key_columns::<(nodes::id,)>().collect();
+    let keys: Vec<_> = Edge::iter_foreign_key_columns::<(nodes::id,)>().collect();
 
     assert_eq!(keys.len(), 2);
 

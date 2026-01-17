@@ -308,9 +308,11 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
 
     // Test iter_foreign_key_columns with composite index (satellite_table::id,
     // satellite_table::parent_id)
-    let refs: Vec<_> = child
-        .iter_foreign_key_columns::<(satellite_table::id, satellite_table::parent_id)>()
-        .collect();
+    let refs: Vec<_> = ChildWithMandatory::iter_foreign_key_columns::<(
+        satellite_table::id,
+        satellite_table::parent_id,
+    )>()
+    .collect();
     assert_eq!(refs.len(), 1);
     // iter_foreign_key_columns yields boxed host table columns
     // We can verify the count but can't directly inspect the boxed trait objects
