@@ -56,7 +56,7 @@ where
 pub trait MayGetColumn<C: ColumnTyped> {
     /// Get the reference of the specified column, returning `None` if not
     /// present.
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>;
+    fn may_get_column_ref(&self) -> Option<&C::ColumnType>;
     /// Get the value of the specified column, returning `None` if not present.
     fn may_get_column(&self) -> Option<C::ColumnType> {
         self.may_get_column_ref().cloned()

@@ -164,7 +164,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(name_val, Some(animal.name()));
 
     let desc_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc_column)?;
-    assert_eq!(desc_val.map(|s| s.as_str()), animal.description().as_deref());
+    assert_eq!(desc_val.map(String::as_str), animal.description().as_deref());
 
     // Test CursedColumn failure
     let result = nested_models.try_get_dynamic_column_ref::<String>(dyn_cursed_column);

@@ -34,6 +34,7 @@ pub trait TryGetDynamicColumn {
     /// # Errors
     ///
     /// Returns an error if the column cannot be retrieved.
+    #[allow(clippy::redundant_closure_for_method_calls)]
     fn try_get_dynamic_column<VT: Clone + 'static>(
         &self,
         column: DynColumn<VT>,
@@ -93,6 +94,7 @@ where
     }
 }
 
+/// Local module for sealed trait.
 mod sealed {
     use super::super::GetColumn;
     use crate::{
@@ -100,7 +102,9 @@ mod sealed {
         builder_error::DynamicColumnError,
     };
 
+    /// Trait for variadic dynamic column retrieval.
     pub trait VariadicTryGetDynamicColumn<Columns: NestedColumns> {
+        /// Try to get a dynamic column from a nested structure.
         fn variadic_try_get_dynamic_column<VT: 'static>(
             &self,
             column: DynColumn<VT>,
