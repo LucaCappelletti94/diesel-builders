@@ -266,12 +266,18 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test reference blanket impl
     let animal_ref = &animal;
-    assert_eq!(<&Animal as diesel_builders::GetColumn<animals::name>>::get_column(&animal_ref), "Test Animal");
+    assert_eq!(
+        <&Animal as diesel_builders::GetColumn<animals::name>>::get_column(&animal_ref),
+        "Test Animal"
+    );
     assert_eq!(
         <&Animal as diesel_builders::GetColumn<animals::description>>::get_column(&animal_ref),
         Some("A test description".to_string())
     );
-    assert_eq!(<&Animal as diesel_builders::GetColumn<animals::name>>::get_column_ref(&animal_ref), "Test Animal");
+    assert_eq!(
+        <&Animal as diesel_builders::GetColumn<animals::name>>::get_column_ref(&animal_ref),
+        "Test Animal"
+    );
     assert_eq!(
         <&Animal as diesel_builders::GetColumn<animals::description>>::get_column_ref(&animal_ref),
         &Some("A test description".to_string())
