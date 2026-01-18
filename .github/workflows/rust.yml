@@ -101,7 +101,7 @@ jobs:
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
       - name: Generate coverage
-        run: cargo tarpaulin --engine=llvm --out xml --workspace --exclude diesel-builders-derive --exclude-files diesel-builders-derive --run-types AllTargets --run-types Doctests
+        run: cargo tarpaulin --engine=llvm --out xml --workspace --exclude diesel-builders-derive --exclude-files "diesel-builders-derive/*" --run-types AllTargets
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
