@@ -98,3 +98,108 @@ impl<V> DynColumn<V> {
         self.table
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_debug() {
+        let col = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let debug_str = format!("{col:?}");
+        assert!(debug_str.contains("DynColumn"));
+        assert!(debug_str.contains("table"));
+        assert!(debug_str.contains("name"));
+    }
+
+    #[test]
+    fn test_clone() {
+        let col = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let cloned = col;
+        assert_eq!(col, cloned);
+    }
+
+    #[test]
+    fn test_copy() {
+        let col = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let copied = col;
+        // Since Copy, the original is still valid
+        assert_eq!(col, copied);
+    }
+
+    #[test]
+    fn test_partial_eq() {
+        let col1 = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let col2 = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let col3 =
+            DynColumn::<i32> { table: "dogs", name: "id", _value_type: std::marker::PhantomData };
+        assert_eq!(col1, col2);
+        assert_ne!(col1, col3);
+    }
+
+    #[test]
+    fn test_hash() {
+        use std::collections::HashSet;
+        let col1 = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let col2 = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let mut set = HashSet::new();
+        set.insert(col1);
+        assert!(set.contains(&col2));
+    }
+
+    #[test]
+    fn test_ord() {
+        let col1 = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        let col2 = DynColumn::<i32> {
+            table: "animals",
+            name: "name",
+            _value_type: std::marker::PhantomData,
+        };
+        let col3 =
+            DynColumn::<i32> { table: "dogs", name: "id", _value_type: std::marker::PhantomData };
+        assert!(col1 < col2); // same table, "id" < "name"
+        assert!(col1 < col3); // "animals" < "dogs"
+    }
+
+    #[test]
+    fn test_display() {
+        let col = DynColumn::<i32> {
+            table: "animals",
+            name: "id",
+            _value_type: std::marker::PhantomData,
+        };
+        assert_eq!(format!("{col}"), "animals.id");
+    }
+}
