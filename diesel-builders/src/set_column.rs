@@ -189,7 +189,7 @@ pub trait TrySetColumnExt: Sized {
 
 impl<T> TrySetColumnExt for T {}
 
-/// Trait attempting to set a dynamic [`DynTypedColumn`], which may fail.
+/// Trait attempting to set a dynamic [`DynColumn`], which may fail.
 pub trait TrySetDynamicColumn: Sized {
     /// Attempt to set the value of the specified dynamic column.
     ///
@@ -288,7 +288,7 @@ mod sealed {
     use super::{DynColumn, DynamicSetColumnError, TableExt, TrySetColumn, TypedColumn};
     use crate::NestedColumns;
 
-    /// Trait attempting to set a dynamic [`DynTypedColumn`], which may fail.
+    /// Trait attempting to set a dynamic [`DynColumn`], which may fail.
     pub trait VariadicTrySetDynamicColumn<Columns: NestedColumns> {
         /// Attempt to set the value of the specified dynamic column.
         ///
