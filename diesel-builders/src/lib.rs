@@ -18,7 +18,7 @@ pub use typed::*;
 pub mod typed_column;
 pub use typed_column::{DynColumn, TypedColumn};
 pub mod get_column;
-pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
+pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt, TryGetDynamicColumn};
 pub mod get_set_columns;
 pub use get_set_columns::*;
 pub mod columns;
@@ -105,7 +105,7 @@ pub mod prelude {
     // Core table building traits
     pub use crate::buildable_table::BuildableTable;
     // Column accessor extension traits (always use Ext variants)
-    pub use crate::get_column::{GetColumnExt, MayGetColumnExt};
+    pub use crate::get_column::{GetColumnExt, MayGetColumnExt, TryGetDynamicColumn};
     // Note: Root is NOT exported here to avoid collision with Root macro from
     // diesel_builders_derive
     pub use crate::horizontal_same_as::HorizontalKey;

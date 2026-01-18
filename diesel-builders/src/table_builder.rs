@@ -61,7 +61,7 @@ where
 impl<C, T> MayGetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
-    C: TypedColumn,
+    C: TypedColumn<Table: 'static>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
     T::NestedAncestorBuilders: NestedTupleIndex<
@@ -75,10 +75,7 @@ where
     }
 
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
-    where
-        C::Table: 'a,
-    {
+    fn may_get_column_ref(&self) -> Option<&C::ColumnType> {
         self.bundles.nested_index().may_get_column_ref()
     }
 }

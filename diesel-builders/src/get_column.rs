@@ -3,10 +3,10 @@
 use diesel::associations::HasTable;
 use tuplities::prelude::{NestedTupleIndex, NestedTuplePopBack};
 
-use crate::{AncestorOfIndex, DescendantOf, HasTableExt, TypedColumn};
+use crate::{AncestorOfIndex, ColumnTyped, DescendantOf, HasTableExt, TypedColumn};
 
 /// Trait providing a getter for a specific Diesel column.
-pub trait GetColumn<Column: TypedColumn> {
+pub trait GetColumn<Column: ColumnTyped> {
     /// Get the value of the specified column.
     fn get_column_ref(&self) -> &Column::ColumnType;
     /// Get the owned value of the specified column.
@@ -17,7 +17,7 @@ pub trait GetColumn<Column: TypedColumn> {
 
 impl<T, C> GetColumn<C> for (T,)
 where
-    C: TypedColumn,
+    C: ColumnTyped,
     T: GetColumn<C>,
 {
     #[inline]
@@ -53,12 +53,10 @@ where
 }
 
 /// Trait providing a failable getter for a specific Diesel column.
-pub trait MayGetColumn<C: TypedColumn> {
+pub trait MayGetColumn<C: ColumnTyped> {
     /// Get the reference of the specified column, returning `None` if not
     /// present.
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
-    where
-        C::Table: 'a;
+    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>;
     /// Get the value of the specified column, returning `None` if not present.
     fn may_get_column(&self) -> Option<C::ColumnType> {
         self.may_get_column_ref().cloned()
@@ -67,14 +65,11 @@ pub trait MayGetColumn<C: TypedColumn> {
 
 impl<T, C> MayGetColumn<C> for Option<T>
 where
-    C: TypedColumn,
+    C: ColumnTyped,
     T: GetColumn<C>,
 {
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
-    where
-        C::Table: 'a,
-    {
+    fn may_get_column_ref(&self) -> Option<&C::ColumnType> {
         Some(self.as_ref()?.get_column_ref())
     }
 }
@@ -133,3 +128,5 @@ pub trait MayGetColumnExt {
 impl<T> MayGetColumnExt for T {}
 
 mod blanket_impls;
+mod dynamic;
+pub use dynamic::TryGetDynamicColumn;

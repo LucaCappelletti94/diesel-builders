@@ -70,7 +70,7 @@ pub enum IncompleteBuilderError {
 /// Specific error indicating that a dynamic setting operation
 /// has failed due to an incompatible/unknown column.
 #[derive(Debug, thiserror::Error)]
-pub enum DynamicSetColumnError {
+pub enum DynamicColumnError {
     #[error("Unknown column: `{table_name}.{column_name}`")]
     /// The specified column is not part of the table.
     UnknownColumn {

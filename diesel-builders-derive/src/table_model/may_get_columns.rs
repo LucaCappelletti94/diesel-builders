@@ -13,9 +13,7 @@ pub fn generate_may_get_column_impls(
 		};
         quote::quote! {
             impl ::diesel_builders::MayGetColumn<#new_record_column> for <#table_module::table as ::diesel_builders::TableExt>::NewValues {
-            fn may_get_column_ref<'a>(&'a self) -> Option<&'a <#new_record_column as ::diesel_builders::ColumnTyped>::ColumnType>
-                    where
-                        #table_module::table: 'a,
+            fn may_get_column_ref(&self) -> Option<&<#new_record_column as ::diesel_builders::ColumnTyped>::ColumnType>
                 {
 					use ::diesel_builders::tuplities::NestedTupleIndex;
                     <Self as NestedTupleIndex<#index_path>>::nested_index(self).as_ref()

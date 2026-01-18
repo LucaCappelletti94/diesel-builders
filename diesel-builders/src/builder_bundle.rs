@@ -10,15 +10,16 @@ pub use completed_table_builder_bundle::{CompletedTableBuilderBundle, RecursiveB
 use tuplities::prelude::*;
 
 use crate::{
-    BuildableTable, Columns, DiscretionarySameAsIndex, HasNestedTables, HorizontalNestedKeys,
-    MandatorySameAsIndex, MayGetColumn, NestedBuildableTables, NestedTableModels, NestedTables,
-    OptionalRef, SetColumn, SetDiscretionaryBuilder, SetDiscretionarySameAsNestedColumns,
-    SetMandatoryBuilder, SetMandatorySameAsNestedColumns, TableBuilder, TableExt, TrySetColumn,
-    TrySetDiscretionaryBuilder, TrySetDiscretionarySameAsColumn,
-    TrySetDiscretionarySameAsNestedColumns, TrySetMandatoryBuilder, TrySetMandatorySameAsColumn,
-    TrySetMandatorySameAsNestedColumns, TupleGetNestedColumns, TupleMayGetNestedColumns,
-    TypedColumn, TypedNestedTuple, ValidateColumn, columns::NestedColumns,
-    horizontal_same_as_group::HorizontalSameAsGroupExt, tables::NonCompositePrimaryKeyNestedTables,
+    BuildableTable, ColumnTyped, Columns, DiscretionarySameAsIndex, HasNestedTables,
+    HorizontalNestedKeys, MandatorySameAsIndex, MayGetColumn, NestedBuildableTables,
+    NestedTableModels, NestedTables, OptionalRef, SetColumn, SetDiscretionaryBuilder,
+    SetDiscretionarySameAsNestedColumns, SetMandatoryBuilder, SetMandatorySameAsNestedColumns,
+    TableBuilder, TableExt, TrySetColumn, TrySetDiscretionaryBuilder,
+    TrySetDiscretionarySameAsColumn, TrySetDiscretionarySameAsNestedColumns,
+    TrySetMandatoryBuilder, TrySetMandatorySameAsColumn, TrySetMandatorySameAsNestedColumns,
+    TupleGetNestedColumns, TupleMayGetNestedColumns, TypedColumn, TypedNestedTuple, ValidateColumn,
+    columns::NestedColumns, horizontal_same_as_group::HorizontalSameAsGroupExt,
+    tables::NonCompositePrimaryKeyNestedTables,
 };
 
 /// Trait representing a Diesel table with associated mandatory and
@@ -182,14 +183,11 @@ where
 impl<T, C> MayGetColumn<C> for TableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: TypedColumn,
+    C: ColumnTyped,
     T::NewValues: MayGetColumn<C>,
 {
     #[inline]
-    fn may_get_column_ref<'a>(&'a self) -> Option<&'a C::ColumnType>
-    where
-        C::Table: 'a,
-    {
+    fn may_get_column_ref(&self) -> Option<&C::ColumnType> {
         self.insertable_model.may_get_column_ref()
     }
 }

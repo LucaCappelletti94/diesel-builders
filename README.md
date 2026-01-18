@@ -20,7 +20,7 @@ diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.g
 
 ## Supported Patterns
 
-### 1. Simple Table (Base Case)
+### Simple Table (Base Case)
 
 [A single table with no relationships](diesel-builders/tests/test_base_case.rs). This demonstrates the most basic usage of the builder pattern with type-safe column setters.
 
@@ -55,7 +55,7 @@ assert!(!Animal::exists(loaded_animal.id(), &mut conn)?);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 2. Table Inheritance
+### Table Inheritance
 
 [A linear inheritance chain](diesel-builders/tests/test_inheritance_chain.rs). Here, `dog_notes` in `Dog` uses `#[same_as(animals::description)]` to propagate its value up to `Animal`.
 
@@ -134,12 +134,13 @@ assert!(!Animal::exists(puppy.id(), &mut conn)?);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 3. Directed Acyclic Graph (DAG)
+### Directed Acyclic Graph (DAG)
 
 [Multiple inheritance](diesel-builders/tests/test_dag.rs) where a child extends multiple parents. Pets extends Dogs and Cats, which both extend Animals.
 
 ```rust
 use diesel_builders::prelude::*;
+use diesel_builders::DynColumn;
 
 #[derive(Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
@@ -184,6 +185,7 @@ diesel::sql_query("CREATE TABLE dogs (id INTEGER PRIMARY KEY REFERENCES animals(
 diesel::sql_query("CREATE TABLE cats (id INTEGER PRIMARY KEY REFERENCES animals(id) ON DELETE CASCADE, color TEXT NOT NULL DEFAULT 'All cats are orange');").execute(&mut conn)?;
 diesel::sql_query("CREATE TABLE pets (id INTEGER PRIMARY KEY, owner_name TEXT NOT NULL, FOREIGN KEY (id) REFERENCES dogs(id) ON DELETE CASCADE, FOREIGN KEY (id) REFERENCES cats(id) ON DELETE CASCADE);").execute(&mut conn)?;
 
+// --- Standard Usage ---
 let pet_graph = pets::table::builder()
     .name("Bellerophon")
     .breed("Hybrid Orange-Labrador")
@@ -198,19 +200,28 @@ assert_eq!(pet_graph.breed(), "Hybrid Orange-Labrador"); // From Dog
 assert_eq!(pet_graph.color(), "Orange");                 // From Cat
 assert_eq!(pet_graph.owner_name(), "Alice Smith");       // From Pet
 
-// The returned structure is a nested tuple: (Animal, (Dog, (Cat, (Pet,))))
-// We can access the root model (Animal) to get the ID shared by all tables
-let pet_id = pet_graph.get_column::<animals::id>(); 
-Pet::find(&pet_id, &mut conn)?.delete(&mut conn)?;
-assert!(!Pet::exists(&pet_id, &mut conn)?);
-assert!(!Dog::exists(&pet_id, &mut conn)?);
-assert!(!Cat::exists(&pet_id, &mut conn)?);
-assert!(!Animal::exists(&pet_id, &mut conn)?);
+// --- Dynamic Column Access ---
+// You can set and get columns dynamically, which is valuable when column identities are known only at runtime.
+
+let nested_models = pets::table::builder()
+    .name("Buddy")
+    .breed("Labrador")
+    .owner_name("Alice")
+    .try_set_dynamic_column(cats::color.into(), &"Black".to_string())?
+    .insert_nested(&mut conn)?;
+
+// Dynamic Getter on Nested Result works on the returned nested tuple structure
+let color_val = nested_models.try_get_dynamic_column_ref(cats::color.into())?;
+assert_eq!(color_val, Some(&"Black".to_string()));
+
+let dyn_breed: DynColumn<String> = dogs::breed.into();
+let breed_val = nested_models.try_get_dynamic_column_ref(dyn_breed)?;
+assert_eq!(breed_val, Some(&"Labrador".to_string()));
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 4. Mandatory Triangular Relation
+### Mandatory Triangular Relation
 
 [A complex pattern](diesel-builders/tests/test_mandatory_triangular_relation.rs) where Child extends Parent and references Mandatory, and Mandatory also references Parent. The `#[mandatory]` attribute ensures atomic creation. Insertion order: Parent → Mandatory → Child.
 
@@ -279,7 +290,7 @@ assert_eq!(parent, mandatory_parent);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 5. Discretionary Triangular Relation
+### Discretionary Triangular Relation
 
 [Similar to mandatory](diesel-builders/tests/test_discretionary_triangular_relation.rs), but Child can reference *any* Discretionary record. Use `try_discretionary()` (new record) or `try_discretionary_model()` (existing).
 
@@ -353,7 +364,7 @@ assert_eq!(discretionary2, discretionary);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 6. Iterating Foreign Keys
+### Iterating Foreign Keys
 
 [Iterating over foreign keys](diesel-builders/tests/test_iter_foreign_key.rs) grouping by referred index.
 
@@ -404,7 +415,7 @@ assert_eq!(refs.len(), 2);
 assert!(refs.contains(&(&node1.id(),)));
 assert!(refs.contains(&(&node2.id(),)));
 
-// Iterate over foreign key columns as dynamic trait objects
+// Iterate over foreign key columns.
 // The result is a list of boxed host table columns with value types from the referenced index
 let keys: Vec<_> = 
     Edge::iter_foreign_key_columns::<(nodes::id,)>().collect();
@@ -426,7 +437,7 @@ assert_eq!(edge2.target_id(), edge.target_id());
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-### 7. Validation with Check Constraints
+### Validation with Check Constraints
 
 [Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints.
 

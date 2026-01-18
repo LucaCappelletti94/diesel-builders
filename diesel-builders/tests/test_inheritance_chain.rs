@@ -20,6 +20,15 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     let nested_models = builder_clone.insert_nested(&mut conn)?;
     assert_eq!(nested_models.name(), animal.name());
 
+    let dyn_name = animals::name.into();
+    let name_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_name)?;
+    assert_eq!(name_val, Some(animal.name()));
+
+    // Test retrieval of optional column that is currently None
+    let dyn_desc = animals::description.into();
+    let desc_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc)?;
+    assert_eq!(desc_val, None);
+
     assert_eq!(animal.name(), "Generic Animal");
 
     // Insert into dogs table (extends animals)
@@ -30,6 +39,13 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     let nested_models = builder_clone.insert_nested(&mut conn)?;
     assert_eq!(nested_models.breed(), dog.breed());
     assert_eq!(nested_models.name(), "Max");
+
+    let dyn_breed = dogs::breed.into();
+    let breed_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_breed)?;
+    assert_eq!(breed_val, Some(dog.breed()));
+
+    let name_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_name)?;
+    assert_eq!(name_val, Some(&"Max".to_string()));
 
     assert_eq!(dog.breed(), "Golden Retriever");
 
@@ -48,6 +64,25 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(nested_models.age_months(), puppy.age_months());
     assert_eq!(nested_models.breed(), "Labrador");
     assert_eq!(nested_models.name(), "Buddy");
+
+    let dyn_age = puppies::age_months.into();
+    let age_val = nested_models.try_get_dynamic_column_ref::<i32>(dyn_age)?;
+    assert_eq!(age_val, Some(puppy.age_months()));
+
+    // Test owned get
+    let breed_val_owned = nested_models.try_get_dynamic_column::<String>(dyn_breed)?;
+    assert_eq!(breed_val_owned, Some("Labrador".to_string()));
+
+    let name_val_owned = nested_models.try_get_dynamic_column::<String>(dyn_name)?;
+    assert_eq!(name_val_owned, Some("Buddy".to_string()));
+
+    // Test unknown column
+    let dyn_cat_color = cats::color.into();
+    let result = nested_models.try_get_dynamic_column_ref::<String>(dyn_cat_color);
+    assert!(matches!(
+        result,
+        Err(diesel_builders::builder_error::DynamicColumnError::UnknownColumn { .. })
+    ));
 
     assert_eq!(*puppy.age_months(), 3);
 

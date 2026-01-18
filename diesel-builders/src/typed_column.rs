@@ -1,5 +1,7 @@
 //! Submodule providing the `Typed` trait.
 
+use std::fmt::Debug;
+
 use diesel::Column;
 
 use crate::{ColumnTyped, TableExt, ValueTyped};
@@ -68,8 +70,12 @@ impl<V> std::fmt::Display for DynColumn<V> {
     }
 }
 
-impl<V: Clone + 'static> ValueTyped for DynColumn<V> {
+impl<V: Debug + Clone + 'static> ValueTyped for DynColumn<V> {
     type ValueType = V;
+}
+
+impl<V: Debug + Clone + 'static> ColumnTyped for DynColumn<V> {
+    type ColumnType = V;
 }
 
 impl<C> From<C> for DynColumn<C::ValueType>

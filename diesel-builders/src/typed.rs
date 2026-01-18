@@ -12,7 +12,7 @@ pub use homogeneously_typed_nested_tuple::*;
 /// Trait representing an object with an associated value type.
 pub trait ValueTyped {
     /// The value type associated with this object.
-    type ValueType: Clone + 'static;
+    type ValueType: Clone + Debug + 'static;
 }
 
 /// Trait representing an object with an associated type.
@@ -22,7 +22,6 @@ pub trait ColumnTyped: ValueTyped {
     /// The column type associated with this object, which may be an `Option` of
     /// the value type.
     type ColumnType: Clone
-        + Debug
         + From<Self::ValueType>
         + Into<Option<Self::ValueType>>
         + OptionalRef<Self::ValueType>;

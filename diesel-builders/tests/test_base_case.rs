@@ -7,7 +7,7 @@ mod shared_animals;
 use std::{rc::Rc, sync::Arc};
 
 use diesel_builders::{
-    ColumnTyped, TrySetDynamicColumn, ValueTyped, builder_error::DynamicSetColumnError, prelude::*,
+    ColumnTyped, TrySetDynamicColumn, ValueTyped, builder_error::DynamicColumnError, prelude::*,
 };
 use shared_animals::*;
 
@@ -144,7 +144,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     assert!(matches!(
         animal_builder.try_set_dynamic_column_ref(dyn_cursed_column, &"This will fail".to_owned()),
-        Err(DynamicSetColumnError::UnknownColumn {
+        Err(DynamicColumnError::UnknownColumn {
             table_name: "animals",
             column_name: "cursed_column",
         })
@@ -158,6 +158,23 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(animal.description().as_deref(), Some("Dynamically set description"));
     assert_eq!(animal.name(), "Dynamic Name");
+
+    // Test TryGetDynamicColumn on nested models
+    let name_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc_name)?;
+    assert_eq!(name_val, Some(animal.name()));
+
+    let desc_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc_column)?;
+    assert_eq!(desc_val.map(|s| s.as_str()), animal.description().as_deref());
+
+    // Test CursedColumn failure
+    let result = nested_models.try_get_dynamic_column_ref::<String>(dyn_cursed_column);
+    assert!(matches!(
+        result,
+        Err(DynamicColumnError::UnknownColumn {
+            table_name: "animals",
+            column_name: "cursed_column",
+        })
+    ));
 
     Ok(())
 }
