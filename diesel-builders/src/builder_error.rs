@@ -1,7 +1,5 @@
 //! Helper functions for creating builder-related errors.
 
-use std::fmt::Display;
-
 use diesel::result::DatabaseErrorInformation;
 
 /// Error type for incomplete builder operations.
@@ -15,64 +13,8 @@ pub enum BuilderError<E> {
     Validation(E),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-/// Specific error indicating that not all mandatory triangular builder fields
-/// have been set.
-pub enum IncompleteBuilderError {
-    /// Not all mandatory associated builders have been set.
-    MissingMandatoryTriangularField(&'static str),
-    /// A field required for insertion is missing.
-    MissingMandatoryField(&'static str),
-}
-
-/// Specific error indicating that a dynamic setting operation
-/// has failed due to an incompatible/unknown column.
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub enum DynamicSetColumnError<E> {
-    /// The specified column is not part of the table.
-    UnknownColumn(&'static str),
-    /// Validation error when setting the column.
-    Validation(E),
-}
-
-impl<E: Display> Display for DynamicSetColumnError<E> {
+impl<E: std::error::Error + 'static> std::fmt::Display for BuilderError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DynamicSetColumnError::UnknownColumn(column_name) => {
-                write!(f, "Unknown column: `{column_name}`")
-            }
-            DynamicSetColumnError::Validation(e) => write!(f, "Validation error: {e}"),
-        }
-    }
-}
-
-impl<E: std::error::Error + 'static> std::error::Error for DynamicSetColumnError<E> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            DynamicSetColumnError::UnknownColumn(_) => None,
-            DynamicSetColumnError::Validation(e) => Some(e),
-        }
-    }
-}
-
-/// A specialized `Result` type for builder operations.
-pub type BuilderResult<T, E> = Result<T, BuilderError<E>>;
-
-impl core::fmt::Display for IncompleteBuilderError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            IncompleteBuilderError::MissingMandatoryTriangularField(horizontal_key_name) => {
-                write!(f, "Missing mandatory triangular builder field: `{horizontal_key_name}`")
-            }
-            IncompleteBuilderError::MissingMandatoryField(field_name) => {
-                write!(f, "Missing mandatory field: `{field_name}`")
-            }
-        }
-    }
-}
-
-impl<E: core::fmt::Display> core::fmt::Display for BuilderError<E> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             BuilderError::Diesel(e) => write!(f, "Diesel error: {e}"),
             BuilderError::Incomplete(e) => write!(f, "{e}"),
@@ -81,10 +23,8 @@ impl<E: core::fmt::Display> core::fmt::Display for BuilderError<E> {
     }
 }
 
-impl core::error::Error for IncompleteBuilderError {}
-
-impl<E: core::error::Error + 'static> core::error::Error for BuilderError<E> {
-    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+impl<E: std::error::Error + 'static> std::error::Error for BuilderError<E> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             BuilderError::Diesel(e) => Some(e),
             BuilderError::Incomplete(e) => Some(e),
@@ -105,13 +45,55 @@ impl<E> From<IncompleteBuilderError> for BuilderError<E> {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, thiserror::Error)]
+/// Specific error indicating that not all mandatory triangular builder fields
+/// have been set.
+pub enum IncompleteBuilderError {
+    #[error("Missing mandatory triangular builder field: `{table_name}.{field_name}`")]
+    /// Not all mandatory associated builders have been set.
+    MissingMandatoryTriangularField {
+        /// The table of the missing column.
+        table_name: &'static str,
+        /// The name of the missing column.
+        field_name: &'static str,
+    },
+    #[error("Missing mandatory field: `{table_name}.{field_name}`")]
+    /// A field required for insertion is missing.
+    MissingMandatoryField {
+        /// The table of the missing column.
+        table_name: &'static str,
+        /// The name of the missing field.
+        field_name: &'static str,
+    },
+}
+
+/// Specific error indicating that a dynamic setting operation
+/// has failed due to an incompatible/unknown column.
+#[derive(Debug, thiserror::Error)]
+pub enum DynamicSetColumnError {
+    #[error("Unknown column: `{table_name}.{column_name}`")]
+    /// The specified column is not part of the table.
+    UnknownColumn {
+        /// The table of the unknown column.
+        table_name: &'static str,
+        /// The name of the unknown column.
+        column_name: &'static str,
+    },
+    #[error("Validation error: {0}")]
+    /// Validation error when setting the column.
+    Validation(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+/// A specialized `Result` type for builder operations.
+pub type BuilderResult<T, E> = Result<T, BuilderError<E>>;
+
 impl DatabaseErrorInformation for IncompleteBuilderError {
     fn message(&self) -> &str {
         match self {
-            IncompleteBuilderError::MissingMandatoryTriangularField(_) => {
+            IncompleteBuilderError::MissingMandatoryTriangularField { .. } => {
                 "Missing mandatory triangular builder field"
             }
-            IncompleteBuilderError::MissingMandatoryField(_) => "Missing mandatory field",
+            IncompleteBuilderError::MissingMandatoryField { .. } => "Missing mandatory field",
         }
     }
 
@@ -124,13 +106,16 @@ impl DatabaseErrorInformation for IncompleteBuilderError {
     }
 
     fn table_name(&self) -> Option<&str> {
-        None
+        match self {
+            IncompleteBuilderError::MissingMandatoryTriangularField { table_name, .. }
+            | IncompleteBuilderError::MissingMandatoryField { table_name, .. } => Some(table_name),
+        }
     }
 
     fn column_name(&self) -> Option<&str> {
         match self {
-            IncompleteBuilderError::MissingMandatoryTriangularField(field_name)
-            | IncompleteBuilderError::MissingMandatoryField(field_name) => Some(field_name),
+            IncompleteBuilderError::MissingMandatoryTriangularField { field_name, .. }
+            | IncompleteBuilderError::MissingMandatoryField { field_name, .. } => Some(field_name),
         }
     }
 

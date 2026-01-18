@@ -144,7 +144,10 @@ where
                 .nested_mandatory_associated_builders
                 .transpose_or(T::NestedMandatoryTriangularColumns::NESTED_COLUMN_NAMES)
                 .map_err(|column_name| {
-                    IncompleteBuilderError::MissingMandatoryTriangularField(column_name)
+                    IncompleteBuilderError::MissingMandatoryTriangularField {
+                        table_name: T::TABLE_NAME,
+                        field_name: column_name,
+                    }
                 })?,
             nested_discretionary_associated_builders: value
                 .nested_discretionary_associated_builders,
@@ -211,7 +214,10 @@ where
             .insertable_model
             .transpose_or(T::NewRecord::NESTED_COLUMN_NAMES)
             .map_err(|column_name| {
-                BuilderError::Incomplete(IncompleteBuilderError::MissingMandatoryField(column_name))
+                BuilderError::Incomplete(IncompleteBuilderError::MissingMandatoryField {
+                    table_name: T::TABLE_NAME,
+                    field_name: column_name,
+                })
             })?;
 
         Ok(diesel::insert_into(T::default())

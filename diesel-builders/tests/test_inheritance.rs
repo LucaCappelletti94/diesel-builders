@@ -136,20 +136,16 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
 #[test]
 fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::Error>> {
-    use diesel_builders::DynTypedColumn;
-
     let mut conn = shared::establish_connection()?;
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // Create a dog using dynamic column setting
-    let dyn_breed_column: Box<dyn DynTypedColumn<Table = dogs::table, ValueType = String>> =
-        Box::new(dogs::breed);
-    let dyn_name_column: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
-        Box::new(animals::name);
+    let dyn_breed_column = dogs::breed.into();
+    let dyn_name_column = animals::name.into();
 
     let dog = dogs::table::builder()
-        .try_set_dynamic_column(dyn_name_column, "Dynamic Dog")?
-        .try_set_dynamic_column(dyn_breed_column, "Dynamic Breed")?
+        .try_set_dynamic_column(dyn_name_column, &"Dynamic Dog".to_owned())?
+        .try_set_dynamic_column(dyn_breed_column, &"Dynamic Breed".to_owned())?
         .insert(&mut conn)?;
 
     // Load the ancestor to check name

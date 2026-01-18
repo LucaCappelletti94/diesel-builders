@@ -359,8 +359,8 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ```rust
 use diesel_builders::prelude::*;
-use diesel_builders::DynTypedColumn;
-use diesel::prelude::*;
+use diesel_builders::DynColumn;
+use diesel::{prelude::*, Column};
 use diesel::sqlite::SqliteConnection;
 
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
@@ -410,13 +410,13 @@ let keys: Vec<_> =
     Edge::iter_foreign_key_columns::<(nodes::id,)>().collect();
 
 assert_eq!(keys.len(), 2);
-assert_eq!(keys[0].0.column_name(), edges::source_id.column_name());
-assert_eq!(keys[1].0.column_name(), edges::target_id.column_name());
+assert_eq!(keys[0].0.column_name(), <edges::source_id as Column>::NAME);
+assert_eq!(keys[1].0.column_name(), <edges::target_id as Column>::NAME);
 
 // We can dynamically set the values of the columns using `TrySetDynamicColumn::try_set_dynamic_column`
 let mut edge_builder = edges::table::builder().id(2);
 for ((column,), (value_ref,)) in keys.iter().zip(refs.iter()) {
-    edge_builder.try_set_dynamic_column_ref::<edges::table, i32>(column, **value_ref)?;
+    edge_builder.try_set_dynamic_column_ref(*column, *value_ref)?;
 }
 let edge2 = edge_builder.insert(&mut conn)?;
 

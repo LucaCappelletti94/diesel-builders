@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use tuplities::prelude::FlattenNestedTuple;
 
-use crate::{TypedColumn, TypedNestedTuple};
+use crate::{DynColumn, TypedColumn, TypedNestedTuple};
 
 /// Trait representing a nested tuple of columns.
 ///
@@ -15,6 +15,8 @@ pub trait NestedColumns: TypedNestedTuple + Default + Copy {
     type NestedTables: FlattenNestedTuple;
     /// The of the columns as a nested tuple of strings.
     type NestedColumnNames: FlattenNestedTuple + Debug;
+    /// The Dynamic columns associated with these columns.
+    type DynColumns: FlattenNestedTuple;
     /// Const representing the names of the columns as a nested tuple of
     /// strings.
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames;
@@ -23,12 +25,14 @@ pub trait NestedColumns: TypedNestedTuple + Default + Copy {
 impl NestedColumns for () {
     type NestedTables = ();
     type NestedColumnNames = ();
+    type DynColumns = ();
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames = ();
 }
 
 impl<C1: TypedColumn> NestedColumns for (C1,) {
     type NestedTables = (C1::Table,);
     type NestedColumnNames = (&'static str,);
+    type DynColumns = (DynColumn<C1::ValueType>,);
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames = (C1::NAME,);
 }
 
@@ -39,8 +43,10 @@ where
     (Head, Tail): TypedNestedTuple,
     (Head::Table, Tail::NestedTables): FlattenNestedTuple,
     (&'static str, Tail::NestedColumnNames): FlattenNestedTuple,
+    (DynColumn<Head::ValueType>, Tail::DynColumns): FlattenNestedTuple,
 {
     type NestedTables = (Head::Table, Tail::NestedTables);
     type NestedColumnNames = (&'static str, Tail::NestedColumnNames);
+    type DynColumns = (DynColumn<Head::ValueType>, Tail::DynColumns);
     const NESTED_COLUMN_NAMES: Self::NestedColumnNames = (Head::NAME, Tail::NESTED_COLUMN_NAMES);
 }

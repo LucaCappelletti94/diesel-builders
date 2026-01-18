@@ -16,7 +16,7 @@ pub use table_models::NestedTableModels;
 pub mod typed;
 pub use typed::*;
 pub mod typed_column;
-pub use typed_column::{DynTypedColumn, NestedColumnsByValueType, TypedColumn};
+pub use typed_column::{DynColumn, TypedColumn};
 pub mod get_column;
 pub use get_column::{GetColumn, GetColumnExt, MayGetColumn, MayGetColumnExt};
 pub mod get_set_columns;
@@ -28,7 +28,7 @@ pub use table_addition::{HasTableExt, TableExt};
 pub mod set_column;
 pub use set_column::{
     MaySetColumn, SetColumn, SetColumnExt, TrySetColumn, TrySetColumnExt, TrySetDynamicColumn,
-    TrySetDynamicColumnExt, ValidateColumn,
+    ValidateColumn,
 };
 pub mod foreign_key;
 pub use foreign_key::*;
@@ -121,7 +121,7 @@ pub mod prelude {
             SetDiscretionaryBuilderExt, SetDiscretionaryModelExt, SetMandatoryBuilderExt,
             TrySetDiscretionaryBuilderExt, TrySetDiscretionaryModelExt, TrySetMandatoryBuilderExt,
         },
-        set_column::{SetColumnExt, TrySetColumnExt, TrySetDynamicColumnExt, ValidateColumn},
+        set_column::{SetColumnExt, TrySetColumnExt, TrySetDynamicColumn, ValidateColumn},
         table_addition::TableExt,
         table_builder::TableBuilder,
     };

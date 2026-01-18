@@ -2,7 +2,9 @@
 
 use tuplities::prelude::*;
 
-use crate::{HasNestedTables, NestedTableModels, TableExt, columns::NestedColumnsCollection};
+use crate::{
+    HasNestedTables, NestedColumns, NestedTableModels, TableExt, columns::NestedColumnsCollection,
+};
 
 /// Trait for recursive definition of the `Tables` trait.
 pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
@@ -19,6 +21,8 @@ pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
     type NestedNewValues: FlattenNestedTuple;
     /// The associated nested primary key columns collection.
     type NestedPrimaryKeyColumnsCollection: NestedColumnsCollection;
+    /// The chained nested columns of all nested tables.
+    type ChainedNestedRecords: NestedColumns;
 }
 
 impl NestedTables for () {
@@ -26,6 +30,7 @@ impl NestedTables for () {
     type OptionalNestedModels = ();
     type NestedNewValues = ();
     type NestedPrimaryKeyColumnsCollection = ();
+    type ChainedNestedRecords = ();
 }
 
 impl<T> NestedTables for (T,)
@@ -38,6 +43,7 @@ where
     type OptionalNestedModels = (Option<T::Model>,);
     type NestedNewValues = (T::NewValues,);
     type NestedPrimaryKeyColumnsCollection = (T::NestedPrimaryKeyColumns,);
+    type ChainedNestedRecords = T::NewRecord;
 }
 
 impl<Head, Tail> NestedTables for (Head, Tail)
@@ -52,10 +58,13 @@ where
     (Head::NewValues, Tail::NestedNewValues): FlattenNestedTuple,
     (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection):
         NestedColumnsCollection,
+    Head::NewRecord: NestedTupleChain<Tail::ChainedNestedRecords, Chained: NestedColumns>,
 {
     type NestedModels = (Head::Model, Tail::NestedModels);
     type OptionalNestedModels = (Option<Head::Model>, Tail::OptionalNestedModels);
     type NestedNewValues = (Head::NewValues, Tail::NestedNewValues);
     type NestedPrimaryKeyColumnsCollection =
         (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection);
+    type ChainedNestedRecords =
+        <Head::NewRecord as NestedTupleChain<Tail::ChainedNestedRecords>>::Chained;
 }

@@ -6,7 +6,7 @@ use std::convert::Infallible;
 
 use diesel::{associations::HasTable, prelude::*};
 use diesel_builders::{
-    DynTypedColumn, IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*,
+    DynColumn, IncompleteBuilderError, TableBuilder, TableBuilderBundle, prelude::*,
 };
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
@@ -194,14 +194,12 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     assert!(refs.contains(&(child.mandatory_id(), (child.__columns.as_ref().unwrap(),))));
 
     // Create a child with mandatory using dynamic column setting
-    let dyn_type_column: Box<
-        dyn DynTypedColumn<Table = child_with_satellite_table::table, ValueType = String>,
-    > = Box::new(child_with_satellite_table::r#type);
+    let dyn_type_column: DynColumn<_> = DynColumn::from(child_with_satellite_table::r#type);
 
     let satellite_builder = satellite_table::table::builder().field("Dynamic Field");
 
     let builder = child_with_satellite_table::table::builder()
-        .try_set_dynamic_column(dyn_type_column, "Dynamic Type")?
+        .try_set_dynamic_column(dyn_type_column, &"Dynamic Type".to_owned())?
         .parent_field("Parent for Dynamic Child")
         .try_mandatory(satellite_builder)?;
 
@@ -335,7 +333,13 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
 
     // Verify that the conversion fails with the expected error message
     let err = result.unwrap_err();
-    assert_eq!(err, IncompleteBuilderError::MissingMandatoryTriangularField("mandatory_id"));
+    assert_eq!(
+        err,
+        IncompleteBuilderError::MissingMandatoryTriangularField {
+            table_name: "child_with_satellite_table",
+            field_name: "mandatory_id"
+        }
+    );
 }
 
 #[test]

@@ -7,11 +7,11 @@ mod shared_animals;
 use std::{rc::Rc, sync::Arc};
 
 use diesel_builders::{
-    ColumnTyped, DynTypedColumn, ValueTyped, builder_error::DynamicSetColumnError, prelude::*,
+    ColumnTyped, TrySetDynamicColumn, ValueTyped, builder_error::DynamicSetColumnError, prelude::*,
 };
 use shared_animals::*;
 
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 /// A cursed column marker explicitly designed to cause the error case
 /// in `TrySetDynamicColumn`.
 struct CursedColumn;
@@ -134,21 +134,21 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
 
     // We attempt to dynamically set the description column using
     // TrySetDynamicColumnExt
-    let dyn_desc_column: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
-        Box::new(animals::description);
-    let dyn_desc_name: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
-        Box::new(animals::name);
-    let dyn_cursed_column: Box<dyn DynTypedColumn<Table = animals::table, ValueType = String>> =
-        Box::new(CursedColumn);
+    let dyn_desc_column = animals::description.into();
+    let dyn_desc_name = animals::name.into();
+    let dyn_cursed_column = CursedColumn.into();
 
     let mut animal_builder = animals::table::builder()
-        .try_set_dynamic_column(dyn_desc_name, "Dynamic Name")?
-        .try_set_dynamic_column(dyn_desc_column, "Dynamically set description")?;
+        .try_set_dynamic_column(dyn_desc_name, &"Dynamic Name".to_owned())?
+        .try_set_dynamic_column(dyn_desc_column, &"Dynamically set description".to_owned())?;
 
-    assert_eq!(
-        animal_builder.try_set_dynamic_column_ref(dyn_cursed_column, "This will fail"),
-        Err(DynamicSetColumnError::UnknownColumn(<CursedColumn as Column>::NAME))
-    );
+    assert!(matches!(
+        animal_builder.try_set_dynamic_column_ref(dyn_cursed_column, &"This will fail".to_owned()),
+        Err(DynamicSetColumnError::UnknownColumn {
+            table_name: "animals",
+            column_name: "cursed_column",
+        })
+    ));
 
     let builder_clone = animal_builder.clone();
     animal = animal_builder.insert(&mut conn)?;

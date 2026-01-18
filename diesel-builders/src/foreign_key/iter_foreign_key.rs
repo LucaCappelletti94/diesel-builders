@@ -3,7 +3,7 @@
 
 use tuplities::prelude::{IntoNestedTupleOption, NestedTupleRef};
 
-use crate::{TypedNestedTuple, columns::NonEmptyProjection};
+use crate::{NestedColumns, TypedNestedTuple, columns::NonEmptyProjection};
 
 /// An iterator over foreign keys in a table which reference the same foreign
 /// index in another table.
@@ -32,15 +32,9 @@ pub trait IterForeignKey<Idx: NonEmptyProjection> {
         Idx: 'a,
         Self: 'a;
 
-    /// Foreign key n-uple Iterator item type, most commonly an
-    /// n-uple of `Box<dyn DynTypedColumn<ValueType=ith column of index
-    /// ValueType>>`.
-    type ForeignKeyItemType;
-
     /// Iterator yield the tuples of column values corresponding to all foreign
-    /// keys in this table. Most commonly an n-uple of `Box<dyn
-    /// DynTypedColumn<ValueType=ith column of index ValueType>>`.
-    type ForeignKeyColumnsIter: Iterator<Item = Self::ForeignKeyItemType>;
+    /// keys in this table.
+    type ForeignKeyColumnsIter: Iterator<Item = <Idx::Nested as NestedColumns>::DynColumns>;
 
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
@@ -72,10 +66,9 @@ impl<Idx: NonEmptyProjection> IterForeignKey<Idx> for () {
         Idx: 'a,
         Self: 'a;
 
-    type ForeignKeyItemType = ();
+    type ForeignKeyColumnsIter = std::iter::Empty<<Idx::Nested as NestedColumns>::DynColumns>;
 
-    type ForeignKeyColumnsIter = std::iter::Empty<()>;
-
+    #[inline]
     fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
     where
         Idx: 'a,
@@ -83,6 +76,7 @@ impl<Idx: NonEmptyProjection> IterForeignKey<Idx> for () {
         std::iter::empty()
     }
 
+    #[inline]
     fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
     where
         Idx: 'a,
@@ -90,6 +84,7 @@ impl<Idx: NonEmptyProjection> IterForeignKey<Idx> for () {
         std::iter::empty()
     }
 
+    #[inline]
     fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
         std::iter::empty()
     }
@@ -111,10 +106,9 @@ where
         Idx: 'a,
         Self: 'a;
 
-    type ForeignKeyItemType = T::ForeignKeyItemType;
-
     type ForeignKeyColumnsIter = T::ForeignKeyColumnsIter;
 
+    #[inline]
     fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
     where
         Idx: 'a,
@@ -122,6 +116,7 @@ where
         self.0.iter_match_simple()
     }
 
+    #[inline]
     fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
     where
         Idx: 'a,
@@ -129,6 +124,7 @@ where
         self.0.iter_match_full()
     }
 
+    #[inline]
     fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
         T::iter_foreign_key_columns()
     }
@@ -151,11 +147,10 @@ where
         Idx: 'a,
         Self: 'a;
 
-    type ForeignKeyItemType = (Head::ForeignKeyItemType, Tail::ForeignKeyItemType);
-
     type ForeignKeyColumnsIter =
-        std::iter::Zip<Head::ForeignKeyColumnsIter, Tail::ForeignKeyColumnsIter>;
+        std::iter::Chain<Head::ForeignKeyColumnsIter, Tail::ForeignKeyColumnsIter>;
 
+    #[inline]
     fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
     where
         Idx: 'a,
@@ -163,6 +158,7 @@ where
         self.0.iter_match_simple().chain(self.1.iter_match_simple())
     }
 
+    #[inline]
     fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
     where
         Idx: 'a,
@@ -170,14 +166,16 @@ where
         self.0.iter_match_full().chain(self.1.iter_match_full())
     }
 
+    #[inline]
     fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
-        std::iter::zip(Head::iter_foreign_key_columns(), Tail::iter_foreign_key_columns())
+        std::iter::chain(Head::iter_foreign_key_columns(), Tail::iter_foreign_key_columns())
     }
 }
 
 /// An extension of the `IterForeignKey` trait moving the generic parameter
 /// from the trait to the method to facilitate usage in certain contexts.
 pub trait IterForeignKeyExt {
+    #[inline]
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
     fn iter_match_simple<Idx>(&self) -> <Self as IterForeignKey<Idx>>::MatchSimpleIter<'_>
@@ -188,6 +186,7 @@ pub trait IterForeignKeyExt {
         IterForeignKey::iter_match_simple(self)
     }
 
+    #[inline]
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are skipped.
     fn iter_match_full<Idx>(&self) -> <Self as IterForeignKey<Idx>>::MatchFullIter<'_>
@@ -199,6 +198,7 @@ pub trait IterForeignKeyExt {
     }
 
     #[must_use]
+    #[inline]
     /// Returns an iterator over the foreign keys in this table.
     fn iter_foreign_key_columns<Idx>() -> <Self as IterForeignKey<Idx>>::ForeignKeyColumnsIter
     where

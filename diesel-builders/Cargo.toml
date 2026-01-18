@@ -17,6 +17,7 @@ diesel-builders-derive.workspace = true
 serde = { workspace = true, optional = true }
 tuplities.workspace = true
 typenum.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 diesel = { workspace = true, features = [
@@ -25,7 +26,6 @@ diesel = { workspace = true, features = [
 	"extras",
 ] }
 serde_json.workspace = true
-thiserror.workspace = true
 trybuild = "1.0.114"
 
 [lints]

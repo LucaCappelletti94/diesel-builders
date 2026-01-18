@@ -1,7 +1,7 @@
 //! Tests for iterating foreign keys.
 
 use diesel::prelude::*;
-use diesel_builders::{DynTypedColumn, IterForeignKeyExt, prelude::*};
+use diesel_builders::{IterForeignKeyExt, prelude::*};
 
 /// Node table.
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
@@ -157,6 +157,6 @@ fn test_iter_foreign_key_columns() {
     let col1_name = keys[0].0.column_name();
     let col2_name = keys[1].0.column_name();
 
-    assert_eq!(col1_name, edges::source_id.column_name());
-    assert_eq!(col2_name, edges::target_id.column_name());
+    assert_eq!(col1_name, edges::source_id::NAME);
+    assert_eq!(col2_name, edges::target_id::NAME);
 }

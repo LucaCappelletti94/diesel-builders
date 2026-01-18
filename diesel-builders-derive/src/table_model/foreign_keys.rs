@@ -613,22 +613,8 @@ fn generate_impls_for_groups<'b>(
         let (simple_iter_type, simple_iter_expr, full_iter_type, full_iter_expr) =
             build_chain_iterators(&keys, &simple_elem_ty, &full_elem_ty, table_module);
 
-        // Build ForeignKeyItemType: Nested tuple of Box<dyn ...>
-        let boxed_column_types: Vec<_> = keys[0]
-            .host_fields
-            .iter()
-            .map(|f| {
-                let f_ident = f.ident.as_ref().unwrap();
-                let host_col = quote!(#table_module::#f_ident);
-                quote!(::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
-                ValueType = <#host_col as ::diesel_builders::ValueTyped>::ValueType,
-                Table = #table_module::table,
-            >>)
-            })
-            .collect();
-        let foreign_key_item_type = recursive_tuple_type(&boxed_column_types);
-
         let foreign_keys_expr = build_foreign_keys_iterator(keys.as_slice(), table_module);
+        let number_of_keys = keys.len();
 
         impls.push(quote! {
             impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
@@ -642,9 +628,10 @@ fn generate_impls_for_groups<'b>(
                     #idx_type: 'a,
                     Self: 'a;
 
-                type ForeignKeyItemType = #foreign_key_item_type;
-
-                type ForeignKeyColumnsIter = ::std::vec::IntoIter<Self::ForeignKeyItemType>;
+                type ForeignKeyColumnsIter = ::core::array::IntoIter<
+                    <<#idx_type as ::diesel_builders::tuplities::NestTuple>::Nested as ::diesel_builders::NestedColumns>::DynColumns,
+                    #number_of_keys
+                >;
 
                 fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
                     where #idx_type: 'a
@@ -775,14 +762,8 @@ fn build_foreign_keys_iterator(
             .host_fields
             .iter()
             .map(|host_field| {
-                let name = host_field.ident.as_ref().unwrap();
-                let host_col = quote!(#table_module::#name);
-                quote! {
-                    ::std::boxed::Box::new(#host_col) as ::std::boxed::Box<dyn ::diesel_builders::DynTypedColumn<
-                    ValueType = <#host_col as ::diesel_builders::ValueTyped>::ValueType,
-                    Table = #table_module::table,
-                >>
-                }
+                let name = &host_field.ident;
+                quote! {#table_module::#name.into()}
             })
             .collect();
 
@@ -790,7 +771,7 @@ fn build_foreign_keys_iterator(
     }
 
     quote! {
-        ::std::vec![#(#items),*].into_iter()
+        [#(#items),*].into_iter()
     }
 }
 

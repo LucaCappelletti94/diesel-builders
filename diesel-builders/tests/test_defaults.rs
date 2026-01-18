@@ -63,15 +63,16 @@ fn test_defaults() -> Result<(), Box<dyn std::error::Error>> {
     let res = builder.clone().insert(&mut conn);
     let err = res.unwrap_err();
 
-    assert_eq!(err.to_string(), "Missing mandatory field: `email`");
+    assert_eq!(err.to_string(), "Missing mandatory field: `users.email`");
 
     assert!(
         matches!(
             err,
             diesel_builders::BuilderError::Incomplete(
-                diesel_builders::builder_error::IncompleteBuilderError::MissingMandatoryField(
-                    "email"
-                )
+                diesel_builders::builder_error::IncompleteBuilderError::MissingMandatoryField {
+                    table_name: "users",
+                    field_name: "email",
+                }
             )
         ),
         "Expected Incomplete error due to missing email field, got: {err:?}",
