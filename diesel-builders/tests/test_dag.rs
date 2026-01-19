@@ -107,22 +107,31 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .iter_dynamic_match_simple((animals::id.into(),))
         .collect::<Result<Vec<_>, _>>()?;
 
+    let animal_fk_match_refs: Vec<_> = nested_models
+        .iter_dynamic_match_full((animals::id.into(),))
+        .collect::<Result<Vec<_>, _>>()?;
+
     // We expect 3 references:
     // 1. Dog -> Animal
     // 2. Cat -> Animal
     // 3. Pet -> Animal (since Pet declares 'animals' in ancestors, acts as logical
     //    FK)
     assert_eq!(animal_fk_refs.len(), 3);
+    assert_eq!(animal_fk_match_refs.len(), 3);
 
     // All FKs should point to the same animal ID (inheritance)
     let first_fk = &animal_fk_refs[0];
+    assert_ne!(first_fk.0, Some(pet.id()));
+
     for fk in &animal_fk_refs {
         assert_eq!(fk, first_fk);
     }
+    let first_fk = &animal_fk_match_refs[0];
+    assert_ne!(first_fk.0, pet.id());
 
-    // The ID should be different from the previous insertion (pet)
-    // because insert_nested created a new record
-    assert_ne!(first_fk.0, Some(pet.id()));
+    for fk in &animal_fk_match_refs {
+        assert_eq!(fk, first_fk);
+    }
 
     // Test dynamic foreign key columns iteration
     let dynamic_fk_cols: Vec<_> =
