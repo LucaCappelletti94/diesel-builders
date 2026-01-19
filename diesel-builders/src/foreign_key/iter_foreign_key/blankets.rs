@@ -96,14 +96,3 @@ where
             .chain(Tail::iter_foreign_key_dyn_columns(index))
     }
 }
-
-impl<DynIdx, T> IterDynForeignKeys<DynIdx> for Option<T>
-where
-    DynIdx: NestedDynColumns,
-    T: IterDynForeignKeys<DynIdx>,
-    Self: TryGetDynamicColumns,
-{
-    fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
-        T::iter_foreign_key_dyn_columns(index)
-    }
-}

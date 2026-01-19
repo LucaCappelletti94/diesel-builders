@@ -15,7 +15,7 @@ pub struct Node {
 }
 
 /// Edge table with two FKs to Node.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Copy, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edges)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(source_id, (nodes::id)))]
@@ -159,4 +159,37 @@ fn test_iter_foreign_key_columns() {
 
     assert_eq!(col1_name, edges::source_id::NAME);
     assert_eq!(col2_name, edges::target_id::NAME);
+
+    // We test the case of an empty tuple.
+    let optional_keys: Vec<_> =
+        <() as IterForeignKeyExt>::iter_foreign_key_columns::<(nodes::id,)>().collect();
+    assert_eq!(optional_keys.len(), 0);
+    let iter_match_simple: Vec<_> =
+        <() as IterForeignKeyExt>::iter_match_simple::<(nodes::id,)>(&()).collect();
+    assert_eq!(iter_match_simple.len(), 0);
+    let iter_match_full: Vec<_> =
+        <() as IterForeignKeyExt>::iter_match_full::<(nodes::id,)>(&()).collect();
+    assert_eq!(iter_match_full.len(), 0);
+
+    // We test the case of a (Edge,) tuple.
+    let edge = Edge { id: 0, source_id: 1, target_id: 2 };
+    let edge_tuple = (edge,);
+    let tuple_keys: Vec<_> =
+        <(Edge,) as IterForeignKeyExt>::iter_foreign_key_columns::<(nodes::id,)>().collect();
+    assert_eq!(tuple_keys.len(), 2);
+    let tuple_simple: Vec<_> = edge_tuple.iter_match_simple::<(nodes::id,)>().collect();
+    assert_eq!(tuple_simple.len(), 2);
+    let tuple_full: Vec<_> = edge_tuple.iter_match_full::<(nodes::id,)>().collect();
+    assert_eq!(tuple_full.len(), 2);
+    // We test the case of a (Edge, (OptionalEdge,)) tuple.
+    let optional_edge = OptionalEdge { id: 1, source_id: Some(10), target_id: None };
+    let mixed_tuple = (edge, (optional_edge,));
+    let mixed_keys: Vec<_> =
+        <(Edge, (OptionalEdge,)) as IterForeignKeyExt>::iter_foreign_key_columns::<(nodes::id,)>()
+            .collect();
+    assert_eq!(mixed_keys.len(), 4);
+    let mixed_simple: Vec<_> = mixed_tuple.iter_match_simple::<(nodes::id,)>().collect();
+    assert_eq!(mixed_simple.len(), 4);
+    let mixed_full: Vec<_> = mixed_tuple.iter_match_full::<(nodes::id,)>().collect();
+    assert_eq!(mixed_full.len(), 3);
 }
