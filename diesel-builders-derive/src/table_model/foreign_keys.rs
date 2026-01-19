@@ -681,30 +681,26 @@ fn generate_impls_for_groups<'b>(
 
         dyn_impl_branches.push(quote! {
             {
-                use ::diesel_builders::tuplities::NestedTupleIntoVec;
-                if index.nested_dyn_column_names().into_vec() == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_COLUMN_NAMES.into_vec()
-                && index.nested_dyn_column_table_names().into_vec() == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_TABLE_NAMES.into_vec()
-                {
-                    // Check types
-                    if ::std::any::TypeId::of::<DynIdx>() == ::std::any::TypeId::of::<#dyn_elem_ty>() {
-                        // Match!
-                        let iterator = <Self as ::diesel_builders::IterForeignKeys<#idx_type>>::iter_foreign_key_columns();
-                        // Collect into Vec<SpecificDynIdx>
-                        let dyn_keys: ::std::vec::Vec<#dyn_elem_ty> = iterator.collect();
+                // Check types first to avoid allocation via into_vec()
+                if ::core::any::TypeId::of::<DynIdx>() == ::core::any::TypeId::of::<#dyn_elem_ty>() {
+                    let index_any = &index as &dyn ::std::any::Any;
+                    if let Some(concrete_index) = index_any.downcast_ref::<#dyn_elem_ty>() {
+                        if <#dyn_elem_ty as ::diesel_builders::NestedDynColumns>::nested_dyn_column_names(concrete_index) == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_COLUMN_NAMES
+                        && <#dyn_elem_ty as ::diesel_builders::NestedDynColumns>::nested_dyn_column_table_names(concrete_index) == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_TABLE_NAMES
+                        {
+                            // Match!
+                            let iterator = <Self as ::diesel_builders::IterForeignKeys<#idx_type>>::iter_foreign_key_columns();
+                            // Collect into Vec<SpecificDynIdx>
+                            let dyn_keys: ::std::vec::Vec<#dyn_elem_ty> = iterator.collect();
 
-                        // Safe downcast via Box<dyn Any>
-                        // We box the vector of specific type.
-                        let boxed: ::std::boxed::Box<dyn ::std::any::Any> = ::std::boxed::Box::new(dyn_keys);
-                        // Attempt to downcast to Vec<DynIdx>. Since TypeId matches, this MUST succeed.
-                        if let Ok(vec) = boxed.downcast::<::std::vec::Vec<DynIdx>>() {
-                            return Ok(vec.into_iter());
-                        } else {
-                            // Should be unreachable if TypeId matches
-                            unreachable!("TypeID matched but downcast failed");
+                            // Safe downcast via Box<dyn Any>
+                            // We box the vector of specific type.
+                            let boxed: ::std::boxed::Box<dyn ::std::any::Any> = ::std::boxed::Box::new(dyn_keys);
+                            // Attempt to downcast to Vec<DynIdx>. Since TypeId matches, this MUST succeed.
+                            if let Ok(vec) = boxed.downcast::<::std::vec::Vec<DynIdx>>() {
+                                return vec.into_iter();
+                            }
                         }
-                    } else {
-                        // Names match but types don't -> Error
-                        return Err(::diesel_builders::builder_error::DynamicColumnError::incompatible_dynamic_columns::<#idx_type, _>(&index));
                     }
                 }
             }
@@ -718,11 +714,11 @@ fn generate_impls_for_groups<'b>(
             DynIdx: ::diesel_builders::NestedDynColumns + ::diesel_builders::TypedNestedTuple + 'static,
             DynIdx::NestedTupleValueType: 'static,
         {
-            fn iter_foreign_key_dyn_columns(index: DynIdx) -> Result<impl Iterator<Item = DynIdx>, ::diesel_builders::builder_error::DynamicColumnError> {
+            fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
                 #(#dyn_impl_branches)*
 
                 // No match found
-                Ok(::std::vec::Vec::new().into_iter())
+                ::std::vec::Vec::new().into_iter()
             }
         }
     });

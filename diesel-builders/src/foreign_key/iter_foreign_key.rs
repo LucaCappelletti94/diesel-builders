@@ -49,21 +49,7 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     ///
     /// * An iterator over the foreign keys in this table which reference the
     ///   given foreign index.
-    ///
-    /// # Errors
-    ///
-    /// The Item of the returned iterator is a `Result`, as some antagonistic
-    /// parameterizations of the provided dynamic index may cause the foreign
-    /// keys to be unretrievable, for instance if a column has the correct name
-    /// and table, but an incompatible type - which implies it was artificially
-    /// constructed at runtime, and does not correspond to any actual column in
-    /// the table. Generally, to avoid such errors, ensure that the dynamic
-    /// index was constructed using the `From<C: Column>` implementation for
-    /// `DynColumn<VT>`, where `VT` is the actual Rust Value Type of the
-    /// column `C`.
-    fn iter_foreign_key_dyn_columns(
-        index: DynIdx,
-    ) -> Result<impl Iterator<Item = DynIdx>, DynamicColumnError>;
+    fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx>;
 
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index. Foreign keys with `None` values are included.
@@ -81,15 +67,11 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     fn iter_dyn_match_simple<'a>(
         &'a self,
         index: DynIdx,
-    ) -> Result<
-        impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>,
-        DynamicColumnError,
-    >
+    ) -> impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>
     where
         DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
     {
-        Ok(Self::iter_foreign_key_dyn_columns(index)?
-            .map(|keys| self.try_get_dynamic_columns_ref(keys)))
+        Self::iter_foreign_key_dyn_columns(index).map(|keys| self.try_get_dynamic_columns_ref(keys))
     }
 
     /// Returns an iterator over the foreign keys in this table which reference
@@ -108,13 +90,12 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     fn iter_dyn_match_full<'a>(
         &'a self,
         index: DynIdx,
-    ) -> Result<impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>, DynamicColumnError>
+    ) -> impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>
     where
         DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
     {
-        Ok(self
-            .iter_dyn_match_simple(index)?
-            .filter_map(|res| res.map(NestedTupleOption::transpose).transpose()))
+        self.iter_dyn_match_simple(index)
+            .filter_map(|res| res.map(NestedTupleOption::transpose).transpose())
     }
 }
 
@@ -198,10 +179,7 @@ pub trait IterForeignKeyExt {
     fn iter_dynamic_match_simple<'a, DynIdx>(
         &'a self,
         index: DynIdx,
-    ) -> Result<
-        impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>,
-        DynamicColumnError,
-    >
+    ) -> impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>
     where
         DynIdx: NestedDynColumns + VariadicTryGetDynamicColumns<'a, Self> + 'a,
         Self: IterDynForeignKeys<DynIdx>,
@@ -247,7 +225,7 @@ pub trait IterForeignKeyExt {
     fn iter_dynamic_match_full<'a, DynIdx>(
         &'a self,
         index: DynIdx,
-    ) -> Result<impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>, DynamicColumnError>
+    ) -> impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>
     where
         DynIdx: NestedDynColumns + VariadicTryGetDynamicColumns<'a, Self> + 'a,
         Self: IterDynForeignKeys<DynIdx>,
@@ -288,9 +266,7 @@ pub trait IterForeignKeyExt {
     /// * Read the documentation of
     ///   [`IterDynForeignKeys::iter_foreign_key_dyn_columns`] for details on
     ///   possible errors.
-    fn iter_dynamic_foreign_key_columns<DynIdx>(
-        index: DynIdx,
-    ) -> Result<impl Iterator<Item = DynIdx>, DynamicColumnError>
+    fn iter_dynamic_foreign_key_columns<DynIdx>(index: DynIdx) -> impl Iterator<Item = DynIdx>
     where
         DynIdx: NestedDynColumns,
         Self: IterDynForeignKeys<DynIdx>,

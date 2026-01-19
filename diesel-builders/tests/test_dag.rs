@@ -104,7 +104,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test dynamic foreign key iteration
     let animal_fk_refs: Vec<_> = nested_models
-        .iter_dynamic_match_simple((animals::id.into(),))?
+        .iter_dynamic_match_simple((animals::id.into(),))
         .collect::<Result<Vec<_>, _>>()?;
 
     // We expect 3 references:
@@ -126,7 +126,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test dynamic foreign key columns iteration
     let dynamic_fk_cols: Vec<_> =
-        PetNestedModels::iter_dynamic_foreign_key_columns((animals::id.into(),))?
+        PetNestedModels::iter_dynamic_foreign_key_columns((animals::id.into(),))
             .collect::<Vec<_>>();
 
     assert_eq!(dynamic_fk_cols.len(), 3);

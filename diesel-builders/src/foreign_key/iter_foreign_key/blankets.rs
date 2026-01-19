@@ -4,7 +4,6 @@ use tuplities::prelude::{IntoNestedTupleOption, NestedTupleRef};
 
 use crate::{
     IterDynForeignKeys, IterForeignKeys, TryGetDynamicColumns, TypedNestedTuple,
-    builder_error::DynamicColumnError,
     columns::{HasNestedDynColumns, NestedDynColumns, NonEmptyNestedProjection},
 };
 
@@ -80,9 +79,7 @@ where
     T: IterDynForeignKeys<DynIdx>,
     Self: TryGetDynamicColumns,
 {
-    fn iter_foreign_key_dyn_columns(
-        index: DynIdx,
-    ) -> Result<impl Iterator<Item = DynIdx>, DynamicColumnError> {
+    fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
         T::iter_foreign_key_dyn_columns(index)
     }
 }
@@ -94,11 +91,9 @@ where
     Tail: IterDynForeignKeys<DynIdx>,
     Self: TryGetDynamicColumns,
 {
-    fn iter_foreign_key_dyn_columns(
-        index: DynIdx,
-    ) -> Result<impl Iterator<Item = DynIdx>, DynamicColumnError> {
-        Ok(Head::iter_foreign_key_dyn_columns(index.clone())?
-            .chain(Tail::iter_foreign_key_dyn_columns(index)?))
+    fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
+        Head::iter_foreign_key_dyn_columns(index.clone())
+            .chain(Tail::iter_foreign_key_dyn_columns(index))
     }
 }
 
@@ -108,9 +103,7 @@ where
     T: IterDynForeignKeys<DynIdx>,
     Self: TryGetDynamicColumns,
 {
-    fn iter_foreign_key_dyn_columns(
-        index: DynIdx,
-    ) -> Result<impl Iterator<Item = DynIdx>, DynamicColumnError> {
+    fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
         T::iter_foreign_key_dyn_columns(index)
     }
 }

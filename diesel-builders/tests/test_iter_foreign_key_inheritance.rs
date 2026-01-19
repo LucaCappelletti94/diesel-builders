@@ -89,9 +89,9 @@ fn test_iter_foreign_keys_inheritance() -> Result<(), Box<dyn std::error::Error>
 
     assert_eq!(fk_columns, vec![(heterogenous_edges::edge_type_id.into(),),]);
 
-    let fk_matches: Vec<_> = <NestedType as IterForeignKeyExt>::iter_dynamic_foreign_key_columns(
-        (edge_types::id.into(),),
-    )?
+    let fk_matches: Vec<_> = <NestedType as IterForeignKeyExt>::iter_dynamic_foreign_key_columns((
+        edge_types::id.into(),
+    ))
     .collect();
 
     assert_eq!(fk_matches, vec![(heterogenous_edges::edge_type_id.into(),),]);
