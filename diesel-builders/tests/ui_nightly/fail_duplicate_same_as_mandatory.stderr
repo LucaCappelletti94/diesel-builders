@@ -1,0 +1,5 @@
+error: Duplicate column in ForeignColumns: `mandatory_table::mandatory_field`. This column appears multiple times in the same horizontal key relationship. Please ensure that each column is only involved in one `same_as` relationship for this key.
+  --> tests/ui_nightly/fail_duplicate_same_as_mandatory.rs:34:15
+   |
+34 |     #[same_as(mandatory_table::mandatory_field)]
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

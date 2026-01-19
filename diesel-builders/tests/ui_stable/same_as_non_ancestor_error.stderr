@@ -1,0 +1,5 @@
+error: Column `unrelated_table::field` is not from an ancestor or triangular table. The #[same_as(...)] attribute can only reference columns from tables listed in #[table_model(ancestors(...))] or marked as #[mandatory]/#[discretionary]
+  --> tests/ui_stable/same_as_non_ancestor_error.rs:22:15
+   |
+22 |     #[same_as(unrelated_table::field)]
+   |               ^^^^^^^^^^^^^^^^^^^^^^

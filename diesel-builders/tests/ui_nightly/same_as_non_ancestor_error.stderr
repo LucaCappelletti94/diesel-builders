@@ -1,0 +1,13 @@
+error: Column `unrelated_table::field` is not from an ancestor or triangular table. The #[same_as(...)] attribute can only reference columns from tables listed in #[table_model(ancestors(...))] or marked as #[mandatory]/#[discretionary]
+  --> tests/ui_nightly/same_as_non_ancestor_error.rs:22:15
+   |
+22 |     #[same_as(unrelated_table::field)]
+   |               ^^^^^^^^^^^^^^^^^^^^^^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `child_table`
+  --> tests/ui_nightly/same_as_non_ancestor_error.rs:19:23
+   |
+19 | #[diesel(table_name = child_table)]
+   |                       ^^^^^^^^^^^ use of unresolved module or unlinked crate `child_table`
+   |
+   = help: if you wanted to use a crate named `child_table`, use `cargo add child_table` to add it to your `Cargo.toml`

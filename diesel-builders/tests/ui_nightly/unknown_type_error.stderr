@@ -1,0 +1,5 @@
+error: Could not infer SQL type. Please specify it using #[diesel(sql_type = ...)]
+ --> tests/ui_nightly/unknown_type_error.rs:7:5
+  |
+7 |     pub data: std::collections::HashMap<String, String>,
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

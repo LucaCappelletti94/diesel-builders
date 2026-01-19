@@ -1,0 +1,22 @@
+error: Ambiguous triangular relationship: multiple fields point to table `mandatory_table`. Please specify which key to use: `#[same_as(mandatory_table::parent_id, KeyField)]`. Available keys: `mand_id_1`, `mand_id_2`
+  --> tests/ui_nightly/fail_ambiguous_mandatory_same_as.rs:25:5
+   |
+25 | /     #[same_as(mandatory_table::parent_id)]
+26 | |     id: i32,
+   | |___________^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `child_table`
+  --> tests/ui_nightly/fail_ambiguous_mandatory_same_as.rs:39:19
+   |
+39 |     check_trait::<child_table::columns::mand_id_1>();
+   |                   ^^^^^^^^^^^ use of unresolved module or unlinked crate `child_table`
+   |
+   = help: if you wanted to use a crate named `child_table`, use `cargo add child_table` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `child_table`
+  --> tests/ui_nightly/fail_ambiguous_mandatory_same_as.rs:23:23
+   |
+23 | #[diesel(table_name = child_table)]
+   |                       ^^^^^^^^^^^ use of unresolved module or unlinked crate `child_table`
+   |
+   = help: if you wanted to use a crate named `child_table`, use `cargo add child_table` to add it to your `Cargo.toml`

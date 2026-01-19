@@ -1,0 +1,5 @@
+error: Mismatched number of host and referenced columns.
+  --> tests/ui_nightly/mismatched_fk_columns.rs:20:46
+   |
+20 | #[table_model(foreign_key((user_id, title), (users::id)))]
+   |                                              ^^^^^^^^^

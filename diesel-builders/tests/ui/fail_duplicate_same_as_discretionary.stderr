@@ -1,5 +1,0 @@
-error: Duplicate column in ForeignColumns: `discretionary_table::discretionary_field`. This column appears multiple times in the same horizontal key relationship. Please ensure that each column is only involved in one `same_as` relationship for this key.
-  --> tests/ui/fail_duplicate_same_as_discretionary.rs:34:15
-   |
-34 |     #[same_as(discretionary_table::discretionary_field)]
-   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -25,6 +25,7 @@ diesel = { workspace = true, features = [
 	"returning_clauses_for_sqlite_3_35",
 	"extras",
 ] }
+rustversion = "1.0.22"
 serde_json.workspace = true
 trybuild = "1.0.114"
 

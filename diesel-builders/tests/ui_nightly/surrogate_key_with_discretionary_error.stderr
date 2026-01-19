@@ -1,0 +1,19 @@
+error: Tables with `surrogate_key` cannot have `#[mandatory]` or `#[discretionary]` attributes. Surrogate keys are auto-generated and cannot participate in triangular relations.
+  --> tests/ui_nightly/surrogate_key_with_discretionary_error.rs:4:1
+   |
+ 4 | / #[diesel(table_name = child_table)]
+ 5 | | #[table_model(surrogate_key)]
+ 6 | | pub struct Child {
+ 7 | |     id: i32,
+ 8 | |     #[discretionary]
+ 9 | |     optional_field: i32,
+10 | | }
+   | |_^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `child_table`
+ --> tests/ui_nightly/surrogate_key_with_discretionary_error.rs:4:23
+  |
+4 | #[diesel(table_name = child_table)]
+  |                       ^^^^^^^^^^^ use of unresolved module or unlinked crate `child_table`
+  |
+  = help: if you wanted to use a crate named `child_table`, use `cargo add child_table` to add it to your `Cargo.toml`

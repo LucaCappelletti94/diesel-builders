@@ -1,0 +1,15 @@
+error: Duplicate `#[infallible]` or `#[table_model(infallible)]` attribute found. Each field can only have one infallible marker.
+  --> tests/ui_nightly/duplicate_infallible_mixed_error.rs:8:5
+   |
+ 8 | /     #[infallible]
+ 9 | |     #[table_model(infallible)]
+10 | |     field1: String,
+   | |__________________^
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `test_table`
+ --> tests/ui_nightly/duplicate_infallible_mixed_error.rs:5:23
+  |
+5 | #[diesel(table_name = test_table)]
+  |                       ^^^^^^^^^^ use of unresolved module or unlinked crate `test_table`
+  |
+  = help: if you wanted to use a crate named `test_table`, use `cargo add test_table` to add it to your `Cargo.toml`

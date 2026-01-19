@@ -1,0 +1,6 @@
+error: Surrogate primary key cannot have a `default` value
+ --> tests/ui_stable/pk_default_error.rs:7:5
+  |
+7 | /     #[table_model(default = 1)]
+8 | |     pub id: i32,
+  | |_______________^
