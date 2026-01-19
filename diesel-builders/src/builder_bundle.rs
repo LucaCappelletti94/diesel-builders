@@ -78,11 +78,10 @@ pub trait BundlableTableExt:
         + HasNestedTables<NestedTables = Self::NestedMandatoryTables>;
     /// Optional builders for the mandatory associated tables.
     type OptionalMandatoryNestedBuilders: NestedTupleOptionWith<
-        &'static str,
-        SameDepth = <Self::NestedMandatoryTriangularColumns as NestedColumns>::NestedColumnNames,
-        Transposed = Self::MandatoryNestedBuilders
-    >
-        + HasNestedTables<NestedTables = Self::NestedMandatoryTables>;
+            &'static str,
+            SameDepth = <Self::NestedMandatoryTriangularColumns as NestedColumns>::NestedNames,
+            Transposed = Self::MandatoryNestedBuilders,
+        > + HasNestedTables<NestedTables = Self::NestedMandatoryTables>;
     /// Builders for the discretionary associated tables.
     type DiscretionaryNestedBuilders: IntoNestedTupleOption<IntoOptions = Self::OptionalDiscretionaryNestedBuilders>
         + HasNestedTables<NestedTables = Self::NestedDiscretionaryTables>;

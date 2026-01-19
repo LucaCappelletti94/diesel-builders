@@ -2,7 +2,7 @@
 
 use tuplities::prelude::NestedTupleRef;
 
-use crate::{GetColumn, TypedColumn, columns::NonEmptyNestedProjection};
+use crate::{GetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can get multiple columns.
 pub trait GetNestedColumns<CS: NonEmptyNestedProjection> {
@@ -15,7 +15,7 @@ pub trait GetNestedColumns<CS: NonEmptyNestedProjection> {
 impl<C1, T> GetNestedColumns<(C1,)> for T
 where
     T: GetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn get_nested_columns(&self) -> (C1::ColumnType,) {

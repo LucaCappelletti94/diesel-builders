@@ -1,7 +1,7 @@
 //! Trait indicating a builder can set multiple columns.
 
 use crate::{
-    OptionalRef, SetColumn, TypedColumn,
+    OptionalRef, SetColumn, TableExt, TypedColumn,
     columns::{HomogeneouslyTypedNestedColumns, NonEmptyNestedProjection},
 };
 
@@ -21,7 +21,7 @@ impl<Type, T> SetHomogeneousNestedColumns<Type, ()> for T {
 impl<Type: Clone, C1, T> SetHomogeneousNestedColumns<Type, (C1,)> for T
 where
     T: SetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
     C1::ColumnType: From<Type>,
 {
     #[inline]

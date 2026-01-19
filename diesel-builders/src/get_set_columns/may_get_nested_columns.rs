@@ -1,7 +1,7 @@
 //! Trait for builders which may get multiple nested columns.
 use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{MayGetColumn, TypedColumn, columns::NonEmptyNestedProjection};
+use crate::{MayGetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder which may get multiple columns.
 pub trait MayGetNestedColumns<CS: NonEmptyNestedProjection> {
@@ -14,7 +14,7 @@ pub trait MayGetNestedColumns<CS: NonEmptyNestedProjection> {
 impl<C1, T> MayGetNestedColumns<(C1,)> for T
 where
     T: MayGetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn may_get_nested_columns(&self) -> (Option<C1::ColumnType>,) {

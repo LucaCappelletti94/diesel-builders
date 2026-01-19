@@ -371,10 +371,12 @@ struct CapturedForeignKey<'a> {
 pub fn generate_iter_foreign_key_impls(
     fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
+    ancestors: &Option<Vec<syn::Path>>,
+    primary_key_columns: &[Ident],
     table_module: &Ident,
     model_ident: &Ident,
 ) -> syn::Result<Vec<TokenStream>> {
-    let captured_keys = collect_foreign_keys(fields, foreign_keys)?;
+    let captured_keys = collect_foreign_keys(fields, foreign_keys, ancestors, primary_key_columns)?;
 
     // Group foreign keys by their referenced index
     let groups = group_by_referenced_index(captured_keys.as_slice());
@@ -387,16 +389,60 @@ pub fn generate_iter_foreign_key_impls(
 fn collect_foreign_keys<'a>(
     fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
+    ancestors: &Option<Vec<syn::Path>>,
+    primary_key_columns: &[Ident],
 ) -> syn::Result<Vec<CapturedForeignKey<'a>>> {
     let mut captured_keys = Vec::new();
 
     // Collect implicit foreign keys from triangular relations
     collect_triangular_foreign_keys(fields, &mut captured_keys)?;
 
+    // Collect implicit foreign keys from ancestors
+    collect_ancestor_foreign_keys(fields, ancestors, primary_key_columns, &mut captured_keys)?;
+
     // Collect explicit foreign keys from attributes
     collect_explicit_foreign_keys(fields, foreign_keys, &mut captured_keys)?;
 
     Ok(captured_keys)
+}
+
+/// Collects foreign keys from ancestor relations.
+fn collect_ancestor_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    ancestors: &Option<Vec<syn::Path>>,
+    primary_key_columns: &[Ident],
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
+) -> syn::Result<()> {
+    if let Some(ancestors) = ancestors {
+        if primary_key_columns.len() != 1 {
+            return Ok(());
+        }
+        let pk_ident = &primary_key_columns[0];
+
+        // Find the field corresponding to PK
+        let pk_field =
+            fields.iter().find(|f| f.ident.as_ref() == Some(pk_ident)).ok_or_else(|| {
+                syn::Error::new_spanned(pk_ident, "Primary key field not found in struct.")
+            })?;
+
+        for ancestor_path in ancestors {
+            // Assume ancestor PK is same name as local PK (id -> id)
+            // or id -> ancestor::id
+            let ancestor_table_name = &ancestor_path.segments.last().unwrap().ident;
+
+            // Construct referenced column: ancestor::id
+            let ref_col = quote! { #ancestor_path::#pk_ident };
+
+            let grouping_key = format!("{ancestor_table_name}::{pk_ident}");
+
+            captured_keys.push(CapturedForeignKey {
+                host_fields: vec![pk_field],
+                ref_cols: vec![ref_col],
+                grouping_key,
+            });
+        }
+    }
+    Ok(())
 }
 
 /// Collects foreign keys from mandatory/discretionary triangular relations.
@@ -568,9 +614,10 @@ fn generate_impls_for_groups<'b>(
     model_ident: &Ident,
 ) -> Vec<TokenStream> {
     let mut impls = Vec::new();
+    let mut dyn_impl_branches = Vec::new();
 
     for (_, (ref_cols, keys)) in groups {
-        let idx_type = quote! {( #(#ref_cols,)* )};
+        let idx_type = recursive_tuple_type(ref_cols);
 
         assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
         let first_key = keys[0];
@@ -603,54 +650,82 @@ fn generate_impls_for_groups<'b>(
         let simple_item_types: Vec<_> =
             base_types.iter().map(|ty| quote!(::std::option::Option<&'a #ty>)).collect();
         let simple_elem_ty = recursive_tuple_type(&simple_item_types);
-
-        // MatchFullIter: Nested tuple of &T
-        let full_item_types: Vec<_> = base_types.iter().map(|ty| quote!(&'a #ty)).collect();
-        let full_elem_ty = recursive_tuple_type(&full_item_types);
+        // Nested Dyn Index
+        let dyn_elem_ty = recursive_dyn_tuple_type(&base_types);
 
         // Build chains
         // (type_simple, expr_simple, type_full, expr_full)
-        let (simple_iter_type, simple_iter_expr, full_iter_type, full_iter_expr) =
-            build_chain_iterators(&keys, &simple_elem_ty, &full_elem_ty, table_module);
+        let (_, simple_iter_expr, _, _) =
+            build_chain_iterators(&keys, &simple_elem_ty, &simple_elem_ty, table_module);
 
-        let foreign_keys_expr = build_foreign_keys_iterator(keys.as_slice(), table_module);
-        let number_of_keys = keys.len();
+        let iter_foreign_key_columns_expr =
+            build_foreign_keys_iterator(keys.as_slice(), &base_types, table_module);
 
         impls.push(quote! {
-            impl ::diesel_builders::IterForeignKey<#idx_type> for #model_ident {
-                type MatchSimpleIter<'a> = #simple_iter_type
-                where
-                    #idx_type: 'a,
-                    Self: 'a;
+            impl ::diesel_builders::IterForeignKeys<#idx_type> for #model_ident {
+                #[inline]
+                fn iter_foreign_key_columns() -> impl Iterator<Item = <#idx_type as ::diesel_builders::HasNestedDynColumns>::NestedDynColumns> {
+                    #iter_foreign_key_columns_expr
+                }
 
-                type MatchFullIter<'a> = #full_iter_type
-                where
-                    #idx_type: 'a,
-                    Self: 'a;
-
-                type ForeignKeyColumnsIter = ::core::array::IntoIter<
-                    <<#idx_type as ::diesel_builders::tuplities::NestTuple>::Nested as ::diesel_builders::NestedColumns>::DynColumns,
-                    #number_of_keys
-                >;
-
-                fn iter_match_simple<'a>(&'a self) -> Self::MatchSimpleIter<'a>
-                    where #idx_type: 'a
+                #[inline]
+                fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = #simple_elem_ty>
+                where #idx_type: 'a
                 {
                     #simple_iter_expr
                 }
+            }
+        });
 
-                fn iter_match_full<'a>(&'a self) -> Self::MatchFullIter<'a>
-                    where #idx_type: 'a
+        // Add to dynamic branching logic
+
+        dyn_impl_branches.push(quote! {
+            {
+                use ::diesel_builders::tuplities::NestedTupleIntoVec;
+                if index.nested_dyn_column_names().into_vec() == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_COLUMN_NAMES.into_vec()
+                && index.nested_dyn_column_table_names().into_vec() == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_TABLE_NAMES.into_vec()
                 {
-                    #full_iter_expr
-                }
+                    // Check types
+                    if ::std::any::TypeId::of::<DynIdx>() == ::std::any::TypeId::of::<#dyn_elem_ty>() {
+                        // Match!
+                        let iterator = <Self as ::diesel_builders::IterForeignKeys<#idx_type>>::iter_foreign_key_columns();
+                        // Collect into Vec<SpecificDynIdx>
+                        let dyn_keys: ::std::vec::Vec<#dyn_elem_ty> = iterator.collect();
 
-                fn iter_foreign_key_columns() -> Self::ForeignKeyColumnsIter {
-                    #foreign_keys_expr
+                        // Safe downcast via Box<dyn Any>
+                        // We box the vector of specific type.
+                        let boxed: ::std::boxed::Box<dyn ::std::any::Any> = ::std::boxed::Box::new(dyn_keys);
+                        // Attempt to downcast to Vec<DynIdx>. Since TypeId matches, this MUST succeed.
+                        if let Ok(vec) = boxed.downcast::<::std::vec::Vec<DynIdx>>() {
+                            return Ok(vec.into_iter());
+                        } else {
+                            // Should be unreachable if TypeId matches
+                            unreachable!("TypeID matched but downcast failed");
+                        }
+                    } else {
+                        // Names match but types don't -> Error
+                        return Err(::diesel_builders::builder_error::DynamicColumnError::incompatible_dynamic_columns::<#idx_type, _>(&index));
+                    }
                 }
             }
         });
     }
+
+    // Generate IterDynForeignKeys impl
+    impls.push(quote! {
+        impl<DynIdx> ::diesel_builders::IterDynForeignKeys<DynIdx> for #model_ident
+        where
+            DynIdx: ::diesel_builders::NestedDynColumns + ::diesel_builders::TypedNestedTuple + 'static,
+            DynIdx::NestedTupleValueType: 'static,
+        {
+            fn iter_foreign_key_dyn_columns(index: DynIdx) -> Result<impl Iterator<Item = DynIdx>, ::diesel_builders::builder_error::DynamicColumnError> {
+                #(#dyn_impl_branches)*
+
+                // No match found
+                Ok(::std::vec::Vec::new().into_iter())
+            }
+        }
+    });
 
     impls
 }
@@ -752,6 +827,7 @@ fn build_single_key_iterators(
 /// Boxes).
 fn build_foreign_keys_iterator(
     keys: &[&CapturedForeignKey<'_>],
+    base_types: &[TokenStream],
     table_module: &syn::Ident,
 ) -> TokenStream {
     let mut items = Vec::new();
@@ -763,11 +839,11 @@ fn build_foreign_keys_iterator(
             .iter()
             .map(|host_field| {
                 let name = &host_field.ident;
-                quote! {#table_module::#name.into()}
+                quote! {#table_module::#name}
             })
             .collect();
 
-        items.push(recursive_tuple_expr(&host_columns));
+        items.push(recursive_dyn_tuple_expr(&host_columns, base_types));
     }
 
     quote! {
@@ -802,6 +878,34 @@ fn recursive_tuple_expr(exprs: &[TokenStream]) -> TokenStream {
         [head, tail @ ..] => {
             let tail_tokens = recursive_tuple_expr(tail);
             quote!((#head, #tail_tokens))
+        }
+    }
+}
+
+/// Recursively builds a nested tuple expression from a slice of expressions
+/// used to build a Dynamic Column Index
+fn recursive_dyn_tuple_expr(exprs: &[TokenStream], types: &[TokenStream]) -> TokenStream {
+    match (exprs, types) {
+        ([], []) => quote! { () },
+        ([single_expr], [single_type]) => {
+            quote! { (::diesel_builders::DynColumn::<#single_type>::from(#single_expr),) }
+        }
+        ([head_expr, tail_exprs @ ..], [head_type, tail_types @ ..]) => {
+            let tail_tuple = recursive_dyn_tuple_expr(tail_exprs, tail_types);
+            quote! { (::diesel_builders::DynColumn::<#head_type>::from(#head_expr), #tail_tuple) }
+        }
+        _ => panic!("Mismatched expressions and types for dynamic tuple construction"),
+    }
+}
+
+/// Recursively builds the type of a nested dynamic column tuple.
+fn recursive_dyn_tuple_type(types: &[TokenStream]) -> TokenStream {
+    match types {
+        [] => quote! { () },
+        [single] => quote! { (::diesel_builders::DynColumn<#single>,) },
+        [head, tail @ ..] => {
+            let tail_tuple = recursive_dyn_tuple_type(tail);
+            quote! { (::diesel_builders::DynColumn<#head>, #tail_tuple) }
         }
     }
 }

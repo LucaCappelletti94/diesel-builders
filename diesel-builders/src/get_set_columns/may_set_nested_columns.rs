@@ -2,7 +2,7 @@
 
 use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{MaySetColumn, TypedColumn, columns::NonEmptyNestedProjection};
+use crate::{MaySetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder which may set multiple columns.
 pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
@@ -16,7 +16,7 @@ pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
 impl<C1, T> MaySetColumns<(C1,)> for T
 where
     T: MaySetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn may_set_nested_columns(&mut self, (value,): (Option<C1::ColumnType>,)) -> &mut Self {

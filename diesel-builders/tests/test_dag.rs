@@ -7,7 +7,7 @@
 
 mod shared;
 mod shared_animals;
-use diesel_builders::{BuilderError, prelude::*};
+use diesel_builders::{BuilderError, NestedTables, prelude::*};
 use shared_animals::*;
 
 #[test]
@@ -99,6 +99,45 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(color_val_owned, Some("Black".to_string()));
 
     assert_eq!(pet.owner_name(), "Alice Smith");
+
+    // Test dynamic foreign key iteration
+    let animal_fk_refs: Vec<_> = nested_models
+        .iter_dynamic_match_simple((animals::id.into(),))?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // We expect 3 references:
+    // 1. Dog -> Animal
+    // 2. Cat -> Animal
+    // 3. Pet -> Animal (since Pet declares 'animals' in ancestors, acts as logical
+    //    FK)
+    assert_eq!(animal_fk_refs.len(), 3);
+
+    // All FKs should point to the same animal ID (inheritance)
+    let first_fk = &animal_fk_refs[0];
+    for fk in &animal_fk_refs {
+        assert_eq!(fk, first_fk);
+    }
+
+    // The ID should be different from the previous insertion (pet)
+    // because insert_nested created a new record
+    assert_ne!(first_fk.0, Some(pet.id()));
+
+    // Test dynamic foreign key columns iteration
+    type PetNestedModels = <<pets::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels;
+    let dynamic_fk_cols: Vec<_> =
+        PetNestedModels::iter_dynamic_foreign_key_columns((animals::id.into(),))?
+            .collect::<Vec<_>>();
+
+    assert_eq!(dynamic_fk_cols.len(), 3);
+
+    // Verify expected columns (pets::id, dogs::id, cats::id)
+    // Note: Implicit casting to DynColumn<i32> via From
+    let dyn_dogs_id: diesel_builders::DynColumn<i32> = dogs::id.into();
+    let dyn_cats_id: diesel_builders::DynColumn<i32> = cats::id.into();
+    let dyn_pets_id: diesel_builders::DynColumn<i32> = pets::id.into();
+
+    // Check presence of each expected FK column
+    assert_eq!(dynamic_fk_cols, vec![(dyn_dogs_id,), (dyn_cats_id,), (dyn_pets_id,),]);
 
     // Test TableModel derive - using UniquelyIndexedColumn implementations
     assert_eq!(pet.id(), pet.id());

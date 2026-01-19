@@ -2,7 +2,7 @@
 
 use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{MayGetColumn, TypedColumn, columns::NestedColumns};
+use crate::{MayGetColumn, TableExt, TypedColumn, columns::NestedColumns};
 
 /// Variant of `MayGetNestedColumns` for n-uples.
 pub trait TupleMayGetNestedColumns<CS: NestedColumns> {
@@ -20,7 +20,7 @@ impl TupleMayGetNestedColumns<()> for () {
 impl<T1, C1> TupleMayGetNestedColumns<(C1,)> for (T1,)
 where
     T1: MayGetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn tuple_may_get_nested_columns(&self) -> (Option<C1::ColumnType>,) {

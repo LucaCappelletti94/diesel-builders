@@ -4,10 +4,7 @@ use diesel::Table;
 use sealed::VariadicTryGetDynamicColumn;
 use tuplities::prelude::NestTuple;
 
-use crate::{
-    AncestorOfIndex, BuildableTable, DescendantWithSelf, DynColumn, HasTableExt, NestedTables,
-    TableBuilder, TableExt, builder_error::DynamicColumnError,
-};
+use crate::{DynColumn, HasTableExt, TableExt, builder_error::DynamicColumnError};
 
 /// Trait attempting to get a dynamic [`DynColumn`], which may fail.
 pub trait TryGetDynamicColumn {
@@ -34,7 +31,6 @@ pub trait TryGetDynamicColumn {
     /// # Errors
     ///
     /// Returns an error if the column cannot be retrieved.
-    #[allow(clippy::redundant_closure_for_method_calls)]
     fn try_get_dynamic_column<VT: Clone + 'static>(
         &self,
         column: DynColumn<VT>,
@@ -42,6 +38,30 @@ pub trait TryGetDynamicColumn {
         self.try_get_dynamic_column_ref(column).map(|opt| opt.cloned())
     }
 }
+
+macro_rules! impl_try_get_dynamic_column {
+    ($($T:ty),*) => {
+        $(
+            impl<Head> TryGetDynamicColumn for $T
+            where
+                Head: HasTableExt,
+                Self: sealed::VariadicTryGetDynamicColumn<
+                    <<Head::Table as Table>::AllColumns as NestTuple>::Nested,
+                >,
+            {
+                #[inline]
+                fn try_get_dynamic_column_ref<VT: 'static>(
+                    &self,
+                    column: DynColumn<VT>,
+                ) -> Result<Option<&VT>, DynamicColumnError> {
+                    self.variadic_try_get_dynamic_column(column)
+                }
+            }
+        )*
+    };
+}
+
+impl_try_get_dynamic_column!(&Head, Box<Head>, std::rc::Rc<Head>, std::sync::Arc<Head>);
 
 impl<Head> TryGetDynamicColumn for (Head,)
 where
@@ -75,22 +95,6 @@ where
             }
             res => res,
         }
-    }
-}
-
-impl<T> TryGetDynamicColumn for TableBuilder<T>
-where
-    Self: sealed::VariadicTryGetDynamicColumn<
-        <<T as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::ChainedNestedRecords,
-    >,
-    T: AncestorOfIndex<T> + BuildableTable
-{
-    #[inline]
-    fn try_get_dynamic_column_ref<VT: 'static>(
-        &self,
-        column: DynColumn<VT>,
-    ) -> Result<Option<&VT>, DynamicColumnError> {
-        self.variadic_try_get_dynamic_column(column)
     }
 }
 

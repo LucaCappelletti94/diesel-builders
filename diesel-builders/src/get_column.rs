@@ -128,5 +128,8 @@ pub trait MayGetColumnExt {
 impl<T> MayGetColumnExt for T {}
 
 mod blanket_impls;
-mod dynamic;
+pub mod dynamic;
 pub use dynamic::TryGetDynamicColumn;
+
+pub mod dynamic_multi;
+pub use dynamic_multi::TryGetDynamicColumns;

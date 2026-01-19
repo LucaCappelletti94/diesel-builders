@@ -2,7 +2,7 @@
 
 use tuplities::prelude::IntoNestedTupleOption;
 
-use crate::{TrySetColumn, TypedColumn, ValidateColumn, columns::NestedColumns};
+use crate::{TableExt, TrySetColumn, TypedColumn, ValidateColumn, columns::NestedColumns};
 
 /// Trait indicating a builder which may try to set multiple columns.
 pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
@@ -27,7 +27,7 @@ impl<T, Error> TryMaySetNestedColumns<Error, ()> for T {
 impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where
     T: TrySetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
 {
     #[inline]

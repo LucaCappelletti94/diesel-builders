@@ -1,6 +1,6 @@
 //! Submodule providing the `TupleGetNestedColumns` trait.
 
-use crate::{GetColumn, TypedColumn, TypedNestedTuple, columns::NestedColumns};
+use crate::{GetColumn, TableExt, TypedColumn, TypedNestedTuple, columns::NestedColumns};
 
 /// Variant of `GetNestedColumns` for n-uples.
 pub trait TupleGetNestedColumns<CS: NestedColumns> {
@@ -16,7 +16,7 @@ impl TupleGetNestedColumns<()> for () {
 impl<T1, C1> TupleGetNestedColumns<(C1,)> for (T1,)
 where
     T1: GetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn tuple_get_nested_columns(&self) -> <(C1,) as TypedNestedTuple>::NestedTupleColumnType {

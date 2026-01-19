@@ -1,7 +1,7 @@
 //! Trait indicating a builder can set multiple columns.
 
 use crate::{
-    OptionalRef, TrySetColumn, TypedColumn, ValidateColumn,
+    OptionalRef, TableExt, TrySetColumn, TypedColumn, ValidateColumn,
     columns::{HomogeneouslyTypedNestedColumns, NonEmptyNestedProjection},
 };
 
@@ -32,7 +32,7 @@ impl<Type: Clone, C1, Error, T> TrySetHomogeneousNestedColumns<Type, Error, (C1,
 where
     T: TrySetColumn<C1>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
-    C1: TypedColumn<ColumnType: From<Type>>,
+    C1: TypedColumn<ColumnType: From<Type>, Table: TableExt>,
 {
     #[inline]
     fn try_set_homogeneous_nested_columns(

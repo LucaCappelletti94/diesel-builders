@@ -30,7 +30,7 @@ pub trait TableExt:
         + NestedTupleOptionWith<
             &'static str,
             Transposed = <Self::NewRecord as TypedNestedTuple>::NestedTupleColumnType,
-            SameDepth = <Self::NewRecord as NestedColumns>::NestedColumnNames,
+            SameDepth = <Self::NewRecord as NestedColumns>::NestedNames,
         >;
     /// The nested primary key columns of this table.
     type NestedPrimaryKeyColumns: NonEmptyNestedProjection<Table = Self>

@@ -2,7 +2,7 @@
 
 use tuplities::prelude::*;
 mod iter_foreign_key;
-pub use iter_foreign_key::{IterForeignKey, IterForeignKeyExt};
+pub use iter_foreign_key::{IterDynForeignKeys, IterForeignKeyExt, IterForeignKeys};
 
 use crate::{
     Descendant, GetColumn, TableExt, TypedColumn, TypedNestedTuple, ValueTyped,
@@ -31,7 +31,7 @@ pub trait NestedTableIndexTail<Idx, FullIndex>: NonEmptyNestedProjection {}
 
 impl<Idx, C1, FullIndex> NestedTableIndexTail<Idx, FullIndex> for (C1,)
 where
-    C1: IndexedColumn<Idx, FullIndex>,
+    C1: IndexedColumn<Idx, FullIndex, Table: TableExt>,
     FullIndex: NonEmptyProjection<Table = C1::Table>,
     <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
 {
@@ -57,7 +57,7 @@ pub trait NestedUniqueTableIndexTail<Idx, FullIndex>: NonEmptyNestedProjection {
 
 impl<Idx, C1, FullIndex> NestedUniqueTableIndexTail<Idx, FullIndex> for (C1,)
 where
-    C1: UniquelyIndexedColumn<Idx, FullIndex>,
+    C1: UniquelyIndexedColumn<Idx, FullIndex, Table: TableExt>,
     FullIndex: NonEmptyProjection<Table = C1::Table>,
     <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
 {
@@ -99,9 +99,9 @@ where
 }
 
 /// A trait defining a non-composited primary key column.
-pub trait PrimaryKeyColumn: UniquelyIndexedColumn<typenum::U0, (Self,)> {}
+pub trait PrimaryKeyColumn: UniquelyIndexedColumn<typenum::U0, (Self,), Table: TableExt> {}
 impl<C> PrimaryKeyColumn for C where
-    C: UniquelyIndexedColumn<typenum::U0, (C,)>
+    C: UniquelyIndexedColumn<typenum::U0, (C,), Table: TableExt>
         + diesel::Column<Table: diesel::Table<PrimaryKey = C>>
 {
 }
@@ -164,8 +164,9 @@ pub trait NestedForeignKeyTail<
 
 impl<F1, H1> NestedForeignKeyTail<typenum::U0, (F1,), (F1,)> for (H1,)
 where
-    H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,)>,
-    F1: TypedColumn<ValueType = <H1 as ValueTyped>::ValueType> + IndexedColumn<typenum::U0, (F1,)>,
+    H1: TypedColumn + HostColumn<typenum::U0, (H1,), (F1,), Table: TableExt>,
+    F1: TypedColumn<ValueType = <H1 as ValueTyped>::ValueType>
+        + IndexedColumn<typenum::U0, (F1,), Table: TableExt>,
 {
 }
 
@@ -217,6 +218,6 @@ impl<C>
     > for C
 where
     <<C as ForeignPrimaryKey>::ReferencedTable as diesel::Table>::PrimaryKey: PrimaryKeyColumn,
-    C: ForeignPrimaryKey,
+    C: ForeignPrimaryKey<Table: TableExt>,
 {
 }

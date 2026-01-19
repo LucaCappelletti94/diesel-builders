@@ -114,7 +114,7 @@ pub trait HorizontalNestedKeys<T>: NestedColumns {
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<
                 &'static str,
-                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+                SameDepth = <Self as NestedColumns>::NestedNames,
             >,
         >;
     /// Tuple of tuples of host columns associated to each horizontal same-as
@@ -143,7 +143,7 @@ where
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<
                 &'static str,
-                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+                SameDepth = <Self as NestedColumns>::NestedNames,
             >,
         >,
     (Head::NestedHostColumns,): NestedColumnsCollection<FlattenedMatrix: ColumnsCollection>,
@@ -168,7 +168,7 @@ where
         > + NestedBuildableTables<
             NestedOptionalBuilders: NestedTupleOptionWith<
                 &'static str,
-                SameDepth = <Self as NestedColumns>::NestedColumnNames,
+                SameDepth = <Self as NestedColumns>::NestedNames,
             >,
         >,
     (Head::NestedHostColumns, Tail::NestedHostColumnsMatrix):

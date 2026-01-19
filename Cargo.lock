@@ -149,7 +149,7 @@ dependencies = [
  "diesel-builders-derive",
  "serde",
  "serde_json",
- "thiserror 2.0.17 (git+https://github.com/LucaCappelletti94/thiserror)",
+ "thiserror 2.0.17",
  "trybuild",
  "tuplities",
  "typenum",
@@ -479,7 +479,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8a1f2315036ef6b1fbacd1972e8ee7688030b0a2121edfc2a6550febd41574d"
 dependencies = [
  "hashbrown",
- "thiserror 2.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -620,25 +620,24 @@ dependencies = [
 [[package]]
 name = "thiserror"
 version = "2.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f63587ca0f12b72a0600bcba1d40081f830876000bb46dd2337a3051618f4fc8"
+source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
 dependencies = [
- "thiserror-impl 2.0.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror-impl 2.0.17",
 ]
 
 [[package]]
 name = "thiserror"
-version = "2.0.17"
-source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
+version = "2.0.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4288b5bcbc7920c07a1149a35cf9590a2aa808e0bc1eafaade0b80947865fbc4"
 dependencies = [
- "thiserror-impl 2.0.17 (git+https://github.com/LucaCappelletti94/thiserror)",
+ "thiserror-impl 2.0.18",
 ]
 
 [[package]]
 name = "thiserror-impl"
 version = "2.0.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
+source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -647,8 +646,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.17"
-source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
+version = "2.0.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc4ee7f67670e9b64d05fa4253e753e016c6c95ff35b89b7941d6b856dec1d5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -743,7 +743,7 @@ dependencies = [
 [[package]]
 name = "tuplities"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-clone",
  "tuplities-copy",
@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "tuplities-clone"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -785,7 +785,7 @@ dependencies = [
 [[package]]
 name = "tuplities-copy"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-clone",
  "tuplities-derive",
@@ -794,7 +794,7 @@ dependencies = [
 [[package]]
 name = "tuplities-debug"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -802,7 +802,7 @@ dependencies = [
 [[package]]
 name = "tuplities-default"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -810,7 +810,7 @@ dependencies = [
 [[package]]
 name = "tuplities-derive"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -822,7 +822,7 @@ dependencies = [
 [[package]]
 name = "tuplities-eq"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-partial-eq",
@@ -831,7 +831,7 @@ dependencies = [
 [[package]]
 name = "tuplities-flatten-nest"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-push-front",
@@ -841,7 +841,7 @@ dependencies = [
 [[package]]
 name = "tuplities-from"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -849,7 +849,7 @@ dependencies = [
 [[package]]
 name = "tuplities-hash"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-eq",
@@ -858,7 +858,7 @@ dependencies = [
 [[package]]
 name = "tuplities-index"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-len",
@@ -868,7 +868,7 @@ dependencies = [
 [[package]]
 name = "tuplities-insert"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -877,7 +877,7 @@ dependencies = [
 [[package]]
 name = "tuplities-len"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -886,7 +886,7 @@ dependencies = [
 [[package]]
 name = "tuplities-mut"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -894,7 +894,7 @@ dependencies = [
 [[package]]
 name = "tuplities-option"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-default",
  "tuplities-derive",
@@ -903,7 +903,7 @@ dependencies = [
 [[package]]
 name = "tuplities-ord"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-eq",
@@ -913,7 +913,7 @@ dependencies = [
 [[package]]
 name = "tuplities-partial-eq"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -921,7 +921,7 @@ dependencies = [
 [[package]]
 name = "tuplities-partial-ord"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-partial-eq",
@@ -930,7 +930,7 @@ dependencies = [
 [[package]]
 name = "tuplities-pop-back"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -938,7 +938,7 @@ dependencies = [
 [[package]]
 name = "tuplities-pop-front"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-push-front",
@@ -947,7 +947,7 @@ dependencies = [
 [[package]]
 name = "tuplities-push-back"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -955,7 +955,7 @@ dependencies = [
 [[package]]
 name = "tuplities-push-front"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -963,7 +963,7 @@ dependencies = [
 [[package]]
 name = "tuplities-ref"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -971,7 +971,7 @@ dependencies = [
 [[package]]
 name = "tuplities-remove"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -980,7 +980,7 @@ dependencies = [
 [[package]]
 name = "tuplities-replicate"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -988,7 +988,7 @@ dependencies = [
 [[package]]
 name = "tuplities-reverse"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -996,7 +996,7 @@ dependencies = [
 [[package]]
 name = "tuplities-row"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "tuplities-index",
@@ -1011,7 +1011,7 @@ dependencies = [
 [[package]]
 name = "tuplities-split"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
  "typenum",
@@ -1020,7 +1020,7 @@ dependencies = [
 [[package]]
 name = "tuplities-try-from"
 version = "0.1.4"
-source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d2dab5f84cf3207f3776182e8dd5df5725f943fd"
+source = "git+https://github.com/LucaCappelletti94/tuplities?branch=main#d1be66bbf90232e4df7f067575d3124559ed0741"
 dependencies = [
  "tuplities-derive",
 ]
@@ -1053,7 +1053,7 @@ version = "0.1.0"
 dependencies = [
  "diesel",
  "diesel-builders",
- "thiserror 2.0.17 (git+https://github.com/LucaCappelletti94/thiserror)",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

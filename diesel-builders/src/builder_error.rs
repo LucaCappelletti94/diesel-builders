@@ -1,7 +1,12 @@
 //! Helper functions for creating builder-related errors.
 
 use diesel::result::DatabaseErrorInformation;
+use tuplities::prelude::NestedTupleIntoVec;
 
+use crate::{
+    TableExt,
+    columns::{NestedDynColumns, NonEmptyNestedProjection},
+};
 /// Error type for incomplete builder operations.
 #[derive(Debug)]
 pub enum BuilderError<E> {
@@ -79,9 +84,51 @@ pub enum DynamicColumnError {
         /// The name of the unknown column.
         column_name: &'static str,
     },
+    #[error(
+        "Incompatible dynamic columns provided: columns {} from `{table_name}` with types {provided_types} are incompatible with provided columns {} with types {expected_types}.",
+        .expected_column_names.join(", "),
+        .provided_columns.join(", "),
+    )]
+    /// The specified column type is incompatible with the expected type.
+    IncompatibleDynamicColumns {
+        /// The user provided dynamic columns.
+        provided_columns: Vec<&'static str>,
+        /// The provided dynamic column types.
+        provided_types: &'static str,
+        /// The table of the incompatible column.
+        table_name: &'static str,
+        /// The names of the incompatible columns.
+        expected_column_names: Vec<&'static str>,
+        /// The expected dynamic column types.
+        expected_types: &'static str,
+    },
     #[error("Validation error: {0}")]
     /// Validation error when setting the column.
     Validation(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+impl DynamicColumnError {
+    /// Create an `IncompatibleDynamicColumns` error.
+    ///
+    /// # Arguments
+    ///
+    /// * `dyn_columns` - The dynamic columns that were provided.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `NCS` - The expected non-empty nested projection.
+    /// * `NDynCS` - The provided nested dynamic columns.
+    pub fn incompatible_dynamic_columns<NCS: NonEmptyNestedProjection, NDynCS: NestedDynColumns>(
+        dyn_columns: &NDynCS,
+    ) -> Self {
+        DynamicColumnError::IncompatibleDynamicColumns {
+            table_name: <NCS::Table as TableExt>::TABLE_NAME,
+            expected_column_names: NCS::NESTED_COLUMN_NAMES.into_vec(),
+            expected_types: std::any::type_name::<NCS::NestedTupleValueType>(),
+            provided_columns: dyn_columns.nested_dyn_column_names().into_vec(),
+            provided_types: std::any::type_name::<NDynCS::NestedTupleValueType>(),
+        }
+    }
 }
 
 /// A specialized `Result` type for builder operations.

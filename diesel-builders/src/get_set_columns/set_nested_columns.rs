@@ -1,6 +1,6 @@
 //! Trait indicating a builder can set multiple columns.
 
-use crate::{NestedColumns, SetColumn, TypedColumn, columns::NonEmptyNestedProjection};
+use crate::{NestedColumns, SetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjection};
 
 /// Trait indicating a builder can set multiple columns.
 pub trait SetNestedColumns<CS: NestedColumns> {
@@ -11,7 +11,7 @@ pub trait SetNestedColumns<CS: NestedColumns> {
 impl<C1, T> SetNestedColumns<(C1,)> for T
 where
     T: SetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn set_nested_columns(&mut self, nested_values: (C1::ColumnType,)) -> &mut Self {

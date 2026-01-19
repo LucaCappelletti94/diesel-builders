@@ -11,7 +11,7 @@ mod tuple_to_order;
 
 pub use columns_collection::ColumnsCollection;
 pub use homogeneously_typed_nested_columns::HomogeneouslyTypedNestedColumns;
-pub use nested_columns::NestedColumns;
+pub use nested_columns::{HasNestedDynColumns, NestedColumns, NestedDynColumns};
 pub use nested_columns_collection::NestedColumnsCollection;
 pub use non_empty_nested_projection::NonEmptyNestedProjection;
 pub use non_empty_projection::NonEmptyProjection;

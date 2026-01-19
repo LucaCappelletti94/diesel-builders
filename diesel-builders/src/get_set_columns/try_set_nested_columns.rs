@@ -3,7 +3,7 @@
 use tuplities::prelude::IntoNestedTupleOption;
 
 use crate::{
-    OptionalRef, TrySetColumn, TypedColumn, TypedNestedTuple, ValidateColumn,
+    OptionalRef, TableExt, TrySetColumn, TypedColumn, TypedNestedTuple, ValidateColumn,
     columns::NestedColumns,
 };
 
@@ -21,7 +21,7 @@ impl<C1, T, Error> ValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
     T: ValidateColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn validate_nested_columns(&self, (head,): &(C1::ColumnType,)) -> Result<(), Error> {
@@ -71,7 +71,7 @@ impl<C1, T, Error> MayValidateNestedColumns<Error, (C1,)> for T
 where
     Error: From<<T as ValidateColumn<C1>>::Error>,
     T: ValidateColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
 {
     #[inline]
     fn may_validate_nested_columns(
@@ -133,7 +133,7 @@ impl<T, Error> TrySetNestedColumns<Error, ()> for T {
 impl<C1, T, Error> TrySetNestedColumns<Error, (C1,)> for T
 where
     T: TrySetColumn<C1>,
-    C1: TypedColumn,
+    C1: TypedColumn<Table: TableExt>,
     Error: From<<T as ValidateColumn<C1>>::Error>,
 {
     #[inline]

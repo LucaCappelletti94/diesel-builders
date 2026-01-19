@@ -7,7 +7,8 @@ mod shared_animals;
 use std::{rc::Rc, sync::Arc};
 
 use diesel_builders::{
-    ColumnTyped, TrySetDynamicColumn, ValueTyped, builder_error::DynamicColumnError, prelude::*,
+    ColumnTyped, TryGetDynamicColumns, TrySetDynamicColumn, ValueTyped,
+    builder_error::DynamicColumnError, prelude::*,
 };
 use shared_animals::*;
 
@@ -160,11 +161,25 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(animal.name(), "Dynamic Name");
 
     // Test TryGetDynamicColumn on nested models
-    let name_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc_name)?;
+    let animal_ref = &animal;
+    let flat_name_val = animal_ref.try_get_dynamic_column_ref(dyn_desc_name)?;
+    let name_val = nested_models.try_get_dynamic_column_ref(dyn_desc_name)?;
+    assert_eq!(flat_name_val, Some(animal.name()));
     assert_eq!(name_val, Some(animal.name()));
 
-    let desc_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_desc_column)?;
+    let desc_val = nested_models.try_get_dynamic_column_ref(dyn_desc_column)?;
     assert_eq!(desc_val.map(String::as_str), animal.description().as_deref());
+
+    // Test Variadic TryGetDynamicColumns
+    let columns = (dyn_desc_name, (dyn_desc_column,));
+    let (name_opt, (desc_opt,)) = nested_models.try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_opt, Some(animal.name()));
+    assert_eq!(desc_opt.map(|s| s.as_str()), animal.description().as_deref());
+
+    // Test variadic with error (CursedColumn)
+    let columns_err = (dyn_desc_name, (dyn_cursed_column,));
+    let result = nested_models.try_get_dynamic_columns_ref(columns_err);
+    assert!(matches!(result, Err(DynamicColumnError::UnknownColumn { .. })));
 
     // Test CursedColumn failure
     let result = nested_models.try_get_dynamic_column_ref::<String>(dyn_cursed_column);
@@ -338,6 +353,96 @@ fn test_get_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
         arc_animal.get_column_ref::<animals::description>(),
         &Some("A test description".to_string())
     );
+
+    Ok(())
+}
+
+#[test]
+fn test_try_get_dynamic_column_blanket_impls() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    setup_animal_tables(&mut conn)?;
+
+    let mut builder = animals::table::builder();
+    builder.try_name_ref("Test Animal")?;
+    builder.try_description_ref(Some("A test description".to_string()))?;
+
+    let animal = builder.insert(&mut conn)?;
+
+    // We let the type of DynColumn be inferred to avoid mismatches
+    let dyn_name = animals::name.into();
+    let dyn_desc = animals::description.into();
+
+    let expected_name = "Test Animal".to_string();
+    let expected_desc_inner = "A test description".to_string();
+
+    // Test Reference
+    assert_eq!(
+        (&animal).try_get_dynamic_column_ref(dyn_name)?,
+        Some(&expected_name)
+    );
+    assert_eq!(
+        (&animal).try_get_dynamic_column_ref(dyn_desc)?,
+        Some(&expected_desc_inner)
+    );
+
+    // Test Box
+    let animal_box = Box::new(animal.clone());
+    assert_eq!(
+        animal_box.try_get_dynamic_column_ref(dyn_name)?,
+        Some(&expected_name)
+    );
+    assert_eq!(
+        animal_box.try_get_dynamic_column_ref(dyn_desc)?,
+        Some(&expected_desc_inner)
+    );
+
+    // Test Rc
+    let animal_rc = Rc::new(animal.clone());
+    assert_eq!(
+        animal_rc.try_get_dynamic_column_ref(dyn_name)?,
+        Some(&expected_name)
+    );
+    assert_eq!(
+        animal_rc.try_get_dynamic_column_ref(dyn_desc)?,
+        Some(&expected_desc_inner)
+    );
+
+    // Test Arc
+    let animal_arc = Arc::new(animal.clone());
+    assert_eq!(
+        animal_arc.try_get_dynamic_column_ref(dyn_name)?,
+        Some(&expected_name)
+    );
+    assert_eq!(
+        animal_arc.try_get_dynamic_column_ref(dyn_desc)?,
+        Some(&expected_desc_inner)
+    );
+
+    // --- Multi-column tests ---
+    let columns = (dyn_name, (dyn_desc,));
+
+    // Test Reference Multi
+    // We access via double reference to ensure logic applies to &Animal, preventing
+    // T=Animal inference which would fail.
+    let ref_animal = &animal;
+    let (name_ref, (desc_ref,)) = (&ref_animal).try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_ref, Some(&expected_name));
+    assert_eq!(desc_ref, Some(&expected_desc_inner));
+
+    // Test Box Multi
+    let (name_box, (desc_box,)) = animal_box.try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_box, Some(&expected_name));
+    assert_eq!(desc_box, Some(&expected_desc_inner));
+
+    // Test Rc Multi
+    let (name_rc, (desc_rc,)) = animal_rc.try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_rc, Some(&expected_name));
+    assert_eq!(desc_rc, Some(&expected_desc_inner));
+
+    // Test Arc Multi
+    let (name_arc, (desc_arc,)) = animal_arc.try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_arc, Some(&expected_name));
+    assert_eq!(desc_arc, Some(&expected_desc_inner));
 
     Ok(())
 }

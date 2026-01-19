@@ -159,5 +159,17 @@ fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::E
     assert_eq!(queried_animal.name(), "Dynamic Dog");
     assert_eq!(queried_dog.breed(), "Dynamic Breed");
 
+    // Test Variadic retrieval with insert_nested
+    let dog_builder = dogs::table::builder()
+        .try_set_dynamic_column(dyn_name_column, &"Dynamic Dog 2".to_owned())?
+        .try_set_dynamic_column(dyn_breed_column, &"Dynamic Breed 2".to_owned())?;
+
+    let nested_dog = dog_builder.insert_nested(&mut conn)?;
+
+    let cols = (dyn_name_column, (dyn_breed_column,));
+    let (name_opt, (breed_opt,)) = nested_dog.try_get_dynamic_columns_ref(cols)?;
+    assert_eq!(name_opt.map(|s| s.as_str()), Some("Dynamic Dog 2"));
+    assert_eq!(breed_opt.map(|s| s.as_str()), Some("Dynamic Breed 2"));
+
     Ok(())
 }
