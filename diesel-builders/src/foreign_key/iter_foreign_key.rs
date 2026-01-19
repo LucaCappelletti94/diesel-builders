@@ -14,6 +14,11 @@ use crate::{
 
 mod blankets;
 
+/// Alias for the reference type of a nested tuple value.
+type Ref<'a, T> = <<T as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>;
+/// Alias for the optional reference type of a nested tuple value.
+type OptRef<'a, T> = <Ref<'a, T> as IntoNestedTupleOption>::IntoOptions;
+
 /// An iterator over foreign keys in a table which reference the same foreign
 /// dynamic index. The index is represented as a nested tuple of dynamic
 /// columns.
@@ -77,10 +82,8 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
         &'a self,
         index: DynIdx,
     ) -> Result<
-        impl Iterator<
-            Item = Result<<<<DynIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions, DynamicColumnError>,
-        >,
-        DynamicColumnError
+        impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>,
+        DynamicColumnError,
     >
     where
         DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
@@ -105,21 +108,13 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     fn iter_dyn_match_full<'a>(
         &'a self,
         index: DynIdx,
-    ) -> Result<
-        impl Iterator<
-            Item = Result<
-                <<DynIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
-                DynamicColumnError,
-            >,
-        >,
-        DynamicColumnError,
-    >
+    ) -> Result<impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>, DynamicColumnError>
     where
         DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
     {
         Ok(self
             .iter_dyn_match_simple(index)?
-            .filter_map(|res| res.map(|opt| opt.transpose()).transpose()))
+            .filter_map(|res| res.map(NestedTupleOption::transpose).transpose()))
     }
 }
 
@@ -143,11 +138,7 @@ pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProject
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterDynForeignKeys`] trait instead.
-    fn iter_match_simple<'a>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<<NestedIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions,
-    >
+    fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = OptRef<'a, NestedIdx>>
     where
         NestedIdx: 'a;
 
@@ -158,15 +149,11 @@ pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProject
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterDynForeignKeys`] trait instead.
-    fn iter_match_full<'a>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<NestedIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
-    >
+    fn iter_match_full<'a>(&'a self) -> impl Iterator<Item = Ref<'a, NestedIdx>>
     where
         NestedIdx: 'a,
     {
-        self.iter_match_simple().filter_map(|opt| opt.transpose())
+        self.iter_match_simple().filter_map(NestedTupleOption::transpose)
     }
 }
 
@@ -181,9 +168,7 @@ pub trait IterForeignKeyExt {
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterForeignKeyExt::iter_dynamic_match_simple`] method instead.
-    fn iter_match_simple<'a, Idx>(&'a self) -> impl Iterator<
-        Item = <<<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions,
-        >
+    fn iter_match_simple<'a, Idx>(&'a self) -> impl Iterator<Item = OptRef<'a, Idx::Nested>>
     where
         Idx: NonEmptyProjection<Nested: HasNestedDynColumns> + 'a,
         Self: IterForeignKeys<Idx::Nested>,
@@ -214,20 +199,12 @@ pub trait IterForeignKeyExt {
         &'a self,
         index: DynIdx,
     ) -> Result<
-        impl Iterator<
-            Item = Result<
-                <<<DynIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<
-                    'a,
-                > as IntoNestedTupleOption>::IntoOptions,
-                DynamicColumnError,
-            >,
-        >,
+        impl Iterator<Item = Result<OptRef<'a, DynIdx>, DynamicColumnError>>,
         DynamicColumnError,
     >
     where
-        DynIdx: NestedDynColumns + 'a,
+        DynIdx: NestedDynColumns + VariadicTryGetDynamicColumns<'a, Self> + 'a,
         Self: IterDynForeignKeys<DynIdx>,
-        DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
     {
         IterDynForeignKeys::iter_dyn_match_simple(self, index)
     }
@@ -240,11 +217,7 @@ pub trait IterForeignKeyExt {
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterForeignKeyExt::iter_dynamic_match_full`] method instead.
-    fn iter_match_full<'a, Idx>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<Idx::Nested as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
-    >
+    fn iter_match_full<'a, Idx>(&'a self) -> impl Iterator<Item = Ref<'a, Idx::Nested>>
     where
         Idx: NonEmptyProjection<Nested: HasNestedDynColumns> + 'a,
         Self: IterForeignKeys<Idx::Nested>,
@@ -274,19 +247,10 @@ pub trait IterForeignKeyExt {
     fn iter_dynamic_match_full<'a, DynIdx>(
         &'a self,
         index: DynIdx,
-    ) -> Result<
-        impl Iterator<
-            Item = Result<
-                <<DynIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a>,
-                DynamicColumnError,
-            >,
-        >,
-        DynamicColumnError,
-    >
+    ) -> Result<impl Iterator<Item = Result<Ref<'a, DynIdx>, DynamicColumnError>>, DynamicColumnError>
     where
-        DynIdx: NestedDynColumns + 'a,
+        DynIdx: NestedDynColumns + VariadicTryGetDynamicColumns<'a, Self> + 'a,
         Self: IterDynForeignKeys<DynIdx>,
-        DynIdx: 'a + VariadicTryGetDynamicColumns<'a, Self>,
     {
         <Self as IterDynForeignKeys<DynIdx>>::iter_dyn_match_full(self, index)
     }
@@ -309,7 +273,6 @@ pub trait IterForeignKeyExt {
         <Self as IterForeignKeys<Idx::Nested>>::iter_foreign_key_columns()
     }
 
-    #[must_use]
     #[inline]
     /// Returns an iterator over the DYNAMIC foreign keys in this table.
     ///

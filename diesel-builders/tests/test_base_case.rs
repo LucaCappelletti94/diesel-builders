@@ -174,7 +174,7 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     let columns = (dyn_desc_name, (dyn_desc_column,));
     let (name_opt, (desc_opt,)) = nested_models.try_get_dynamic_columns_ref(columns)?;
     assert_eq!(name_opt, Some(animal.name()));
-    assert_eq!(desc_opt.map(|s| s.as_str()), animal.description().as_deref());
+    assert_eq!(desc_opt.map(String::as_str), animal.description().as_deref());
 
     // Test variadic with error (CursedColumn)
     let columns_err = (dyn_desc_name, (dyn_cursed_column,));
@@ -376,47 +376,23 @@ fn test_try_get_dynamic_column_blanket_impls() -> Result<(), Box<dyn std::error:
     let expected_desc_inner = "A test description".to_string();
 
     // Test Reference
-    assert_eq!(
-        (&animal).try_get_dynamic_column_ref(dyn_name)?,
-        Some(&expected_name)
-    );
-    assert_eq!(
-        (&animal).try_get_dynamic_column_ref(dyn_desc)?,
-        Some(&expected_desc_inner)
-    );
+    assert_eq!((&animal).try_get_dynamic_column_ref(dyn_name)?, Some(&expected_name));
+    assert_eq!((&animal).try_get_dynamic_column_ref(dyn_desc)?, Some(&expected_desc_inner));
 
     // Test Box
     let animal_box = Box::new(animal.clone());
-    assert_eq!(
-        animal_box.try_get_dynamic_column_ref(dyn_name)?,
-        Some(&expected_name)
-    );
-    assert_eq!(
-        animal_box.try_get_dynamic_column_ref(dyn_desc)?,
-        Some(&expected_desc_inner)
-    );
+    assert_eq!(animal_box.try_get_dynamic_column_ref(dyn_name)?, Some(&expected_name));
+    assert_eq!(animal_box.try_get_dynamic_column_ref(dyn_desc)?, Some(&expected_desc_inner));
 
     // Test Rc
     let animal_rc = Rc::new(animal.clone());
-    assert_eq!(
-        animal_rc.try_get_dynamic_column_ref(dyn_name)?,
-        Some(&expected_name)
-    );
-    assert_eq!(
-        animal_rc.try_get_dynamic_column_ref(dyn_desc)?,
-        Some(&expected_desc_inner)
-    );
+    assert_eq!(animal_rc.try_get_dynamic_column_ref(dyn_name)?, Some(&expected_name));
+    assert_eq!(animal_rc.try_get_dynamic_column_ref(dyn_desc)?, Some(&expected_desc_inner));
 
     // Test Arc
-    let animal_arc = Arc::new(animal.clone());
-    assert_eq!(
-        animal_arc.try_get_dynamic_column_ref(dyn_name)?,
-        Some(&expected_name)
-    );
-    assert_eq!(
-        animal_arc.try_get_dynamic_column_ref(dyn_desc)?,
-        Some(&expected_desc_inner)
-    );
+    let animal_atomic_rc = Arc::new(animal.clone());
+    assert_eq!(animal_atomic_rc.try_get_dynamic_column_ref(dyn_name)?, Some(&expected_name));
+    assert_eq!(animal_atomic_rc.try_get_dynamic_column_ref(dyn_desc)?, Some(&expected_desc_inner));
 
     // --- Multi-column tests ---
     let columns = (dyn_name, (dyn_desc,));
@@ -440,9 +416,10 @@ fn test_try_get_dynamic_column_blanket_impls() -> Result<(), Box<dyn std::error:
     assert_eq!(desc_rc, Some(&expected_desc_inner));
 
     // Test Arc Multi
-    let (name_arc, (desc_arc,)) = animal_arc.try_get_dynamic_columns_ref(columns)?;
-    assert_eq!(name_arc, Some(&expected_name));
-    assert_eq!(desc_arc, Some(&expected_desc_inner));
+    let (name_atomic_rc, (desc_atomic_rc,)) =
+        animal_atomic_rc.try_get_dynamic_columns_ref(columns)?;
+    assert_eq!(name_atomic_rc, Some(&expected_name));
+    assert_eq!(desc_atomic_rc, Some(&expected_desc_inner));
 
     Ok(())
 }

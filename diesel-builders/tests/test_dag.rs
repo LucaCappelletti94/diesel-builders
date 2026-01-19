@@ -12,6 +12,8 @@ use shared_animals::*;
 
 #[test]
 fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
+    type PetNestedModels = <<pets::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels;
+
     let mut conn = shared::establish_connection()?;
     shared_animals::setup_animal_tables(&mut conn)?;
 
@@ -123,7 +125,6 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(first_fk.0, Some(pet.id()));
 
     // Test dynamic foreign key columns iteration
-    type PetNestedModels = <<pets::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels;
     let dynamic_fk_cols: Vec<_> =
         PetNestedModels::iter_dynamic_foreign_key_columns((animals::id.into(),))?
             .collect::<Vec<_>>();

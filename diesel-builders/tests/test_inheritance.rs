@@ -168,8 +168,8 @@ fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::E
 
     let cols = (dyn_name_column, (dyn_breed_column,));
     let (name_opt, (breed_opt,)) = nested_dog.try_get_dynamic_columns_ref(cols)?;
-    assert_eq!(name_opt.map(|s| s.as_str()), Some("Dynamic Dog 2"));
-    assert_eq!(breed_opt.map(|s| s.as_str()), Some("Dynamic Breed 2"));
+    assert_eq!(name_opt.map(String::as_str), Some("Dynamic Dog 2"));
+    assert_eq!(breed_opt.map(String::as_str), Some("Dynamic Breed 2"));
 
     Ok(())
 }

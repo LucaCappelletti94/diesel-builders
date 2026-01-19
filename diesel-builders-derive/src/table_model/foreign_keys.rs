@@ -371,7 +371,7 @@ struct CapturedForeignKey<'a> {
 pub fn generate_iter_foreign_key_impls(
     fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
-    ancestors: &Option<Vec<syn::Path>>,
+    ancestors: Option<&[syn::Path]>,
     primary_key_columns: &[Ident],
     table_module: &Ident,
     model_ident: &Ident,
@@ -382,14 +382,14 @@ pub fn generate_iter_foreign_key_impls(
     let groups = group_by_referenced_index(captured_keys.as_slice());
 
     // Generate an IterForeignKey impl for each unique referenced index
-    Ok(generate_impls_for_groups(groups, table_module, model_ident))
+    generate_impls_for_groups(groups, table_module, model_ident)
 }
 
 /// Collects all foreign key relationships (both implicit and explicit).
 fn collect_foreign_keys<'a>(
     fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
     foreign_keys: &[ForeignKeyAttribute],
-    ancestors: &Option<Vec<syn::Path>>,
+    ancestors: Option<&[syn::Path]>,
     primary_key_columns: &[Ident],
 ) -> syn::Result<Vec<CapturedForeignKey<'a>>> {
     let mut captured_keys = Vec::new();
@@ -409,7 +409,7 @@ fn collect_foreign_keys<'a>(
 /// Collects foreign keys from ancestor relations.
 fn collect_ancestor_foreign_keys<'a>(
     fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
-    ancestors: &Option<Vec<syn::Path>>,
+    ancestors: Option<&[syn::Path]>,
     primary_key_columns: &[Ident],
     captured_keys: &mut Vec<CapturedForeignKey<'a>>,
 ) -> syn::Result<()> {
@@ -612,7 +612,7 @@ fn generate_impls_for_groups<'b>(
     >,
     table_module: &Ident,
     model_ident: &Ident,
-) -> Vec<TokenStream> {
+) -> syn::Result<Vec<TokenStream>> {
     let mut impls = Vec::new();
     let mut dyn_impl_branches = Vec::new();
 
@@ -659,7 +659,7 @@ fn generate_impls_for_groups<'b>(
             build_chain_iterators(&keys, &simple_elem_ty, &simple_elem_ty, table_module);
 
         let iter_foreign_key_columns_expr =
-            build_foreign_keys_iterator(keys.as_slice(), &base_types, table_module);
+            build_foreign_keys_iterator(keys.as_slice(), &base_types, table_module)?;
 
         impls.push(quote! {
             impl ::diesel_builders::IterForeignKeys<#idx_type> for #model_ident {
@@ -727,7 +727,7 @@ fn generate_impls_for_groups<'b>(
         }
     });
 
-    impls
+    Ok(impls)
 }
 
 /// Builds chained iterator types and expressions for multiple foreign key
@@ -829,7 +829,7 @@ fn build_foreign_keys_iterator(
     keys: &[&CapturedForeignKey<'_>],
     base_types: &[TokenStream],
     table_module: &syn::Ident,
-) -> TokenStream {
+) -> syn::Result<TokenStream> {
     let mut items = Vec::new();
 
     for key in keys {
@@ -843,12 +843,12 @@ fn build_foreign_keys_iterator(
             })
             .collect();
 
-        items.push(recursive_dyn_tuple_expr(&host_columns, base_types));
+        items.push(recursive_dyn_tuple_expr(&host_columns, base_types)?);
     }
 
-    quote! {
+    Ok(quote! {
         [#(#items),*].into_iter()
-    }
+    })
 }
 
 // Helpers for nested tuples
@@ -884,18 +884,26 @@ fn recursive_tuple_expr(exprs: &[TokenStream]) -> TokenStream {
 
 /// Recursively builds a nested tuple expression from a slice of expressions
 /// used to build a Dynamic Column Index
-fn recursive_dyn_tuple_expr(exprs: &[TokenStream], types: &[TokenStream]) -> TokenStream {
-    match (exprs, types) {
+fn recursive_dyn_tuple_expr(
+    exprs: &[TokenStream],
+    types: &[TokenStream],
+) -> syn::Result<TokenStream> {
+    Ok(match (exprs, types) {
         ([], []) => quote! { () },
         ([single_expr], [single_type]) => {
             quote! { (::diesel_builders::DynColumn::<#single_type>::from(#single_expr),) }
         }
         ([head_expr, tail_exprs @ ..], [head_type, tail_types @ ..]) => {
-            let tail_tuple = recursive_dyn_tuple_expr(tail_exprs, tail_types);
+            let tail_tuple = recursive_dyn_tuple_expr(tail_exprs, tail_types)?;
             quote! { (::diesel_builders::DynColumn::<#head_type>::from(#head_expr), #tail_tuple) }
         }
-        _ => panic!("Mismatched expressions and types for dynamic tuple construction"),
-    }
+        _ => {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Mismatched lengths between expressions and types in recursive_dyn_tuple_expr",
+            ));
+        }
+    })
 }
 
 /// Recursively builds the type of a nested dynamic column tuple.

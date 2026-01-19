@@ -31,8 +31,7 @@ pub trait TryGetDynamicColumns {
         DCS: TypedNestedTuple + sealed::VariadicTryGetDynamicColumns<'a, Self>;
 }
 
-impl<T> TryGetDynamicColumns for T
-{
+impl<T> TryGetDynamicColumns for T {
     fn try_get_dynamic_columns_ref<'a, DCS>(
         &'a self,
         columns: DCS,
@@ -44,10 +43,16 @@ impl<T> TryGetDynamicColumns for T
     }
 }
 
+/// Sealed trait module for internal variadic logic.
 pub(crate) mod sealed {
-    use super::*;
+    use super::{
+        DynColumn, DynamicColumnError, FlattenNestedTuple, IntoNestedTupleOption, NestedTupleRef,
+        TryGetDynamicColumn, TypedNestedTuple,
+    };
 
+    /// Trait for retrieving dynamic columns from a variadic tuple of columns.
     pub trait VariadicTryGetDynamicColumns<'a, T: ?Sized>: TypedNestedTuple {
+        /// Recursively retrieves dynamic columns.
         fn variadic_try_get_dynamic_columns(
             self,
             target: &'a T,

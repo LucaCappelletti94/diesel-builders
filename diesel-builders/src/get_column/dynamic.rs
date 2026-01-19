@@ -35,10 +35,11 @@ pub trait TryGetDynamicColumn {
         &self,
         column: DynColumn<VT>,
     ) -> Result<Option<VT>, DynamicColumnError> {
-        self.try_get_dynamic_column_ref(column).map(|opt| opt.cloned())
+        Ok(self.try_get_dynamic_column_ref(column)?.cloned())
     }
 }
 
+/// Implements `TryGetDynamicColumn` for wrapper types.
 macro_rules! impl_try_get_dynamic_column {
     ($($T:ty),*) => {
         $(

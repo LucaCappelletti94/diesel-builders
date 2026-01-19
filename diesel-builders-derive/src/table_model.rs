@@ -806,7 +806,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let iter_foreign_key_impls = generate_iter_foreign_key_impls(
         fields,
         &attributes.foreign_keys,
-        &attributes.ancestors,
+        attributes.ancestors.as_deref(),
         &primary_key_columns,
         &table_module,
         struct_ident,

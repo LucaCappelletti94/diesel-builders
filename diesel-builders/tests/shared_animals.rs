@@ -2,7 +2,10 @@
 
 use std::convert::Infallible;
 
-use diesel_builders::prelude::*;
+use diesel_builders::{
+    columns::{HasNestedDynColumns, NestedDynColumns},
+    prelude::*,
+};
 
 /// Setups the animal hierarchy tables in the given `SQLite` connection.
 ///
@@ -256,4 +259,46 @@ impl Pet {
     pub fn set_owner_name(&mut self, owner_name: String) {
         self.owner_name = owner_name;
     }
+}
+
+#[test]
+fn test_nested_columns_unit() {
+    // Test impl HasNestedDynColumns for ()
+    <() as HasNestedDynColumns>::nested_dyn_columns();
+    // Test impl NestedDynColumns for ()
+    assert_eq!(().nested_dyn_column_names(), ());
+    assert_eq!(().nested_dyn_column_table_names(), ());
+}
+
+#[test]
+fn test_nested_columns_single() {
+    // Test impl HasNestedDynColumns for (Head,)
+    type Single = (animals::name,);
+    let cols = <Single as HasNestedDynColumns>::nested_dyn_columns();
+
+    // Test impl NestedDynColumns for (DynColumn,) - reportedly covered but good to
+    // have
+    assert_eq!(cols.nested_dyn_column_names(), ("name",));
+    assert_eq!(cols.nested_dyn_column_table_names(), ("animals",));
+}
+
+#[test]
+fn test_nested_columns_multi() {
+    // Test impl HasNestedDynColumns for (Head, Tail)
+    type Multi = (animals::name, (animals::description,));
+    let cols = <Multi as HasNestedDynColumns>::nested_dyn_columns();
+
+    // Test impl NestedDynColumns for (Head, Tail)
+    assert_eq!(cols.nested_dyn_column_names(), ("name", ("description",)));
+    assert_eq!(cols.nested_dyn_column_table_names(), ("animals", ("animals",)));
+}
+
+#[test]
+fn test_nested_columns_multi_recursive() {
+    // Test deeper nesting
+    type Deep = (animals::name, (animals::description, (animals::id,)));
+    let cols = <Deep as HasNestedDynColumns>::nested_dyn_columns();
+
+    assert_eq!(cols.nested_dyn_column_names(), ("name", ("description", ("id",))));
+    assert_eq!(cols.nested_dyn_column_table_names(), ("animals", ("animals", ("animals",))));
 }

@@ -15,7 +15,7 @@ pub struct Node {
     name: String,
 }
 
-/// EdgeType table.
+/// `EdgeType` table.
 #[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edge_types)]
 #[table_model(surrogate_key)]
@@ -58,6 +58,8 @@ pub struct HeterogenousEdge {
 
 #[test]
 fn test_iter_foreign_keys_inheritance() -> Result<(), Box<dyn std::error::Error>> {
+    type NestedType = (Edge, (HeterogenousEdge,));
+
     let mut conn = shared::establish_connection()?;
 
     diesel::sql_query("CREATE TABLE nodes (id INTEGER PRIMARY KEY, name TEXT NOT NULL);")
@@ -86,8 +88,6 @@ fn test_iter_foreign_keys_inheritance() -> Result<(), Box<dyn std::error::Error>
             .collect();
 
     assert_eq!(fk_columns, vec![(heterogenous_edges::edge_type_id.into(),),]);
-
-    type NestedType = (Edge, (HeterogenousEdge,));
 
     let fk_matches: Vec<_> = <NestedType as IterForeignKeyExt>::iter_dynamic_foreign_key_columns(
         (edge_types::id.into(),),
