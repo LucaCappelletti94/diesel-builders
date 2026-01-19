@@ -172,10 +172,6 @@ mod sealed {
                 if let Some(value) = value_any.downcast_ref::<VT>() {
                     return Ok(Some(value));
                 }
-                return Err(DynamicColumnError::UnknownColumn {
-                    table_name: column.table_name(),
-                    column_name: column.column_name(),
-                });
             }
 
             <Self as VariadicTryGetDynamicColumn<CTail>>::variadic_try_get_dynamic_column(

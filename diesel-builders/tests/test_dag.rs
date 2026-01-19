@@ -78,26 +78,26 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Test dynamic column retrieval on nested results
     let dyn_owner = pets::owner_name.into();
-    let owner_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_owner)?;
+    let owner_val = nested_models.try_get_dynamic_column_ref(dyn_owner)?;
     assert_eq!(owner_val, Some(pet.owner_name()));
 
     let dyn_breed = dogs::breed.into();
-    let breed_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_breed)?;
+    let breed_val = nested_models.try_get_dynamic_column_ref(dyn_breed)?;
     assert_eq!(breed_val, Some(&"Labrador".to_string()));
 
     let dyn_color = cats::color.into();
-    let color_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_color)?;
+    let color_val = nested_models.try_get_dynamic_column_ref(dyn_color)?;
     assert_eq!(color_val, Some(&"Black".to_string()));
 
     let dyn_name = animals::name.into();
-    let name_val = nested_models.try_get_dynamic_column_ref::<String>(dyn_name)?;
+    let name_val = nested_models.try_get_dynamic_column_ref(dyn_name)?;
     assert_eq!(name_val, Some(&"Buddy the Pet".to_string()));
 
     // Test owned get
-    let breed_val_owned = nested_models.try_get_dynamic_column::<String>(dyn_breed)?;
+    let breed_val_owned = nested_models.try_get_dynamic_column(dyn_breed)?;
     assert_eq!(breed_val_owned, Some("Labrador".to_string()));
 
-    let color_val_owned = nested_models.try_get_dynamic_column::<String>(dyn_color)?;
+    let color_val_owned = nested_models.try_get_dynamic_column(dyn_color)?;
     assert_eq!(color_val_owned, Some("Black".to_string()));
 
     assert_eq!(pet.owner_name(), "Alice Smith");

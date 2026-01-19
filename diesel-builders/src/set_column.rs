@@ -1,11 +1,8 @@
 //! Submodule providing the `SetColumn` trait.
 
-use diesel::Table;
-use tuplities::prelude::NestTuple;
-
 use crate::{
-    AncestorOfIndex, BuildableTable, ColumnTyped, DescendantWithSelf, DynColumn, HasTableExt,
-    NestedTables, OptionalRef, TableBuilder, TableExt, TypedColumn, ValueTyped,
+    AncestorOfIndex, BuildableTable, ColumnTyped, DescendantWithSelf, DynColumn, NestedTables,
+    OptionalRef, TableBuilder, TableExt, TypedColumn, ValueTyped,
     builder_error::DynamicColumnError,
 };
 
@@ -227,44 +224,6 @@ pub trait TrySetDynamicColumn: Sized {
     }
 }
 
-impl<Head> TrySetDynamicColumn for (Head,)
-where
-    Head: HasTableExt,
-    Self: sealed::VariadicTrySetDynamicColumn<
-            <<Head::Table as Table>::AllColumns as NestTuple>::Nested,
-        >,
-{
-    #[inline]
-    fn try_set_dynamic_column_ref<VT: Clone + 'static>(
-        &mut self,
-        column: DynColumn<VT>,
-        value: &VT,
-    ) -> Result<&mut Self, DynamicColumnError> {
-        use sealed::VariadicTrySetDynamicColumn;
-        self.variadic_try_set_dynamic_column(column, value)
-    }
-}
-
-impl<Head, Tail> TrySetDynamicColumn for (Head, Tail)
-where
-    Head: HasTableExt + sealed::VariadicTrySetDynamicColumn<<Head::Table as TableExt>::NewRecord>,
-    Tail: TrySetDynamicColumn,
-{
-    #[inline]
-    fn try_set_dynamic_column_ref<VT: Clone + 'static>(
-        &mut self,
-        column: DynColumn<VT>,
-        value: &VT,
-    ) -> Result<&mut Self, DynamicColumnError> {
-        if let Err(DynamicColumnError::UnknownColumn { .. }) =
-            self.0.variadic_try_set_dynamic_column(column, value)
-        {
-            <Tail as TrySetDynamicColumn>::try_set_dynamic_column_ref(&mut self.1, column, value)?;
-        }
-        Ok(self)
-    }
-}
-
 impl<T> TrySetDynamicColumn for TableBuilder<T>
 where
     Self: sealed::VariadicTrySetDynamicColumn<
@@ -352,18 +311,15 @@ mod sealed {
             {
                 let value_any: &dyn core::any::Any = value;
                 if let Some(value) = value_any.downcast_ref::<CHead::ValueType>() {
-                    self.try_set_column(value.clone())
-                        .map_err(|e| DynamicColumnError::Validation(Box::new(e)))
-                } else {
-                    <Self as VariadicTrySetDynamicColumn<CTail>>::variadic_try_set_dynamic_column(
-                        self, column, value,
-                    )
+                    return self
+                        .try_set_column(value.clone())
+                        .map_err(|e| DynamicColumnError::Validation(Box::new(e)));
                 }
-            } else {
-                <Self as VariadicTrySetDynamicColumn<CTail>>::variadic_try_set_dynamic_column(
-                    self, column, value,
-                )
             }
+
+            <Self as VariadicTrySetDynamicColumn<CTail>>::variadic_try_set_dynamic_column(
+                self, column, value,
+            )
         }
     }
 }

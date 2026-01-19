@@ -59,15 +59,6 @@ pub(crate) mod sealed {
         ) -> Result<<<<Self as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions, DynamicColumnError>;
     }
 
-    impl<'a, T> VariadicTryGetDynamicColumns<'a, T> for () {
-        fn variadic_try_get_dynamic_columns(
-            self,
-            _target: &'a T,
-        ) -> Result<(), DynamicColumnError> {
-            Ok(())
-        }
-    }
-
     impl<'a, Head, Tail, T> VariadicTryGetDynamicColumns<'a, T> for (DynColumn<Head>, Tail)
     where
         Head: 'static + std::fmt::Debug + Clone,
