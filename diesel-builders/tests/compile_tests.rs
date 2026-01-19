@@ -1,13 +1,13 @@
 //! UI tests for compile-time errors.
 
-#[rustversion::attr(nightly, ignore)]
+#[rustversion::attr(nightly, ignore = "only runs on nightly")]
 #[test]
 fn ui_compile_fail_nightly() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/ui_nightly/*.rs");
 }
 
-#[rustversion::attr(stable, ignore)]
+#[rustversion::attr(stable, ignore = "only runs on stable")]
 #[test]
 fn ui_compile_fail_stable() {
     let t = trybuild::TestCases::new();
