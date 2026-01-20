@@ -177,9 +177,9 @@ where
     }
 }
 
-/// The `LoadNestedManySorted` trait allows retrieving several record sets from
+/// The `LoadNestedSorted` trait allows retrieving several record sets from
 /// a nested load query, sorted by the leaf table's primary key.
-pub trait LoadNestedManySorted<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
+pub trait LoadNestedSorted<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
@@ -195,7 +195,7 @@ where
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
-    fn load_nested_many_sorted(
+    fn load_nested_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<
@@ -203,7 +203,7 @@ where
     >;
 }
 
-impl<NCS, LeafTable, Conn> LoadNestedManySorted<LeafTable, Conn> for NCS
+impl<NCS, LeafTable, Conn> LoadNestedSorted<LeafTable, Conn> for NCS
 where
     Conn: diesel::connection::LoadConnection,
     NCS: LoadNestedQueryBuilder<LeafTable>,
@@ -220,7 +220,7 @@ where
         <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
     >,
 {
-    fn load_nested_many_sorted(
+    fn load_nested_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<
@@ -234,11 +234,10 @@ where
     }
 }
 
-/// The `LoadNestedManySortedPaginated` trait allows retrieving several records
+/// The `LoadNestedPaginated` trait allows retrieving several records
 /// from a nested load query, sorted by the leaf table's primary key with
 /// offset and limit for pagination.
-pub trait LoadNestedManySortedPaginated<LeafTable, Conn>:
-    LoadNestedQueryBuilder<LeafTable>
+pub trait LoadNestedPaginated<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
@@ -256,7 +255,7 @@ where
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails.
-    fn load_nested_many_sorted_paginated(
+    fn load_nested_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
         limit: i64,
@@ -266,7 +265,7 @@ where
     >;
 }
 
-impl<NCS, LeafTable, Conn> LoadNestedManySortedPaginated<LeafTable, Conn> for NCS
+impl<NCS, LeafTable, Conn> LoadNestedPaginated<LeafTable, Conn> for NCS
 where
     Conn: diesel::connection::LoadConnection,
     NCS: LoadNestedQueryBuilder<LeafTable>,
@@ -289,7 +288,7 @@ where
         <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
     >,
 {
-    fn load_nested_many_sorted_paginated(
+    fn load_nested_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
         limit: i64,

@@ -68,7 +68,7 @@ pub use nested_bundlable_tables::*;
 pub mod get_foreign;
 pub use get_foreign::{GetForeign, GetForeignExt};
 pub mod load_query_builder;
-pub use load_query_builder::{LoadFirst, LoadMany, LoadManySorted, LoadQueryBuilder};
+pub use load_query_builder::{LoadFirst, LoadMany, LoadQueryBuilder, LoadSorted};
 pub mod load_nested_query_builder;
 
 /// Re-export typenum for convenience
@@ -117,7 +117,7 @@ pub mod prelude {
     pub use crate::horizontal_same_as::HorizontalKey;
     // Builder setter extension traits (always use Ext variants)
     /// Query loading traits
-    pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadManySorted};
+    pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadSorted};
     pub use crate::{
         builder_bundle::BundlableTable,
         foreign_key::IterForeignKeyExt,

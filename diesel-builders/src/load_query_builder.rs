@@ -135,9 +135,9 @@ where
     }
 }
 
-/// The `LoadManySorted` trait allows retrieving several records from a load
+/// The `LoadSorted` trait allows retrieving several records from a load
 /// query, sorted by a given expression.
-pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
+pub trait LoadSorted<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// Constructs a load query.
     ///
     /// # Arguments
@@ -150,13 +150,13 @@ pub trait LoadManySorted<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
-    fn load_many_sorted(
+    fn load_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
 }
 
-impl<Conn, NestedColumns> LoadManySorted<Conn> for NestedColumns
+impl<Conn, NestedColumns> LoadSorted<Conn> for NestedColumns
 where
     Conn: diesel::connection::LoadConnection,
     NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
@@ -168,7 +168,7 @@ where
         <<NestedColumns::Table as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
     >>::Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
-    fn load_many_sorted(
+    fn load_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>> {
@@ -179,10 +179,10 @@ where
     }
 }
 
-/// The `LoadManySortedPaginated` trait allows retrieving several records from a
+/// The `LoadPaginated` trait allows retrieving several records from a
 /// load query, sorted by a given expression with offset and limit for
 /// pagination.
-pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
+pub trait LoadPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// Constructs a paginated load query.
     ///
     /// # Arguments
@@ -197,7 +197,7 @@ pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails.
-    fn load_many_sorted_paginated(
+    fn load_many_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
         limit: i64,
@@ -205,7 +205,7 @@ pub trait LoadManySortedPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     ) -> diesel::QueryResult<Vec<<Self::Table as TableExt>::Model>>;
 }
 
-impl<Conn, NestedColumns> LoadManySortedPaginated<Conn> for NestedColumns
+impl<Conn, NestedColumns> LoadPaginated<Conn> for NestedColumns
 where
     Conn: diesel::connection::LoadConnection,
     NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
@@ -224,7 +224,7 @@ where
     >>::Output as LimitDsl>::Output as OffsetDsl>::Output:
         LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
-    fn load_many_sorted_paginated(
+    fn load_many_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
         limit: i64,

@@ -3,7 +3,7 @@
 
 mod shared;
 use diesel_builders::{
-    load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated},
+    load_query_builder::{LoadMany, LoadPaginated, LoadSorted},
     prelude::*,
 };
 use diesel_builders_derive::TableModel;
@@ -175,26 +175,26 @@ fn test_load_many_composite() -> Result<(), Box<dyn std::error::Error>> {
     assert!(users_role_10.contains(&ur1_10));
     assert!(users_role_10.contains(&ur2_10));
 
-    // Test LoadManySorted
+    // Test LoadSorted
     // Sorted by PK (user_id, role_id)
     let roles_user_1_sorted: Vec<UserRole> =
-        <(user_roles::user_id,)>::load_many_sorted((1,), &mut conn)?;
+        <(user_roles::user_id,)>::load_sorted((1,), &mut conn)?;
     assert_eq!(roles_user_1_sorted, vec![ur1_10.clone(), ur1_20.clone()]);
 
-    // Test LoadManySortedPaginated
+    // Test LoadPaginated
     // Get first item only
     let roles_user_1_paginated: Vec<UserRole> =
-        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 0, 1, &mut conn)?;
+        <(user_roles::user_id,)>::load_many_paginated((1,), 0, 1, &mut conn)?;
     assert_eq!(roles_user_1_paginated, vec![ur1_10.clone()]);
 
     // Get second item using offset
     let roles_user_1_offset: Vec<UserRole> =
-        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 1, 1, &mut conn)?;
+        <(user_roles::user_id,)>::load_many_paginated((1,), 1, 1, &mut conn)?;
     assert_eq!(roles_user_1_offset, vec![ur1_20.clone()]);
 
     // Get all items with high limit
     let roles_user_1_all: Vec<UserRole> =
-        <(user_roles::user_id,)>::load_many_sorted_paginated((1,), 0, 10, &mut conn)?;
+        <(user_roles::user_id,)>::load_many_paginated((1,), 0, 10, &mut conn)?;
     assert_eq!(roles_user_1_all, vec![ur1_10, ur1_20]);
 
     Ok(())
