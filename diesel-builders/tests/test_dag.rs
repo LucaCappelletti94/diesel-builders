@@ -7,7 +7,9 @@
 
 mod shared;
 mod shared_animals;
-use diesel_builders::{BuilderError, NestedTables, prelude::*};
+use diesel_builders::{
+    BuilderError, NestedTables, load_nested_query_builder::LoadNestedFirst, prelude::*,
+};
 use shared_animals::*;
 
 #[test]
@@ -296,6 +298,122 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     let queried_pet: Pet = Pet::find(pet.get_column_ref::<pets::id>(), &mut conn)?;
     assert_eq!(queried_pet.get_column::<pets::owner_name>(), "Updated Owner");
+
+    Ok(())
+}
+
+allow_tables_to_appear_in_same_query!(dogs, cats);
+
+#[test]
+fn test_load_nested_traits_dag() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::load_nested_query_builder::LoadNestedFirst;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Insert Pet
+    let nested_pet = pets::table::builder()
+        .try_name("Diamond Pet")?
+        .breed("Multibreed")
+        .try_color("Rainbow")?
+        .owner_name("Owner")
+        .insert_nested(&mut conn)?;
+
+    let loaded = <(pets::owner_name,) as LoadNestedFirst<pets::table, _>>::load_nested_first(
+        ("Owner",),
+        &mut conn,
+    )?;
+
+    assert_eq!(loaded, nested_pet);
+
+    Ok(())
+}
+
+#[test]
+fn test_load_nested_many_variants_dag() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::load_nested_query_builder::{
+        LoadNestedMany, LoadNestedManySorted, LoadNestedManySortedPaginated,
+    };
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // 1. Insert Pet 1: Alice (Breed A, Color Red)
+    let pet1 = pets::table::builder()
+        .try_name("Alice")?
+        .breed("BreedA")
+        .try_color("Red")?
+        .owner_name("Owner1")
+        .insert_nested(&mut conn)?;
+
+    // 2. Insert Pet 2: Bob (Breed A, Color Blue)
+    let pet2 = pets::table::builder()
+        .try_name("Bob")?
+        .breed("BreedA")
+        .try_color("Blue")?
+        .owner_name("Owner2")
+        .insert_nested(&mut conn)?;
+
+    // 3. Insert Pet 3: Charlie (Breed B, Color Green)
+    let pet3 = pets::table::builder()
+        .try_name("Charlie")?
+        .breed("BreedB")
+        .try_color("Green")?
+        .owner_name("Owner3")
+        .insert_nested(&mut conn)?;
+
+    // --- Test LoadNestedMany ---
+    // Filter by Breed A. Should match Alice and Bob.
+    let many_res = <(dogs::breed,) as LoadNestedMany<pets::table, _>>::load_nested_many(
+        ("BreedA",),
+        &mut conn,
+    )?;
+
+    assert_eq!(many_res.len(), 2);
+    assert!(many_res.contains(&pet1), "Loaded pets should contain Alice");
+    assert!(many_res.contains(&pet2), "Loaded pets should contain Bob");
+
+    // We load the first two pets inserted with Breed B
+    let res_b = <(dogs::breed,) as LoadNestedFirst<pets::table, _>>::load_nested_first(
+        ("BreedB",),
+        &mut conn,
+    )?;
+    assert_eq!(res_b, pet3, "Loaded pet should be Charlie");
+
+    // --- Test LoadNestedManySorted ---
+    // Filter by Breed A. Default sort is by PK (ASC usually).
+    // Alice (id 1 typically) should come before Bob (id 2).
+    let sorted_res =
+        <(dogs::breed,) as LoadNestedManySorted<pets::table, _>>::load_nested_many_sorted(
+            ("BreedA",),
+            &mut conn,
+        )?;
+
+    assert_eq!(sorted_res.len(), 2);
+    assert_eq!(sorted_res[0], pet1, "First sorted pet should be Alice");
+    assert_eq!(sorted_res[1], pet2, "Second sorted pet should be Bob");
+
+    // --- Test LoadNestedManySortedPaginated ---
+    // Filter by Breed A. Sort Default (PK ASC).
+    // Offset 0, Limit 1 -> Alice
+    let paginated_res = <(dogs::breed,) as LoadNestedManySortedPaginated<pets::table, _>>::load_nested_many_sorted_paginated(
+        ("BreedA",),
+        0, // offset
+        1, // limit
+        &mut conn
+    )?;
+
+    assert_eq!(paginated_res[0], pet1, "Paginated first pet should be Alice");
+
+    // Offset 1, Limit 1 -> Bob
+    let paginated_res_2 = <(dogs::breed,) as LoadNestedManySortedPaginated<pets::table, _>>::load_nested_many_sorted_paginated(
+        ("BreedA",),
+        1, // offset
+        1, // limit
+        &mut conn
+    )?;
+
+    assert_eq!(paginated_res_2[0], pet2, "Paginated second pet should be Bob");
 
     Ok(())
 }

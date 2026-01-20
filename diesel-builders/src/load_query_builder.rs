@@ -9,7 +9,7 @@ use diesel::{
 use tuplities::prelude::{FlattenNestedTuple, NestedTupleInto};
 
 use crate::{
-    TableExt,
+    DescendantWithSelf, TableExt,
     columns::{NonEmptyNestedProjection, TupleToOrder},
 };
 
@@ -61,8 +61,8 @@ where
 }
 
 /// The `LoadFirst` trait allows retrieving the first record from a load query.
-pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: TableExt> {
-    /// Constructs a load query.
+pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: DescendantWithSelf> {
+    /// Returns the first record matching the load query.
     ///
     /// # Arguments
     ///
@@ -84,7 +84,7 @@ pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: TableExt> {
 impl<Conn, NestedColumns> LoadFirst<Conn> for NestedColumns
 where
     Conn: diesel::connection::LoadConnection,
-    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: TableExt>,
+    NestedColumns: LoadQueryBuilder + NonEmptyNestedProjection<Table: DescendantWithSelf>,
     NestedColumns::LoadQuery: LimitDsl + diesel::query_dsl::RunQueryDsl<Conn>,
     for<'query> <Self::LoadQuery as LimitDsl>::Output:
         LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,

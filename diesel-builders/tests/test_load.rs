@@ -3,6 +3,7 @@
 mod shared;
 use diesel::prelude::*;
 use diesel_builders::{
+    load_nested_query_builder::{LoadNestedFirst, LoadNestedMany, LoadNestedManySorted},
     load_query_builder::{LoadMany, LoadManySorted, LoadManySortedPaginated},
     prelude::*,
 };
@@ -121,6 +122,109 @@ fn test_load_many_sorted_paginated() -> Result<(), Box<dyn std::error::Error>> {
         )?;
 
     assert_eq!(paginated_items_filtered, vec![item2]);
+
+    Ok(())
+}
+
+#[test]
+fn test_load_nested_first() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    // Insert Items
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+    let _item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
+
+    // Test LoadNestedFirst
+    // Item is descended from itself (and no others).
+    // So NestedModels should be (Item,).
+    let loaded_tuple: (Item,) =
+        <(items::category,) as LoadNestedFirst<items::table, _>>::load_nested_first(
+            (1,),
+            &mut conn,
+        )?;
+
+    assert_eq!(loaded_tuple.0, item1);
+
+    Ok(())
+}
+
+#[test]
+fn test_load_nested_many() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    // Insert Items
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
+    let _item3 = items::table::builder().category(2).val(30).insert(&mut conn)?;
+
+    // Test LoadNestedMany
+    let loaded_tuples: Vec<(Item,)> =
+        <(items::category,) as LoadNestedMany<items::table, _>>::load_nested_many((1,), &mut conn)?;
+
+    assert_eq!(loaded_tuples.len(), 2);
+    assert!(loaded_tuples.contains(&(item1,)));
+    assert!(loaded_tuples.contains(&(item2,)));
+
+    Ok(())
+}
+
+#[test]
+fn test_load_nested_many_sorted() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    // Insert Items
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
+    let _item3 = items::table::builder().category(2).val(30).insert(&mut conn)?;
+
+    // Test LoadNestedManySorted
+    let loaded_tuples: Vec<(Item,)> = <(items::category,) as LoadNestedManySorted<
+        items::table,
+        _,
+    >>::load_nested_many_sorted((1,), &mut conn)?;
+
+    assert_eq!(loaded_tuples, vec![(item1,), (item2,)]);
+
+    Ok(())
+}
+
+#[test]
+fn test_load_nested_many_sorted_paginated() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::load_nested_query_builder::LoadNestedManySortedPaginated;
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    // Insert Items
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+    let item2 = items::table::builder().category(1).val(20).insert(&mut conn)?;
+    let item3 = items::table::builder().category(1).val(30).insert(&mut conn)?;
+
+    // Test LoadNestedManySortedPaginated
+    // Page 1: Offset 0, Limit 2
+    let loaded_page1: Vec<(Item,)> = <(items::category,) as LoadNestedManySortedPaginated<
+        items::table,
+        _,
+    >>::load_nested_many_sorted_paginated(
+        (1,), 0, 2, &mut conn
+    )?;
+
+    assert_eq!(loaded_page1.len(), 2);
+    assert_eq!(loaded_page1[0].0, item1);
+    assert_eq!(loaded_page1[1].0, item2);
+
+    // Page 2: Offset 2, Limit 2
+    let loaded_page2: Vec<(Item,)> = <(items::category,) as LoadNestedManySortedPaginated<
+        items::table,
+        _,
+    >>::load_nested_many_sorted_paginated(
+        (1,), 2, 2, &mut conn
+    )?;
+
+    assert_eq!(loaded_page2.len(), 1);
+    assert_eq!(loaded_page2[0].0, item3);
 
     Ok(())
 }

@@ -69,6 +69,7 @@ pub mod get_foreign;
 pub use get_foreign::{GetForeign, GetForeignExt};
 pub mod load_query_builder;
 pub use load_query_builder::{LoadFirst, LoadMany, LoadManySorted, LoadQueryBuilder};
+pub mod load_nested_query_builder;
 
 /// Re-export typenum for convenience
 pub mod typenum {

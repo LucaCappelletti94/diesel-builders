@@ -159,3 +159,54 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
 
     Ok(())
 }
+
+#[test]
+fn test_load_nested_traits_chain() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::load_nested_query_builder::{LoadNestedFirst, LoadNestedMany};
+
+    let mut conn = shared::establish_connection()?;
+    setup_animal_tables(&mut conn)?;
+
+    // 1. Insert Animal -> Dog -> Puppy 1
+    let puppy1 = puppies::table::builder()
+        .try_name("Puppy1")?
+        .breed("BreedA")
+        .try_age_months(1)?
+        .insert_nested(&mut conn)?;
+
+    // 2. Insert Animal -> Dog -> Puppy 2 (Same Breed)
+    let puppy2 = puppies::table::builder()
+        .try_name("Puppy2")?
+        .breed("BreedA")
+        .try_age_months(2)?
+        .insert_nested(&mut conn)?;
+
+    // 3. Insert Animal -> Dog -> Puppy 3 (Different Breed)
+    let puppy3 = puppies::table::builder()
+        .try_name("Puppy3")?
+        .breed("BreedB")
+        .try_age_months(3)?
+        .insert_nested(&mut conn)?;
+
+    // Test LoadNestedMany filtering by dogs::breed ("BreedA")
+    // This verifies we can filter on an ancestor column (dogs) while querying leaf
+    // (puppies) and retrieve the full nested structure.
+    let loaded_a = <(dogs::breed,) as LoadNestedMany<puppies::table, _>>::load_nested_many(
+        ("BreedA",),
+        &mut conn,
+    )?;
+
+    assert_eq!(loaded_a.len(), 2);
+    assert!(loaded_a.contains(&puppy1), "Loaded puppies should contain Puppy1");
+    assert!(loaded_a.contains(&puppy2), "Loaded puppies should contain Puppy2");
+
+    // Test LoadNestedFirst for Puppy3 (BreedB)
+    let loaded_b = <(dogs::breed,) as LoadNestedFirst<puppies::table, _>>::load_nested_first(
+        ("BreedB",),
+        &mut conn,
+    )?;
+
+    assert_eq!(loaded_b, puppy3, "Loaded puppy should match Puppy3");
+
+    Ok(())
+}

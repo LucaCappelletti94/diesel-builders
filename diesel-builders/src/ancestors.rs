@@ -38,6 +38,19 @@ pub trait DescendantOf<T: Descendant>: Descendant<Root = T::Root> {}
 
 impl<T> DescendantOf<T> for T where T: Descendant {}
 
+/// A trait for Diesel tables that have ancestor tables.
+/// This trait enforces that the `Self` table is descendant of all of the
+/// tables in the `NestedAncestors` tuple.
+pub trait DescendantOfAll<NestedAncestors>: Table {}
+
+impl<Head: Descendant, T> DescendantOfAll<(Head,)> for T where T: Descendant + DescendantOf<Head> {}
+impl<Head, Tail, T> DescendantOfAll<(Head, Tail)> for T
+where
+    Head: Descendant,
+    T: Descendant + DescendantOf<Head> + DescendantOfAll<Tail>,
+{
+}
+
 /// A column from an ancestor table.
 pub trait AncestorColumnOf<T: DescendantOf<Self::Table>>: TypedColumn<Table: Descendant> {}
 impl<T, C> AncestorColumnOf<T> for C

@@ -436,6 +436,23 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Generate `fpk!` implementations for triangular relation fields
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
+    // Generate `diesel::joinable!` calls for ancestors
+    let joinable_impls = if let Some(ancestors) = &attributes.ancestors
+        && primary_key_columns.len() == 1
+    {
+        let pk = &primary_key_columns[0];
+        ancestors
+            .iter()
+            .map(|ancestor| {
+                quote! {
+                    ::diesel::joinable!(#table_module -> #ancestor (#pk));
+                }
+            })
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
+
     // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors
     // and triangular relations
     let table_name = table_module.to_string();
@@ -902,6 +919,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*
+
+        // Joinable implementations for ancestors (only if single primary key)
+        #(#joinable_impls)*
 
         // Allow tables to appear in same query with ancestors
         #(#allow_same_query_calls)*
