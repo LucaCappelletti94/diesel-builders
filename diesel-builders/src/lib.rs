@@ -122,6 +122,7 @@ pub mod prelude {
         builder_bundle::BundlableTable,
         foreign_key::IterForeignKeyExt,
         get_foreign::GetForeignExt,
+        load_nested_query_builder::{LoadNestedFirst, LoadNestedMany, LoadNestedSorted},
         nested_insert::Insert,
         set_builder::{
             SetDiscretionaryBuilderExt, SetDiscretionaryModelExt, SetMandatoryBuilderExt,
