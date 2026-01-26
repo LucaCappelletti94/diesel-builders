@@ -218,6 +218,11 @@ let dyn_breed: DynColumn<String> = dogs::breed.into();
 let breed_val = nested_models.try_get_dynamic_column_ref(dyn_breed)?;
 assert_eq!(breed_val, Some(&"Labrador".to_string()));
 
+// We can get the model for a specific table from the nested result
+let cat_model: &Cat = nested_models.get_model_ref::<cats::table>();
+
+assert_eq!(cat_model.color(), "Black");
+
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 

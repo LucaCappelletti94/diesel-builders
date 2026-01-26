@@ -11,6 +11,7 @@ pub mod tables;
 pub use tables::{HasNestedTables, NestedTables, Tables};
 pub mod table_model;
 pub use table_model::TableModel;
+pub mod get_model;
 pub mod table_models;
 pub use table_models::NestedTableModels;
 pub mod typed;
@@ -122,6 +123,7 @@ pub mod prelude {
         builder_bundle::BundlableTable,
         foreign_key::IterForeignKeyExt,
         get_foreign::GetForeignExt,
+        get_model::GetModelExt,
         load_nested_query_builder::{LoadNestedFirst, LoadNestedMany, LoadNestedSorted},
         nested_insert::Insert,
         set_builder::{

@@ -15,7 +15,8 @@ use typenum::Unsigned;
 
 use crate::{
     GetNestedColumns, NestedBundlableTables, NestedColumns, TableExt, Tables, TypedColumn,
-    TypedNestedTuple, columns::TupleEqAll, load_query_builder::LoadFirst, tables::NestedTables,
+    TypedNestedTuple, columns::TupleEqAll, get_model::GetModel, load_query_builder::LoadFirst,
+    tables::NestedTables,
 };
 
 /// Marker trait for root table models (tables with no ancestors).
@@ -349,7 +350,9 @@ pub trait Descendant: TableExt {
 /// A trait for Diesel tables that have ancestor tables, including themselves.
 pub trait DescendantWithSelf: Descendant + AncestorOfIndex<Self> {
     /// The ancestor tables of this table, including itself.
-    type NestedAncestorsWithSelf: NestedBundlableTables;
+    type NestedAncestorsWithSelf: NestedBundlableTables<
+        NestedModels: GetModel<Self> + GetModel<Self::Root>,
+    >;
 }
 
 impl<T> DescendantWithSelf for T
@@ -357,7 +360,7 @@ where
     T: Descendant + AncestorOfIndex<Self>,
     <T::Ancestors as NestTuple>::Nested: NestedTuplePushBack<Self>,
     <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output:
-        NestedBundlableTables,
+        NestedBundlableTables<NestedModels: GetModel<T> + GetModel<T::Root>>,
 {
     type NestedAncestorsWithSelf =
         <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output;

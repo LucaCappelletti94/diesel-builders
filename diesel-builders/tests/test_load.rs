@@ -220,3 +220,29 @@ fn test_load_nested_paginated() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_get_model_ext() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    create_tables(&mut conn)?;
+
+    // Insert Items
+    let item1 = items::table::builder().category(1).val(10).insert(&mut conn)?;
+
+    // Test LoadNestedFirst
+    let loaded_tuple: (Item,) =
+        <(items::category,) as LoadNestedFirst<items::table, _>>::load_nested_first(
+            (1,),
+            &mut conn,
+        )?;
+
+    // Use GetModelExt
+    let loaded_item = loaded_tuple.get_model_ref::<items::table>();
+    assert_eq!(loaded_item, &item1);
+
+    // Also test get_model (owned)
+    let loaded_item_owned = loaded_tuple.get_model::<items::table>();
+    assert_eq!(loaded_item_owned, item1);
+
+    Ok(())
+}

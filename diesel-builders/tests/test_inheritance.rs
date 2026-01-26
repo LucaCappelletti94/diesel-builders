@@ -173,3 +173,26 @@ fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::E
 
     Ok(())
 }
+
+#[test]
+fn test_get_model_ext_inheritance() -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    let dog_builder = dogs::table::builder().try_name("Rex")?.breed("Labrador");
+    let nested_dog = dog_builder.insert_nested(&mut conn)?;
+
+    // nested_dog should allow accessing both Dog and Animal models
+    let dog = nested_dog.get_model_ref::<dogs::table>();
+    let animal = nested_dog.get_model_ref::<animals::table>();
+
+    assert_eq!(dog.breed(), "Labrador");
+    assert_eq!(animal.name(), "Rex");
+    assert_eq!(dog.id(), animal.id());
+
+    // Test owned variant
+    let dog_owned = nested_dog.get_model::<dogs::table>();
+    assert_eq!(dog_owned.breed(), "Labrador");
+
+    Ok(())
+}
