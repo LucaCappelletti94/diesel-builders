@@ -150,7 +150,7 @@ dependencies = [
  "rustversion",
  "serde",
  "serde_json",
- "thiserror 2.0.17",
+ "thiserror",
  "trybuild",
  "tuplities",
  "typenum",
@@ -480,7 +480,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8a1f2315036ef6b1fbacd1972e8ee7688030b0a2121edfc2a6550febd41574d"
 dependencies = [
  "hashbrown",
- "thiserror 2.0.18",
+ "thiserror",
 ]
 
 [[package]]
@@ -620,29 +620,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.17"
-source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
-dependencies = [
- "thiserror-impl 2.0.17",
-]
-
-[[package]]
-name = "thiserror"
 version = "2.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4288b5bcbc7920c07a1149a35cf9590a2aa808e0bc1eafaade0b80947865fbc4"
 dependencies = [
- "thiserror-impl 2.0.18",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "2.0.17"
-source = "git+https://github.com/LucaCappelletti94/thiserror#21653d1d33f563f0b8f8881671894a23cc3a2a27"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -1054,7 +1036,7 @@ version = "0.1.0"
 dependencies = [
  "diesel",
  "diesel-builders",
- "thiserror 2.0.17",
+ "thiserror",
 ]
 
 [[package]]
