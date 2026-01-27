@@ -3,6 +3,7 @@
 //! This module contains the implementation of the `TableModel` derive macro,
 //! split into logical components for better maintainability.
 
+mod accumulated_traits;
 mod attribute_parsing;
 mod foreign_keys;
 mod get_column;
@@ -15,6 +16,7 @@ mod vertical_same_as;
 
 use std::collections::HashMap;
 
+use accumulated_traits::generate_accumulated_traits;
 use attribute_parsing::{
     extract_discretionary_table, extract_field_default_value, extract_mandatory_table,
     extract_primary_key_columns, extract_same_as_columns, extract_table_model_attributes,
@@ -367,6 +369,14 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let typed_column_impls =
         generate_typed_column_impls(fields, &table_module, struct_ident, &primary_key_columns);
     let get_column_impls = generate_get_column_impls(fields, &table_module, struct_ident);
+    let accumulated_traits_impls = generate_accumulated_traits(
+        fields,
+        &table_module,
+        struct_ident,
+        &primary_key_columns,
+        attributes.surrogate_key,
+        attributes.error.is_some(),
+    );
     let indexed_column_impls = generate_indexed_column_impls(&table_module, &primary_key_columns);
     let nested_primary_keys = format_as_nested_tuple(
         primary_key_columns.iter().map(|col| quote::quote! { #table_module::#col }),
@@ -901,6 +911,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #table_macro
         #typed_column_impls
         #get_column_impls
+        #accumulated_traits_impls
         #(#indexed_column_impls)*
         #may_get_column_impls
         #set_column_impls
