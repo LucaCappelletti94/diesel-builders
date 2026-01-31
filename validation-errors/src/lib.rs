@@ -25,6 +25,9 @@ pub enum ValidationErrorKind {
     /// The provided text is empty.
     #[error("Field `{0}` must not be empty")]
     MustNotBeEmpty(&'static str),
+    /// The provided text is too long.
+    #[error("Field `{0}` exceeds maximum length of {1}")]
+    MustNotExceedMaxLength(&'static str, usize),
     /// The scalar is not strictly greater than the expected amount.
     #[error("Field `{0}` must be strictly smaller than {1}")]
     MustBeStrictlySmallerThanScalar(&'static str, f64),
@@ -66,6 +69,7 @@ impl AsRef<str> for ValidationErrorKind {
                 "Field must be greater than or equal to another"
             }
             ValidationErrorKind::MustNotBeEmpty(_) => "Field must not be empty",
+            ValidationErrorKind::MustNotExceedMaxLength(_, _) => "Field exceeds maximum length",
             ValidationErrorKind::MustBeStrictlySmallerThanScalar(_, _) => {
                 "Field must be strictly smaller than value"
             }
@@ -128,6 +132,7 @@ impl DatabaseErrorInformation for ValidationError {
             | ValidationErrorKind::MustBeStrictlySmallerThanScalar(field, _)
             | ValidationErrorKind::MustBeSmallerThanScalar(field, _)
             | ValidationErrorKind::MustBeStrictlyGreaterThanScalar(field, _)
+            | ValidationErrorKind::MustNotExceedMaxLength(field, _)
             | ValidationErrorKind::MustBeGreaterThanScalar(field, _) => Some(*field),
             ValidationErrorKind::MustBeDistinct(field1, _)
             | ValidationErrorKind::MustBeStrictlySmallerThan(field1, _)
@@ -160,12 +165,30 @@ pub struct ValidationError {
 
 impl ValidationError {
     /// Returns the underlying kind of validation error.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::{ValidationError, ValidationErrorKind};
+    ///
+    /// let error = ValidationError::empty("users", "username");
+    /// assert!(matches!(error.kind(), ValidationErrorKind::MustNotBeEmpty("username")));
+    /// ```
     #[must_use]
     pub fn kind(&self) -> &ValidationErrorKind {
         &self.kind
     }
 
     /// Returns the table where the error occurred.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::empty("users", "username");
+    /// assert_eq!(error.table(), "users");
+    /// ```
     #[must_use]
     pub fn table(&self) -> &'static str {
         self.table
@@ -181,9 +204,42 @@ impl ValidationError {
     /// # Returns
     ///
     /// A `ValidationError` indicating that the specified field is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::empty("users", "username");
+    /// assert_eq!(error.to_string(), "Table `users`: Field `username` must not be empty");
+    /// ```
     #[must_use]
     pub fn empty(table: &'static str, field: &'static str) -> Self {
         ValidationError { table, kind: ValidationErrorKind::MustNotBeEmpty(field) }
+    }
+
+    /// Creates a new validation error for a field that exceeds maximum length.
+    ///
+    /// # Arguments
+    ///
+    /// * `table` - The name of the table where the error occurred.
+    /// * `field` - The name of the field that exceeds maximum length.
+    /// * `max_length` - The maximum allowed length for the field.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::exceeds_max_length("users", "username", 20);
+    /// assert_eq!(error.to_string(), "Table `users`: Field `username` exceeds maximum length of 20");
+    /// ```
+    #[must_use]
+    pub fn exceeds_max_length(table: &'static str, field: &'static str, max_length: usize) -> Self {
+        ValidationError {
+            table,
+            kind: ValidationErrorKind::MustNotExceedMaxLength(field, max_length),
+        }
     }
 
     /// Creates a new validation error for two fields that must not be equal.
@@ -193,6 +249,18 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `left_field` - The name of the first field.
     /// * `right_field` - The name of the second field.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::equal("users", "password", "username");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `users`: Fields `password` and `username` must be distinct"
+    /// );
+    /// ```
     #[must_use]
     pub fn equal(table: &'static str, left_field: &'static str, right_field: &'static str) -> Self {
         ValidationError {
@@ -208,6 +276,18 @@ impl ValidationError {
     ///
     /// * `smaller_field` - The name of the field that should be smaller.
     /// * `greater_field` - The name of the field that should be greater.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::smaller_than("events", "start_time", "end_time");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `events`: Field `start_time` must be smaller than or equal to field `end_time`"
+    /// );
+    /// ```
     #[must_use]
     pub fn smaller_than(
         table: &'static str,
@@ -228,6 +308,18 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `field` - The name of the field that should be smaller.
     /// * `value` - The value that the field should be smaller than or equal to.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::smaller_than_value("products", "price", 100.0);
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `products`: Field `price` must be smaller than or equal to 100"
+    /// );
+    /// ```
     #[must_use]
     pub fn smaller_than_value(table: &'static str, field: &'static str, value: f64) -> Self {
         ValidationError { table, kind: ValidationErrorKind::MustBeSmallerThanScalar(field, value) }
@@ -241,6 +333,18 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `greater_field` - The name of the field that should be greater.
     /// * `smaller_field` - The name of the field that should be smaller.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::greater_than("events", "end_time", "start_time");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `events`: Field `end_time` must be greater than or equal to field `start_time`"
+    /// );
+    /// ```
     #[must_use]
     pub fn greater_than(
         table: &'static str,
@@ -261,6 +365,15 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `field` - The name of the field that should be greater.
     /// * `value` - The value that the field should be greater than or equal to.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::greater_than_value("users", "age", 18.0);
+    /// assert_eq!(error.to_string(), "Table `users`: Field `age` must be greater than or equal to 18");
+    /// ```
     #[must_use]
     pub fn greater_than_value(table: &'static str, field: &'static str, value: f64) -> Self {
         ValidationError { table, kind: ValidationErrorKind::MustBeGreaterThanScalar(field, value) }
@@ -275,6 +388,18 @@ impl ValidationError {
     /// * `smaller_equal_field` - The name of the field that should be strictly
     ///   smaller than another field.
     /// * `greater_field` - The name of the field that should be greater.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::strictly_smaller_than("ranges", "min", "max");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `ranges`: Field `min` must be strictly smaller than field `max`"
+    /// );
+    /// ```
     #[must_use]
     pub fn strictly_smaller_than(
         table: &'static str,
@@ -298,6 +423,18 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `field` - The name of the field that should be strictly smaller.
     /// * `value` - The value that the field should be strictly smaller than.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::strictly_smaller_than_value("temperatures", "reading", 100.0);
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `temperatures`: Field `reading` must be strictly smaller than 100"
+    /// );
+    /// ```
     #[must_use]
     pub fn strictly_smaller_than_value(
         table: &'static str,
@@ -319,6 +456,18 @@ impl ValidationError {
     /// * `greater_equal_field` - The name of the field that should be strictly
     ///   greater than another field.
     /// * `smaller_field` - The name of the field that should be smaller.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::strictly_greater_than("ranges", "max", "min");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `ranges`: Field `max` must be strictly greater than field `min`"
+    /// );
+    /// ```
     #[must_use]
     pub fn strictly_greater_than(
         table: &'static str,
@@ -342,6 +491,16 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `field` - The name of the field that should be strictly greater.
     /// * `value` - The value that the field should be strictly greater than.
+    ///
+    /// ```rust
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::strictly_greater_than_value("temperatures", "reading", 0.0);
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `temperatures`: Field `reading` must be strictly greater than 0"
+    /// );
+    /// ```
     #[must_use]
     pub fn strictly_greater_than_value(
         table: &'static str,
@@ -361,6 +520,21 @@ impl ValidationError {
     /// * `table` - The name of the table where the error occurred.
     /// * `fields` - The fields involved in the error.
     /// * `error` - The underlying error.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::io;
+    ///
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::generic(
+    ///     "files",
+    ///     vec!["path"],
+    ///     Box::new(io::Error::new(io::ErrorKind::Other, "file not found")),
+    /// );
+    /// assert_eq!(error.to_string(), "Table `files`: Fields [\"path\"]: file not found");
+    /// ```
     #[must_use]
     pub fn generic(
         table: &'static str,
