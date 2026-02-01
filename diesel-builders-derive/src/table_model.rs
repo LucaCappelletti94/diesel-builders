@@ -514,13 +514,14 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         // Convert ancestor module paths to table types for the trait implementation
         let ancestor_tables: Vec<syn::Type> =
             ancestors.iter().map(|a| syn::parse_quote!(#a::table)).collect();
+        let nested_ancestors = format_as_nested_tuple(&ancestor_tables);
         let root: &syn::Type = ancestor_tables.first().unwrap();
         let aux_impls =
             crate::descendant::generate_auxiliary_descendant_impls(&table_type, &ancestor_tables);
 
         quote! {
             impl ::diesel_builders::Descendant for #table_type {
-                type Ancestors = (#(#ancestor_tables,)*);
+                type NestedAncestors = #nested_ancestors;
                 type Root = #root;
             }
             #aux_impls
@@ -534,7 +535,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             impl ::diesel_builders::Root for #table_type {}
 
             impl ::diesel_builders::Descendant for #table_type {
-                type Ancestors = ();
+                type NestedAncestors = ();
                 type Root = Self;
             }
 

@@ -14,7 +14,7 @@ use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedT
 use typenum::Unsigned;
 
 use crate::{
-    GetNestedColumns, NestedBundlableTables, NestedColumns, TableExt, Tables, TypedColumn,
+    GetNestedColumns, NestedBundlableTables, NestedColumns, TableExt, TypedColumn,
     TypedNestedTuple, columns::TupleEqAll, get_model::GetModel, load_query_builder::LoadFirst,
     tables::NestedTables,
 };
@@ -328,17 +328,12 @@ where
 }
 
 /// A trait marker for getting the ancestor tables of a descendant table.
-pub trait NestedAncestorsOf<T: Descendant<Ancestors = <Self as FlattenNestedTuple>::Flattened>>:
-    NestedTables
-{
-}
+pub trait NestedAncestorsOf<T: Descendant<NestedAncestors = Self>>: NestedTables {}
 
 /// A trait for Diesel tables that have ancestor tables.
 pub trait Descendant: TableExt {
     /// The ancestor tables of this table.
-    type Ancestors: Tables<
-        Nested: NestedAncestorsOf<Self, Flattened = Self::Ancestors> + NestedTuplePushBack<Self>,
-    >;
+    type NestedAncestors: NestedAncestorsOf<Self> + NestedTuplePushBack<Self>;
     /// The root of the ancestor hierarchy. When the current
     /// table is the root, this is itself.
     type Root: Root<NestedPrimaryKeyColumns: TypedNestedTuple<
@@ -358,20 +353,21 @@ pub trait DescendantWithSelf: Descendant + AncestorOfIndex<Self> {
 impl<T> DescendantWithSelf for T
 where
     T: Descendant + AncestorOfIndex<Self>,
-    <T::Ancestors as NestTuple>::Nested: NestedTuplePushBack<Self>,
-    <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output:
+    T::NestedAncestors: NestedTuplePushBack<Self>,
+    <T::NestedAncestors as NestedTuplePushBack<Self>>::Output:
         NestedBundlableTables<NestedModels: GetModel<T> + GetModel<T::Root>>,
 {
-    type NestedAncestorsWithSelf =
-        <<T::Ancestors as NestTuple>::Nested as NestedTuplePushBack<Self>>::Output;
+    type NestedAncestorsWithSelf = <T::NestedAncestors as NestedTuplePushBack<Self>>::Output;
 }
 
-impl<T> NestedAncestorsOf<T> for () where T: Descendant<Ancestors = ()> {}
+impl<T> NestedAncestorsOf<T> for () where T: Descendant<NestedAncestors = ()> {}
 
 impl<T, A> NestedAncestorsOf<T> for (A,)
 where
     A: AncestorOfIndex<T>,
-    T: Descendant<Ancestors = (A,)> + DescendantOf<A> + diesel::query_source::TableNotEqual<A>,
+    T: Descendant<NestedAncestors = (A,)>
+        + DescendantOf<A>
+        + diesel::query_source::TableNotEqual<A>,
 {
 }
 
@@ -379,7 +375,7 @@ impl<T, Head, Tail> NestedAncestorsOf<T> for (Head, Tail)
 where
     (Head, Tail): NestedTables,
     Head: AncestorOfIndex<T>,
-    T: Descendant<Ancestors = <(Head, Tail) as FlattenNestedTuple>::Flattened>
+    T: Descendant<NestedAncestors = (Head, Tail)>
         + DescendantOf<Head>
         + diesel::query_source::TableNotEqual<Head>,
 {
