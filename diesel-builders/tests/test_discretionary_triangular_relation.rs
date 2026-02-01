@@ -9,7 +9,7 @@ use diesel_builders::prelude::*;
 use shared_triangular::*;
 
 // Table B models
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = ErrorB, ancestors = shared_triangular::parent_table)]
 #[diesel(table_name = child_with_satellite_table)]
 /// Model for table B.
@@ -37,7 +37,7 @@ pub struct ChildWithDiscretionary {
     another_remote_column: Option<String>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = simple_child_with_satellite_table)]
 /// Model for simple child table with discretionary triangular relation.
@@ -50,7 +50,7 @@ pub struct SimpleChildWithDiscretionary {
     discretionary_id: i32,
 }
 
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 /// Errors for `NewChildWithDiscretionary` validation.
 pub enum ErrorB {
     /// `remote_field` cannot be empty.

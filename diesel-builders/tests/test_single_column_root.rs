@@ -5,7 +5,7 @@
 mod shared;
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = single_column_root_table)]
 #[table_model(surrogate_key, error = SingleColumnRootError)]
 /// Model for the `single_column_root_table`.

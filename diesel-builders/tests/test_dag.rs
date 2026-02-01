@@ -416,3 +416,44 @@ fn test_load_nested_many_variants_dag() -> Result<(), Box<dyn std::error::Error>
 
     Ok(())
 }
+
+#[test]
+fn test_get_nested_model_dag() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::get_model::GetNestedModelExt;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Insert a Pet
+    let nested_pet = pets::table::builder()
+        .try_name("ExtractedPet")?
+        .breed("ExtractionBreed")
+        .try_color("ExtractionColor")?
+        .owner_name("ExtractionOwner")
+        .insert_nested(&mut conn)?;
+
+    // nested_pet is likely (Pet, (Dog, (Cat, (Animal,)))) or similar structure
+    // We want to extract models for Dog and Cat.
+
+    // 1. Extract NestedModel<dogs::table>
+    let nested_dog: NestedModel<dogs::table> = nested_pet.get_nested_model::<dogs::table>();
+
+    // NestedModel<dogs::table> should contain Dog and Animal models
+    // Let's verify values
+    assert_eq!(nested_dog.get_column::<dogs::breed>(), "ExtractionBreed");
+    assert_eq!(nested_dog.get_column::<animals::name>(), "ExtractedPet");
+
+    // 2. Extract NestedModel<cats::table>
+    let nested_cat: NestedModel<cats::table> = nested_pet.get_nested_model::<cats::table>();
+
+    // NestedModel<cats::table> should contain Cat and Animal models
+    assert_eq!(nested_cat.get_column::<cats::color>(), "ExtractionColor");
+    assert_eq!(nested_cat.get_column::<animals::name>(), "ExtractedPet");
+
+    // 3. Extract NestedModel<animals::table>
+    let nested_animal: NestedModel<animals::table> =
+        nested_pet.get_nested_model::<animals::table>();
+    assert_eq!(nested_animal.get_column::<animals::name>(), "ExtractedPet");
+
+    Ok(())
+}

@@ -127,7 +127,7 @@ pub mod prelude {
         builder_bundle::BundlableTable,
         foreign_key::IterForeignKeyExt,
         get_foreign::GetForeignExt,
-        get_model::GetModelExt,
+        get_model::{GetModelExt, GetNestedModelExt},
         helper_type::NestedModel,
         load_nested_query_builder::{LoadNestedFirst, LoadNestedMany, LoadNestedSorted},
         nested_insert::Insert,

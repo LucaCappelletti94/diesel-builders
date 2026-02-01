@@ -1,6 +1,6 @@
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
@@ -9,7 +9,7 @@ pub struct Animal {
     description: Option<String>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 #[table_model(default(cats::description, "A cat?".to_string()))]

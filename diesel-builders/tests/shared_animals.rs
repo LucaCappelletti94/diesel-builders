@@ -163,7 +163,7 @@ impl Dog {
     }
 }
 
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = NewCatError, ancestors(animals))]
 #[diesel(table_name = cats)]
 /// Model for the cats table.

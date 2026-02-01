@@ -11,7 +11,7 @@ use diesel_builders::{
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
-#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
 #[diesel(table_name = child_with_satellite_table)]
 /// Model for child table with mandatory triangular relation.
@@ -39,7 +39,7 @@ pub struct ChildWithMandatory {
     another_remote_column: Option<String>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(ancestors = parent_table)]
 #[diesel(table_name = simple_child_with_satellite_table)]
 /// Model for simple child table with mandatory triangular relation.

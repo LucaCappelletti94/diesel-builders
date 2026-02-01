@@ -2,7 +2,7 @@
 use diesel_builders::prelude::*;
 
 // Table A models
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = parent_table)]
 /// Model for parent table.
@@ -13,7 +13,7 @@ pub struct Parent {
     parent_field: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel, PartialEq, Eq, Debug)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel, PartialEq, Eq, Debug)]
 #[table_model(surrogate_key)]
 #[diesel(table_name = satellite_table)]
 #[table_model(foreign_key(parent_id, (parent_table::id)))]

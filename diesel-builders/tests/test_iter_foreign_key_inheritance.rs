@@ -5,7 +5,7 @@ use diesel_builders::{IterForeignKeyExt, prelude::*};
 mod shared;
 
 /// Node table.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]
 #[table_model(surrogate_key)]
 pub struct Node {
@@ -16,7 +16,7 @@ pub struct Node {
 }
 
 /// `EdgeType` table.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edge_types)]
 #[table_model(surrogate_key)]
 pub struct EdgeType {
@@ -27,7 +27,7 @@ pub struct EdgeType {
 }
 
 /// Edge table with two FKs to Node.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edges)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(source_id, (nodes::id)))]
@@ -42,7 +42,7 @@ pub struct Edge {
 }
 
 /// Optional Edge table with two optional FKs to Node.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = heterogenous_edges)]
 #[table_model(ancestors(edges))]
 #[table_model(foreign_key(edge_type_id, (edge_types::id)))]

@@ -5,7 +5,7 @@ use diesel_builders::{
 };
 use typenum::U0;
 
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = dogs)]
 /// Model struct associated to the `dogs` table.
 pub struct Dog {

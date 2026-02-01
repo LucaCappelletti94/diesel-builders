@@ -12,6 +12,6 @@ use crate::{HasTableExt, TableExt};
 ///
 /// This trait is typically derived automatically via the
 /// `#[derive(TableModel)]` macro on your model structs.
-pub trait TableModel: HasTableExt<Table: TableExt<Model = Self>> + Sized {}
+pub trait TableModel: HasTableExt<Table: TableExt<Model = Self>> + Sized + Clone {}
 
-impl<T> TableModel for T where T: HasTableExt<Table: TableExt<Model = T>> {}
+impl<T> TableModel for T where T: HasTableExt<Table: TableExt<Model = T>> + Clone {}

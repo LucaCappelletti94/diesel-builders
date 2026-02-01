@@ -27,7 +27,7 @@ diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.g
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
@@ -62,7 +62,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
@@ -72,7 +72,7 @@ pub struct Animal {
     description: Option<String>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 pub struct Dog {
@@ -82,7 +82,7 @@ pub struct Dog {
     dog_notes: Option<String>,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = puppies)]
 #[table_model(ancestors(animals, dogs))]
 // Descendants can override ancestor defaults
@@ -142,7 +142,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 use diesel_builders::prelude::*;
 use diesel_builders::DynColumn;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = animals)]
 #[table_model(surrogate_key)]
 pub struct Animal {
@@ -152,7 +152,7 @@ pub struct Animal {
     description: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = dogs)]
 #[table_model(ancestors(animals))]
 pub struct Dog {
@@ -160,7 +160,7 @@ pub struct Dog {
     breed: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = cats)]
 #[table_model(ancestors(animals))]
 pub struct Cat {
@@ -169,7 +169,7 @@ pub struct Cat {
     color: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = pets)]
 #[table_model(ancestors(animals, dogs, cats))]
 pub struct Pet {
@@ -235,7 +235,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 pub struct Parent {
@@ -243,7 +243,7 @@ pub struct Parent {
     parent_field: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = mandatory_table)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(parent_id, (parent_table::id)))]
@@ -257,7 +257,7 @@ pub struct Mandatory {
 unique_index!(mandatory_table::id, mandatory_table::mandatory_field);
 unique_index!(mandatory_table::id, mandatory_table::parent_id);
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_table)]
 #[table_model(ancestors(parent_table))]
 pub struct Child {
@@ -304,7 +304,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]
 pub struct Parent {
@@ -312,7 +312,7 @@ pub struct Parent {
     parent_field: String,
 }
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = discretionary_table)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(parent_id, (parent_table::id)))]
@@ -325,7 +325,7 @@ pub struct Discretionary {
 unique_index!(discretionary_table::id, discretionary_table::discretionary_field);
 unique_index!(discretionary_table::id, discretionary_table::parent_id);
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = child_with_discretionary_table)]
 #[table_model(ancestors(parent_table))]
 pub struct Child {
@@ -379,7 +379,7 @@ use diesel_builders::DynColumn;
 use diesel::{prelude::*, Column};
 use diesel::sqlite::SqliteConnection;
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]
 #[table_model(surrogate_key)]
 pub struct Node {
@@ -387,7 +387,7 @@ pub struct Node {
     name: String,
 }
 
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = edges)]
 #[table_model(foreign_key(source_id, (nodes::id)))]
 #[table_model(foreign_key(target_id, (nodes::id)))]
@@ -449,7 +449,7 @@ Ok::<(), Box<dyn std::error::Error>>(())
 ```rust
 use diesel_builders::prelude::*;
 
-#[derive(Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = users)]
 #[table_model(error = UserError, surrogate_key)]
 pub struct User {

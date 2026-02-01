@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
 /// A taxonomy table with an optional `parent_id` that references itself
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel, Clone)]
 #[diesel(table_name = taxonomy)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(parent_id, (taxonomy::id)))]

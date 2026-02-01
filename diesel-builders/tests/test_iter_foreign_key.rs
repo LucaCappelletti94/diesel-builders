@@ -4,7 +4,7 @@ use diesel::prelude::*;
 use diesel_builders::{IterForeignKeyExt, prelude::*};
 
 /// Node table.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]
 #[table_model(surrogate_key)]
 pub struct Node {
@@ -30,7 +30,7 @@ pub struct Edge {
 }
 
 /// Optional Edge table with two optional FKs to Node.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = optional_edges)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(source_id, (nodes::id)))]
@@ -45,7 +45,7 @@ pub struct OptionalEdge {
 }
 
 /// Optional Edge table with two optional FKs to Node.
-#[derive(Debug, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = mixed_optional_edges)]
 #[table_model(surrogate_key)]
 #[table_model(foreign_key(source_id, (nodes::id)))]

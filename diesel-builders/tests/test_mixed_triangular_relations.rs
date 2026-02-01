@@ -9,7 +9,7 @@ use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
 // Table B models
-#[derive(Debug, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
+#[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_with_mixed_table)]
 #[table_model(ancestors = parent_table)]
 /// Model for table B.
