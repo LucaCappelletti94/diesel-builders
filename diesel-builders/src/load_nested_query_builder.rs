@@ -8,8 +8,8 @@ use diesel::{
 use tuplities::prelude::{FlattenNestedTuple, NestedTupleInto};
 
 use crate::{
-    DescendantWithSelf, NestedColumns, NestedTables, TableExt, ancestors::DescendantOfAll,
-    columns::TupleToOrder,
+    DescendantWithSelf, NestedColumns, TableExt, ancestors::DescendantOfAll, columns::TupleToOrder,
+    helper_type::NestedModel,
 };
 mod nested_inner_join;
 pub use nested_inner_join::NestedInnerJoin;
@@ -95,9 +95,7 @@ where
     fn load_nested_first(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    >;
+    ) -> diesel::QueryResult<NestedModel<LeafTable>>;
 }
 
 impl<NCS, LeafTable, Conn> LoadNestedFirst<LeafTable, Conn> for NCS
@@ -106,22 +104,15 @@ where
     NCS: LoadNestedQueryBuilder<LeafTable>,
     LeafTable: DescendantWithSelf + DescendantOfAll<NCS::NestedTables>,
     NCS::LoadQuery: LimitDsl + diesel::query_dsl::RunQueryDsl<Conn>,
-    for<'query> <NCS::LoadQuery as LimitDsl>::Output: LoadQuery<
-        'query,
-        Conn,
-        <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    >,
+    for<'query> <NCS::LoadQuery as LimitDsl>::Output:
+        LoadQuery<'query, Conn, NestedModel<LeafTable>>,
 {
     fn load_nested_first(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    > {
+    ) -> diesel::QueryResult<NestedModel<LeafTable>> {
         let query = Self::load_nested_query(values).limit(1);
-        diesel::query_dsl::RunQueryDsl::get_result::<
-            <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-        >(query, conn)
+        diesel::query_dsl::RunQueryDsl::get_result::<NestedModel<LeafTable>>(query, conn)
     }
 }
 
@@ -147,9 +138,7 @@ where
     fn load_nested_many(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    >;
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>>;
 }
 
 impl<NCS, LeafTable, Conn> LoadNestedMany<LeafTable, Conn> for NCS
@@ -158,22 +147,14 @@ where
     NCS: LoadNestedQueryBuilder<LeafTable>,
     LeafTable: DescendantWithSelf + DescendantOfAll<NCS::NestedTables>,
     NCS::LoadQuery: diesel::query_dsl::RunQueryDsl<Conn>
-        + for<'query> LoadQuery<
-            'query,
-            Conn,
-            <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-        >,
+        + for<'query> LoadQuery<'query, Conn, NestedModel<LeafTable>>,
 {
     fn load_nested_many(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    > {
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>> {
         let query = Self::load_nested_query(values);
-        diesel::query_dsl::RunQueryDsl::load::<
-            <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-        >(query, conn)
+        diesel::query_dsl::RunQueryDsl::load::<NestedModel<LeafTable>>(query, conn)
     }
 }
 
@@ -198,9 +179,7 @@ where
     fn load_nested_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    >;
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>>;
 }
 
 impl<NCS, LeafTable, Conn> LoadNestedSorted<LeafTable, Conn> for NCS
@@ -209,28 +188,19 @@ where
     NCS: LoadNestedQueryBuilder<LeafTable>,
     LeafTable: DescendantWithSelf + DescendantOfAll<NCS::NestedTables>,
     <LeafTable as TableExt>::NestedPrimaryKeyColumns: TupleToOrder,
-    NCS::LoadQuery: OrderDsl<
-            <<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
-        > + diesel::query_dsl::RunQueryDsl<Conn>,
+    NCS::LoadQuery: OrderDsl<<<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order>
+        + diesel::query_dsl::RunQueryDsl<Conn>,
     for<'query> <NCS::LoadQuery as OrderDsl<
         <<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
-    >>::Output: LoadQuery<
-        'query,
-        Conn,
-        <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    >,
+    >>::Output: LoadQuery<'query, Conn, NestedModel<LeafTable>>,
 {
     fn load_nested_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    > {
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>> {
         let order = <LeafTable as TableExt>::NestedPrimaryKeyColumns::default().to_order();
         let query = Self::load_nested_query(values).order(order);
-        diesel::query_dsl::RunQueryDsl::load::<
-            <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-        >(query, conn)
+        diesel::query_dsl::RunQueryDsl::load::<NestedModel<LeafTable>>(query, conn)
     }
 }
 
@@ -260,9 +230,7 @@ where
         offset: i64,
         limit: i64,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    >;
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>>;
 }
 
 impl<NCS, LeafTable, Conn> LoadNestedPaginated<LeafTable, Conn> for NCS
@@ -271,9 +239,8 @@ where
     NCS: LoadNestedQueryBuilder<LeafTable>,
     LeafTable: DescendantWithSelf + DescendantOfAll<NCS::NestedTables>,
     <LeafTable as TableExt>::NestedPrimaryKeyColumns: TupleToOrder,
-    NCS::LoadQuery: OrderDsl<
-            <<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
-        > + diesel::query_dsl::RunQueryDsl<Conn>,
+    NCS::LoadQuery: OrderDsl<<<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order>
+        + diesel::query_dsl::RunQueryDsl<Conn>,
     <NCS::LoadQuery as OrderDsl<
         <<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
     >>::Output: LimitDsl + OffsetDsl,
@@ -282,27 +249,17 @@ where
     >>::Output as LimitDsl>::Output: OffsetDsl,
     for<'query> <<<NCS::LoadQuery as OrderDsl<
         <<LeafTable as TableExt>::NestedPrimaryKeyColumns as TupleToOrder>::Order,
-    >>::Output as LimitDsl>::Output as OffsetDsl>::Output: LoadQuery<
-        'query,
-        Conn,
-        <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    >,
+    >>::Output as LimitDsl>::Output as OffsetDsl>::Output:
+        LoadQuery<'query, Conn, NestedModel<LeafTable>>,
 {
     fn load_nested_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,
         limit: i64,
         conn: &mut Conn,
-    ) -> diesel::QueryResult<
-        Vec<<<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels>,
-    > {
+    ) -> diesel::QueryResult<Vec<NestedModel<LeafTable>>> {
         let order = <LeafTable as TableExt>::NestedPrimaryKeyColumns::default().to_order();
-        let query = Self::load_nested_query(values)
-            .order(order)
-            .limit(limit)
-            .offset(offset);
-        diesel::query_dsl::RunQueryDsl::load::<
-            <<LeafTable as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-        >(query, conn)
+        let query = Self::load_nested_query(values).order(order).limit(limit).offset(offset);
+        diesel::query_dsl::RunQueryDsl::load::<NestedModel<LeafTable>>(query, conn)
     }
 }

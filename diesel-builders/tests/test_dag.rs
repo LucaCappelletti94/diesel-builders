@@ -7,14 +7,12 @@
 
 mod shared;
 mod shared_animals;
-use diesel_builders::{
-    BuilderError, NestedTables, load_nested_query_builder::LoadNestedFirst, prelude::*,
-};
+use diesel_builders::{BuilderError, load_nested_query_builder::LoadNestedFirst, prelude::*};
 use shared_animals::*;
 
 #[test]
 fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
-    type PetNestedModels = <<pets::table as diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels;
+    type PetNestedModels = NestedModel<pets::table>;
 
     let mut conn = shared::establish_connection()?;
     shared_animals::setup_animal_tables(&mut conn)?;

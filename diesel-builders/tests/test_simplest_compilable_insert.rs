@@ -1,7 +1,7 @@
 //! Reproduction case for generic insert type mismatch.
 
 use diesel::associations::HasTable;
-use diesel_builders::{BuilderResult, DescendantWithSelf, NestedTables, TableBuilder, prelude::*};
+use diesel_builders::{BuilderResult, TableBuilder, prelude::*};
 
 /// Generic insert function using `TableBuilder`
 ///
@@ -37,10 +37,7 @@ where
 pub fn simplest_compilable_insert_nested<T, C>(
     builder: TableBuilder<T>,
     conn: &mut C,
-) -> BuilderResult<
-    <<T as DescendantWithSelf>::NestedAncestorsWithSelf as NestedTables>::NestedModels,
-    T::Error,
->
+) -> BuilderResult<NestedModel<T>, T::Error>
 where
     T: BuildableTable,
     TableBuilder<T>: Insert<C> + HasTable<Table = T>,

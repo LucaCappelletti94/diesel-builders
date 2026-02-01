@@ -72,6 +72,10 @@ pub mod load_query_builder;
 pub use load_query_builder::{LoadFirst, LoadMany, LoadQueryBuilder, LoadSorted};
 pub mod load_nested_query_builder;
 
+/// Module defining helper types for the crate.
+pub mod helper_type;
+pub use helper_type::*;
+
 /// Re-export typenum for convenience
 pub mod typenum {
     pub use typenum::*;
@@ -124,6 +128,7 @@ pub mod prelude {
         foreign_key::IterForeignKeyExt,
         get_foreign::GetForeignExt,
         get_model::GetModelExt,
+        helper_type::NestedModel,
         load_nested_query_builder::{LoadNestedFirst, LoadNestedMany, LoadNestedSorted},
         nested_insert::Insert,
         set_builder::{
