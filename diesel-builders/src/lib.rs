@@ -12,6 +12,7 @@ pub use tables::{HasNestedTables, NestedTables, Tables};
 pub mod table_model;
 pub use table_model::TableModel;
 pub mod get_model;
+pub use get_model::*;
 pub mod table_models;
 pub use table_models::NestedTableModels;
 pub mod typed;
