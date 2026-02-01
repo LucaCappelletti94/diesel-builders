@@ -113,6 +113,28 @@ fn test_cat_inheritance() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::table_model::TableModel;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Create a dog (inherits from Animal)
+    let dog: Dog =
+        dogs::table::builder().try_name("NestedDog")?.breed("NestedBreed").insert(&mut conn)?;
+
+    // Load nested model using .nested()
+    // For Dog, NestedModel is (Animal, (Dog,))
+    let nested: diesel_builders::NestedModel<dogs::table> = dog.nested(&mut conn)?;
+
+    // Verify contents
+    assert_eq!(nested.get_column::<animals::name>(), "NestedDog");
+    assert_eq!(nested.get_column::<dogs::breed>(), "NestedBreed");
+
+    Ok(())
+}
+
+#[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder for a Dog that extends Animals

@@ -432,14 +432,12 @@ fn test_get_nested_model_dag() -> Result<(), Box<dyn std::error::Error>> {
         .owner_name("ExtractionOwner")
         .insert_nested(&mut conn)?;
 
-    // nested_pet is likely (Pet, (Dog, (Cat, (Animal,)))) or similar structure
-    // We want to extract models for Dog and Cat.
+    // nested_pet is (Animal, (Dog, (Cat, (Pet,))))
 
     // 1. Extract NestedModel<dogs::table>
     let nested_dog: NestedModel<dogs::table> = nested_pet.get_nested_model::<dogs::table>();
 
     // NestedModel<dogs::table> should contain Dog and Animal models
-    // Let's verify values
     assert_eq!(nested_dog.get_column::<dogs::breed>(), "ExtractionBreed");
     assert_eq!(nested_dog.get_column::<animals::name>(), "ExtractedPet");
 
@@ -454,6 +452,33 @@ fn test_get_nested_model_dag() -> Result<(), Box<dyn std::error::Error>> {
     let nested_animal: NestedModel<animals::table> =
         nested_pet.get_nested_model::<animals::table>();
     assert_eq!(nested_animal.get_column::<animals::name>(), "ExtractedPet");
+
+    Ok(())
+}
+
+#[test]
+fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::table_model::TableModel;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Insert a Pet
+    let pet: Pet = pets::table::builder()
+        .try_name("NestedMethodPet")?
+        .breed("NestedMethodBreed")
+        .try_color("NestedMethodColor")?
+        .owner_name("NestedMethodOwner")
+        .insert(&mut conn)?;
+
+    // Load full nested model using .nested(&mut conn)
+    let nested_pet: NestedModel<pets::table> = pet.nested(&mut conn)?;
+
+    // Verify contents
+    assert_eq!(nested_pet.get_column::<pets::owner_name>(), "NestedMethodOwner");
+    assert_eq!(nested_pet.get_column::<dogs::breed>(), "NestedMethodBreed");
+    assert_eq!(nested_pet.get_column::<cats::color>(), "NestedMethodColor");
+    assert_eq!(nested_pet.get_column::<animals::name>(), "NestedMethodPet");
 
     Ok(())
 }

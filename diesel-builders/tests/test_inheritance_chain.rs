@@ -210,3 +210,28 @@ fn test_load_nested_traits_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::table_model::TableModel;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Insert a Puppy (extends Dogs, which extends Animals)
+    let puppy: Puppy = puppies::table::builder()
+        .try_name("NestedPuppy")?
+        .breed("NestedDogBreed")
+        .try_age_months(5)?
+        .insert(&mut conn)?;
+
+    // Load full nested model
+    // Tuple structure: (Animal, (Dog, (Puppy,)))
+    let nested: diesel_builders::NestedModel<puppies::table> = puppy.nested(&mut conn)?;
+
+    assert_eq!(nested.get_column::<animals::name>(), "NestedPuppy");
+    assert_eq!(nested.get_column::<dogs::breed>(), "NestedDogBreed");
+    assert_eq!(nested.get_column::<puppies::age_months>(), 5);
+
+    Ok(())
+}

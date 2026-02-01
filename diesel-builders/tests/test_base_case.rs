@@ -423,3 +423,26 @@ fn test_try_get_dynamic_column_blanket_impls() -> Result<(), Box<dyn std::error:
 
     Ok(())
 }
+
+#[test]
+fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
+    use diesel_builders::table_model::TableModel;
+
+    let mut conn = shared::establish_connection()?;
+    shared_animals::setup_animal_tables(&mut conn)?;
+
+    // Create a base animal
+    let animal = animals::table::builder().try_name("BaseNestedAnimal")?.insert(&mut conn)?;
+
+    // Load nested model using .nested()
+    // For a base table, NestedModel<T> is just (Model,)
+    let nested: diesel_builders::NestedModel<animals::table> = animal.nested(&mut conn)?;
+
+    // It should be a tuple wrapping the animal
+    assert_eq!(nested.0, animal);
+
+    // Verify we can access columns through the nested model tuple
+    assert_eq!(nested.get_column::<animals::name>(), "BaseNestedAnimal");
+
+    Ok(())
+}
