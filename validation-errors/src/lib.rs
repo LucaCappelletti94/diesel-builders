@@ -28,6 +28,9 @@ pub enum ValidationErrorKind {
     /// The provided text is too long.
     #[error("Field `{0}` exceeds maximum length of {1}")]
     MustNotExceedMaxLength(&'static str, usize),
+    /// The provided date time must be in the past.
+    #[error("Field `{0}` must be in the past")]
+    MustBeInThePast(&'static str),
     /// The scalar is not strictly greater than the expected amount.
     #[error("Field `{0}` must be strictly smaller than {1}")]
     MustBeStrictlySmallerThanScalar(&'static str, f64),
@@ -70,6 +73,7 @@ impl AsRef<str> for ValidationErrorKind {
             }
             ValidationErrorKind::MustNotBeEmpty(_) => "Field must not be empty",
             ValidationErrorKind::MustNotExceedMaxLength(_, _) => "Field exceeds maximum length",
+            ValidationErrorKind::MustBeInThePast(_) => "Field must be in the past",
             ValidationErrorKind::MustBeStrictlySmallerThanScalar(_, _) => {
                 "Field must be strictly smaller than value"
             }
@@ -129,6 +133,7 @@ impl DatabaseErrorInformation for ValidationError {
     fn column_name(&self) -> Option<&str> {
         match &self.kind {
             ValidationErrorKind::MustNotBeEmpty(field)
+            | ValidationErrorKind::MustBeInThePast(field)
             | ValidationErrorKind::MustBeStrictlySmallerThanScalar(field, _)
             | ValidationErrorKind::MustBeSmallerThanScalar(field, _)
             | ValidationErrorKind::MustBeStrictlyGreaterThanScalar(field, _)
@@ -240,6 +245,26 @@ impl ValidationError {
             table,
             kind: ValidationErrorKind::MustNotExceedMaxLength(field, max_length),
         }
+    }
+
+    /// Creates a new validation error for a date time field that is in the future.
+    ///
+    /// # Arguments
+    ///
+    /// * `table` - The name of the table where the error occurred.
+    /// * `field` - The name of the field that is in the future.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::ValidationError;
+    ///
+    /// let error = ValidationError::in_the_future("posts", "created_at");
+    /// assert_eq!(error.to_string(), "Table `posts`: Field `created_at` must be in the past");
+    /// ```
+    #[must_use]
+    pub fn in_the_future(table: &'static str, field: &'static str) -> Self {
+        ValidationError { table, kind: ValidationErrorKind::MustBeInThePast(field) }
     }
 
     /// Creates a new validation error for two fields that must not be equal.
@@ -620,6 +645,12 @@ mod tests {
         write!(s, "{err}").unwrap();
         assert_eq!(s, "Field `field` must be greater than or equal to 5");
 
+        // Test MustBeInThePast
+        let err = ValidationErrorKind::MustBeInThePast("field");
+        s.clear();
+        write!(s, "{err}").unwrap();
+        assert_eq!(s, "Field `field` must be in the past");
+
         // Test Generic
         let dummy = DummyError;
         let err = ValidationErrorKind::Generic {
@@ -679,6 +710,11 @@ mod tests {
         let err = ValidationError::empty("table", "field");
         assert_eq!(err.table(), "table");
         assert!(matches!(err.kind(), ValidationErrorKind::MustNotBeEmpty("field")));
+
+        // Test in_the_future
+        let err = ValidationError::in_the_future("table", "field");
+        assert_eq!(err.table(), "table");
+        assert!(matches!(err.kind(), ValidationErrorKind::MustBeInThePast("field")));
 
         // Test equal
         let err = ValidationError::equal("table", "field1", "field2");
@@ -794,6 +830,9 @@ mod tests {
 
         let err = ValidationErrorKind::MustBeGreaterThan("a", "b");
         assert_eq!(err.as_ref(), "Field must be greater than or equal to another");
+
+        let err = ValidationErrorKind::MustBeInThePast("field");
+        assert_eq!(err.as_ref(), "Field must be in the past");
 
         let err = ValidationErrorKind::MustBeStrictlySmallerThanScalar("field", 1.0);
         assert_eq!(err.as_ref(), "Field must be strictly smaller than value");
