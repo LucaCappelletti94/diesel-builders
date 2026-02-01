@@ -4,11 +4,10 @@ use diesel::{
     AsChangeset, Identifiable, Insertable, QueryResult, RunQueryDsl, Table,
     associations::HasTable,
     connection::LoadConnection,
-    query_builder::{DeleteStatement, InsertStatement, IntoUpdateTarget},
-    query_dsl::{
-        DoUpdateDsl, OnConflictDsl,
-        methods::{ExecuteDsl, FindDsl, LoadQuery, SetUpdateDsl},
-    },
+    dsl::{DoUpdate, OnConflict, Set},
+    internal::derives::insertable::UndecoratedInsertRecord,
+    query_builder::{DeleteStatement, InsertStatement, IntoConflictValueClause, IntoUpdateTarget},
+    query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery},
 };
 use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
@@ -287,23 +286,32 @@ pub trait ModelUpsert<Conn>: HasTable<Table: TableExt> {
         Self: Sized;
 }
 
+type FlattenedValuesOf<M> = <<<<<M as HasTable>::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened;
+
 impl<Conn, M> ModelUpsert<Conn> for M
 where
     M: HasTable<Table: TableExt>
         + GetNestedColumns<<<M::Table as Table>::AllColumns as NestTuple>::Nested>,
     Conn: LoadConnection,
-    <<M::Table as Table>::AllColumns as NestTuple>::Nested:
-        TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<M::Table> + AsChangeset<Target = M::Table>>>,
-    for<'query> InsertStatement<
-        Self::Table,
-        <<<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<Self::Table>>::Values,
-    >: OnConflictDsl<
-        <M::Table as Table>::PrimaryKey,
-        Output: DoUpdateDsl<Output: SetUpdateDsl<
-            <<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened,
-            Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
-        >>
+    <<M::Table as Table>::AllColumns as NestTuple>::Nested: TupleEqAll<
+        EqAll: FlattenNestedTuple<Flattened: Insertable<M::Table> + AsChangeset<Target = M::Table>>,
     >,
+    diesel::query_builder::ConflictTarget<<M::Table as Table>::PrimaryKey>:
+        diesel::query_builder::OnConflictTarget<M::Table>,
+    <FlattenedValuesOf<M> as Insertable<M::Table>>::Values:
+        IntoConflictValueClause + UndecoratedInsertRecord<M::Table>,
+    Set<
+        DoUpdate<
+            OnConflict<
+                InsertStatement<
+                    Self::Table,
+                    <FlattenedValuesOf<M> as Insertable<Self::Table>>::Values,
+                >,
+                <M::Table as Table>::PrimaryKey,
+            >,
+        >,
+        FlattenedValuesOf<M>,
+    >: for<'query> LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
 {
     fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
     where
