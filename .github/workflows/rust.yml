@@ -9,6 +9,9 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test
@@ -18,7 +21,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         rust: [stable, nightly]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
@@ -35,7 +38,7 @@ jobs:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -47,7 +50,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -59,7 +62,7 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Check documentation
@@ -71,7 +74,7 @@ jobs:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Install SQLite
@@ -81,7 +84,7 @@ jobs:
       - name: Generate coverage
         run: cargo tarpaulin --engine=llvm --out xml --workspace --exclude diesel-builders-derive --exclude-files "diesel-builders-derive/*" --run-types AllTargets --run-types DocTests
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
