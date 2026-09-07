@@ -302,8 +302,6 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-allow_tables_to_appear_in_same_query!(dogs, cats);
-
 #[test]
 fn test_load_nested_traits_dag() -> Result<(), Box<dyn std::error::Error>> {
     use diesel_builders::load_nested_query_builder::LoadNestedFirst;

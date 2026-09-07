@@ -16,11 +16,3 @@ error: Primary key column `user_id` not found in struct. `TableModel` requires a
  9 | |     email: String,
 10 | | }
    | |_^
-
-error[E0433]: failed to resolve: use of unresolved module or unlinked crate `users`
- --> tests/ui_nightly/primary_key_not_found_error.rs:5:23
-  |
-5 | #[diesel(table_name = users)]
-  |                       ^^^^^ use of unresolved module or unlinked crate `users`
-  |
-  = help: if you wanted to use a crate named `users`, use `cargo add users` to add it to your `Cargo.toml`

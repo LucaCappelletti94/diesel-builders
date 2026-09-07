@@ -463,22 +463,31 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         Vec::new()
     };
 
-    // Generate `allow_tables_to_appear_in_same_query!` macro calls for
-    // ancestors and triangular relations
     let table_name = table_module.to_string();
+    // Generate `allow_tables_to_appear_in_same_query!` macro calls so that the
+    // table and all of its ancestors (plus triangular relations) may be joined
+    // in a single query. The nested inner join over a table's ancestors touches
+    // every ancestor pair, not just self-to-ancestor pairs, so every unordered
+    // pair among {self, ancestors} must be declared; triangular relations only
+    // need to co-occur with self.
     let table_module_path: syn::Path = table_module.clone().into();
-    let allow_same_query_calls = attributes
-        .ancestors
-        .iter()
-        .flat_map(|paths| paths.iter())
-        .chain(triangular_relation_tables.iter())
-        .filter_map(|other| {
-            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(
-                &table_module_path,
-                other,
-            ) {
+    let ancestor_paths: Vec<&syn::Path> =
+        attributes.ancestors.iter().flat_map(|paths| paths.iter()).collect();
+    let mut allow_same_query_pairs: Vec<(&syn::Path, &syn::Path)> = Vec::new();
+    for (i, first) in ancestor_paths.iter().enumerate() {
+        allow_same_query_pairs.push((&table_module_path, first));
+        for second in &ancestor_paths[i + 1..] {
+            allow_same_query_pairs.push((first, second));
+        }
+    }
+    allow_same_query_pairs
+        .extend(triangular_relation_tables.iter().map(|other| (&table_module_path, other)));
+    let allow_same_query_calls = allow_same_query_pairs
+        .into_iter()
+        .filter_map(|(first, second)| {
+            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(first, second) {
                 Some(quote! {
-                    ::diesel::allow_tables_to_appear_in_same_query!(#table_module, #other);
+                    ::diesel::allow_tables_to_appear_in_same_query!(#first, #second);
                 })
             } else {
                 None
@@ -912,6 +921,82 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
+    // Generate the `ModelUpsert` implementation for this model. The upsert
+    // statement chains diesel's inherent `on_conflict`/`do_update`/`set`
+    // methods, whose trait bounds reference `diesel::internal` items and so
+    // cannot be named in a generic `where` clause. Emitting the impl here,
+    // where the table type is concrete, lets the compiler discharge those
+    // bounds itself; the only free parameter left is the connection.
+    let model_table_type = quote! { #table_module::table };
+    let upsert_nested_columns = quote! {
+        <<#model_table_type as ::diesel::Table>::AllColumns as ::diesel_builders::tuplities::NestTuple>::Nested
+    };
+    let upsert_changeset = quote! {
+        <<#upsert_nested_columns as ::diesel_builders::columns::TupleEqAll>::EqAll as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
+    };
+    let upsert_statement = quote! {
+        ::diesel::dsl::Set<
+            ::diesel::dsl::DoUpdate<
+                ::diesel::dsl::OnConflict<
+                    ::diesel::query_builder::InsertStatement<
+                        #model_table_type,
+                        <#upsert_changeset as ::diesel::Insertable<#model_table_type>>::Values,
+                    >,
+                    <#model_table_type as ::diesel::Table>::PrimaryKey,
+                >,
+            >,
+            #upsert_changeset,
+        >
+    };
+    let model_upsert_impl = quote! {
+        impl<Conn> ::diesel_builders::ModelUpsert<Conn> for #struct_ident
+        where
+            Conn: ::diesel::connection::LoadConnection,
+            for<'query> #upsert_statement: ::diesel::query_dsl::methods::LoadQuery<
+                'query,
+                Conn,
+                <#model_table_type as ::diesel_builders::TableExt>::Model,
+            >,
+        {
+            fn upsert(
+                &self,
+                conn: &mut Conn,
+            ) -> ::diesel::QueryResult<<#model_table_type as ::diesel_builders::TableExt>::Model>
+            where
+                Self: Sized,
+            {
+                use ::diesel::{RunQueryDsl, Table};
+                let table: #model_table_type = ::core::default::Default::default();
+                let columns = <#upsert_nested_columns as ::core::default::Default>::default();
+                let values = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
+                    ::diesel_builders::columns::TupleEqAll::eq_all(
+                        columns,
+                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
+                    ),
+                );
+                let changes = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
+                    ::diesel_builders::columns::TupleEqAll::eq_all(
+                        columns,
+                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
+                    ),
+                );
+                let results: ::std::vec::Vec<<#model_table_type as ::diesel_builders::TableExt>::Model> =
+                    ::diesel::insert_into(table)
+                        .values(values)
+                        .on_conflict(table.primary_key())
+                        .do_update()
+                        .set(changes)
+                        .get_results(conn)?;
+                match results.into_iter().next() {
+                    ::core::option::Option::Some(first) => ::core::result::Result::Ok(first),
+                    ::core::option::Option::None => {
+                        ::core::result::Result::Err(::diesel::result::Error::NotFound)
+                    }
+                }
+            }
+        }
+    };
+
     // Generate final output
     Ok(quote! {
         #(#warnings)*
@@ -926,6 +1011,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #descendant_impls
         #bundlable_table_impl
         #buildable_table_impl
+        #model_upsert_impl
         #(#mandatory_same_as_impls)*
         #(#discretionary_same_as_impls)*
         #(#column_horizontal_impls)*

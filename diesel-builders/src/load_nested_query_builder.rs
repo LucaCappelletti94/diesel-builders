@@ -38,14 +38,12 @@ pub trait LoadNestedQueryBuilder<
 
 impl<NCS, LeafTable> LoadNestedQueryBuilder<LeafTable> for NCS
 where
-    LeafTable: DescendantWithSelf<
-            NestedAncestorsWithSelf: NestedInnerJoin<
-                JoinQuery: NestedSelect<LeafTable::NestedAncestorsWithSelf>,
-            >,
-        > + DescendantOfAll<Self::NestedTables>,
+    LeafTable: DescendantWithSelf
+        + NestedInnerJoin<JoinQuery: NestedSelect<LeafTable::NestedAncestorsWithSelf>>
+        + DescendantOfAll<Self::NestedTables>,
     NCS: NestedColumns,
     NCS::Flattened: EqAll<<NCS::NestedTupleValueType as FlattenNestedTuple>::Flattened>,
-    <<LeafTable::NestedAncestorsWithSelf as NestedInnerJoin>::JoinQuery as NestedSelect<
+    <<LeafTable as NestedInnerJoin>::JoinQuery as NestedSelect<
         LeafTable::NestedAncestorsWithSelf,
     >>::NestedSelect:
         FilterDsl<
@@ -55,7 +53,7 @@ where
         >,
 {
     type LoadQuery =
-        <<<LeafTable::NestedAncestorsWithSelf as NestedInnerJoin>::JoinQuery as NestedSelect<
+        <<<LeafTable as NestedInnerJoin>::JoinQuery as NestedSelect<
             LeafTable::NestedAncestorsWithSelf,
         >>::NestedSelect as FilterDsl<
             <NCS::Flattened as EqAll<
@@ -66,7 +64,7 @@ where
     fn load_nested_query(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
     ) -> Self::LoadQuery {
-        let inner_join = LeafTable::NestedAncestorsWithSelf::nested_inner_join();
+        let inner_join = LeafTable::nested_inner_join();
         let columns = NCS::default().flatten();
         let values: NCS::NestedTupleValueType = values.nested_tuple_into();
         FilterDsl::filter(inner_join.nested_select(), columns.eq_all(values.flatten()))
