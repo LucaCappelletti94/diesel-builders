@@ -126,8 +126,8 @@ fn test_get_foreign_ext_direct() -> Result<(), Box<dyn std::error::Error>> {
     ), (satellite_table::id, satellite_table::field)>(&mut conn)?;
     assert_eq!(c_pk2.get_column_ref::<satellite_table::id>(), b.mandatory_id());
 
-    // Use GetForeignExt directly for composite foreign key mapping (non-nullable
-    // types)
+    // Use GetForeignExt directly for composite foreign key mapping
+    // (non-nullable types)
     let c_horizontal: Satellite = b.foreign::<(
         child_with_mixed_table::mandatory_id,
         child_with_mixed_table::id,
@@ -163,7 +163,8 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
     assert_eq!(nested_models.field(), satellite_table.field());
 
     // Try to create without mandatory C builder
-    // Note: d_id_model references an existing model instead of creating a new one
+    // Note: d_id_model references an existing model instead of creating a new
+    // one
     let result = child_with_mixed_table::table::builder()
         .parent_field("Value A")
         .child_field("Value B")
@@ -179,7 +180,8 @@ fn test_mixed_triangular_missing_mandatory_fails() -> Result<(), Box<dyn std::er
 #[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a builder with mixed mandatory and discretionary triangular relations
+    // Create a builder with mixed mandatory and discretionary triangular
+    // relations
     let builder = child_with_mixed_table::table::builder()
         .child_field("Serialized B")
         .try_remote_mandatory_field(Some("Serialized C".to_string()))?
@@ -224,10 +226,12 @@ fn test_mixed_triangular_iter_foreign_keys_coverage() -> Result<(), Box<dyn std:
         .insert(&mut conn)?;
 
     // 1. Verify (satellite_table::id, satellite_table::parent_id)
-    // This index corresponds to the FK (mandatory_id, id) and (discretionary_id,
-    // id) because `id` is `same_as(satellite_table::parent_id)`.
+    // This index corresponds to the FK (mandatory_id, id) and
+    // (discretionary_id, id) because `id` is
+    // `same_as(satellite_table::parent_id)`.
 
-    // We expect the iterator to yield nested tuples of references: (&i32, (&i32,))
+    // We expect the iterator to yield nested tuples of references: (&i32,
+    // (&i32,))
     {
         type Idx = (satellite_table::id, satellite_table::parent_id);
 

@@ -39,7 +39,7 @@ pub trait TableModel: HasTableExt<Table: TableExt<Model = Self>> + Sized + Clone
             NestedTupleInto<
                 <<Self::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleValueType,
             >,
-    {
+{
         let pk = self.get_nested_columns();
         <<Self::Table as TableExt>::NestedPrimaryKeyColumns as LoadNestedFirst<
             Self::Table,

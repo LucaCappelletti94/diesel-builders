@@ -51,7 +51,8 @@ pub fn generate_vertical_same_as_impls(
                     })
                 };
 
-                // Check if second looks like a key (local table reference or single segment)
+                // Check if second looks like a key (local table reference or
+                // single segment)
                 let second_is_key = if second.segments.len() == 1 {
                     // Single segment (e.g. "key_field")
                     true
@@ -69,13 +70,14 @@ pub fn generate_vertical_same_as_impls(
             };
 
             for (i, column_path) in attr_paths.iter().enumerate() {
-                // Skip the key if we identified this as a horizontal same_as with key
+                // Skip the key if we identified this as a horizontal same_as
+                // with key
                 if is_horizontal_with_key && i == 1 {
                     continue;
                 }
 
-                // Extract the table name from the column path (e.g., parent_table from
-                // parent_table::column)
+                // Extract the table name from the column path (e.g.,
+                // parent_table from parent_table::column)
                 if column_path.segments.len() < 2 {
                     return Err(syn::Error::new_spanned(
                         column_path,

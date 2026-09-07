@@ -14,8 +14,8 @@ fn test_dynamic_nullable_column_none() -> Result<(), Box<dyn std::error::Error>>
     // We only set the required name.
     let builder = animals::table::builder().try_name("Silent Animal")?;
 
-    // Insert as nested implementation to get the structure that supports dynamic
-    // access
+    // Insert as nested implementation to get the structure that supports
+    // dynamic access
     let nested_models = builder.insert_nested(&mut conn)?;
 
     // Define dynamic column key for description

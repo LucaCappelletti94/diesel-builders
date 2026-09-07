@@ -136,8 +136,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         Err(ErrorB::EmptyRemoteColumnC)
     );
 
-    // Since the operation has failed, the preliminary state of the builder should
-    // have remained unchanged.
+    // Since the operation has failed, the preliminary state of the builder
+    // should have remained unchanged.
     assert_eq!(child_builder, saved_child_builder);
 
     child_builder
@@ -165,8 +165,8 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     assert_eq!(associated_parent.parent_field(), "Value A for B");
 
     // We can also reference an existing model using the _model variant
-    // Example: triangular_b_builder.discretionary_id_model_ref(&c) would reference
-    // the existing c model
+    // Example: triangular_b_builder.discretionary_id_model_ref(&c) would
+    // reference the existing c model
 
     let associated_discretionary: Satellite = child.discretionary(&mut conn)?;
     assert_eq!(
@@ -277,8 +277,8 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
 
     let saved_child_builder = child_builder.clone();
 
-    // Since the operation has failed, the preliminary state of the builder should
-    // have remained unchanged.
+    // Since the operation has failed, the preliminary state of the builder
+    // should have remained unchanged.
     assert_eq!(child_builder, saved_child_builder);
 
     child_builder.try_discretionary_ref(discretionary_builder.clone())?;
@@ -289,8 +289,8 @@ fn test_discretionary_triangular_relation_simple() -> Result<(), Box<dyn std::er
     let child = builder.insert(&mut conn).unwrap();
 
     let nested_models = builder_clone.insert_nested(&mut conn).unwrap();
-    // Since discretionary model is created new each time (via builder), the ID will
-    // differ. We verify the referenced model has correct data.
+    // Since discretionary model is created new each time (via builder), the ID
+    // will differ. We verify the referenced model has correct data.
     let disc_id = nested_models.discretionary_id();
     let disc_model = satellite_table::table.find(disc_id).first::<Satellite>(&mut conn).unwrap();
     assert_eq!(disc_model.field(), "Value C");

@@ -405,8 +405,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         if is_field_mandatory(field)
             && let Some(mandatory_table) = extract_mandatory_table(field)?
         {
-            // Check if ALL primary key columns have a same_as pointing to this mandatory
-            // table
+            // Check if ALL primary key columns have a same_as pointing to this
+            // mandatory table
             for pk_col_name in &primary_key_columns {
                 let pk_field = fields.iter().find(|f| f.ident.as_ref() == Some(pk_col_name));
 
@@ -463,8 +463,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         Vec::new()
     };
 
-    // Generate `allow_tables_to_appear_in_same_query!` macro calls for ancestors
-    // and triangular relations
+    // Generate `allow_tables_to_appear_in_same_query!` macro calls for
+    // ancestors and triangular relations
     let table_name = table_module.to_string();
     let table_module_path: syn::Path = table_module.clone().into();
     let allow_same_query_calls = attributes
@@ -511,7 +511,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // If ancestors are specified, generate Descendant; otherwise generate Root
     let descendant_impls = if let Some(ref ancestors) = attributes.ancestors {
         let table_type: syn::Type = syn::parse_quote!(#table_module::table);
-        // Convert ancestor module paths to table types for the trait implementation
+        // Convert ancestor module paths to table types for the trait
+        // implementation
         let ancestor_tables: Vec<syn::Type> =
             ancestors.iter().map(|a| syn::parse_quote!(#a::table)).collect();
         let nested_ancestors = format_as_nested_tuple(&ancestor_tables);
@@ -564,7 +565,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         })
         .collect();
 
-    // Generate DiscretionarySameAsIndex implementations for discretionary columns
+    // Generate DiscretionarySameAsIndex implementations for discretionary
+    // columns
     let discretionary_same_as_impls: Vec<_> = discretionary_columns
         .iter()
         .enumerate()
@@ -579,8 +581,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         .collect();
 
     // Collect Horizontal Keys
-    // Map from TargetTable (last segment ident) to list of (KeyField, IsMandatory,
-    // TargetTablePath)
+    // Map from TargetTable (last segment ident) to list of (KeyField,
+    // IsMandatory, TargetTablePath)
     let mut potential_keys: HashMap<syn::Ident, Vec<(&syn::Ident, bool, syn::Path)>> =
         HashMap::new();
 
@@ -640,7 +642,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 };
 
                 for (i, col_path) in attr_paths.iter().enumerate() {
-                    // If this is the explicit key, skip it (it's not a target column)
+                    // If this is the explicit key, skip it (it's not a target
+                    // column)
                     if let Some(k) = &explicit_key_ident
                         && i == 1
                         && col_path.segments.last().map(|s| &s.ident) == Some(k)
@@ -663,12 +666,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
                         let selected_key: Option<Ident> = if let Some(k_ident) = &explicit_key_ident
                         {
-                            // Verify the explicit key belongs to this target table
+                            // Verify the explicit key belongs to this target
+                            // table
                             if keys.iter().any(|(kf, _, _)| kf == &k_ident) {
                                 Some(k_ident.clone())
                             } else {
-                                // Explicit key provided but doesn't match this target table
-                                // This might happen if we have #[same_as(Target1, KeyForTarget2)]
+                                // Explicit key provided but doesn't match this
+                                // target table
+                                // This might happen if we have
+                                // #[same_as(Target1, KeyForTarget2)]
                                 // We ignore it for Target1.
                                 None
                             }
@@ -705,9 +711,9 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     }
 
     let horizontal_keys: Vec<_> = horizontal_keys_map.into_values().collect();
-    // We do not filter out keys with no columns, as they still need to implement
-    // HorizontalKey to satisfy BundlableTable bounds, even if they don't
-    // propagate any values.
+    // We do not filter out keys with no columns, as they still need to
+    // implement HorizontalKey to satisfy BundlableTable bounds, even if
+    // they don't propagate any values.
 
     // Generate HorizontalKey implementations
     let mut horizontal_key_impls = Vec::with_capacity(horizontal_keys.len());
@@ -730,8 +736,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
 
         let key_column = &key.key_column;
 
-        // We check that the key has at least one host and one foreign column, or
-        // raise an appropriate compile-time error.
+        // We check that the key has at least one host and one foreign column,
+        // or raise an appropriate compile-time error.
         if key.host_columns.is_empty() {
             return Err(syn::Error::new_spanned(
                 key.field.clone(),

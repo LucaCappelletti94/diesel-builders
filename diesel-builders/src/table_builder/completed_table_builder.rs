@@ -181,7 +181,8 @@ where
         if let Some(value_ref) = value.as_optional_ref() {
             self.validate_column_in_context(value_ref)?;
         }
-        // We try to set eventual vertically-same-as columns in nested builders first.
+        // We try to set eventual vertically-same-as columns in nested builders
+        // first.
         self.try_set_homogeneous_nested_columns(&value)?;
         self.nested_bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)

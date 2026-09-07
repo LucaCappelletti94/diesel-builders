@@ -276,8 +276,8 @@ fn test_nested_columns_single() {
     type Single = (animals::name,);
     let cols = <Single as HasNestedDynColumns>::nested_dyn_columns();
 
-    // Test impl NestedDynColumns for (DynColumn,) - reportedly covered but good to
-    // have
+    // Test impl NestedDynColumns for (DynColumn,) - reportedly covered but good
+    // to have
     assert_eq!(cols.nested_dyn_column_names(), ("name",));
     assert_eq!(cols.nested_dyn_column_table_names(), ("animals",));
 }

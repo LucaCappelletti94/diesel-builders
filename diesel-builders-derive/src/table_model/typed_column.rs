@@ -67,8 +67,8 @@ fn generate_field_traits(
     let is_mandatory = is_field_mandatory(field);
     let is_discretionary = is_field_discretionary(field);
 
-    // Generate triangular relation traits only for single primary key tables and if
-    // field is marked
+    // Generate triangular relation traits only for single primary key tables
+    // and if field is marked
     let maybe_triangular_impls =
         if primary_key_columns.len() == 1 && (is_mandatory || is_discretionary) {
             Some(generate_triangular_relation_traits(
@@ -259,8 +259,8 @@ fn generate_typed_impl(
     field_type: &syn::Type,
     table_module: &syn::Ident,
 ) -> TokenStream {
-    // Determine the ValueType: if the column type is an Option<T>, ValueType = T,
-    // otherwise ValueType = the field type itself.
+    // Determine the ValueType: if the column type is an Option<T>, ValueType =
+    // T, otherwise ValueType = the field type itself.
     let value_type = extract_option_inner_type(field_type).unwrap_or(quote::quote! { #field_type });
 
     quote! {
@@ -312,9 +312,9 @@ fn generate_triangular_relation_traits(
         &format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"),
         proc_macro2::Span::call_site(),
     );
-    // Base method name: if column ends with `_id` strip it (e.g., `c_id` -> `c`).
-    // If it's an `_id` column, use the base name for model/builder methods (e.g.,
-    // `.c()`), otherwise generate `{field_name}_model` and
+    // Base method name: if column ends with `_id` strip it (e.g., `c_id` ->
+    // `c`). If it's an `_id` column, use the base name for model/builder
+    // methods (e.g., `.c()`), otherwise generate `{field_name}_model` and
     // `{field_name}_builder`.
     let base_field_name = {
         let s = field_name.to_string();
@@ -427,7 +427,8 @@ fn generate_triangular_relation_traits(
         "Tries to set the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
     );
 
-    // Generate discretionary traits only if the field is marked as discretionary
+    // Generate discretionary traits only if the field is marked as
+    // discretionary
     let discretionary_traits = if is_discretionary {
         quote! {
             #[doc = #set_discretionary_model_trait_doc_comment]

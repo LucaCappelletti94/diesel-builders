@@ -236,10 +236,10 @@ fn test_upsert_composite() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_role.assigned_at, "2025-01-02");
 
     // 3. Upsert (Insert)
-    // We need to construct a UserRole manually since we don't have a builder that
-    // returns a struct without inserting. But we can use the struct constructor
-    // since fields are public now. TODO: We will add support for upsert via
-    // builder in the future.
+    // We need to construct a UserRole manually since we don't have a builder
+    // that returns a struct without inserting. But we can use the struct
+    // constructor since fields are public now. TODO: We will add support
+    // for upsert via builder in the future.
     let new_role = UserRole { user_id: 2, role_id: 20, assigned_at: "2025-02-01".to_string() };
 
     let inserted_role = new_role.upsert(&mut conn)?;

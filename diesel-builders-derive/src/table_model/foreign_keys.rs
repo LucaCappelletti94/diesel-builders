@@ -59,9 +59,10 @@ pub fn generate_foreign_key_impls(
 
             for group in extract_same_as_columns(other_field)? {
                 // Check for disambiguators in the group
-                // A disambiguator is a path with a single segment that matches the current
-                // field name. If there are any single-segment paths in the
-                // group, at least one must match `field_name`.
+                // A disambiguator is a path with a single segment that matches
+                // the current field name. If there are any
+                // single-segment paths in the group, at least
+                // one must match `field_name`.
                 let disambiguators: Vec<_> =
                     group.iter().filter(|p| p.segments.len() == 1).collect();
 
@@ -88,8 +89,9 @@ pub fn generate_foreign_key_impls(
 
                     let table_name = &ref_col.segments[number_of_segments - 2].ident;
 
-                    // Construct a path from table_path_segments to compare with ref_table
-                    // This is a bit heuristic. We check if ref_table ends with the table name found
+                    // Construct a path from table_path_segments to compare with
+                    // ref_table This is a bit heuristic. We
+                    // check if ref_table ends with the table name found
                     // in same_as. Or better, we check if the segments match.
 
                     if ref_table_name == table_name {
@@ -102,7 +104,8 @@ pub fn generate_foreign_key_impls(
                         };
 
                         // 1. Generate allow_tables_to_appear_in_same_query
-                        // We use the second column for table extraction as the first one is complex
+                        // We use the second column for table extraction as the
+                        // first one is complex
                         // (PrimaryKey)
                         if let Some(ref_table) =
                             crate::utils::extract_table_path_from_column(&ref_col)
@@ -209,8 +212,9 @@ pub fn generate_explicit_foreign_key_impls(
             );
         }
 
-        // If this is a single column FK that will become an FPK, skip HostColumn
-        // generation to avoid conflict with blanket implementation.
+        // If this is a single column FK that will become an FPK, skip
+        // HostColumn generation to avoid conflict with blanket
+        // implementation.
         if fk.host_columns.len() == 1 && fpk_column_names.contains(&fk.host_columns[0].to_string())
         {
             continue;
@@ -477,8 +481,9 @@ fn collect_triangular_foreign_keys<'a>(
             }
 
             for group in extract_same_as_columns(other_field)? {
-                // Check disambiguators: if there are single-segment paths in the group,
-                // at least one must match the current field name
+                // Check disambiguators: if there are single-segment paths in
+                // the group, at least one must match the
+                // current field name
                 let disambiguators: Vec<_> =
                     group.iter().filter(|p| p.segments.len() == 1).collect();
 
@@ -500,7 +505,8 @@ fn collect_triangular_foreign_keys<'a>(
                     let table_name = &ref_col.segments[ref_col.segments.len() - 2].ident;
 
                     if ref_table_name == table_name {
-                        // Found a triangular FK: (mandatory/discr_id, same_as_field) ->
+                        // Found a triangular FK: (mandatory/discr_id,
+                        // same_as_field) ->
                         // (RefTable::PK, RefTable::column)
                         let ref_pk = quote!(
                             <#ref_table::table as ::diesel::Table>::PrimaryKey
@@ -544,8 +550,8 @@ fn collect_explicit_foreign_keys<'a>(
         let ref_cols_tokens: Vec<_> = ref_cols_paths.iter().map(|p| quote!(#p)).collect();
 
         // Create a unique grouping key from the referenced columns
-        // This logic ensures that FKs targeting the same sets of columns are grouped
-        // together for iteration.
+        // This logic ensures that FKs targeting the same sets of columns are
+        // grouped together for iteration.
         let parts: Vec<String> = ref_cols_paths
             .iter()
             .map(|p| {
@@ -622,9 +628,9 @@ fn generate_impls_for_groups<'b>(
         assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
         let first_key = keys[0];
 
-        // Determine base types (inner types T for T or Option<T>) of the host fields
-        // We use the first key as a template. All keys in group target same index,
-        // implies they have compatible types.
+        // Determine base types (inner types T for T or Option<T>) of the host
+        // fields We use the first key as a template. All keys in group
+        // target same index, implies they have compatible types.
         let mut base_types = Vec::new();
         for field in &first_key.host_fields {
             let ty = &field.ty;
@@ -795,7 +801,8 @@ fn build_single_key_iterators(
     let simple_iter_expr = quote!(::std::iter::once(#simple_tuple_expr));
     let simple_iter_type = quote!(::std::iter::Once<#simple_elem_ty>);
 
-    // Full Iter: match (...) { (Some(v), ...) => Some(nested_tuple), _ => None }
+    // Full Iter: match (...) { (Some(v), ...) => Some(nested_tuple), _ => None
+    // }
     let match_exprs: Vec<_> = full_match_arms.iter().map(|(e, _)| e).collect();
     let match_pats: Vec<_> = full_match_arms.iter().map(|(_, p)| p).collect();
 

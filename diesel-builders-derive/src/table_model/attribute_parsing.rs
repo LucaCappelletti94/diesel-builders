@@ -76,7 +76,8 @@ pub fn extract_primary_key_columns(input: &DeriveInput) -> Vec<Ident> {
             if pk_columns.is_empty() { None } else { Some(pk_columns) }
         })
         .unwrap_or_else(|| {
-            // Default: if no primary_key attribute, assume "id" is the primary key
+            // Default: if no primary_key attribute, assume "id" is the primary
+            // key
             vec![syn::Ident::new("id", proc_macro2::Span::call_site())]
         })
 }
@@ -116,12 +117,14 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> syn::Result<TableM
                     syn::parenthesized!(content in meta.input);
                     let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
                         syn::punctuated::Punctuated::parse_terminated(&content)?;
-                    // Store ancestor module paths directly without ::table suffix
+                    // Store ancestor module paths directly without ::table
+                    // suffix
                     ancestors = Some(punct.into_iter().collect());
                 } else {
                     let value = meta.value()?;
                     let module_ident: syn::Path = value.parse()?;
-                    // Store ancestor module path directly without ::table suffix
+                    // Store ancestor module path directly without ::table
+                    // suffix
                     ancestors = Some(vec![module_ident]);
                 }
             } else if meta.path.is_ident("default") {
@@ -405,8 +408,8 @@ pub fn validate_field_attributes(field: &syn::Field) -> syn::Result<()> {
     }
 
     // Validate same_as attributes
-    // Check that each same_as attribute has proper parentheses and contains valid
-    // paths
+    // Check that each same_as attribute has proper parentheses and contains
+    // valid paths
     for attr in &field.attrs {
         if attr.path().is_ident("same_as") {
             // Ensure the attribute is in the form #[same_as(...)]
@@ -467,7 +470,8 @@ pub fn extract_same_as_columns(field: &syn::Field) -> syn::Result<Vec<Vec<syn::P
                     results.push(vec![first_path.clone(), tuple_path]);
                 }
             } else {
-                // Handle remaining paths as a list (legacy behavior or simple list)
+                // Handle remaining paths as a list (legacy behavior or simple
+                // list)
                 let remaining_paths: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
                     syn::punctuated::Punctuated::parse_terminated(input)?;
 

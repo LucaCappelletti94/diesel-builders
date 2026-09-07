@@ -23,7 +23,7 @@ where
     >
     where
         NestedIdx: 'a,
-    {
+{
         std::iter::empty()
     }
 }
@@ -45,7 +45,7 @@ where
     >
     where
         NestedIdx: 'a,
-    {
+{
         self.0.iter_match_simple()
     }
 }
@@ -68,7 +68,7 @@ where
     >
     where
         NestedIdx: 'a,
-    {
+{
         self.0.iter_match_simple().chain(self.1.iter_match_simple())
     }
 }

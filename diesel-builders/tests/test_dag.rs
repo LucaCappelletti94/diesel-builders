@@ -60,7 +60,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
         .try_color("Black")?
         .owner_name("Alice");
 
-    // Test generated helper traits - using fluent API (consumes and returns self)
+    // Test generated helper traits - using fluent API (consumes and returns
+    // self)
     let pet_builder = pet_builder.owner_name("Alice Smith"); // Helper method from SetPetOwnerName
 
     let builder_clone = pet_builder.clone();
@@ -114,8 +115,8 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
     // We expect 3 references:
     // 1. Dog -> Animal
     // 2. Cat -> Animal
-    // 3. Pet -> Animal (since Pet declares 'animals' in ancestors, acts as logical
-    //    FK)
+    // 3. Pet -> Animal (since Pet declares 'animals' in ancestors, acts as
+    //    logical FK)
     assert_eq!(animal_fk_refs.len(), 3);
     assert_eq!(animal_fk_match_refs.len(), 3);
 
@@ -224,7 +225,8 @@ fn test_diesel_error() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a builder for a Pet that extends both Dogs and Cats (DAG structure)
+    // Create a builder for a Pet that extends both Dogs and Cats (DAG
+    // structure)
     let builder = pets::table::builder()
         .try_name("Serialized Pet")?
         .breed("Mixed Breed")

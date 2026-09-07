@@ -51,7 +51,8 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_dog.breed(), "Golden Retriever");
     assert_eq!(loaded_dog, dog);
 
-    // Test delete cascade - deleting dog should cascade delete from animals table
+    // Test delete cascade - deleting dog should cascade delete from animals
+    // table
     let dog_id = dog.id();
     let deleted_rows = dog.delete(&mut conn)?;
     assert_eq!(deleted_rows, 1);

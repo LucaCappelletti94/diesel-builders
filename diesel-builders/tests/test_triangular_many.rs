@@ -143,8 +143,8 @@ fn test_triangular_many() -> Result<(), Box<dyn std::error::Error>> {
     let d3 = child.d3(&mut conn)?;
     assert_eq!(d3, discretionary);
 
-    // Test iter_foreign_keys - Child has 6 foreign keys to satellite_table (m1, m2,
-    // m3, d1, d2, d3) Using composite index (satellite_table::id,
+    // Test iter_foreign_keys - Child has 6 foreign keys to satellite_table (m1,
+    // m2, m3, d1, d2, d3) Using composite index (satellite_table::id,
     // satellite_table::field)
     let _m1 = child.m1(&mut conn)?;
     let _m2 = child.m2(&mut conn)?;

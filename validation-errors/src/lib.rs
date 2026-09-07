@@ -247,7 +247,8 @@ impl ValidationError {
         }
     }
 
-    /// Creates a new validation error for a date time field that is in the future.
+    /// Creates a new validation error for a date time field that is in the
+    /// future.
     ///
     /// # Arguments
     ///

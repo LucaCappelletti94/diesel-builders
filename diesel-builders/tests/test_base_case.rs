@@ -46,7 +46,8 @@ fn test_simple_table() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(builder.may_get_column_ref::<animals::name>(), None);
     assert_eq!(builder.may_get_column_ref::<animals::description>(), Some(&None));
 
-    // Test generated TrySetAnimalsName helper trait - fallible setter by reference
+    // Test generated TrySetAnimalsName helper trait - fallible setter by
+    // reference
     builder.try_name_ref("Max")?;
 
     // Test MayGetColumn derive - verifying field is set after mutation
@@ -398,8 +399,8 @@ fn test_try_get_dynamic_column_blanket_impls() -> Result<(), Box<dyn std::error:
     let columns = (dyn_name, (dyn_desc,));
 
     // Test Reference Multi
-    // We access via double reference to ensure logic applies to &Animal, preventing
-    // T=Animal inference which would fail.
+    // We access via double reference to ensure logic applies to &Animal,
+    // preventing T=Animal inference which would fail.
     let ref_animal = &animal;
     let (name_ref, (desc_ref,)) = (&ref_animal).try_get_dynamic_columns_ref(columns)?;
     assert_eq!(name_ref, Some(&expected_name));

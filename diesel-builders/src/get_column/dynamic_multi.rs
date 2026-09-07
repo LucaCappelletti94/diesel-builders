@@ -38,7 +38,7 @@ impl<T> TryGetDynamicColumns for T {
     ) -> Result<<<<DCS as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions, DynamicColumnError>
     where
         DCS: TypedNestedTuple + sealed::VariadicTryGetDynamicColumns<'a, Self>,
-    {
+{
         columns.variadic_try_get_dynamic_columns(self)
     }
 }

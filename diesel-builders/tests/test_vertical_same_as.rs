@@ -187,7 +187,8 @@ fn test_inheritance_vertical_same_as_checked() -> Result<(), Box<dyn std::error:
 
     let mut builder = child_table_checked::table::builder();
 
-    // If we try to set an empty value, it should fail validation from the parent.
+    // If we try to set an empty value, it should fail validation from the
+    // parent.
     let parent_err = builder.try_child_field_ref("").unwrap_err();
     assert!(matches!(
         parent_err,
@@ -195,8 +196,8 @@ fn test_inheritance_vertical_same_as_checked() -> Result<(), Box<dyn std::error:
     ));
     assert_eq!(parent_err.to_string(), "Field cannot be empty");
 
-    // If we try to set an excessively long value, it should fail validation from
-    // the child.
+    // If we try to set an excessively long value, it should fail validation
+    // from the child.
     let child_err = builder
         .try_child_field_ref("This is a very long string that exceeds the maximum allowed length for the child field.")
         .unwrap_err();

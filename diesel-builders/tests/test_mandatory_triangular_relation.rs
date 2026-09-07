@@ -128,9 +128,10 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
     mandatory_builder.field_ref("Value C");
 
     // Insert into table B (extends C and references A)
-    // The mandatory triangular relation means B's parent_id should automatically
-    // match C's parent_id when we only set C's columns
-    // Using generated trait methods like try_mandatory_ref for type-safe builders
+    // The mandatory triangular relation means B's parent_id should
+    // automatically match C's parent_id when we only set C's columns
+    // Using generated trait methods like try_mandatory_ref for type-safe
+    // builders
     let mut child_builder =
         child_with_satellite_table::table::builder().parent_field("Value A for B");
 
@@ -143,8 +144,8 @@ fn test_mandatory_triangular_relation() -> Result<(), Box<dyn std::error::Error>
         Err(ErrorChildWithMandatory::EmptyRemoteColumnC)
     );
 
-    // Since the operation has failed, the preliminary state of the builder should
-    // have remained unchanged.
+    // Since the operation has failed, the preliminary state of the builder
+    // should have remained unchanged.
     assert_eq!(child_builder, saved_child_builder);
 
     child_builder.try_mandatory_ref(mandatory_builder.clone())?.type_ref("Value B");
@@ -259,16 +260,17 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     mandatory_builder.field_ref("Value C");
 
     // Insert into table B (extends C and references A)
-    // The mandatory triangular relation means B's parent_id should automatically
-    // match C's parent_id when we only set C's columns
-    // Using generated trait methods like try_mandatory_ref for type-safe builders
+    // The mandatory triangular relation means B's parent_id should
+    // automatically match C's parent_id when we only set C's columns
+    // Using generated trait methods like try_mandatory_ref for type-safe
+    // builders
     let mut child_builder =
         simple_child_with_satellite_table::table::builder().parent_field("Value A for B");
 
     let saved_child_builder = child_builder.clone();
 
-    // Since the operation has failed, the preliminary state of the builder should
-    // have remained unchanged.
+    // Since the operation has failed, the preliminary state of the builder
+    // should have remained unchanged.
     assert_eq!(child_builder, saved_child_builder);
 
     child_builder.try_mandatory_ref(mandatory_builder.clone())?;
@@ -313,7 +315,8 @@ fn test_mandatory_triangular_relation_simple() -> Result<(), Box<dyn std::error:
     .collect();
     assert_eq!(refs.len(), 1);
     // iter_foreign_key_columns yields boxed host table columns
-    // We can verify the count but can't directly inspect the boxed trait objects
+    // We can verify the count but can't directly inspect the boxed trait
+    // objects
 
     Ok(())
 }
@@ -324,7 +327,8 @@ fn test_mandatory_triangular_relation_missing_builder_error() {
 
     use diesel_builders::{CompletedTableBuilderBundle, TableBuilderBundle};
 
-    // Create a TableBuilderBundle without setting the mandatory associated builder
+    // Create a TableBuilderBundle without setting the mandatory associated
+    // builder
     let b_bundle = TableBuilderBundle::<child_with_satellite_table::table>::default();
 
     // Try to convert to CompletedTableBuilderBundle - this should fail because

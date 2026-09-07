@@ -139,7 +139,8 @@ where
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         let value = value.into();
-        // We try to set eventual vertically-same-as columns in nested builders first.
+        // We try to set eventual vertically-same-as columns in nested builders
+        // first.
         self.try_set_homogeneous_nested_columns(&value)?;
         self.bundles.nested_index_mut().try_set_column(value)?;
         Ok(self)

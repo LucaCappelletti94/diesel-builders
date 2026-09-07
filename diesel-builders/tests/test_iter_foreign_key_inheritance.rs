@@ -96,9 +96,9 @@ fn test_iter_foreign_keys_inheritance() -> Result<(), Box<dyn std::error::Error>
 
     assert_eq!(fk_matches, vec![(heterogenous_edges::edge_type_id.into(),),]);
 
-    // Since both `Edge` and `HeterogenousEdge` have foreign keys to `nodes::id`,
-    // we should get two matches when iterating over foreign key matches for
-    // `nodes::id`.
+    // Since both `Edge` and `HeterogenousEdge` have foreign keys to
+    // `nodes::id`, we should get two matches when iterating over foreign
+    // key matches for `nodes::id`.
     let fk_node_matches: Vec<_> =
         <NestedType as IterForeignKeyExt>::iter_foreign_key_columns::<(nodes::id,)>().collect();
     assert_eq!(

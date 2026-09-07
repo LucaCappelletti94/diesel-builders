@@ -140,8 +140,8 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a builder for a Puppy that extends Dogs which extends Animals (chain
-    // inheritance)
+    // Create a builder for a Puppy that extends Dogs which extends Animals
+    // (chain inheritance)
     let builder = puppies::table::builder()
         .try_name("Serialized Puppy")?
         .breed("Beagle")
@@ -154,7 +154,8 @@ fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> 
     let deserialized: diesel_builders::TableBuilder<puppies::table> =
         serde_json::from_str(&serialized)?;
 
-    // Verify the values match - age_months is the only field directly in NewPuppy
+    // Verify the values match - age_months is the only field directly in
+    // NewPuppy
     assert_eq!(deserialized.may_get_column_ref::<puppies::age_months>(), Some(&6));
 
     Ok(())
@@ -189,8 +190,8 @@ fn test_load_nested_traits_chain() -> Result<(), Box<dyn std::error::Error>> {
         .insert_nested(&mut conn)?;
 
     // Test LoadNestedMany filtering by dogs::breed ("BreedA")
-    // This verifies we can filter on an ancestor column (dogs) while querying leaf
-    // (puppies) and retrieve the full nested structure.
+    // This verifies we can filter on an ancestor column (dogs) while querying
+    // leaf (puppies) and retrieve the full nested structure.
     let loaded_a = <(dogs::breed,) as LoadNestedMany<puppies::table, _>>::load_nested_many(
         ("BreedA",),
         &mut conn,
