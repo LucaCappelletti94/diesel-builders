@@ -3,6 +3,7 @@
 [![CI](https://github.com/LucaCappelletti94/diesel-builders/workflows/Rust%20CI/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
 [![Security Audit](https://github.com/LucaCappelletti94/diesel-builders/workflows/Security%20Audit/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
 [![Codecov](https://codecov.io/gh/LucaCappelletti94/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/LucaCappelletti94)
+[![Codacy](https://app.codacy.com/project/badge/Grade/11b7166bbf7a420db19534b5acc56025)](https://app.codacy.com/gh/LucaCappelletti94/diesel-builders/dashboard)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity. It provides fluent APIs for getting/setting column values and associated builders and models, executing foreign key queries, and [`serde`](https://github.com/serde-rs/serde) support.
