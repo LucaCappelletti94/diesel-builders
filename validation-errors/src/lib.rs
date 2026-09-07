@@ -809,7 +809,7 @@ mod tests {
     fn test_from_infallible() {
         // Infallible can't be created, but the impl exists
         // This test just ensures the impl compiles
-        let _ = |x: Infallible| ValidationError::from(x);
+        let _: fn(Infallible) -> ValidationError = ValidationError::from;
     }
 
     #[test]

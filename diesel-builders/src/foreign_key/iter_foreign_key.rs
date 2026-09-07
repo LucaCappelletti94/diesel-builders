@@ -233,7 +233,7 @@ pub trait IterForeignKeyExt {
         <Self as IterDynForeignKeys<DynIdx>>::iter_dyn_match_full(self, index)
     }
 
-    #[must_use]
+    #[must_use = "iterators are lazy and do nothing unless consumed"]
     #[inline]
     /// Returns an iterator over the foreign keys in this table.
     ///

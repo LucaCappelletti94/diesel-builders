@@ -1,42 +1,21 @@
 //! Submodule providing a `NestedInnerJoin` trait which constructs an inner join
-//! query for an n-uple of nested tables.
+//! query for a table and all of its ancestors.
 
-use diesel::{QueryDsl, dsl::InnerJoin, query_dsl::JoinWithImplicitOnClause, query_source::Inner};
+use crate::TableExt;
 
-use crate::{NestedTables, TableExt};
-
-/// The `NestedInnerJoin` trait allows constructing an inner join query
-/// for an n-uple of nested tables.
-pub trait NestedInnerJoin: NestedTables {
+/// The `NestedInnerJoin` trait constructs the inner-join query over a table and
+/// all of its ancestor tables.
+///
+/// It is implemented on the table itself by the `TableModel` derive macro,
+/// where the concrete ancestor table types are known. Building the join there
+/// means the recursive join kind marker (diesel's private `Inner`) never has to
+/// be named in a generic bound written by this crate, and the join query type,
+/// a foreign tuple-covered type, is defined in the crate that owns the tables
+/// rather than through an orphan impl.
+pub trait NestedInnerJoin: TableExt {
     /// The type of the constructed join query.
     type JoinQuery;
 
-    /// Constructs an inner join query.
+    /// Constructs an inner join query over the table and its ancestors.
     fn nested_inner_join() -> Self::JoinQuery;
-}
-
-impl<Head> NestedInnerJoin for (Head,)
-where
-    Head: TableExt,
-{
-    type JoinQuery = Head;
-
-    fn nested_inner_join() -> Self::JoinQuery {
-        Default::default()
-    }
-}
-
-impl<Head, Tail> NestedInnerJoin for (Head, Tail)
-where
-    Head: TableExt,
-    Tail:
-        NestedInnerJoin<JoinQuery: JoinWithImplicitOnClause<Head, Inner> + QueryDsl> + NestedTables,
-    (Head, Tail): NestedTables,
-{
-    type JoinQuery = InnerJoin<<Tail as NestedInnerJoin>::JoinQuery, Head>;
-
-    fn nested_inner_join() -> Self::JoinQuery {
-        let tail_join = Tail::nested_inner_join();
-        tail_join.inner_join(<Head as Default>::default())
-    }
 }

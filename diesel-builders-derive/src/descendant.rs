@@ -45,11 +45,43 @@ pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]
         }
     };
 
+    // Generate the `NestedInnerJoin` implementation for this table, joining the
+    // table with each of its ancestors. The join query type is a foreign
+    // tuple-covered type and its construction relies on diesel's private
+    // `Inner` join kind marker, so it cannot be produced by a generic library
+    // impl (that would violate the orphan rule and name a private item).
+    // Emitting it here, on the concrete local table type, sidesteps both: the
+    // self type is local, and building the join through `QueryDsl::inner_join`
+    // and the public `InnerJoin` alias keeps the marker unnamed while the
+    // compiler discharges the join bound itself.
+    let join_query_ty = ancestors.iter().rev().fold(quote! { #table_type }, |acc, ancestor| {
+        quote! { ::diesel::helper_types::InnerJoin<#acc, #ancestor> }
+    });
+    let join_query_expr = ancestors.iter().rev().fold(
+        quote! { <#table_type as ::core::default::Default>::default() },
+        |acc, ancestor| {
+            quote! {
+                ::diesel::QueryDsl::inner_join(
+                    #acc,
+                    <#ancestor as ::core::default::Default>::default(),
+                )
+            }
+        },
+    );
+
     quote! {
         #(#descendant_of_impls)*
 
         #self_ancestor_of_index
 
         #(#ancestor_of_index_impls)*
+
+        impl ::diesel_builders::load_nested_query_builder::NestedInnerJoin for #table_type {
+            type JoinQuery = #join_query_ty;
+
+            fn nested_inner_join() -> Self::JoinQuery {
+                #join_query_expr
+            }
+        }
     }
 }

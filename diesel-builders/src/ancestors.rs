@@ -1,22 +1,17 @@
 //! Submodule defining the `Descendant` trait.
 
 use diesel::{
-    AsChangeset, Identifiable, Insertable, QueryResult, RunQueryDsl, Table,
+    Identifiable, QueryResult, RunQueryDsl, Table,
     associations::HasTable,
-    connection::LoadConnection,
-    query_builder::{DeleteStatement, InsertStatement, IntoUpdateTarget},
-    query_dsl::{
-        DoUpdateDsl, OnConflictDsl,
-        methods::{ExecuteDsl, FindDsl, LoadQuery, SetUpdateDsl},
-    },
+    query_builder::{DeleteStatement, IntoUpdateTarget},
+    query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery},
 };
-use tuplities::prelude::{FlattenNestedTuple, NestTuple, NestedTupleInto, NestedTuplePushBack};
+use tuplities::prelude::{NestTuple, NestedTupleInto, NestedTuplePushBack};
 use typenum::Unsigned;
 
 use crate::{
     GetNestedColumns, NestedBundlableTables, NestedColumns, TableExt, TypedColumn,
-    TypedNestedTuple, columns::TupleEqAll, get_model::GetModel, load_query_builder::LoadFirst,
-    tables::NestedTables,
+    TypedNestedTuple, get_model::GetModel, load_query_builder::LoadFirst, tables::NestedTables,
 };
 
 /// Marker trait for root table models (tables with no ancestors).
@@ -285,46 +280,6 @@ pub trait ModelUpsert<Conn>: HasTable<Table: TableExt> {
     fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
     where
         Self: Sized;
-}
-
-impl<Conn, M> ModelUpsert<Conn> for M
-where
-    M: HasTable<Table: TableExt>
-        + GetNestedColumns<<<M::Table as Table>::AllColumns as NestTuple>::Nested>,
-    Conn: LoadConnection,
-    <<M::Table as Table>::AllColumns as NestTuple>::Nested:
-        TupleEqAll<EqAll: FlattenNestedTuple<Flattened: Insertable<M::Table> + AsChangeset<Target = M::Table>>>,
-    for<'query> InsertStatement<
-        Self::Table,
-        <<<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened as Insertable<Self::Table>>::Values,
-    >: OnConflictDsl<
-        <M::Table as Table>::PrimaryKey,
-        Output: DoUpdateDsl<Output: SetUpdateDsl<
-            <<<<M::Table as Table>::AllColumns as NestTuple>::Nested as TupleEqAll>::EqAll as FlattenNestedTuple>::Flattened,
-            Output: LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
-        >>
-    >,
-{
-    fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
-    where
-        Self: Sized,
-    {
-        use diesel::Table;
-        let table: M::Table = Default::default();
-        let columns = <<M::Table as Table>::AllColumns as NestTuple>::Nested::default();
-        let results: Vec<<Self::Table as TableExt>::Model> = diesel::insert_into(table)
-            .values(columns.eq_all(self.get_nested_columns()).flatten())
-            .on_conflict(table.primary_key())
-            .do_update()
-            .set(columns.eq_all(self.get_nested_columns()).flatten())
-            .get_results(conn)?;
-
-        if let Some(first) = results.into_iter().next() {
-            Ok(first)
-        } else {
-            Err(diesel::result::Error::NotFound)
-        }
-    }
 }
 
 /// A trait marker for getting the ancestor tables of a descendant table.
