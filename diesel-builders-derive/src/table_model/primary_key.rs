@@ -16,7 +16,7 @@ pub fn generate_indexed_column_impls(
         .iter()
         .enumerate()
         .map(|(idx, col)| {
-            let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+            let idx_type = crate::utils::typenum_ident(idx);
             quote! {
                 impl ::diesel_builders::UniquelyIndexedColumn<
                     ::diesel_builders::typenum::#idx_type,

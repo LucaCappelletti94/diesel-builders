@@ -111,13 +111,11 @@ pub fn generate_foreign_key_impls(
                             crate::utils::extract_table_path_from_column(&ref_col)
                         {
                             let host_table: syn::Path = syn::parse_quote!(#table_module);
-                            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(
+                            if let Some(stream) = crate::utils::allow_tables_to_appear_in_same_query(
                                 &host_table,
                                 &ref_table,
                             ) {
-                                impls.push(quote! {
-                                    ::diesel::allow_tables_to_appear_in_same_query!(#host_table, #ref_table);
-                                });
+                                impls.push(stream);
                             }
                         }
 
@@ -202,14 +200,10 @@ pub fn generate_explicit_foreign_key_impls(
         // Try extract table from first ref col for allow_same_query
         if let Some(first_ref) = ref_cols.first()
             && let Some(ref_table) = crate::utils::extract_table_path_from_column(first_ref)
-            && crate::utils::should_generate_allow_tables_to_appear_in_same_query(
-                &host_table_path,
-                &ref_table,
-            )
+            && let Some(stream) =
+                crate::utils::allow_tables_to_appear_in_same_query(&host_table_path, &ref_table)
         {
-            impls.push(
-                quote! { ::diesel::allow_tables_to_appear_in_same_query!(#table_module, #ref_table); },
-            );
+            impls.push(stream);
         }
 
         // If this is a single column FK that will become an FPK, skip
@@ -224,7 +218,7 @@ pub fn generate_explicit_foreign_key_impls(
             fk.host_columns.iter().map(|c| quote!(#table_module::#c)).collect();
 
         for (idx, host_col_ident) in fk.host_columns.iter().enumerate() {
-            let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+            let idx_type = crate::utils::typenum_ident(idx);
             let host_col = quote!(#table_module::#host_col_ident);
             impls.push(quote! {
                 impl ::diesel_builders::HostColumn<
@@ -240,13 +234,10 @@ pub fn generate_explicit_foreign_key_impls(
     for (_, (host_col_ident, tables)) in host_col_to_refs {
         if tables.len() == 1 {
             let ref_table = &tables[0];
-            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(
-                &host_table_path,
-                ref_table,
-            ) {
-                impls.push(
-                    quote! { ::diesel::allow_tables_to_appear_in_same_query!(#table_module, #ref_table); },
-                );
+            if let Some(stream) =
+                crate::utils::allow_tables_to_appear_in_same_query(&host_table_path, ref_table)
+            {
+                impls.push(stream);
             }
 
             if let Some(stream) =

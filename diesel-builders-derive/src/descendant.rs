@@ -12,7 +12,7 @@ pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]
     let num_ancestors = ancestors.len();
 
     // Generate TupleIndex for self (last position in ancestors + self)
-    let self_idx = syn::Ident::new(&format!("U{num_ancestors}"), proc_macro2::Span::call_site());
+    let self_idx = crate::utils::typenum_ident(num_ancestors);
 
     // Generate DescendantOf implementations for each direct ancestor
     let descendant_of_impls: Vec<_> = ancestors
@@ -29,7 +29,7 @@ pub fn generate_auxiliary_descendant_impls(table_type: &Type, ancestors: &[Type]
         .iter()
         .enumerate()
         .map(|(i, ancestor)| {
-            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
+            let idx = crate::utils::typenum_ident(i);
             quote! {
                 impl diesel_builders::AncestorOfIndex<#table_type> for #ancestor {
                     type Idx = diesel_builders::typenum::#idx;
