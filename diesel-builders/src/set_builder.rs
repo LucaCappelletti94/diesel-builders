@@ -161,270 +161,207 @@ where
     }
 }
 
-/// Extension trait for [`SetMandatoryBuilder`] that allows specifying the
-/// column at the method level.
+/// Emits an extension trait that lets callers pick the relationship marker at
+/// the method level instead of on the trait.
 ///
-/// This trait provides a cleaner API where the relationship type is specified
-/// as a type parameter on the method rather than on the trait itself. It
-/// enables method chaining with mandatory relationships.
-pub trait SetMandatoryBuilderExt: Sized {
-    /// Sets the mandatory builder for the specified column.
-    ///
-    /// # Type Parameters
-    ///
-    /// * `Key`: The specific mandatory relationship to set
-    #[inline]
-    fn set_mandatory_builder_ref<Key>(
-        &mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> &mut Self
-    where
-        Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetMandatoryBuilder<Key>,
-    {
-        <Self as SetMandatoryBuilder<Key>>::set_mandatory_builder(self, builder)
-    }
+/// The six builder/model extension traits are structurally identical within
+/// each flavour, differing only in their names, key bound, argument type, and
+/// whether they are fallible, so all of them are produced from this template.
+macro_rules! set_builder_ext {
+    (
+        @infallible
+        ext_trait = $ext:ident,
+        supertrait = $supertrait:path,
+        inner_trait = $inner:ident,
+        inner_method = $inner_method:ident,
+        ref_method = $ref_method:ident,
+        method = $method:ident,
+        key_bound = [$($key_bound:tt)+],
+        $arg:ident: $arg_ty:ty,
+        subject = $subject:literal,
+        link = $link:literal $(,)?
+    ) => {
+        #[doc = concat!(
+            "Extension trait for [`", $link, "`] that allows specifying the column at \
+             the method level.\n\nThis trait provides a cleaner API where the \
+             relationship is chosen with a method type parameter rather than on the \
+             trait itself."
+        )]
+        pub trait $ext: $supertrait {
+            #[doc = concat!("Sets the ", $subject, " for the specified column.")]
+            #[inline]
+            fn $ref_method<Key>(&mut self, $arg: $arg_ty) -> &mut Self
+            where
+                Key: $($key_bound)+,
+                Self: $inner<Key>,
+            {
+                <Self as $inner<Key>>::$inner_method(self, $arg)
+            }
 
-    /// Sets the mandatory builder for the specified column (consuming version).
-    ///
-    /// This is a convenience method that consumes self and returns it,
-    /// enabling fluent chaining.
-    ///
-    /// # Type Parameters
-    ///
-    /// * `Key`: The specific mandatory relationship to set
-    #[inline]
-    #[must_use]
-    fn set_mandatory_builder<Key>(mut self, builder: TableBuilder<Key::ReferencedTable>) -> Self
-    where
-        Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetMandatoryBuilder<Key>,
-    {
-        self.set_mandatory_builder_ref::<Key>(builder);
-        self
-    }
+            #[doc = concat!(
+                "Sets the ", $subject, " for the specified column, consuming and \
+                 returning `self` for fluent chaining."
+            )]
+            #[inline]
+            #[must_use]
+            fn $method<Key>(mut self, $arg: $arg_ty) -> Self
+            where
+                Key: $($key_bound)+,
+                Self: $inner<Key>,
+            {
+                self.$ref_method::<Key>($arg);
+                self
+            }
+        }
+
+        impl<T: $supertrait> $ext for T {}
+    };
+    (
+        @fallible
+        ext_trait = $ext:ident,
+        supertrait = $supertrait:path,
+        inner_trait = $inner:ident,
+        inner_method = $inner_method:ident,
+        ref_method = $ref_method:ident,
+        method = $method:ident,
+        key_bound = [$($key_bound:tt)+],
+        consume_bound = [$($consume_bound:tt)*],
+        $arg:ident: $arg_ty:ty,
+        subject = $subject:literal,
+        link = $link:literal $(,)?
+    ) => {
+        #[doc = concat!(
+            "Extension trait for [`", $link, "`] that allows specifying the column at \
+             the method level.\n\nThis trait provides a cleaner API where the \
+             relationship is chosen with a method type parameter rather than on the \
+             trait itself."
+        )]
+        pub trait $ext: $supertrait {
+            #[doc = concat!(
+                "Attempts to set the ", $subject, " for the specified column.\n\n\
+                 # Errors\n\nReturns an error if the ", $subject, " cannot be set."
+            )]
+            #[inline]
+            fn $ref_method<Key>(
+                &mut self,
+                $arg: $arg_ty,
+            ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
+            where
+                Key: $($key_bound)+,
+                Self: $inner<Key>,
+            {
+                <Self as $inner<Key>>::$inner_method(self, $arg)
+            }
+
+            #[doc = concat!(
+                "Attempts to set the ", $subject, " for the specified column, consuming \
+                 and returning `self` for fluent chaining.\n\n# Errors\n\nReturns an \
+                 error if the ", $subject, " cannot be set."
+            )]
+            #[inline]
+            fn $method<Key>(
+                mut self,
+                $arg: $arg_ty,
+            ) -> Result<Self, <Self::Table as TableExt>::Error>
+            where
+                Key: $($key_bound)+,
+                Self: $inner<Key> $($consume_bound)*,
+            {
+                self.$ref_method::<Key>($arg)?;
+                Ok(self)
+            }
+        }
+
+        impl<T: $supertrait> $ext for T {}
+    };
 }
 
-impl<T> SetMandatoryBuilderExt for T {}
-
-/// Extension trait for [`SetDiscretionaryBuilder`] that allows specifying the
-/// column at the method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-pub trait SetDiscretionaryBuilderExt: Sized {
-    /// Set the discretionary builder for the specified column.
-    #[inline]
-    fn set_discretionary_builder_ref<Key>(
-        &mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> &mut Self
-    where
-        Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetDiscretionaryBuilder<Key>,
-    {
-        <Self as SetDiscretionaryBuilder<Key>>::set_discretionary_builder(self, builder)
-    }
-
-    #[inline]
-    #[must_use]
-    /// Set the discretionary builder for the specified column.
-    fn set_discretionary_builder<Key>(mut self, builder: TableBuilder<Key::ReferencedTable>) -> Self
-    where
-        Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: SetDiscretionaryBuilder<Key>,
-    {
-        self.set_discretionary_builder_ref::<Key>(builder);
-        self
-    }
+set_builder_ext! {
+    @infallible
+    ext_trait = SetMandatoryBuilderExt,
+    supertrait = Sized,
+    inner_trait = SetMandatoryBuilder,
+    inner_method = set_mandatory_builder,
+    ref_method = set_mandatory_builder_ref,
+    method = set_mandatory_builder,
+    key_bound = [MandatorySameAsIndex<ReferencedTable: BuildableTable>],
+    builder: TableBuilder<Key::ReferencedTable>,
+    subject = "mandatory builder",
+    link = "SetMandatoryBuilder",
 }
 
-impl<T> SetDiscretionaryBuilderExt for T {}
-
-/// Extension trait for [`TrySetMandatoryBuilder`] that allows specifying the
-/// column at the method level.
-///
-/// This trait provides a failable API for setting mandatory relationships.
-/// Use this when you need to handle validation errors during relationship
-/// setup.
-pub trait TrySetMandatoryBuilderExt: HasTableExt {
-    /// Attempts to set the mandatory builder for the specified column.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the mandatory
-    /// relationship (e.g., validation failures).
-    ///
-    /// # Type Parameters
-    ///
-    /// * `Key`: The specific mandatory relationship to set
-    #[inline]
-    fn try_set_mandatory_builder_ref<Key>(
-        &mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
-    where
-        Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetMandatoryBuilder<Key>,
-    {
-        <Self as TrySetMandatoryBuilder<Key>>::try_set_mandatory_builder(self, builder)
-    }
-
-    /// Attempts to set the mandatory builder for the specified column
-    /// (consuming version).
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the mandatory
-    /// relationship.
-    ///
-    /// # Type Parameters
-    ///
-    /// * `Key`: The specific mandatory relationship to set
-    #[inline]
-    fn try_set_mandatory_builder<Key>(
-        mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<Self, <Self::Table as TableExt>::Error>
-    where
-        Key: MandatorySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetMandatoryBuilder<Key> + Sized,
-    {
-        self.try_set_mandatory_builder_ref::<Key>(builder)?;
-        Ok(self)
-    }
+set_builder_ext! {
+    @infallible
+    ext_trait = SetDiscretionaryBuilderExt,
+    supertrait = Sized,
+    inner_trait = SetDiscretionaryBuilder,
+    inner_method = set_discretionary_builder,
+    ref_method = set_discretionary_builder_ref,
+    method = set_discretionary_builder,
+    key_bound = [DiscretionarySameAsIndex<ReferencedTable: BuildableTable>],
+    builder: TableBuilder<Key::ReferencedTable>,
+    subject = "discretionary builder",
+    link = "SetDiscretionaryBuilder",
 }
 
-impl<T: HasTableExt> TrySetMandatoryBuilderExt for T {}
-
-/// Extension trait for [`TrySetDiscretionaryBuilder`] that allows specifying
-/// the column at the method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-pub trait TrySetDiscretionaryBuilderExt: HasTableExt {
-    /// Attempt to set the discretionary builder for the specified column.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the discretionary
-    /// relationship.
-    #[inline]
-    fn try_set_discretionary_builder_ref<Key>(
-        &mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
-    where
-        Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetDiscretionaryBuilder<Key>,
-    {
-        <Self as TrySetDiscretionaryBuilder<Key>>::try_set_discretionary_builder(self, builder)
-    }
-
-    #[inline]
-    /// Attempt to set the discretionary builder for the specified column.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the builder cannot be set for the discretionary
-    /// relationship.
-    fn try_set_discretionary_builder<Key>(
-        mut self,
-        builder: TableBuilder<Key::ReferencedTable>,
-    ) -> Result<Self, <Self::Table as TableExt>::Error>
-    where
-        Key: DiscretionarySameAsIndex<ReferencedTable: BuildableTable>,
-        Self: TrySetDiscretionaryBuilder<Key> + Sized,
-    {
-        self.try_set_discretionary_builder_ref::<Key>(builder)?;
-        Ok(self)
-    }
+set_builder_ext! {
+    @infallible
+    ext_trait = SetDiscretionaryModelExt,
+    supertrait = Sized,
+    inner_trait = SetDiscretionaryModel,
+    inner_method = set_discretionary_model,
+    ref_method = set_discretionary_model_ref,
+    method = set_discretionary_model,
+    key_bound = [DiscretionarySameAsIndex],
+    model: &<Key::ReferencedTable as TableExt>::Model,
+    subject = "discretionary model",
+    link = "SetDiscretionaryModel",
 }
 
-impl<T: HasTableExt> TrySetDiscretionaryBuilderExt for T {}
-
-/// Extension trait for [`SetDiscretionaryModel`] that allows specifying the
-/// column at the method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-pub trait SetDiscretionaryModelExt: Sized {
-    /// Set the discretionary model for the specified column.
-    #[inline]
-    fn set_discretionary_model_ref<Key>(
-        &mut self,
-        model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> &mut Self
-    where
-        Key: DiscretionarySameAsIndex,
-        Self: SetDiscretionaryModel<Key>,
-    {
-        <Self as SetDiscretionaryModel<Key>>::set_discretionary_model(self, model)
-    }
-
-    #[inline]
-    #[must_use]
-    /// Set the discretionary model for the specified column.
-    fn set_discretionary_model<Key>(
-        mut self,
-        model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Self
-    where
-        Key: DiscretionarySameAsIndex,
-        Self: SetDiscretionaryModel<Key>,
-    {
-        self.set_discretionary_model_ref::<Key>(model);
-        self
-    }
+set_builder_ext! {
+    @fallible
+    ext_trait = TrySetMandatoryBuilderExt,
+    supertrait = HasTableExt,
+    inner_trait = TrySetMandatoryBuilder,
+    inner_method = try_set_mandatory_builder,
+    ref_method = try_set_mandatory_builder_ref,
+    method = try_set_mandatory_builder,
+    key_bound = [MandatorySameAsIndex<ReferencedTable: BuildableTable>],
+    consume_bound = [+ Sized],
+    builder: TableBuilder<Key::ReferencedTable>,
+    subject = "mandatory builder",
+    link = "TrySetMandatoryBuilder",
 }
 
-impl<T> SetDiscretionaryModelExt for T {}
-
-/// Extension trait for [`TrySetDiscretionaryModel`] that allows specifying the
-/// column at the method level.
-///
-/// This trait provides a cleaner API where the column marker is specified as a
-/// type parameter on the method rather than on the trait itself.
-pub trait TrySetDiscretionaryModelExt: Sized {
-    /// Attempt to set the discretionary model for the specified column.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the model cannot be set for the discretionary
-    /// relationship.
-    #[inline]
-    fn try_set_discretionary_model_ref<Key>(
-        &mut self,
-        model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Result<&mut Self, <Self::Table as TableExt>::Error>
-    where
-        Key: DiscretionarySameAsIndex,
-        Self: TrySetDiscretionaryModel<Key>,
-    {
-        <Self as TrySetDiscretionaryModel<Key>>::try_set_discretionary_model(self, model)
-    }
-
-    #[inline]
-    /// Attempt to set the discretionary model for the specified column.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the model cannot be set for the discretionary
-    /// relationship.
-    fn try_set_discretionary_model<Key>(
-        mut self,
-        model: &<Key::ReferencedTable as TableExt>::Model,
-    ) -> Result<Self, <Self::Table as TableExt>::Error>
-    where
-        Key: DiscretionarySameAsIndex,
-        Self: TrySetDiscretionaryModel<Key>,
-    {
-        self.try_set_discretionary_model_ref::<Key>(model)?;
-        Ok(self)
-    }
+set_builder_ext! {
+    @fallible
+    ext_trait = TrySetDiscretionaryBuilderExt,
+    supertrait = HasTableExt,
+    inner_trait = TrySetDiscretionaryBuilder,
+    inner_method = try_set_discretionary_builder,
+    ref_method = try_set_discretionary_builder_ref,
+    method = try_set_discretionary_builder,
+    key_bound = [DiscretionarySameAsIndex<ReferencedTable: BuildableTable>],
+    consume_bound = [+ Sized],
+    builder: TableBuilder<Key::ReferencedTable>,
+    subject = "discretionary builder",
+    link = "TrySetDiscretionaryBuilder",
 }
 
-impl<T> TrySetDiscretionaryModelExt for T {}
+set_builder_ext! {
+    @fallible
+    ext_trait = TrySetDiscretionaryModelExt,
+    supertrait = Sized,
+    inner_trait = TrySetDiscretionaryModel,
+    inner_method = try_set_discretionary_model,
+    ref_method = try_set_discretionary_model_ref,
+    method = try_set_discretionary_model,
+    key_bound = [DiscretionarySameAsIndex],
+    consume_bound = [],
+    model: &<Key::ReferencedTable as TableExt>::Model,
+    subject = "discretionary model",
+    link = "TrySetDiscretionaryModel",
+}
 
 /// Trait to try set a column in a mandatory same-as relationship.
 pub trait TrySetMandatorySameAsColumn<
