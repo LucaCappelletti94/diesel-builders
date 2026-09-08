@@ -152,7 +152,7 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> syn::Result<TableM
                 let _comma: syn::Token![,] = content.parse()?;
 
                 // Parse target
-                let referenced_columns = if content.peek(syn::token::Paren) {
+                let referenced_columns: Vec<syn::Path> = if content.peek(syn::token::Paren) {
                     let inner;
                     syn::parenthesized!(inner in content);
                     let punct: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
@@ -161,6 +161,19 @@ pub fn extract_table_model_attributes(input: &DeriveInput) -> syn::Result<TableM
                 } else {
                     return Err(syn::Error::new(content.span(), "Expected list of columns"));
                 };
+
+                if host_columns.is_empty() {
+                    return Err(syn::Error::new(
+                        content.span(),
+                        "`foreign_key(...)` requires at least one host column",
+                    ));
+                }
+                if referenced_columns.is_empty() {
+                    return Err(syn::Error::new(
+                        content.span(),
+                        "`foreign_key(...)` requires at least one referenced column",
+                    ));
+                }
 
                 foreign_keys.push(ForeignKeyAttribute { host_columns, referenced_columns });
             }
