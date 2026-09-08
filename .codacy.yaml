@@ -1,6 +1,13 @@
 ---
-# Tests duplicate by design; every other tool and metric still covers them.
 engines:
+  # Tests duplicate by design; every other tool and metric still covers them.
   duplication:
     exclude_paths:
       - "**/tests/**"
+  # The proc-macro crate is code generation: its parsing, orchestration, and
+  # token assembly are inherently branchy and are already held to
+  # clippy::pedantic (denied) plus explicit, reasoned `too_many_lines` expects,
+  # so Codacy's generic cyclomatic-complexity metric only adds noise there.
+  metric:
+    exclude_paths:
+      - "diesel-builders-derive/**"
