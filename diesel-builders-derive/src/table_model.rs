@@ -56,7 +56,6 @@ struct ProcessedFields {
 }
 
 /// Process fields to extract columns, validation status, and default values.
-#[allow(clippy::too_many_lines)]
 fn process_fields(
     fields: &syn::punctuated::Punctuated<syn::Field, syn::token::Comma>,
     table_module: &syn::Ident,
@@ -100,59 +99,14 @@ fn process_fields(
         new_record_columns.push(syn::parse_quote!(#table_module::#field_name));
 
         if is_field_infallible(field) && attributes.error.is_none() {
-            let warning_msg = format!(
-                "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",
-            );
-
-            let mut span = field.span();
-            for attr in &field.attrs {
-                if attr.path().is_ident("infallible") {
-                    span = attr.span();
-                    break;
-                }
-                if attr.path().is_ident("table_model") {
-                    let mut found = false;
-                    let _ = attr.parse_nested_meta(|meta| {
-                        if meta.path.is_ident("infallible") {
-                            found = true;
-                        }
-                        Ok(())
-                    });
-                    if found {
-                        span = attr.span();
-                        break;
-                    }
-                }
-            }
-
-            let const_name =
-                syn::Ident::new(&format!("__WARN_REDUNDANT_INFALLIBLE_{field_name}"), span);
-            warnings.push(quote! {
-                const _: () = {
-                    #[deprecated(note = #warning_msg)]
-                    #[allow(non_upper_case_globals)]
-                    const #const_name: () = ();
-                    let _ = #const_name;
-                };
-            });
+            warnings.push(redundant_infallible_warning(field, field_name));
         }
 
         if is_field_infallible(field) || attributes.error.is_none() {
             infallible_records.push(syn::parse_quote!(#table_module::#field_name));
         }
 
-        // Default value logic
-        let user_default = extract_field_default_value(field);
-        let is_nullable = is_option(&field.ty);
-
-        let default_val = if let Some(def) = user_default {
-            quote::quote! { Some((#def).to_owned().into()) }
-        } else if is_nullable {
-            quote::quote! { Some(None) }
-        } else {
-            quote::quote! { None }
-        };
-        default_values.push(default_val);
+        default_values.push(field_default_value(field));
     }
 
     Ok(ProcessedFields { new_record_columns, infallible_records, default_values, warnings })
@@ -1081,4 +1035,59 @@ fn generate_allow_same_query_calls(
             crate::utils::allow_tables_to_appear_in_same_query(first, second)
         })
         .collect()
+}
+
+/// Computes the default-value expression for a field's slot in the new-record
+/// tuple: a user default if present, `Some(None)` for nullable columns, or
+/// `None` otherwise.
+fn field_default_value(field: &syn::Field) -> TokenStream {
+    let user_default = extract_field_default_value(field);
+    let is_nullable = is_option(&field.ty);
+    if let Some(def) = user_default {
+        quote::quote! { Some((#def).to_owned().into()) }
+    } else if is_nullable {
+        quote::quote! { Some(None) }
+    } else {
+        quote::quote! { None }
+    }
+}
+
+/// Builds a compile-time deprecation warning for a field marked `#[infallible]`
+/// on a model with no error type, where the attribute is redundant. The warning
+/// is anchored to the `#[infallible]` attribute when it can be located.
+fn redundant_infallible_warning(field: &syn::Field, field_name: &Ident) -> TokenStream {
+    let warning_msg = format!(
+        "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",
+    );
+
+    let mut span = field.span();
+    for attr in &field.attrs {
+        if attr.path().is_ident("infallible") {
+            span = attr.span();
+            break;
+        }
+        if attr.path().is_ident("table_model") {
+            let mut found = false;
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("infallible") {
+                    found = true;
+                }
+                Ok(())
+            });
+            if found {
+                span = attr.span();
+                break;
+            }
+        }
+    }
+
+    let const_name = syn::Ident::new(&format!("__WARN_REDUNDANT_INFALLIBLE_{field_name}"), span);
+    quote! {
+        const _: () = {
+            #[deprecated(note = #warning_msg)]
+            #[allow(non_upper_case_globals)]
+            const #const_name: () = ();
+            let _ = #const_name;
+        };
+    }
 }
