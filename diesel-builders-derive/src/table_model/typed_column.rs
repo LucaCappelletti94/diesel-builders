@@ -6,6 +6,33 @@ use syn::{Field, Ident, Token, punctuated::Punctuated};
 
 use crate::utils::snake_to_camel_case;
 
+/// Builds an identifier from `name` using call-site hygiene.
+fn ident(name: &str) -> Ident {
+    Ident::new(name, proc_macro2::Span::call_site())
+}
+
+/// Emits a marker trait carrying `methods` together with its blanket
+/// implementation for every `T` that satisfies `bound`.
+///
+/// The generated setter and getter surface is a family of `pub trait … : Bound`
+/// declarations each paired with an `impl<T> … for T where T: Bound {}`, so
+/// this centralises that scaffold and leaves every caller to supply only the
+/// per-trait methods.
+fn trait_with_blanket_impl(
+    name: &Ident,
+    bound: &TokenStream,
+    doc: &str,
+    methods: &TokenStream,
+) -> TokenStream {
+    quote! {
+        #[doc = #doc]
+        pub trait #name: #bound {
+            #methods
+        }
+        impl<T> #name for T where T: #bound {}
+    }
+}
+
 /// Generate `TypedColumn` implementations and associated setter/getter traits
 /// for all fields.
 pub fn generate_typed_column_impls(
@@ -118,27 +145,23 @@ fn generate_getter_trait(
     struct_ident: &Ident,
     camel_cased_field_name: &str,
 ) -> TokenStream {
-    let get_field_name = syn::Ident::new(
-        &format!("Get{struct_ident}{camel_cased_field_name}"),
-        proc_macro2::Span::call_site(),
-    );
+    let get_field_name = ident(&format!("Get{struct_ident}{camel_cased_field_name}"));
 
     let get_trait_doc_comment =
         format!("Trait to get the `{field_name}` column from a `{table_module}` table model.");
     let get_field_name_method_doc_comment =
         format!("Gets the value of the `{field_name}` column from a `{table_module}` table model.");
 
-    quote! {
-        #[doc = #get_trait_doc_comment]
-        pub trait #get_field_name: ::diesel_builders::GetColumn<#table_module::#field_name> {
-            #[inline]
-            #[doc = #get_field_name_method_doc_comment]
-            fn #method_name(&self) -> &<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType {
-                self.get_column_ref()
-            }
+    let bound = quote!(::diesel_builders::GetColumn<#table_module::#field_name>);
+    let methods = quote! {
+        #[inline]
+        #[doc = #get_field_name_method_doc_comment]
+        fn #method_name(&self) -> &<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType {
+            self.get_column_ref()
         }
-        impl<T> #get_field_name for T where T: ::diesel_builders::GetColumn<#table_module::#field_name> {}
-    }
+    };
+
+    trait_with_blanket_impl(&get_field_name, &bound, &get_trait_doc_comment, &methods)
 }
 
 /// Generate the `SetColumn` trait for a field.
@@ -150,12 +173,8 @@ fn generate_set_trait(
     struct_ident: &Ident,
     camel_cased_field_name: &str,
 ) -> TokenStream {
-    let set_field_name = syn::Ident::new(
-        &format!("Set{struct_ident}{camel_cased_field_name}"),
-        proc_macro2::Span::call_site(),
-    );
-    let field_name_ref =
-        syn::Ident::new(&format!("{clean_field_name}_ref"), proc_macro2::Span::call_site());
+    let set_field_name = ident(&format!("Set{struct_ident}{camel_cased_field_name}"));
+    let field_name_ref = ident(&format!("{clean_field_name}_ref"));
     let method_name = method_name_ident;
 
     let set_trait_doc_comment =
@@ -166,32 +185,30 @@ fn generate_set_trait(
     let field_name_method_doc_comment =
         format!("Sets the `{field_name}` column on a [`{table_module}`] table builder.");
 
-    quote! {
-        #[doc = #set_trait_doc_comment]
-        pub trait #set_field_name: diesel_builders::SetColumn<#table_module::#field_name> + Sized {
-            #[inline]
-            #[doc = #field_name_ref_method_doc_comment]
-            fn #field_name_ref(
-                &mut self,
-                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
-            ) -> &mut Self {
-                use diesel_builders::SetColumnExt;
-                self.set_column_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[must_use]
-            #[doc = #field_name_method_doc_comment]
-            fn #method_name(
-                self,
-                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
-            ) -> Self {
-                use diesel_builders::SetColumnExt;
-                self.set_column::<#table_module::#field_name>(value)
-            }
+    let bound = quote!(diesel_builders::SetColumn<#table_module::#field_name> + Sized);
+    let methods = quote! {
+        #[inline]
+        #[doc = #field_name_ref_method_doc_comment]
+        fn #field_name_ref(
+            &mut self,
+            value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
+        ) -> &mut Self {
+            use diesel_builders::SetColumnExt;
+            self.set_column_ref::<#table_module::#field_name>(value)
         }
+        #[inline]
+        #[must_use]
+        #[doc = #field_name_method_doc_comment]
+        fn #method_name(
+            self,
+            value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType>
+        ) -> Self {
+            use diesel_builders::SetColumnExt;
+            self.set_column::<#table_module::#field_name>(value)
+        }
+    };
 
-        impl<T> #set_field_name for T where T: diesel_builders::SetColumn<#table_module::#field_name> {}
-    }
+    trait_with_blanket_impl(&set_field_name, &bound, &set_trait_doc_comment, &methods)
 }
 
 /// Generate the `TrySetColumn` trait for a field.
@@ -202,14 +219,9 @@ fn generate_try_set_trait(
     struct_ident: &Ident,
     camel_cased_field_name: &str,
 ) -> TokenStream {
-    let try_set_field_name = syn::Ident::new(
-        &format!("TrySet{struct_ident}{camel_cased_field_name}"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_field_name =
-        syn::Ident::new(&format!("try_{clean_field_name}"), proc_macro2::Span::call_site());
-    let try_field_name_ref =
-        syn::Ident::new(&format!("try_{clean_field_name}_ref"), proc_macro2::Span::call_site());
+    let try_set_field_name = ident(&format!("TrySet{struct_ident}{camel_cased_field_name}"));
+    let try_field_name = ident(&format!("try_{clean_field_name}"));
+    let try_field_name_ref = ident(&format!("try_{clean_field_name}_ref"));
 
     let try_set_trait_doc_comment =
         format!("Trait to try to set the `{field_name}` column on a table builder.");
@@ -218,39 +230,37 @@ fn generate_try_set_trait(
     let try_field_name_method_doc_comment =
         format!("Tries to set the `{field_name}` column on a table builder.");
 
-    quote! {
-        #[doc = #try_set_trait_doc_comment]
-        pub trait #try_set_field_name: diesel_builders::TrySetColumn<#table_module::#field_name> + Sized {
-            #[inline]
-            #[doc = #try_field_name_ref_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the column check constraints are not respected."]
-            fn #try_field_name_ref(
-                &mut self,
-                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
-            ) -> Result<&mut Self, Self::Error> {
-                use diesel_builders::TrySetColumnExt;
-                self.try_set_column_ref::<#table_module::#field_name>(value)
-            }
-            #[inline]
-            #[doc = #try_field_name_method_doc_comment]
-            #[doc = ""]
-            #[doc = " # Errors"]
-            #[doc = ""]
-            #[doc = "Returns an error if the value cannot be converted to the column type."]
-            fn #try_field_name(
-                self,
-                value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
-            ) -> Result<Self, Self::Error> {
-                use diesel_builders::TrySetColumnExt;
-                self.try_set_column::<#table_module::#field_name>(value)
-            }
+    let bound = quote!(diesel_builders::TrySetColumn<#table_module::#field_name> + Sized);
+    let methods = quote! {
+        #[inline]
+        #[doc = #try_field_name_ref_method_doc_comment]
+        #[doc = ""]
+        #[doc = " # Errors"]
+        #[doc = ""]
+        #[doc = "Returns an error if the column check constraints are not respected."]
+        fn #try_field_name_ref(
+            &mut self,
+            value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
+        ) -> Result<&mut Self, Self::Error> {
+            use diesel_builders::TrySetColumnExt;
+            self.try_set_column_ref::<#table_module::#field_name>(value)
         }
+        #[inline]
+        #[doc = #try_field_name_method_doc_comment]
+        #[doc = ""]
+        #[doc = " # Errors"]
+        #[doc = ""]
+        #[doc = "Returns an error if the value cannot be converted to the column type."]
+        fn #try_field_name(
+            self,
+            value: impl Into<<#table_module::#field_name as ::diesel_builders::ColumnTyped>::ColumnType> + Clone
+        ) -> Result<Self, Self::Error> {
+            use diesel_builders::TrySetColumnExt;
+            self.try_set_column::<#table_module::#field_name>(value)
+        }
+    };
 
-        impl<T> #try_set_field_name for T where T: diesel_builders::TrySetColumn<#table_module::#field_name> {}
-    }
+    trait_with_blanket_impl(&try_set_field_name, &bound, &try_set_trait_doc_comment, &methods)
 }
 
 /// Generate the Typed implementation for a field.
@@ -308,10 +318,8 @@ fn generate_triangular_relation_traits(
     is_mandatory: bool,
     is_discretionary: bool,
 ) -> TokenStream {
-    let set_field_name_discretionary_model_trait = syn::Ident::new(
-        &format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"),
-        proc_macro2::Span::call_site(),
-    );
+    let set_field_name_discretionary_model_trait =
+        ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
     // Base method name: if column ends with `_id` strip it (e.g., `c_id` ->
     // `c`). If it's an `_id` column, use the base name for model/builder
     // methods (e.g., `.c()`), otherwise generate `{field_name}_model` and
@@ -328,67 +336,42 @@ fn generate_triangular_relation_traits(
     // For model methods, always use `{base}_model` (even for `_id` columns) to
     // avoid generating the same method name for both builder and model methods
     // which would cause ambiguous trait method resolution in Rust.
-    let set_field_name_model_method =
-        syn::Ident::new(&format!("{clean_base_field_name}_model"), proc_macro2::Span::call_site());
-    let set_field_name_model_method_ref = syn::Ident::new(
-        &format!("{clean_base_field_name}_model_ref"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_set_field_name_model_method = syn::Ident::new(
-        &format!("try_{clean_base_field_name}_model"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_set_field_name_model_method_ref = syn::Ident::new(
-        &format!("try_{clean_base_field_name}_model_ref"),
-        proc_macro2::Span::call_site(),
-    );
+    let set_field_name_model_method = ident(&format!("{clean_base_field_name}_model"));
+    let set_field_name_model_method_ref = ident(&format!("{clean_base_field_name}_model_ref"));
+    let try_set_field_name_model_method = ident(&format!("try_{clean_base_field_name}_model"));
+    let try_set_field_name_model_method_ref =
+        ident(&format!("try_{clean_base_field_name}_model_ref"));
     let set_field_name_builder_method_name =
         if is_id_col { base_field_name } else { format!("{clean_base_field_name}_builder") };
-    let set_field_name_builder_method =
-        syn::Ident::new(&set_field_name_builder_method_name, proc_macro2::Span::call_site());
+    let set_field_name_builder_method = ident(&set_field_name_builder_method_name);
     let set_field_name_builder_method_ref_name = if is_id_col {
         format!("{clean_base_field_name}_ref")
     } else {
         format!("{clean_base_field_name}_builder_ref")
     };
-    let set_field_name_builder_method_ref =
-        syn::Ident::new(&set_field_name_builder_method_ref_name, proc_macro2::Span::call_site());
+    let set_field_name_builder_method_ref = ident(&set_field_name_builder_method_ref_name);
     let try_set_field_name_builder_method_name = if is_id_col {
         format!("try_{clean_base_field_name}")
     } else {
         format!("try_{clean_base_field_name}_builder")
     };
-    let try_set_field_name_builder_method =
-        syn::Ident::new(&try_set_field_name_builder_method_name, proc_macro2::Span::call_site());
+    let try_set_field_name_builder_method = ident(&try_set_field_name_builder_method_name);
     let try_set_field_name_builder_method_ref_name = if is_id_col {
         format!("try_{clean_base_field_name}_ref")
     } else {
         format!("try_{clean_base_field_name}_builder_ref")
     };
-    let try_set_field_name_builder_method_ref = syn::Ident::new(
-        &try_set_field_name_builder_method_ref_name,
-        proc_macro2::Span::call_site(),
-    );
-    let set_field_name_mandatory_builder_trait = syn::Ident::new(
-        &format!("Set{struct_ident}{camel_cased_field_name}MandatoryBuilder"),
-        proc_macro2::Span::call_site(),
-    );
-    let set_field_name_discretionary_builder_trait = syn::Ident::new(
-        &format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_set_field_name_discretionary_model_trait = syn::Ident::new(
-        &format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryModel"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_set_field_name_mandatory_builder_trait = syn::Ident::new(
-        &format!("TrySet{struct_ident}{camel_cased_field_name}MandatoryBuilder"),
-        proc_macro2::Span::call_site(),
-    );
-    let try_set_field_name_discretionary_builder_trait = syn::Ident::new(
-        &format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"),
-        proc_macro2::Span::call_site(),
-    );
+    let try_set_field_name_builder_method_ref = ident(&try_set_field_name_builder_method_ref_name);
+    let set_field_name_mandatory_builder_trait =
+        ident(&format!("Set{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+    let set_field_name_discretionary_builder_trait =
+        ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
+    let try_set_field_name_discretionary_model_trait =
+        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
+    let try_set_field_name_mandatory_builder_trait =
+        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+    let try_set_field_name_discretionary_builder_trait =
+        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
 
     let set_discretionary_model_trait_doc_comment = format!(
         "Trait to set the `{field_name}` column model on a table builder relative to a discretionary triangular relation."
@@ -430,10 +413,11 @@ fn generate_triangular_relation_traits(
     // Generate discretionary traits only if the field is marked as
     // discretionary
     let discretionary_traits = if is_discretionary {
-        quote! {
-            #[doc = #set_discretionary_model_trait_doc_comment]
-            pub trait #set_field_name_discretionary_model_trait: diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized
-            {
+        let discretionary_model = trait_with_blanket_impl(
+            &set_field_name_discretionary_model_trait,
+            &quote!(diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized),
+            &set_discretionary_model_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #set_discretionary_model_method_doc_comment]
                 fn #set_field_name_model_method_ref(
@@ -453,16 +437,14 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::SetDiscretionaryModelExt;
                     self.set_discretionary_model::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #set_field_name_discretionary_model_trait for T
-                where
-                    T: diesel_builders::SetDiscretionaryModel<#table_module::#field_name>
-                {}
-
-            #[doc = #set_discretionary_builder_trait_doc_comment]
-            pub trait #set_field_name_discretionary_builder_trait: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized
-            {
+        let discretionary_builder = trait_with_blanket_impl(
+            &set_field_name_discretionary_builder_trait,
+            &quote!(diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized),
+            &set_discretionary_builder_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #set_discretionary_builder_method_doc_comment]
                 fn #set_field_name_builder_method_ref(
@@ -482,16 +464,14 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::SetDiscretionaryBuilderExt;
                     self.set_discretionary_builder::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #set_field_name_discretionary_builder_trait for T
-            where
-                T: diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name>
-                {}
-
-            #[doc = #try_set_discretionary_model_trait_doc_comment]
-            pub trait #try_set_field_name_discretionary_model_trait: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized
-            {
+        let try_discretionary_model = trait_with_blanket_impl(
+            &try_set_field_name_discretionary_model_trait,
+            &quote!(diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized),
+            &try_set_discretionary_model_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #try_set_discretionary_model_method_doc_comment]
                 #[doc = ""]
@@ -518,16 +498,14 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::TrySetDiscretionaryModelExt;
                     self.try_set_discretionary_model::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #try_set_field_name_discretionary_model_trait for T
-            where
-                T: diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name>
-                {}
-
-            #[doc = #try_set_discretionary_builder_trait_doc_comment]
-            pub trait #try_set_field_name_discretionary_builder_trait: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized
-            {
+        let try_discretionary_builder = trait_with_blanket_impl(
+            &try_set_field_name_discretionary_builder_trait,
+            &quote!(diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized),
+            &try_set_discretionary_builder_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #try_set_discretionary_builder_method_doc_comment]
                 #[doc = ""]
@@ -554,12 +532,14 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::TrySetDiscretionaryBuilderExt;
                     self.try_set_discretionary_builder::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #try_set_field_name_discretionary_builder_trait for T
-            where
-                T: diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name>
-                {}
+        quote! {
+            #discretionary_model
+            #discretionary_builder
+            #try_discretionary_model
+            #try_discretionary_builder
         }
     } else {
         quote! {}
@@ -567,10 +547,11 @@ fn generate_triangular_relation_traits(
 
     // Generate mandatory traits only if the field is marked as mandatory
     let mandatory_traits = if is_mandatory {
-        quote! {
-            #[doc = #set_mandatory_builder_trait_doc_comment]
-            pub trait #set_field_name_mandatory_builder_trait: diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized
-            {
+        let mandatory_builder = trait_with_blanket_impl(
+            &set_field_name_mandatory_builder_trait,
+            &quote!(diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized),
+            &set_mandatory_builder_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #set_mandatory_builder_method_doc_comment]
                 fn #set_field_name_builder_method_ref(
@@ -590,16 +571,14 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::SetMandatoryBuilderExt;
                     self.set_mandatory_builder::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #set_field_name_mandatory_builder_trait for T
-            where
-                T: diesel_builders::SetMandatoryBuilder<#table_module::#field_name>
-                {}
-
-            #[doc = #try_set_mandatory_builder_trait_doc_comment]
-            pub trait #try_set_field_name_mandatory_builder_trait: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized
-            {
+        let try_mandatory_builder = trait_with_blanket_impl(
+            &try_set_field_name_mandatory_builder_trait,
+            &quote!(diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized),
+            &try_set_mandatory_builder_trait_doc_comment,
+            &quote! {
                 #[inline]
                 #[doc = #try_set_mandatory_builder_method_doc_comment]
                 #[doc = ""]
@@ -626,12 +605,12 @@ fn generate_triangular_relation_traits(
                     use diesel_builders::TrySetMandatoryBuilderExt;
                     self.try_set_mandatory_builder::<#table_module::#field_name>(value)
                 }
-            }
+            },
+        );
 
-            impl<T> #try_set_field_name_mandatory_builder_trait for T
-            where
-                T: diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name>
-                {}
+        quote! {
+            #mandatory_builder
+            #try_mandatory_builder
         }
     } else {
         quote! {}
