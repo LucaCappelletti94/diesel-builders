@@ -132,20 +132,16 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
     for diesel::result::Error
 {
     fn from(error: BuilderError<E>) -> Self {
+        let check_violation = |info: Box<dyn DatabaseErrorInformation + Send + Sync>| {
+            diesel::result::Error::DatabaseError(
+                diesel::result::DatabaseErrorKind::CheckViolation,
+                info,
+            )
+        };
         match error {
             BuilderError::Diesel(e) => e,
-            BuilderError::Incomplete(e) => {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::CheckViolation,
-                    Box::new(e),
-                )
-            }
-            BuilderError::Validation(e) => {
-                diesel::result::Error::DatabaseError(
-                    diesel::result::DatabaseErrorKind::CheckViolation,
-                    Box::new(e),
-                )
-            }
+            BuilderError::Incomplete(e) => check_violation(Box::new(e)),
+            BuilderError::Validation(e) => check_violation(Box::new(e)),
         }
     }
 }

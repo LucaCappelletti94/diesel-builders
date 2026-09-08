@@ -60,19 +60,3 @@ impl<T> OptionalRef<T> for Option<T> {
         self.as_ref()
     }
 }
-
-/// Trait representing an object whose `ValueType` and `ColumnType` are the
-/// same, and therefore cannot be optional.
-///
-/// Extends [`ColumnTyped`].
-pub trait NonOptionalTyped: ColumnTyped<ValueType = <Self as ColumnTyped>::ColumnType> {}
-
-impl<T> NonOptionalTyped for T where T: ColumnTyped<ValueType = <T as ColumnTyped>::ColumnType> {}
-
-/// Trait representing an object whose `ColumnType` is an `Option` of its
-/// `ValueType`.
-///
-/// Extends [`ColumnTyped`].
-pub trait OptionalTyped: ColumnTyped<ColumnType = Option<<Self as ValueTyped>::ValueType>> {}
-
-impl<T> OptionalTyped for T where T: ColumnTyped<ColumnType = Option<<T as ValueTyped>::ValueType>> {}

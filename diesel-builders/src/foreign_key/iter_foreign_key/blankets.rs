@@ -1,9 +1,8 @@
 //! Blanket implementations of `IterForeignKey` for tuples.
 
-use tuplities::prelude::{IntoNestedTupleOption, NestedTupleRef};
-
+use super::OptRef;
 use crate::{
-    IterDynForeignKeys, IterForeignKeys, TryGetDynamicColumns, TypedNestedTuple,
+    IterDynForeignKeys, IterForeignKeys, TryGetDynamicColumns,
     columns::{HasNestedDynColumns, NestedDynColumns, NonEmptyNestedProjection},
 };
 
@@ -16,14 +15,10 @@ where
         std::iter::empty()
     }
 
-    fn iter_match_simple<'a>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<<NestedIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions,
-    >
+    fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = OptRef<'a, NestedIdx>>
     where
         NestedIdx: 'a,
-{
+    {
         std::iter::empty()
     }
 }
@@ -38,14 +33,10 @@ where
         T::iter_foreign_key_columns()
     }
 
-    fn iter_match_simple<'a>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<<NestedIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions,
-    >
+    fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = OptRef<'a, NestedIdx>>
     where
         NestedIdx: 'a,
-{
+    {
         self.0.iter_match_simple()
     }
 }
@@ -61,14 +52,10 @@ where
         Head::iter_foreign_key_columns().chain(Tail::iter_foreign_key_columns())
     }
 
-    fn iter_match_simple<'a>(
-        &'a self,
-    ) -> impl Iterator<
-        Item = <<<NestedIdx as TypedNestedTuple>::NestedTupleValueType as NestedTupleRef>::Ref<'a> as IntoNestedTupleOption>::IntoOptions,
-    >
+    fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = OptRef<'a, NestedIdx>>
     where
         NestedIdx: 'a,
-{
+    {
         self.0.iter_match_simple().chain(self.1.iter_match_simple())
     }
 }

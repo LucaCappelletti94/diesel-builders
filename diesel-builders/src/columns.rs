@@ -22,15 +22,11 @@ use tuplities::prelude::*;
 use crate::TypedNestedTuple;
 
 /// A trait representing a collection of Diesel columns.
-pub trait Columns: NestTuple<Nested: Default + TypedNestedTuple> {
-    /// Tables to which these columns belong.
-    type Tables: NestTuple;
-}
+pub trait Columns: NestTuple<Nested: Default + TypedNestedTuple> {}
 
 impl<T> Columns for T
 where
     T: NestTuple<Nested: NestedColumns>,
     <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened: NestTuple,
 {
-    type Tables = <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened;
 }
