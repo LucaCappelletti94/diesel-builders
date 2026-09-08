@@ -9,87 +9,77 @@ use crate::{
     columns::{NonEmptyNestedProjection, NonEmptyProjection},
 };
 
-/// A trait defining a table index for Diesel tables.
-pub trait TableIndex: NonEmptyProjection {}
-impl<I> TableIndex for I where
-    I: NonEmptyProjection + NestTuple<Nested: NestedTableIndexTail<typenum::U0, I>>
-{
+/// Emits the index-trait family (`…TableIndex`, `Nested…TableIndexTail`, and
+/// the per-column `…IndexedColumn`) for one flavour, plain or unique. The two
+/// flavours are identical apart from their trait names, so both are generated
+/// from this template.
+macro_rules! index_traits {
+    (
+        kind = $kind:literal,
+        table_index = $table_index:ident,
+        nested_tail = $nested_tail:ident,
+        column = $column:ident $(,)?
+    ) => {
+        #[doc = concat!("A trait defining a ", $kind, "table index for Diesel tables.")]
+        pub trait $table_index: NonEmptyProjection {}
+        impl<I> $table_index for I where
+            I: NonEmptyProjection + NestTuple<Nested: $nested_tail<typenum::U0, I>>
+        {
+        }
+
+        #[doc = concat!(
+            "A trait defining a tail of a ", $kind,
+            "table index starting from a given index.\n\nThis trait may not \
+             define a full index, but only the tail part starting from a given \
+             index."
+        )]
+        pub trait $nested_tail<Idx, FullIndex>: NonEmptyNestedProjection {}
+
+        impl<Idx, C1, FullIndex> $nested_tail<Idx, FullIndex> for (C1,)
+        where
+            C1: $column<Idx, FullIndex, Table: TableExt>,
+            FullIndex: NonEmptyProjection<Table = C1::Table>,
+            <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
+        {
+        }
+
+        impl<Idx, CHead, Ctail, FullIndex> $nested_tail<Idx, FullIndex> for (CHead, Ctail)
+        where
+            (CHead, Ctail): NonEmptyNestedProjection<Table = CHead::Table>
+                + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = CHead::Table>>,
+            CHead: $column<Idx, FullIndex>,
+            Ctail: $nested_tail<typenum::Add1<Idx>, FullIndex>,
+            Idx: core::ops::Add<typenum::B1>,
+            FullIndex: NonEmptyProjection<Table = CHead::Table>,
+            <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = CHead>,
+        {
+        }
+
+        #[doc = concat!("A trait for Diesel columns which are part of a ", $kind, "table index.")]
+        pub trait $column<
+            Idx,
+            IndexedColumns: NonEmptyProjection<Table = Self::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
+        >: TypedColumn
+        {
+        }
+    };
 }
 
-/// A trait defining a UNIQUE table index for Diesel tables.
-pub trait UniqueTableIndex: NonEmptyProjection {}
-impl<I> UniqueTableIndex for I where
-    I: NonEmptyProjection + NestTuple<Nested: NestedUniqueTableIndexTail<typenum::U0, I>>
-{
+index_traits! {
+    kind = "",
+    table_index = TableIndex,
+    nested_tail = NestedTableIndexTail,
+    column = IndexedColumn,
 }
 
-/// A trait defining a tail of a table index starting from a given index.
-///
-/// This trait may not define a full index, but only the tail part starting
-/// from a given index.
-pub trait NestedTableIndexTail<Idx, FullIndex>: NonEmptyNestedProjection {}
-
-impl<Idx, C1, FullIndex> NestedTableIndexTail<Idx, FullIndex> for (C1,)
-where
-    C1: IndexedColumn<Idx, FullIndex, Table: TableExt>,
-    FullIndex: NonEmptyProjection<Table = C1::Table>,
-    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
-{
+index_traits! {
+    kind = "UNIQUE ",
+    table_index = UniqueTableIndex,
+    nested_tail = NestedUniqueTableIndexTail,
+    column = UniquelyIndexedColumn,
 }
 
-impl<Idx, CHead, Ctail, FullIndex> NestedTableIndexTail<Idx, FullIndex> for (CHead, Ctail)
-where
-    (CHead, Ctail): NonEmptyNestedProjection<Table = CHead::Table>
-        + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = CHead::Table>>,
-    CHead: IndexedColumn<Idx, FullIndex>,
-    Ctail: NestedTableIndexTail<typenum::Add1<Idx>, FullIndex>,
-    Idx: core::ops::Add<typenum::B1>,
-    FullIndex: NonEmptyProjection<Table = CHead::Table>,
-    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = CHead>,
-{
-}
-
-/// A trait defining a tail of a UNIQUE table index starting from a given index.
-///
-/// This trait may not define a full index, but only the tail part starting
-/// from a given index.
-pub trait NestedUniqueTableIndexTail<Idx, FullIndex>: NonEmptyNestedProjection {}
-
-impl<Idx, C1, FullIndex> NestedUniqueTableIndexTail<Idx, FullIndex> for (C1,)
-where
-    C1: UniquelyIndexedColumn<Idx, FullIndex, Table: TableExt>,
-    FullIndex: NonEmptyProjection<Table = C1::Table>,
-    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = C1>,
-{
-}
-
-impl<Idx, CHead, Ctail, FullIndex> NestedUniqueTableIndexTail<Idx, FullIndex> for (CHead, Ctail)
-where
-    (CHead, Ctail): NonEmptyNestedProjection<Table = CHead::Table>
-        + FlattenNestedTuple<Flattened: NonEmptyProjection<Table = CHead::Table>>,
-    CHead: UniquelyIndexedColumn<Idx, FullIndex>,
-    Ctail: NestedUniqueTableIndexTail<typenum::Add1<Idx>, FullIndex>,
-    Idx: core::ops::Add<typenum::B1>,
-    FullIndex: NonEmptyProjection<Table = CHead::Table>,
-    <FullIndex as NestTuple>::Nested: NestedTupleIndex<Idx, Element = CHead>,
-{
-}
-
-/// A trait for Diesel columns which are part of a `NestedTableIndex`.
-pub trait IndexedColumn<
-    Idx,
-    IndexedColumns: NonEmptyProjection<Table = Self::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
->: TypedColumn
-{
-}
-
-/// A trait for Diesel columns which are part of a `NestedUniqueTableIndex`.
-pub trait UniquelyIndexedColumn<
-    Idx,
-    UniquelyIndexedColumns: NonEmptyProjection<Table = Self::Table, Nested: NestedTupleIndex<Idx, Element = Self>>,
->: TypedColumn
-{
-}
+// Every uniquely-indexed column is also an ordinarily indexed column.
 impl<Idx, C, IndexedColumns> IndexedColumn<Idx, IndexedColumns> for C
 where
     C: UniquelyIndexedColumn<Idx, IndexedColumns>,

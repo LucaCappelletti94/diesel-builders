@@ -62,23 +62,7 @@ macro_rules! impl_try_get_dynamic_column {
     };
 }
 
-impl_try_get_dynamic_column!(&Head, Box<Head>, std::rc::Rc<Head>, std::sync::Arc<Head>);
-
-impl<Head> TryGetDynamicColumn for (Head,)
-where
-    Head: HasTableExt,
-    Self: sealed::VariadicTryGetDynamicColumn<
-            <<Head::Table as Table>::AllColumns as NestTuple>::Nested,
-        >,
-{
-    #[inline]
-    fn try_get_dynamic_column_ref<VT: 'static>(
-        &self,
-        column: DynColumn<VT>,
-    ) -> Result<Option<&VT>, DynamicColumnError> {
-        self.variadic_try_get_dynamic_column(column)
-    }
-}
+impl_try_get_dynamic_column!(&Head, Box<Head>, std::rc::Rc<Head>, std::sync::Arc<Head>, (Head,));
 
 impl<Head, Tail> TryGetDynamicColumn for (Head, Tail)
 where
