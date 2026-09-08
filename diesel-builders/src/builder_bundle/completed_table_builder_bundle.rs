@@ -11,7 +11,8 @@ use crate::{
     TrySetDiscretionarySameAsNestedColumns, TrySetMandatorySameAsColumn,
     TrySetMandatorySameAsNestedColumns, TrySetNestedColumns, TupleGetNestedColumns,
     TupleMayGetNestedColumns, TypedColumn, TypedNestedTuple, ValidateColumn,
-    builder_bundle::BundlableTableExt, columns::TupleEqAll,
+    builder_bundle::{BundlableTableExt, impl_bundle_shared},
+    columns::TupleEqAll,
     horizontal_same_as_group::HorizontalSameAsGroupExt,
 };
 
@@ -26,64 +27,7 @@ pub struct CompletedTableBuilderBundle<T: BundlableTableExt> {
     nested_discretionary_associated_builders: T::OptionalDiscretionaryNestedBuilders,
 }
 
-impl<T> HasTable for CompletedTableBuilderBundle<T>
-where
-    T: BundlableTableExt,
-{
-    type Table = T;
-
-    #[inline]
-    fn table() -> Self::Table {
-        T::default()
-    }
-}
-
-impl<T, C> ValidateColumn<C> for CompletedTableBuilderBundle<T>
-where
-    T: BundlableTableExt,
-    C: TypedColumn<Table = T>,
-    T::NewValues: ValidateColumn<C>,
-{
-    type Error = <T::NewValues as ValidateColumn<C>>::Error;
-
-    #[inline]
-    fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
-        self.insertable_model.validate_column_in_context(value)
-    }
-}
-
-impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
-where
-    T: BundlableTableExt,
-    C: HorizontalSameAsGroupExt<Table = T>,
-    Self: TrySetDiscretionarySameAsNestedColumns<
-            C::ValueType,
-            <T::NewValues as ValidateColumn<C>>::Error,
-            C::NestedDiscretionaryHorizontalKeys,
-            C::NestedDiscretionaryForeignColumns,
-        > + TrySetMandatorySameAsNestedColumns<
-            C::ValueType,
-            <T::NewValues as ValidateColumn<C>>::Error,
-            C::NestedMandatoryHorizontalKeys,
-            C::NestedMandatoryForeignColumns,
-        >,
-    T::NewValues: TrySetColumn<C>,
-{
-    #[inline]
-    fn try_set_column(
-        &mut self,
-        value: impl Into<C::ColumnType>,
-    ) -> Result<&mut Self, Self::Error> {
-        let value = value.into();
-        if let Some(value_ref) = value.as_optional_ref() {
-            self.validate_column_in_context(value_ref)?;
-        }
-        self.try_set_discretionary_same_as_nested_columns(&value)?;
-        self.try_set_mandatory_same_as_nested_columns(&value)?;
-        self.insertable_model.try_set_column(value)?;
-        Ok(self)
-    }
-}
+impl_bundle_shared!(CompletedTableBuilderBundle);
 
 impl<Key: MandatorySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
     TrySetMandatorySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
@@ -101,30 +45,6 @@ where
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
         self.nested_mandatory_associated_builders.nested_index_mut().try_set_column(value)?;
-        Ok(self)
-    }
-}
-
-impl<Key: DiscretionarySameAsIndex<Table: BundlableTableExt, ReferencedTable: BuildableTable>, C>
-    TrySetDiscretionarySameAsColumn<Key, C> for CompletedTableBuilderBundle<<Key as Column>::Table>
-where
-    C: TypedColumn<Table = Key::ReferencedTable>,
-    <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders:
-        NestedTupleIndexMut<Key::Idx, Element = Option<TableBuilder<C::Table>>>,
-    TableBuilder<C::Table>: TrySetColumn<C>,
-{
-    type Error = <TableBuilder<C::Table> as ValidateColumn<C>>::Error;
-
-    #[inline]
-    fn try_set_discretionary_same_as_column(
-        &mut self,
-        value: impl Into<C::ColumnType>,
-    ) -> Result<&mut Self, Self::Error> {
-        if let Some(builder) =
-            self.nested_discretionary_associated_builders.nested_index_mut().as_mut()
-        {
-            builder.try_set_column(value)?;
-        }
         Ok(self)
     }
 }
