@@ -611,7 +611,7 @@ fn generate_impls_for_groups<'b>(
     let mut dyn_impl_branches = Vec::new();
 
     for (_, (ref_cols, keys)) in groups {
-        let idx_type = recursive_tuple_type(ref_cols);
+        let idx_type = crate::utils::format_as_nested_tuple(ref_cols);
 
         assert!(!keys.is_empty(), "Cannot generate iterator for empty key group");
         let first_key = keys[0];
@@ -643,7 +643,7 @@ fn generate_impls_for_groups<'b>(
         // MatchSimpleIter: Nested tuple of Option<&T>
         let simple_item_types: Vec<_> =
             base_types.iter().map(|ty| quote!(::std::option::Option<&'a #ty>)).collect();
-        let simple_elem_ty = recursive_tuple_type(&simple_item_types);
+        let simple_elem_ty = crate::utils::format_as_nested_tuple(&simple_item_types);
         // Nested Dyn Index
         let dyn_elem_ty = recursive_dyn_tuple_type(&base_types);
 
@@ -785,7 +785,7 @@ fn build_single_key_iterators(
     }
 
     // Simple Iter
-    let simple_tuple_expr = recursive_tuple_expr(&simple_val_tokens);
+    let simple_tuple_expr = crate::utils::format_as_nested_tuple(&simple_val_tokens);
     let simple_iter_expr = quote!(::std::iter::once(#simple_tuple_expr));
     let simple_iter_type = quote!(::std::iter::Once<#simple_elem_ty>);
 
@@ -799,7 +799,7 @@ fn build_single_key_iterators(
     // Tuple pattern: (Some(v0), v1, ...)
     let match_pattern = quote!((#(#match_pats,)*));
 
-    let full_tuple_val = recursive_tuple_expr(&full_construction_vars);
+    let full_tuple_val = crate::utils::format_as_nested_tuple(&full_construction_vars);
 
     let full_opt_expr = quote! {
         match #match_target {
@@ -843,35 +843,6 @@ fn build_foreign_keys_iterator(
 }
 
 // Helpers for nested tuples
-/// Recursively builds a nested tuple type from a slice of types.
-/// `[A, B, C]` -> `(A, (B, (C,)))` (with unit termination if needed, or
-/// specific structure) Actually implementation logic:
-/// `[]` -> `()`
-/// `[single]` -> `(single,)`
-/// `[head, tail...]` -> `(head, tail_recursion)`
-/// e.g. `[A, B, C]` -> `(A, (B, (C,)))`
-fn recursive_tuple_type(types: &[TokenStream]) -> TokenStream {
-    match types {
-        [] => quote!(()),
-        [single] => quote!((#single,)),
-        [head, tail @ ..] => {
-            let tail_tokens = recursive_tuple_type(tail);
-            quote!((#head, #tail_tokens))
-        }
-    }
-}
-
-/// Recursively builds a nested tuple expression from a slice of expressions.
-fn recursive_tuple_expr(exprs: &[TokenStream]) -> TokenStream {
-    match exprs {
-        [] => quote!(()),
-        [single] => quote!((#single,)),
-        [head, tail @ ..] => {
-            let tail_tokens = recursive_tuple_expr(tail);
-            quote!((#head, #tail_tokens))
-        }
-    }
-}
 
 /// Recursively builds a nested tuple expression from a slice of expressions
 /// used to build a Dynamic Column Index
