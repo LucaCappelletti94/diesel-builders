@@ -7,7 +7,11 @@ engines:
   # The proc-macro crate is code generation: its parsing, orchestration, and
   # token assembly are inherently branchy and are already held to
   # clippy::pedantic (denied) plus explicit, reasoned `too_many_lines` expects,
-  # so Codacy's generic cyclomatic-complexity metric only adds noise there.
+  # so Codacy's generic cyclomatic-complexity analysis only adds noise there.
+  # `metric` silences the complexity metric and `lizard` the complexity issues.
   metric:
+    exclude_paths:
+      - "diesel-builders-derive/**"
+  lizard:
     exclude_paths:
       - "diesel-builders-derive/**"
