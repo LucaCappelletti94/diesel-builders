@@ -181,6 +181,26 @@ fn collect_triangular_columns(
     (mandatory_columns, discretionary_columns)
 }
 
+/// Generates a positional `SameAsIndex` implementation for each triangular
+/// column, mapping the column to its `typenum` tuple index.
+fn same_as_index_impls(
+    columns: &[syn::Type],
+    same_as_trait: &proc_macro2::TokenStream,
+) -> Vec<proc_macro2::TokenStream> {
+    columns
+        .iter()
+        .enumerate()
+        .map(|(index, column)| {
+            let idx = syn::Ident::new(&format!("U{index}"), proc_macro2::Span::call_site());
+            quote! {
+                impl ::diesel_builders::#same_as_trait for #column {
+                    type Idx = ::diesel_builders::typenum::#idx;
+                }
+            }
+        })
+        .collect()
+}
+
 /// Collect tables referenced by mandatory and discretionary fields.
 /// Returns a set of unique table paths.
 fn collect_triangular_relation_tables(
@@ -560,34 +580,12 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         }
     };
 
-    // Generate MandatorySameAsIndex implementations for mandatory columns
-    let mandatory_same_as_impls: Vec<_> = mandatory_columns
-        .iter()
-        .enumerate()
-        .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
-            quote! {
-                impl ::diesel_builders::MandatorySameAsIndex for #column {
-                    type Idx = ::diesel_builders::typenum::#idx;
-                }
-            }
-        })
-        .collect();
-
-    // Generate DiscretionarySameAsIndex implementations for discretionary
-    // columns
-    let discretionary_same_as_impls: Vec<_> = discretionary_columns
-        .iter()
-        .enumerate()
-        .map(|(i, column)| {
-            let idx = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
-            quote! {
-                impl ::diesel_builders::DiscretionarySameAsIndex for #column {
-                    type Idx = ::diesel_builders::typenum::#idx;
-                }
-            }
-        })
-        .collect();
+    // Generate the positional `SameAsIndex` implementations for the mandatory
+    // and discretionary triangular columns.
+    let mandatory_same_as_impls =
+        same_as_index_impls(&mandatory_columns, &quote!(MandatorySameAsIndex));
+    let discretionary_same_as_impls =
+        same_as_index_impls(&discretionary_columns, &quote!(DiscretionarySameAsIndex));
 
     // Collect Horizontal Keys
     // Map from TargetTable (last segment ident) to list of (KeyField,
