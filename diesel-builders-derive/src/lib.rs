@@ -65,7 +65,7 @@ fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream
 /// in the index.
 #[proc_macro]
 pub fn unique_index(input: TokenStream) -> TokenStream {
-    generate_index_impl(input, &quote::quote!(diesel_builders::UniquelyIndexedColumn))
+    generate_index_impl(input, &quote::quote!(::diesel_builders::UniquelyIndexedColumn))
 }
 
 /// Define a table index using SQL-like syntax.
@@ -74,5 +74,5 @@ pub fn unique_index(input: TokenStream) -> TokenStream {
 /// index.
 #[proc_macro]
 pub fn index(input: TokenStream) -> TokenStream {
-    generate_index_impl(input, &quote::quote!(diesel_builders::IndexedColumn))
+    generate_index_impl(input, &quote::quote!(::diesel_builders::IndexedColumn))
 }
