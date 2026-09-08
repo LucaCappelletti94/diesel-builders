@@ -76,15 +76,18 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
       - name: Install SQLite
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-      - name: Install tarpaulin
-        run: cargo install cargo-tarpaulin
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov
       - name: Generate coverage
-        run: cargo tarpaulin --engine=llvm --out xml --workspace --exclude diesel-builders-derive --exclude-files "diesel-builders-derive/*" --run-types AllTargets --run-types DocTests
+        run: cargo llvm-cov --workspace --exclude diesel-builders-derive --doctests --lcov --output-path lcov.info
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
           fail_ci_if_error: false
