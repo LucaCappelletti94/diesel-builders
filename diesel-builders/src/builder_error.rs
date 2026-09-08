@@ -145,3 +145,33 @@ impl<E: DatabaseErrorInformation + Send + Sync + 'static> From<BuilderError<E>>
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{BuilderError, IncompleteBuilderError};
+
+    fn missing_field() -> IncompleteBuilderError {
+        IncompleteBuilderError::MissingMandatoryField { table_name: "t", field_name: "f" }
+    }
+
+    #[test]
+    fn builder_error_converts_to_diesel_error() {
+        let passthrough: diesel::result::Error =
+            BuilderError::<IncompleteBuilderError>::Diesel(diesel::result::Error::NotFound).into();
+        assert!(matches!(passthrough, diesel::result::Error::NotFound));
+
+        for error in [
+            BuilderError::<IncompleteBuilderError>::Incomplete(missing_field()),
+            BuilderError::<IncompleteBuilderError>::Validation(missing_field()),
+        ] {
+            let converted: diesel::result::Error = error.into();
+            assert!(matches!(
+                converted,
+                diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::CheckViolation,
+                    _,
+                )
+            ));
+        }
+    }
+}
