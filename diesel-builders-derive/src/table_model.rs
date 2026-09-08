@@ -390,17 +390,21 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 if let Some(pk_field) = pk_field {
                     let same_as_cols_groups = extract_same_as_columns(pk_field)?;
 
-                    let has_same_as_to_mandatory =
-                        same_as_cols_groups.iter().flatten().any(|path| {
-                            let number_of_segments = path.segments.len();
-                            assert!(
-                                number_of_segments >= 2,
-                                "Column path in #[same_as(...)] must be in the format `table::column`"
-                            );
-                            let col_table = &path.segments[number_of_segments - 2];
-                            let mandatory_table = &mandatory_table.segments.last().unwrap();
-                            col_table.ident == mandatory_table.ident
-                        });
+                    let mandatory_table_ident = &mandatory_table.segments.last().unwrap().ident;
+                    let mut has_same_as_to_mandatory = false;
+                    for path in same_as_cols_groups.iter().flatten() {
+                        let number_of_segments = path.segments.len();
+                        if number_of_segments < 2 {
+                            return Err(syn::Error::new_spanned(
+                                path,
+                                "Column path in `#[same_as(...)]` must be in the format `table::column`",
+                            ));
+                        }
+                        if path.segments[number_of_segments - 2].ident == *mandatory_table_ident {
+                            has_same_as_to_mandatory = true;
+                            break;
+                        }
+                    }
 
                     if !has_same_as_to_mandatory {
                         let mandatory_table_str = tokens_to_string(&mandatory_table);

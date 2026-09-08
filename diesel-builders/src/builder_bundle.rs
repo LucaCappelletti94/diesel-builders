@@ -368,7 +368,7 @@ where
 
 impl<Key> TrySetDiscretionaryBuilder<Key> for TableBuilderBundle<Key::Table>
 where
-    Key::Table: BundlableTable,
+    Key::Table: BundlableTableExt,
     Key: DiscretionarySameAsIndex,
     Key::ReferencedTable: BuildableTable,
     <Key::Table as BundlableTableExt>::OptionalDiscretionaryNestedBuilders: NestedTupleIndexMut<

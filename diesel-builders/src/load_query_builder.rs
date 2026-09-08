@@ -14,7 +14,7 @@ use crate::{
 };
 
 /// The `LoadQueryBuilder` trait allows retrieving the foreign table
-/// model curresponding to specified foreign columns from a host table model.
+/// model corresponding to specified foreign columns from a host table model.
 pub trait LoadQueryBuilder: NonEmptyNestedProjection {
     /// The type of the constructed load query.
     type LoadQuery;
@@ -100,7 +100,7 @@ where
 
 /// The `LoadMany` trait allows retrieving several records from a load query.
 pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
-    /// Constructs a load query.
+    /// Returns all records matching the load query.
     ///
     /// # Arguments
     ///
@@ -136,9 +136,9 @@ where
 }
 
 /// The `LoadSorted` trait allows retrieving several records from a load
-/// query, sorted by a given expression.
+/// query, sorted by the primary key.
 pub trait LoadSorted<Conn>: LoadQueryBuilder<Table: TableExt> {
-    /// Constructs a load query.
+    /// Returns all records matching the load query, sorted by the primary key.
     ///
     /// # Arguments
     ///
@@ -180,7 +180,7 @@ where
 }
 
 /// The `LoadPaginated` trait allows retrieving several records from a
-/// load query, sorted by a given expression with offset and limit for
+/// load query, sorted by the primary key with offset and limit for
 /// pagination.
 pub trait LoadPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// Constructs a paginated load query.

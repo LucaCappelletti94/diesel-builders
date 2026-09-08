@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// The `GetForeign` trait allows retrieving the foreign table
-/// model curresponding to specified foreign columns from a host table model.
+/// model corresponding to specified foreign columns from a host table model.
 pub trait GetForeign<
     Conn,
     HostColumns: NonEmptyProjection<Nested: NonEmptyNestedProjection>,

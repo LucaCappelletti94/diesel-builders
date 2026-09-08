@@ -120,7 +120,7 @@ pub trait LoadNestedMany<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
-    /// Constructs a load query.
+    /// Returns all records matching the load query.
     ///
     /// # Arguments
     ///
@@ -162,7 +162,8 @@ pub trait LoadNestedSorted<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
-    /// Constructs a load query.
+    /// Returns all records matching the load query, sorted by the leaf table's
+    /// primary key.
     ///
     /// # Arguments
     ///
