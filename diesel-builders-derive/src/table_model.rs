@@ -271,6 +271,12 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     };
 
     if let Some(ancestors) = &attributes.ancestors {
+        if ancestors.is_empty() {
+            return Err(syn::Error::new_spanned(
+                input,
+                "`#[table_model(ancestors(...))]` must list at least one ancestor table",
+            ));
+        }
         let table_type_str = table_module.to_string();
 
         let mut seen = std::collections::HashSet::with_capacity(ancestors.len());
