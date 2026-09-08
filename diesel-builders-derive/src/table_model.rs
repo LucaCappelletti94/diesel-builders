@@ -296,7 +296,10 @@ struct HorizontalKeyInfo {
 }
 
 /// Main entry point for the `TableModel` derive macro.
-#[allow(clippy::too_many_lines)]
+#[expect(
+    clippy::too_many_lines,
+    reason = "orchestration entry point that parses the input then wires each TableModel codegen phase"
+)]
 pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> {
     let struct_ident = &input.ident;
 
@@ -484,30 +487,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     };
 
     let table_name = table_module.to_string();
-    // Generate `allow_tables_to_appear_in_same_query!` macro calls so that the
-    // table and all of its ancestors (plus triangular relations) may be joined
-    // in a single query. The nested inner join over a table's ancestors touches
-    // every ancestor pair, not just self-to-ancestor pairs, so every unordered
-    // pair among {self, ancestors} must be declared; triangular relations only
-    // need to co-occur with self.
-    let table_module_path: syn::Path = table_module.clone().into();
-    let ancestor_paths: Vec<&syn::Path> =
-        attributes.ancestors.iter().flat_map(|paths| paths.iter()).collect();
-    let mut allow_same_query_pairs: Vec<(&syn::Path, &syn::Path)> = Vec::new();
-    for (i, first) in ancestor_paths.iter().enumerate() {
-        allow_same_query_pairs.push((&table_module_path, first));
-        for second in &ancestor_paths[i + 1..] {
-            allow_same_query_pairs.push((first, second));
-        }
-    }
-    allow_same_query_pairs
-        .extend(triangular_relation_tables.iter().map(|other| (&table_module_path, other)));
-    let allow_same_query_calls = allow_same_query_pairs
-        .into_iter()
-        .filter_map(|(first, second)| {
-            crate::utils::allow_tables_to_appear_in_same_query(first, second)
-        })
-        .collect::<Vec<_>>();
+    let allow_same_query_calls =
+        generate_allow_same_query_calls(&table_module, &attributes, &triangular_relation_tables);
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
@@ -581,6 +562,252 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let discretionary_same_as_impls =
         same_as_index_impls(&discretionary_columns, &quote!(DiscretionarySameAsIndex));
 
+    let (horizontal_key_impls, column_horizontal_impls) =
+        generate_horizontal_key_impls(fields, &table_module)?;
+
+    // Generate VerticalSameAsGroup implementations for all columns
+    let vertical_same_as_impls = generate_vertical_same_as_impls(
+        fields,
+        &table_module,
+        &attributes,
+        &triangular_relation_tables,
+    )?;
+
+    // Generate foreign key implementations for triangular relations
+    let foreign_key_impls = generate_foreign_key_impls(fields, &table_module)?;
+
+    // Generate explicit foreign key implementations
+    let explicit_foreign_key_impls =
+        generate_explicit_foreign_key_impls(&attributes.foreign_keys, &table_module)?;
+
+    // Generate IterForeignKey implementations
+    let iter_foreign_key_impls = generate_iter_foreign_key_impls(
+        fields,
+        &attributes.foreign_keys,
+        attributes.ancestors.as_deref(),
+        &primary_key_columns,
+        &table_module,
+        struct_ident,
+    )?;
+
+    let buildable_table_impl = generate_buildable_table_impl(&table_module, &attributes)?;
+
+    let model_upsert_impl = generate_model_upsert_impl(struct_ident, &table_module);
+
+    // Generate final output
+    Ok(quote! {
+        #(#warnings)*
+        #table_macro
+        #typed_column_impls
+        #get_column_impls
+        #accumulated_traits_impls
+        #(#indexed_column_impls)*
+        #may_get_column_impls
+        #set_column_impls
+        #infallible_validate_column_impls
+        #descendant_impls
+        #bundlable_table_impl
+        #buildable_table_impl
+        #model_upsert_impl
+        #(#mandatory_same_as_impls)*
+        #(#discretionary_same_as_impls)*
+        #(#column_horizontal_impls)*
+        #(#horizontal_key_impls)*
+        #(#vertical_same_as_impls)*
+        #(#foreign_key_impls)*
+        #(#explicit_foreign_key_impls)*
+        #(#iter_foreign_key_impls)*
+
+        // Foreign primary key implementations for triangular relations
+        #(#triangular_fpk_impls)*
+
+        // Joinable implementations for ancestors (only if single primary key)
+        #(#joinable_impls)*
+
+        // Allow tables to appear in same query with ancestors
+        #(#allow_same_query_calls)*
+
+        // Warnings
+        #(#warnings)*
+
+        // Auto-implement TableExt for the table associated with this model.
+        impl ::diesel_builders::TableExt for #table_module::table {
+            const TABLE_NAME: &'static str = #table_name;
+            type NewRecord = #new_record;
+            type NewValues = #new_record_type;
+            type Model = #struct_ident;
+            type NestedPrimaryKeyColumns = #nested_primary_keys;
+            type Error = #error_type;
+
+            fn default_new_values() -> Self::NewValues {
+                #default_new_record
+            }
+        }
+    })
+}
+
+/// Generates the `ModelUpsert` implementation for the model.
+///
+/// The upsert statement chains diesel's inherent `on_conflict`, `do_update`,
+/// and `set` methods, whose trait bounds reference `diesel::internal` items and
+/// so cannot be named in a generic `where` clause. Emitting the impl where the
+/// table type is concrete lets the compiler discharge those bounds itself, so
+/// the only free parameter left is the connection.
+fn generate_model_upsert_impl(struct_ident: &Ident, table_module: &Ident) -> TokenStream {
+    let model_table_type = quote! { #table_module::table };
+    let upsert_nested_columns = quote! {
+        <<#model_table_type as ::diesel::Table>::AllColumns as ::diesel_builders::tuplities::NestTuple>::Nested
+    };
+    let upsert_changeset = quote! {
+        <<#upsert_nested_columns as ::diesel_builders::columns::TupleEqAll>::EqAll as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
+    };
+    let upsert_statement = quote! {
+        ::diesel::dsl::Set<
+            ::diesel::dsl::DoUpdate<
+                ::diesel::dsl::OnConflict<
+                    ::diesel::query_builder::InsertStatement<
+                        #model_table_type,
+                        <#upsert_changeset as ::diesel::Insertable<#model_table_type>>::Values,
+                    >,
+                    <#model_table_type as ::diesel::Table>::PrimaryKey,
+                >,
+            >,
+            #upsert_changeset,
+        >
+    };
+    quote! {
+        impl<Conn> ::diesel_builders::ModelUpsert<Conn> for #struct_ident
+        where
+            Conn: ::diesel::connection::LoadConnection,
+            for<'query> #upsert_statement: ::diesel::query_dsl::methods::LoadQuery<
+                'query,
+                Conn,
+                <#model_table_type as ::diesel_builders::TableExt>::Model,
+            >,
+        {
+            fn upsert(
+                &self,
+                conn: &mut Conn,
+            ) -> ::diesel::QueryResult<<#model_table_type as ::diesel_builders::TableExt>::Model>
+            where
+                Self: Sized,
+            {
+                use ::diesel::{RunQueryDsl, Table};
+                let table: #model_table_type = ::core::default::Default::default();
+                let columns = <#upsert_nested_columns as ::core::default::Default>::default();
+                let values = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
+                    ::diesel_builders::columns::TupleEqAll::eq_all(
+                        columns,
+                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
+                    ),
+                );
+                let changes = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
+                    ::diesel_builders::columns::TupleEqAll::eq_all(
+                        columns,
+                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
+                    ),
+                );
+                let results: ::std::vec::Vec<<#model_table_type as ::diesel_builders::TableExt>::Model> =
+                    ::diesel::insert_into(table)
+                        .values(values)
+                        .on_conflict(table.primary_key())
+                        .do_update()
+                        .set(changes)
+                        .get_results(conn)?;
+                match results.into_iter().next() {
+                    ::core::option::Option::Some(first) => ::core::result::Result::Ok(first),
+                    ::core::option::Option::None => {
+                        ::core::result::Result::Err(::diesel::result::Error::NotFound)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Generates the `BuildableTable` implementation, applying any
+/// `#[table_model(default(Table::column, value))]` overrides inside
+/// `default_bundles`.
+fn generate_buildable_table_impl(
+    table_module: &Ident,
+    attributes: &attribute_parsing::TableModelAttributes,
+) -> syn::Result<TokenStream> {
+    let mut overrides = Vec::new();
+    for (col_path, value) in &attributes.struct_defaults {
+        let segments: Vec<_> = col_path.segments.iter().collect();
+        if segments.len() < 2 {
+            return Err(syn::Error::new_spanned(
+                col_path,
+                "Column path in `default(...)` must be in the format `Table::Column`",
+            ));
+        }
+        let table_ident = &segments[segments.len() - 2].ident;
+
+        let mut found_idx = None;
+        let mut ancestor_count = 0;
+
+        if let Some(ancestors) = &attributes.ancestors {
+            ancestor_count = ancestors.len();
+            for (i, ancestor_path) in ancestors.iter().enumerate() {
+                if let Some(last_segment) = ancestor_path.segments.last()
+                    && last_segment.ident == *table_ident
+                {
+                    found_idx = Some(i);
+                    break;
+                }
+            }
+        }
+
+        if found_idx.is_none() && *table_module == *table_ident {
+            found_idx = Some(ancestor_count);
+        }
+
+        if found_idx.is_some() {
+            overrides.push(quote! {
+                {
+                    use ::diesel_builders::TrySetColumn;
+                    ::diesel_builders::TrySetColumn::<#col_path>::try_set_column(
+                        &mut builder,
+                        (#value).to_owned()
+                    ).expect(concat!("Invalid default value for column ", stringify!(#col_path)));
+                }
+            });
+        } else {
+            return Err(syn::Error::new_spanned(
+                col_path,
+                format!("Table `{table_ident}` not found in ancestors or self"),
+            ));
+        }
+    }
+
+    Ok(quote! {
+        impl ::diesel_builders::BuildableTable for #table_module::table {
+            type NestedAncestorBuilders =
+                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
+            type NestedCompletedAncestorBuilders =
+                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
+
+            fn default_bundles() -> Self::NestedAncestorBuilders {
+                #[allow(unused_mut)]
+                let mut bundles = <Self::NestedAncestorBuilders as Default>::default();
+                let mut builder = ::diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
+                #(#overrides)*
+                builder.into_bundles()
+            }
+        }
+    })
+}
+
+/// Computes the horizontal (triangular) same-as `HorizontalKey` and
+/// `HorizontalSameAsGroup` implementations for the table's fields.
+#[expect(
+    clippy::too_many_lines,
+    reason = "one cohesive pass that resolves same-as attributes into horizontal keys whose map borrows through the field list"
+)]
+fn generate_horizontal_key_impls(
+    fields: &syn::punctuated::Punctuated<syn::Field, syn::Token![,]>,
+    table_module: &Ident,
+) -> syn::Result<(Vec<TokenStream>, Vec<TokenStream>)> {
     // Collect Horizontal Keys
     // Map from TargetTable (last segment ident) to list of (KeyField,
     // IsMandatory, TargetTablePath)
@@ -821,222 +1048,37 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             })
         })
         .collect();
+    Ok((horizontal_key_impls, column_horizontal_impls))
+}
 
-    // Generate VerticalSameAsGroup implementations for all columns
-    let vertical_same_as_impls = generate_vertical_same_as_impls(
-        fields,
-        &table_module,
-        &attributes,
-        &triangular_relation_tables,
-    )?;
-
-    // Generate foreign key implementations for triangular relations
-    let foreign_key_impls = generate_foreign_key_impls(fields, &table_module)?;
-
-    // Generate explicit foreign key implementations
-    let explicit_foreign_key_impls =
-        generate_explicit_foreign_key_impls(&attributes.foreign_keys, &table_module)?;
-
-    // Generate IterForeignKey implementations
-    let iter_foreign_key_impls = generate_iter_foreign_key_impls(
-        fields,
-        &attributes.foreign_keys,
-        attributes.ancestors.as_deref(),
-        &primary_key_columns,
-        &table_module,
-        struct_ident,
-    )?;
-
-    // Generate BuildableTable implementation with default overrides
-    let mut overrides = Vec::new();
-    for (col_path, value) in &attributes.struct_defaults {
-        let segments: Vec<_> = col_path.segments.iter().collect();
-        if segments.len() < 2 {
-            return Err(syn::Error::new_spanned(
-                col_path,
-                "Column path in `default(...)` must be in the format `Table::Column`",
-            ));
-        }
-        let table_ident = &segments[segments.len() - 2].ident;
-
-        let mut found_idx = None;
-        let mut ancestor_count = 0;
-
-        if let Some(ancestors) = &attributes.ancestors {
-            ancestor_count = ancestors.len();
-            for (i, ancestor_path) in ancestors.iter().enumerate() {
-                if let Some(last_segment) = ancestor_path.segments.last()
-                    && last_segment.ident == *table_ident
-                {
-                    found_idx = Some(i);
-                    break;
-                }
-            }
-        }
-
-        if found_idx.is_none() && table_module == *table_ident {
-            found_idx = Some(ancestor_count);
-        }
-
-        if found_idx.is_some() {
-            overrides.push(quote! {
-                {
-                    use ::diesel_builders::TrySetColumn;
-                    ::diesel_builders::TrySetColumn::<#col_path>::try_set_column(
-                        &mut builder,
-                        (#value).to_owned()
-                    ).expect(concat!("Invalid default value for column ", stringify!(#col_path)));
-                }
-            });
-        } else {
-            return Err(syn::Error::new_spanned(
-                col_path,
-                format!("Table `{table_ident}` not found in ancestors or self"),
-            ));
+/// Builds the `allow_tables_to_appear_in_same_query!` invocations that let the
+/// table join with every ancestor pair and with each triangular relation.
+///
+/// The nested inner join over a table's ancestors touches every ancestor pair,
+/// not just self-to-ancestor pairs, so every unordered pair among the table and
+/// its ancestors must be declared; triangular relations only need to co-occur
+/// with the table itself.
+fn generate_allow_same_query_calls(
+    table_module: &Ident,
+    attributes: &attribute_parsing::TableModelAttributes,
+    triangular_relation_tables: &[syn::Path],
+) -> Vec<TokenStream> {
+    let table_module_path: syn::Path = table_module.clone().into();
+    let ancestor_paths: Vec<&syn::Path> =
+        attributes.ancestors.iter().flat_map(|paths| paths.iter()).collect();
+    let mut allow_same_query_pairs: Vec<(&syn::Path, &syn::Path)> = Vec::new();
+    for (i, first) in ancestor_paths.iter().enumerate() {
+        allow_same_query_pairs.push((&table_module_path, first));
+        for second in &ancestor_paths[i + 1..] {
+            allow_same_query_pairs.push((first, second));
         }
     }
-
-    let buildable_table_impl = quote! {
-        impl ::diesel_builders::BuildableTable for #table_module::table {
-            type NestedAncestorBuilders =
-                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
-            type NestedCompletedAncestorBuilders =
-                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
-
-            fn default_bundles() -> Self::NestedAncestorBuilders {
-                #[allow(unused_mut)]
-                let mut bundles = <Self::NestedAncestorBuilders as Default>::default();
-                let mut builder = ::diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
-                #(#overrides)*
-                builder.into_bundles()
-            }
-        }
-    };
-
-    // Generate the `ModelUpsert` implementation for this model. The upsert
-    // statement chains diesel's inherent `on_conflict`/`do_update`/`set`
-    // methods, whose trait bounds reference `diesel::internal` items and so
-    // cannot be named in a generic `where` clause. Emitting the impl here,
-    // where the table type is concrete, lets the compiler discharge those
-    // bounds itself; the only free parameter left is the connection.
-    let model_table_type = quote! { #table_module::table };
-    let upsert_nested_columns = quote! {
-        <<#model_table_type as ::diesel::Table>::AllColumns as ::diesel_builders::tuplities::NestTuple>::Nested
-    };
-    let upsert_changeset = quote! {
-        <<#upsert_nested_columns as ::diesel_builders::columns::TupleEqAll>::EqAll as ::diesel_builders::tuplities::FlattenNestedTuple>::Flattened
-    };
-    let upsert_statement = quote! {
-        ::diesel::dsl::Set<
-            ::diesel::dsl::DoUpdate<
-                ::diesel::dsl::OnConflict<
-                    ::diesel::query_builder::InsertStatement<
-                        #model_table_type,
-                        <#upsert_changeset as ::diesel::Insertable<#model_table_type>>::Values,
-                    >,
-                    <#model_table_type as ::diesel::Table>::PrimaryKey,
-                >,
-            >,
-            #upsert_changeset,
-        >
-    };
-    let model_upsert_impl = quote! {
-        impl<Conn> ::diesel_builders::ModelUpsert<Conn> for #struct_ident
-        where
-            Conn: ::diesel::connection::LoadConnection,
-            for<'query> #upsert_statement: ::diesel::query_dsl::methods::LoadQuery<
-                'query,
-                Conn,
-                <#model_table_type as ::diesel_builders::TableExt>::Model,
-            >,
-        {
-            fn upsert(
-                &self,
-                conn: &mut Conn,
-            ) -> ::diesel::QueryResult<<#model_table_type as ::diesel_builders::TableExt>::Model>
-            where
-                Self: Sized,
-            {
-                use ::diesel::{RunQueryDsl, Table};
-                let table: #model_table_type = ::core::default::Default::default();
-                let columns = <#upsert_nested_columns as ::core::default::Default>::default();
-                let values = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
-                    ::diesel_builders::columns::TupleEqAll::eq_all(
-                        columns,
-                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
-                    ),
-                );
-                let changes = ::diesel_builders::tuplities::FlattenNestedTuple::flatten(
-                    ::diesel_builders::columns::TupleEqAll::eq_all(
-                        columns,
-                        ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
-                    ),
-                );
-                let results: ::std::vec::Vec<<#model_table_type as ::diesel_builders::TableExt>::Model> =
-                    ::diesel::insert_into(table)
-                        .values(values)
-                        .on_conflict(table.primary_key())
-                        .do_update()
-                        .set(changes)
-                        .get_results(conn)?;
-                match results.into_iter().next() {
-                    ::core::option::Option::Some(first) => ::core::result::Result::Ok(first),
-                    ::core::option::Option::None => {
-                        ::core::result::Result::Err(::diesel::result::Error::NotFound)
-                    }
-                }
-            }
-        }
-    };
-
-    // Generate final output
-    Ok(quote! {
-        #(#warnings)*
-        #table_macro
-        #typed_column_impls
-        #get_column_impls
-        #accumulated_traits_impls
-        #(#indexed_column_impls)*
-        #may_get_column_impls
-        #set_column_impls
-        #infallible_validate_column_impls
-        #descendant_impls
-        #bundlable_table_impl
-        #buildable_table_impl
-        #model_upsert_impl
-        #(#mandatory_same_as_impls)*
-        #(#discretionary_same_as_impls)*
-        #(#column_horizontal_impls)*
-        #(#horizontal_key_impls)*
-        #(#vertical_same_as_impls)*
-        #(#foreign_key_impls)*
-        #(#explicit_foreign_key_impls)*
-        #(#iter_foreign_key_impls)*
-
-        // Foreign primary key implementations for triangular relations
-        #(#triangular_fpk_impls)*
-
-        // Joinable implementations for ancestors (only if single primary key)
-        #(#joinable_impls)*
-
-        // Allow tables to appear in same query with ancestors
-        #(#allow_same_query_calls)*
-
-        // Warnings
-        #(#warnings)*
-
-        // Auto-implement TableExt for the table associated with this model.
-        impl ::diesel_builders::TableExt for #table_module::table {
-            const TABLE_NAME: &'static str = #table_name;
-            type NewRecord = #new_record;
-            type NewValues = #new_record_type;
-            type Model = #struct_ident;
-            type NestedPrimaryKeyColumns = #nested_primary_keys;
-            type Error = #error_type;
-
-            fn default_new_values() -> Self::NewValues {
-                #default_new_record
-            }
-        }
-    })
+    allow_same_query_pairs
+        .extend(triangular_relation_tables.iter().map(|other| (&table_module_path, other)));
+    allow_same_query_pairs
+        .into_iter()
+        .filter_map(|(first, second)| {
+            crate::utils::allow_tables_to_appear_in_same_query(first, second)
+        })
+        .collect()
 }
