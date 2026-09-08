@@ -51,18 +51,8 @@ impl syn::parse::Parse for IndexDefinition {
 /// index.
 fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream) -> TokenStream {
     let index_def = syn::parse_macro_input!(input as IndexDefinition);
-    let cols: Vec<_> = index_def.columns.iter().collect();
-
-    let impls = cols.iter().enumerate().map(|(idx, col)| {
-        let idx_type = crate::utils::typenum_ident(idx);
-        quote::quote! {
-            impl #trait_path<
-                diesel_builders::typenum::#idx_type,
-                ( #(#cols,)* )
-            > for #col {}
-        }
-    });
-
+    let columns: Vec<_> = index_def.columns.iter().map(|col| quote::quote! { #col }).collect();
+    let impls = crate::utils::index_impls(trait_path, &columns);
     quote::quote! {
         #(#impls)*
     }

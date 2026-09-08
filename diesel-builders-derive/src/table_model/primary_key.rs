@@ -9,20 +9,7 @@ pub fn generate_indexed_column_impls(
     table_module: &syn::Ident,
     primary_key_columns: &[Ident],
 ) -> Vec<TokenStream> {
-    let pk_column_types: Vec<_> =
+    let columns: Vec<_> =
         primary_key_columns.iter().map(|col| quote! { #table_module::#col }).collect();
-
-    primary_key_columns
-        .iter()
-        .enumerate()
-        .map(|(idx, col)| {
-            let idx_type = crate::utils::typenum_ident(idx);
-            quote! {
-                impl ::diesel_builders::UniquelyIndexedColumn<
-                    ::diesel_builders::typenum::#idx_type,
-                    ( #(#pk_column_types,)* )
-                > for #table_module::#col {}
-            }
-        })
-        .collect()
+    crate::utils::index_impls(&quote! { ::diesel_builders::UniquelyIndexedColumn }, &columns)
 }

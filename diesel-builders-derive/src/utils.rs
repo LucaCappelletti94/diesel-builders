@@ -70,6 +70,51 @@ pub(crate) fn is_option(ty: &syn::Type) -> bool {
     false
 }
 
+/// Returns the first generic type argument of a type path, such as the `T` in
+/// `Foo<T, ..>`, or `None` when the type has no angle-bracketed type argument.
+pub(crate) fn first_generic_arg(ty: &syn::Type) -> Option<&syn::Type> {
+    let syn::Type::Path(type_path) = ty else {
+        return None;
+    };
+    let syn::PathArguments::AngleBracketed(args) = &type_path.path.segments.last()?.arguments
+    else {
+        return None;
+    };
+    match args.args.first()? {
+        syn::GenericArgument::Type(inner) => Some(inner),
+        _ => None,
+    }
+}
+
+/// Returns the inner type `T` of an `Option<T>`, or `None` for any other type.
+pub(crate) fn option_inner_type(ty: &syn::Type) -> Option<&syn::Type> {
+    is_option(ty).then(|| first_generic_arg(ty)).flatten()
+}
+
+/// Emits an index-marker `impl` for every column of an index.
+///
+/// Each column `col` at position `idx` gets
+/// `impl #trait_path<typenum::U{idx}, ( #columns, )> for col {}`, shared by the
+/// primary-key codegen and the `index!` / `unique_index!` proc macros.
+pub(crate) fn index_impls(
+    trait_path: &proc_macro2::TokenStream,
+    columns: &[proc_macro2::TokenStream],
+) -> Vec<proc_macro2::TokenStream> {
+    columns
+        .iter()
+        .enumerate()
+        .map(|(idx, col)| {
+            let idx_type = typenum_ident(idx);
+            quote::quote! {
+                impl #trait_path<
+                    ::diesel_builders::typenum::#idx_type,
+                    ( #(#columns,)* )
+                > for #col {}
+            }
+        })
+        .collect()
+}
+
 /// Convert a `CamelCase` string to `snake_case`.
 pub(crate) fn camel_to_snake_case(s: &str) -> String {
     let mut result = String::new();

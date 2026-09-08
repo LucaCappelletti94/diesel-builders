@@ -621,20 +621,7 @@ fn generate_impls_for_groups<'b>(
         // target same index, implies they have compatible types.
         let mut base_types = Vec::new();
         for field in &first_key.host_fields {
-            let ty = &field.ty;
-            let inner_ty = if crate::utils::is_option(ty) {
-                if let syn::Type::Path(type_path) = ty
-                    && let Some(segment) = type_path.path.segments.last()
-                    && let syn::PathArguments::AngleBracketed(args) = &segment.arguments
-                    && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
-                {
-                    inner
-                } else {
-                    ty // Fallback, shouldn't happen if is_option checks out
-                }
-            } else {
-                ty
-            };
+            let inner_ty = crate::utils::option_inner_type(&field.ty).unwrap_or(&field.ty);
             base_types.push(quote!(#inner_ty));
         }
 
