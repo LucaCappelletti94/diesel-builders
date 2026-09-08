@@ -8,6 +8,11 @@ use std::{
 
 use quote::ToTokens;
 
+/// Builds the `typenum` unsigned marker identifier `U{index}` such as `U0`.
+pub(crate) fn typenum_ident(index: usize) -> syn::Ident {
+    syn::Ident::new(&format!("U{index}"), proc_macro2::Span::call_site())
+}
+
 /// Static lookup struct to track which table pairs have already had
 /// `diesel::allow_tables_to_appear_in_same_query!` generated.
 /// This prevents duplicate macro invocations which would cause compile errors.
@@ -86,10 +91,7 @@ pub(crate) fn camel_to_snake_case(s: &str) -> String {
 ///
 /// Returns `true` if this pair hasn't been generated yet.
 /// Uses a static lookup struct to track pairs.
-pub(crate) fn should_generate_allow_tables_to_appear_in_same_query(
-    t1: &syn::Path,
-    t2: &syn::Path,
-) -> bool {
+fn should_generate_allow_tables_to_appear_in_same_query(t1: &syn::Path, t2: &syn::Path) -> bool {
     // Initialize the static map if needed
     let map = GENERATED_LINKS.get_or_init(|| Mutex::new(HashSet::new()));
 
@@ -116,6 +118,23 @@ pub(crate) fn should_generate_allow_tables_to_appear_in_same_query(
 
     let mut lock = map.lock().unwrap();
     lock.insert(hash)
+}
+
+/// Emits a `diesel::allow_tables_to_appear_in_same_query!` invocation for the
+/// pair of tables, or `None` when the pair has already been generated.
+///
+/// Wraps `should_generate_allow_tables_to_appear_in_same_query` so callers
+/// declare a joinable pair in one expression instead of repeating the guard and
+/// the macro call.
+pub(crate) fn allow_tables_to_appear_in_same_query(
+    t1: &syn::Path,
+    t2: &syn::Path,
+) -> Option<proc_macro2::TokenStream> {
+    should_generate_allow_tables_to_appear_in_same_query(t1, t2).then(|| {
+        quote::quote! {
+            ::diesel::allow_tables_to_appear_in_same_query!(#t1, #t2);
+        }
+    })
 }
 
 /// Extracts the table path from a column path.

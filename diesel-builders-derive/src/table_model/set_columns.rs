@@ -7,7 +7,7 @@ pub(super) fn generate_set_column_impls(
     table_module: &syn::Ident,
 ) -> proc_macro2::TokenStream {
     new_record_columns.iter().enumerate().map(|(idx, new_record_column)| {
-		let typenum_index = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+		let typenum_index = crate::utils::typenum_ident(idx);
 		let index_path = quote::quote! {
 			::diesel_builders::typenum::#typenum_index
 		};

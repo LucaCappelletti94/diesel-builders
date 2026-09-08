@@ -191,7 +191,7 @@ fn same_as_index_impls(
         .iter()
         .enumerate()
         .map(|(index, column)| {
-            let idx = syn::Ident::new(&format!("U{index}"), proc_macro2::Span::call_site());
+            let idx = crate::utils::typenum_ident(index);
             quote! {
                 impl ::diesel_builders::#same_as_trait for #column {
                     type Idx = ::diesel_builders::typenum::#idx;
@@ -505,13 +505,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let allow_same_query_calls = allow_same_query_pairs
         .into_iter()
         .filter_map(|(first, second)| {
-            if crate::utils::should_generate_allow_tables_to_appear_in_same_query(first, second) {
-                Some(quote! {
-                    ::diesel::allow_tables_to_appear_in_same_query!(#first, #second);
-                })
-            } else {
-                None
-            }
+            crate::utils::allow_tables_to_appear_in_same_query(first, second)
         })
         .collect::<Vec<_>>();
 
@@ -812,7 +806,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             }
 
             let idx_type = if let Some(i) = idx {
-                let idx_ident = syn::Ident::new(&format!("U{i}"), proc_macro2::Span::call_site());
+                let idx_ident = crate::utils::typenum_ident(i);
                 quote! { ::diesel_builders::typenum::#idx_ident }
             } else {
                 quote! { ::diesel_builders::typenum::U0 }

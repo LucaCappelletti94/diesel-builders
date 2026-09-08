@@ -54,7 +54,7 @@ fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream
     let cols: Vec<_> = index_def.columns.iter().collect();
 
     let impls = cols.iter().enumerate().map(|(idx, col)| {
-        let idx_type = syn::Ident::new(&format!("U{idx}"), proc_macro2::Span::call_site());
+        let idx_type = crate::utils::typenum_ident(idx);
         quote::quote! {
             impl #trait_path<
                 diesel_builders::typenum::#idx_type,
