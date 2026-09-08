@@ -15,7 +15,8 @@ use crate::{
     SetHomogeneousNestedColumns, SetMandatoryBuilder, TableBuilderBundle, TableExt,
     TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
     TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, TypedColumn, ValidateColumn,
-    buildable_table::BuildableTable, vertical_same_as_group::VerticalSameAsGroup,
+    buildable_table::BuildableTable, builder_bundle::BundlableTableExt,
+    vertical_same_as_group::VerticalSameAsGroup,
 };
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -46,6 +47,50 @@ impl<T: BuildableTable> TableBuilder<T> {
     }
 }
 
+/// Routes a [`TableBuilder`] to the [`TableBuilderBundle`] of one of its
+/// ancestor tables.
+///
+/// Every accessor reaches the bundle owning the ancestor table it touches.
+/// This trait names that `NestedTupleIndex` projection once so the accessor
+/// impls carry a single `Self: AncestorBundle<A>` bound instead of restating
+/// it.
+trait AncestorBundle<A: BundlableTableExt> {
+    /// Returns a shared reference to the bundle of ancestor table `A`.
+    fn ancestor_bundle(&self) -> &TableBuilderBundle<A>;
+}
+
+/// Mutable counterpart of [`AncestorBundle`] used by the setting accessors.
+trait AncestorBundleMut<A: BundlableTableExt>: AncestorBundle<A> {
+    /// Returns a mutable reference to the bundle of ancestor table `A`.
+    fn ancestor_bundle_mut(&mut self) -> &mut TableBuilderBundle<A>;
+}
+
+impl<A, T> AncestorBundle<A> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<A>,
+    A: BundlableTableExt + AncestorOfIndex<T>,
+    T::NestedAncestorBuilders:
+        NestedTupleIndex<<A as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<A>>,
+{
+    #[inline]
+    fn ancestor_bundle(&self) -> &TableBuilderBundle<A> {
+        self.bundles.nested_index()
+    }
+}
+
+impl<A, T> AncestorBundleMut<A> for TableBuilder<T>
+where
+    T: BuildableTable + DescendantOf<A>,
+    A: BundlableTableExt + AncestorOfIndex<T>,
+    T::NestedAncestorBuilders:
+        NestedTupleIndexMut<<A as AncestorOfIndex<T>>::Idx, Element = TableBuilderBundle<A>>,
+{
+    #[inline]
+    fn ancestor_bundle_mut(&mut self) -> &mut TableBuilderBundle<A> {
+        self.bundles.nested_index_mut()
+    }
+}
+
 impl<T> HasTable for TableBuilder<T>
 where
     T: BuildableTable,
@@ -64,19 +109,16 @@ where
     C: TypedColumn<Table: 'static>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: MayGetColumn<C>,
-    T::NestedAncestorBuilders: NestedTupleIndex<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
+    Self: AncestorBundle<C::Table>,
 {
     #[inline]
     fn may_get_column(&self) -> Option<C::ColumnType> {
-        self.bundles.nested_index().may_get_column()
+        self.ancestor_bundle().may_get_column()
     }
 
     #[inline]
     fn may_get_column_ref(&self) -> Option<&C::ColumnType> {
-        self.bundles.nested_index().may_get_column_ref()
+        self.ancestor_bundle().may_get_column_ref()
     }
 }
 
@@ -86,16 +128,13 @@ where
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: ValidateColumn<C>,
-    T::NestedAncestorBuilders: NestedTupleIndex<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
+    Self: AncestorBundle<C::Table>,
 {
     type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
     fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
-        self.bundles.nested_index().validate_column_in_context(value)
+        self.ancestor_bundle().validate_column_in_context(value)
     }
 }
 
@@ -103,20 +142,17 @@ impl<C, T> SetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: SetHomogeneousNestedColumns<C::ValueType, C::VerticalSameAsNestedColumns>,
+    Self: SetHomogeneousNestedColumns<C::ValueType, C::VerticalSameAsNestedColumns>
+        + AncestorBundleMut<C::Table>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: SetColumn<C>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
 {
     #[inline]
     fn set_column(&mut self, value: impl Into<C::ColumnType>) -> &mut Self {
         let value = value.into();
         // We set eventual vertically-same-as columns in nested builders first.
         self.set_homogeneous_nested_columns(&value);
-        self.bundles.nested_index_mut().set_column(value);
+        self.ancestor_bundle_mut().set_column(value);
         self
     }
 }
@@ -125,13 +161,10 @@ impl<C, T> TrySetColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: TrySetHomogeneousNestedColumns<C::ValueType, Self::Error, C::VerticalSameAsNestedColumns>,
+    Self: TrySetHomogeneousNestedColumns<C::ValueType, Self::Error, C::VerticalSameAsNestedColumns>
+        + AncestorBundleMut<C::Table>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: TrySetColumn<C>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
 {
     #[inline]
     fn try_set_column(
@@ -142,7 +175,7 @@ where
         // We try to set eventual vertically-same-as columns in nested builders
         // first.
         self.try_set_homogeneous_nested_columns(&value)?;
-        self.bundles.nested_index_mut().try_set_column(value)?;
+        self.ancestor_bundle_mut().try_set_column(value)?;
         Ok(self)
     }
 }
@@ -162,13 +195,10 @@ where
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
-        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>,
+        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
+        + AncestorBundleMut<Key::Table>,
     TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
     TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<Key, Table = Key::Table>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <Key::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<Key::Table>,
-        >,
     T::Error: From<<Key::Table as TableExt>::Error>,
 {
     #[inline]
@@ -179,7 +209,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_validate_nested_columns(&converted_columns)?;
-        self.bundles.nested_index_mut().try_set_mandatory_builder(builder)?;
+        self.ancestor_bundle_mut().try_set_mandatory_builder(builder)?;
         self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
@@ -191,14 +221,10 @@ where
     C: MandatorySameAsIndex,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<C::NestedHostColumns>,
+    Self: MaySetColumns<C::NestedHostColumns> + AncestorBundleMut<C::Table>,
     TableBuilderBundle<C::Table>: SetMandatoryBuilder<C>,
     TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>:
         MayGetNestedColumns<C::NestedForeignColumns>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
 {
     #[inline]
     fn set_mandatory_builder(
@@ -208,7 +234,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_set_nested_columns(converted_columns);
-        self.bundles.nested_index_mut().set_mandatory_builder(builder);
+        self.ancestor_bundle_mut().set_mandatory_builder(builder);
         self
     }
 }
@@ -220,13 +246,10 @@ where
     Key::Table: AncestorOfIndex<T> + BuildableTable,
     Key::ReferencedTable: BuildableTable,
     Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
-        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>,
+        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
+        + AncestorBundleMut<Key::Table>,
     TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
     TableBuilderBundle<Key::Table>: TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <Key::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<Key::Table>,
-        >,
     T::Error: From<<Key::Table as TableExt>::Error>,
 {
     #[inline]
@@ -237,7 +260,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_validate_nested_columns(&converted_columns)?;
-        self.bundles.nested_index_mut().try_set_discretionary_builder(builder)?;
+        self.ancestor_bundle_mut().try_set_discretionary_builder(builder)?;
         self.try_may_set_nested_columns(converted_columns)?;
         Ok(self)
     }
@@ -249,13 +272,9 @@ where
     C: DiscretionarySameAsIndex,
     C::Table: AncestorOfIndex<T> + BuildableTable,
     C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<C::NestedHostColumns>,
+    Self: MaySetColumns<C::NestedHostColumns> + AncestorBundleMut<C::Table>,
     TableBuilder<C::ReferencedTable>: MayGetNestedColumns<C::NestedForeignColumns>,
     TableBuilderBundle<C::Table>: SetDiscretionaryBuilder<C>,
-    T::NestedAncestorBuilders: NestedTupleIndexMut<
-            <C::Table as AncestorOfIndex<T>>::Idx,
-            Element = TableBuilderBundle<C::Table>,
-        >,
 {
     #[inline]
     fn set_discretionary_builder(
@@ -265,7 +284,7 @@ where
         let columns = builder.may_get_nested_columns();
         let converted_columns = columns.nested_tuple_option_into();
         self.may_set_nested_columns(converted_columns);
-        self.bundles.nested_index_mut().set_discretionary_builder(builder);
+        self.ancestor_bundle_mut().set_discretionary_builder(builder);
         self
     }
 }
