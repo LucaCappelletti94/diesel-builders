@@ -4,7 +4,8 @@ use tuplities::prelude::*;
 
 use super::NestedColumnsCollection;
 
-/// A trait representing a collection of Diesel columns.
+/// A trait representing a matrix (a collection of collections) of Diesel
+/// columns.
 pub trait ColumnsCollection: NestTupleMatrix {}
 
 impl<C> ColumnsCollection for C where

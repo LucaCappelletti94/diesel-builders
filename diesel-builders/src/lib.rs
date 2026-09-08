@@ -121,8 +121,7 @@ pub mod prelude {
     // Note: Root is NOT exported here to avoid collision with Root macro from
     // diesel_builders_derive
     pub use crate::horizontal_same_as::HorizontalKey;
-    // Builder setter extension traits (always use Ext variants)
-    /// Query loading traits
+    // Query loading traits
     pub use crate::load_query_builder::{LoadFirst, LoadMany, LoadSorted};
     pub use crate::{
         builder_bundle::BundlableTable,
