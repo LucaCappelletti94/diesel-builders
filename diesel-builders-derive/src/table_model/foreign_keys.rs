@@ -279,11 +279,8 @@ pub fn generate_fpk_impl(column: &syn::Path, referenced_table: &syn::Path) -> Op
 
     // Generate trait name
     // Extract table name from column path (second-to-last segment)
-    assert!(
-        column.segments.len() >= 2,
-        "Column path must have at least 2 segments (table::column)"
-    );
-    let table_name_segment = column.segments[column.segments.len() - 2].ident.to_string();
+    let table_index = column.segments.len().checked_sub(2)?;
+    let table_name_segment = column.segments[table_index].ident.to_string();
 
     // Convert table_name to CamelCase for trait name
     let trait_name = format!(

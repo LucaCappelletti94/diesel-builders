@@ -41,7 +41,7 @@ where
 impl<T, C> ValidateColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: HorizontalSameAsGroupExt,
+    C: TypedColumn<Table = T>,
     T::NewValues: ValidateColumn<C>,
 {
     type Error = <T::NewValues as ValidateColumn<C>>::Error;
@@ -55,7 +55,7 @@ where
 impl<T, C> TrySetColumn<C> for CompletedTableBuilderBundle<T>
 where
     T: BundlableTableExt,
-    C: HorizontalSameAsGroupExt,
+    C: HorizontalSameAsGroupExt<Table = T>,
     Self: TrySetDiscretionarySameAsNestedColumns<
             C::ValueType,
             <T::NewValues as ValidateColumn<C>>::Error,
