@@ -180,111 +180,118 @@ where
     }
 }
 
-impl<Key, T> TrySetMandatoryBuilder<Key> for TableBuilder<T>
-where
-    T: BuildableTable
-        + DescendantOf<
-            Key::Table,
-            NestedPrimaryKeyColumns: NestedColumns<
-                NestedTupleColumnType = (
-                    <<Key::Table as Table>::PrimaryKey as ColumnTyped>::ColumnType,
-                ),
-            >,
+/// Emits the `TableBuilder<T>` triangular builder-setter impls.
+///
+/// The mandatory and discretionary variants share one body per fallibility:
+/// read the referenced builder's nested foreign columns, propagate them into
+/// this builder, and delegate the builder itself to the ancestor bundle. They
+/// differ only in the key marker, the bundle trait delegated to, the method
+/// name, and (for the fallible mandatory case) an extra single-column primary
+/// key bound.
+macro_rules! impl_builder_setters {
+    (
+        @fallible
+        trait = $trait:ident,
+        method = $method:ident,
+        index = $index:ident,
+        bundle_trait = $bundle_trait:ident,
+        descendant = [$($descendant:tt)+] $(,)?
+    ) => {
+        impl<Key, T> $trait<Key> for TableBuilder<T>
+        where
+            T: BuildableTable + $($descendant)+,
+            Key: $index,
+            Key::Table: AncestorOfIndex<T> + BuildableTable,
+            Key::ReferencedTable: BuildableTable,
+            Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
+                + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
+                + AncestorBundleMut<Key::Table>,
+            TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
+            TableBuilderBundle<Key::Table>: $bundle_trait<Key, Table = Key::Table>,
+            T::Error: From<<Key::Table as TableExt>::Error>,
+        {
+            #[inline]
+            fn $method(
+                &mut self,
+                builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
+            ) -> Result<&mut Self, T::Error> {
+                let columns = builder.may_get_nested_columns();
+                let converted_columns = columns.nested_tuple_option_into();
+                self.may_validate_nested_columns(&converted_columns)?;
+                self.ancestor_bundle_mut().$method(builder)?;
+                self.try_may_set_nested_columns(converted_columns)?;
+                Ok(self)
+            }
+        }
+    };
+    (
+        @infallible
+        trait = $trait:ident,
+        method = $method:ident,
+        index = $index:ident,
+        bundle_trait = $bundle_trait:ident $(,)?
+    ) => {
+        impl<Key, T> $trait<Key> for TableBuilder<T>
+        where
+            T: BuildableTable + DescendantOf<Key::Table>,
+            Key: $index,
+            Key::Table: AncestorOfIndex<T> + BuildableTable,
+            Key::ReferencedTable: BuildableTable,
+            Self: MaySetColumns<Key::NestedHostColumns> + AncestorBundleMut<Key::Table>,
+            TableBuilderBundle<Key::Table>: $bundle_trait<Key>,
+            TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>:
+                MayGetNestedColumns<Key::NestedForeignColumns>,
+        {
+            #[inline]
+            fn $method(
+                &mut self,
+                builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
+            ) -> &mut Self {
+                let columns = builder.may_get_nested_columns();
+                let converted_columns = columns.nested_tuple_option_into();
+                self.may_set_nested_columns(converted_columns);
+                self.ancestor_bundle_mut().$method(builder);
+                self
+            }
+        }
+    };
+}
+
+impl_builder_setters! {
+    @fallible
+    trait = TrySetMandatoryBuilder,
+    method = try_set_mandatory_builder,
+    index = MandatorySameAsIndex,
+    bundle_trait = TrySetMandatoryBuilder,
+    descendant = [DescendantOf<
+        Key::Table,
+        NestedPrimaryKeyColumns: NestedColumns<
+            NestedTupleColumnType = (<<Key::Table as Table>::PrimaryKey as ColumnTyped>::ColumnType,),
         >,
-    Key: MandatorySameAsIndex,
-    Key::Table: AncestorOfIndex<T> + BuildableTable,
-    Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
-        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
-        + AncestorBundleMut<Key::Table>,
-    TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
-    TableBuilderBundle<Key::Table>: TrySetMandatoryBuilder<Key, Table = Key::Table>,
-    T::Error: From<<Key::Table as TableExt>::Error>,
-{
-    #[inline]
-    fn try_set_mandatory_builder(
-        &mut self,
-        builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
-    ) -> Result<&mut Self, T::Error> {
-        let columns = builder.may_get_nested_columns();
-        let converted_columns = columns.nested_tuple_option_into();
-        self.may_validate_nested_columns(&converted_columns)?;
-        self.ancestor_bundle_mut().try_set_mandatory_builder(builder)?;
-        self.try_may_set_nested_columns(converted_columns)?;
-        Ok(self)
-    }
+    >],
 }
 
-impl<C, T> SetMandatoryBuilder<C> for TableBuilder<T>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: MandatorySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BuildableTable,
-    C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<C::NestedHostColumns> + AncestorBundleMut<C::Table>,
-    TableBuilderBundle<C::Table>: SetMandatoryBuilder<C>,
-    TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>:
-        MayGetNestedColumns<C::NestedForeignColumns>,
-{
-    #[inline]
-    fn set_mandatory_builder(
-        &mut self,
-        builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
-    ) -> &mut Self {
-        let columns = builder.may_get_nested_columns();
-        let converted_columns = columns.nested_tuple_option_into();
-        self.may_set_nested_columns(converted_columns);
-        self.ancestor_bundle_mut().set_mandatory_builder(builder);
-        self
-    }
+impl_builder_setters! {
+    @fallible
+    trait = TrySetDiscretionaryBuilder,
+    method = try_set_discretionary_builder,
+    index = DiscretionarySameAsIndex,
+    bundle_trait = TrySetDiscretionaryBuilder,
+    descendant = [DescendantOf<Key::Table>],
 }
 
-impl<Key, T> TrySetDiscretionaryBuilder<Key> for TableBuilder<T>
-where
-    T: BuildableTable + DescendantOf<Key::Table>,
-    Key: DiscretionarySameAsIndex,
-    Key::Table: AncestorOfIndex<T> + BuildableTable,
-    Key::ReferencedTable: BuildableTable,
-    Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
-        + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
-        + AncestorBundleMut<Key::Table>,
-    TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
-    TableBuilderBundle<Key::Table>: TrySetDiscretionaryBuilder<Key, Table = Key::Table>,
-    T::Error: From<<Key::Table as TableExt>::Error>,
-{
-    #[inline]
-    fn try_set_discretionary_builder(
-        &mut self,
-        builder: TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>,
-    ) -> Result<&mut Self, T::Error> {
-        let columns = builder.may_get_nested_columns();
-        let converted_columns = columns.nested_tuple_option_into();
-        self.may_validate_nested_columns(&converted_columns)?;
-        self.ancestor_bundle_mut().try_set_discretionary_builder(builder)?;
-        self.try_may_set_nested_columns(converted_columns)?;
-        Ok(self)
-    }
+impl_builder_setters! {
+    @infallible
+    trait = SetMandatoryBuilder,
+    method = set_mandatory_builder,
+    index = MandatorySameAsIndex,
+    bundle_trait = SetMandatoryBuilder,
 }
 
-impl<C, T> SetDiscretionaryBuilder<C> for TableBuilder<T>
-where
-    T: BuildableTable + DescendantOf<C::Table>,
-    C: DiscretionarySameAsIndex,
-    C::Table: AncestorOfIndex<T> + BuildableTable,
-    C::ReferencedTable: BuildableTable,
-    Self: MaySetColumns<C::NestedHostColumns> + AncestorBundleMut<C::Table>,
-    TableBuilder<C::ReferencedTable>: MayGetNestedColumns<C::NestedForeignColumns>,
-    TableBuilderBundle<C::Table>: SetDiscretionaryBuilder<C>,
-{
-    #[inline]
-    fn set_discretionary_builder(
-        &mut self,
-        builder: TableBuilder<<C as ForeignPrimaryKey>::ReferencedTable>,
-    ) -> &mut Self {
-        let columns = builder.may_get_nested_columns();
-        let converted_columns = columns.nested_tuple_option_into();
-        self.may_set_nested_columns(converted_columns);
-        self.ancestor_bundle_mut().set_discretionary_builder(builder);
-        self
-    }
+impl_builder_setters! {
+    @infallible
+    trait = SetDiscretionaryBuilder,
+    method = set_discretionary_builder,
+    index = DiscretionarySameAsIndex,
+    bundle_trait = SetDiscretionaryBuilder,
 }

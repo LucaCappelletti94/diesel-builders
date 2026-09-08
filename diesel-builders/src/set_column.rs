@@ -73,42 +73,38 @@ pub trait TrySetColumn<C: ColumnTyped>: ValidateColumn<C> {
     -> Result<&mut Self, Self::Error>;
 }
 
-impl<T, C> TrySetColumn<C> for (T,)
-where
-    Self: SetColumn<C> + ValidateColumn<C>,
-    C: TypedColumn,
-{
-    #[inline]
-    fn try_set_column(
-        &mut self,
-        value: impl Into<C::ColumnType>,
-    ) -> Result<&mut Self, Self::Error> {
-        let value = value.into();
-        if let Some(value_ref) = value.as_optional_ref() {
-            <Self as ValidateColumn<C>>::validate_column_in_context(self, value_ref)?;
-        }
-        <Self as SetColumn<C>>::set_column(self, value);
-        Ok(self)
-    }
+/// Emits the identical leaf `TrySetColumn` body for each `NewValues` tuple
+/// arity. These are non-recursive leaf impls (the derive emits per-column
+/// `SetColumn`/`ValidateColumn` on `NewValues`), so both arities share one
+/// body that validates an optional value then sets it.
+macro_rules! impl_try_set_column_for_tuple {
+    ($( impl[$($generics:ident),+] for $tuple:ty ),+ $(,)?) => {
+        $(
+            impl<$($generics),+, C> TrySetColumn<C> for $tuple
+            where
+                Self: SetColumn<C> + ValidateColumn<C>,
+                C: TypedColumn,
+            {
+                #[inline]
+                fn try_set_column(
+                    &mut self,
+                    value: impl Into<C::ColumnType>,
+                ) -> Result<&mut Self, Self::Error> {
+                    let value = value.into();
+                    if let Some(value_ref) = value.as_optional_ref() {
+                        <Self as ValidateColumn<C>>::validate_column_in_context(self, value_ref)?;
+                    }
+                    <Self as SetColumn<C>>::set_column(self, value);
+                    Ok(self)
+                }
+            }
+        )+
+    };
 }
 
-impl<Head, Tail, C> TrySetColumn<C> for (Head, Tail)
-where
-    Self: SetColumn<C> + ValidateColumn<C>,
-    C: TypedColumn,
-{
-    #[inline]
-    fn try_set_column(
-        &mut self,
-        value: impl Into<C::ColumnType>,
-    ) -> Result<&mut Self, Self::Error> {
-        let value = value.into();
-        if let Some(value_ref) = value.as_optional_ref() {
-            <Self as ValidateColumn<C>>::validate_column_in_context(self, value_ref)?;
-        }
-        <Self as SetColumn<C>>::set_column(self, value);
-        Ok(self)
-    }
+impl_try_set_column_for_tuple! {
+    impl[T] for (T,),
+    impl[Head, Tail] for (Head, Tail),
 }
 
 /// Extension trait for [`SetColumn`] that allows specifying the column at the
