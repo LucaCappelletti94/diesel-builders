@@ -305,7 +305,74 @@ fn extract_option_inner_type(field_type: &syn::Type) -> Option<TokenStream> {
     Some(quote::quote! { #inner })
 }
 
-#[allow(clippy::too_many_lines)]
+/// Method identifiers for a triangular relation field, derived from whether the
+/// column name ends in `_id`.
+struct TriangularMethods {
+    /// Owned-`self` model setter (`{base}_model`).
+    model: Ident,
+    /// By-reference model setter (`{base}_model_ref`).
+    model_ref: Ident,
+    /// Fallible owned-`self` model setter (`try_{base}_model`).
+    try_model: Ident,
+    /// Fallible by-reference model setter (`try_{base}_model_ref`).
+    try_model_ref: Ident,
+    /// Owned-`self` builder setter (`{base}` for `_id` columns, else
+    /// `{base}_builder`).
+    builder: Ident,
+    /// By-reference builder setter.
+    builder_ref: Ident,
+    /// Fallible owned-`self` builder setter.
+    try_builder: Ident,
+    /// Fallible by-reference builder setter.
+    try_builder_ref: Ident,
+}
+
+/// Derives the [`TriangularMethods`] identifiers for a field.
+///
+/// `_id` columns expose the relation under the bare base name (for example
+/// `mandatory_id` yields `.mandatory(...)`), while other columns use explicit
+/// `_builder` suffixes. Model methods always keep the `_model` suffix to avoid
+/// colliding with the builder methods, which would make trait method
+/// resolution ambiguous.
+fn triangular_method_idents(field_name: &Ident, clean_field_name: &str) -> TriangularMethods {
+    let base_field_name = {
+        let s = field_name.to_string();
+        if let Some(stripped) = s.strip_suffix("_id") { stripped.to_string() } else { s }
+    };
+    let clean_base_field_name = {
+        let s = clean_field_name;
+        if let Some(stripped) = s.strip_suffix("_id") { stripped } else { s }
+    };
+    let is_id_col = field_name.to_string().ends_with("_id");
+    let builder_name =
+        if is_id_col { base_field_name } else { format!("{clean_base_field_name}_builder") };
+    let builder_ref_name = if is_id_col {
+        format!("{clean_base_field_name}_ref")
+    } else {
+        format!("{clean_base_field_name}_builder_ref")
+    };
+    let try_builder_name = if is_id_col {
+        format!("try_{clean_base_field_name}")
+    } else {
+        format!("try_{clean_base_field_name}_builder")
+    };
+    let try_builder_ref_name = if is_id_col {
+        format!("try_{clean_base_field_name}_ref")
+    } else {
+        format!("try_{clean_base_field_name}_builder_ref")
+    };
+    TriangularMethods {
+        model: ident(&format!("{clean_base_field_name}_model")),
+        model_ref: ident(&format!("{clean_base_field_name}_model_ref")),
+        try_model: ident(&format!("try_{clean_base_field_name}_model")),
+        try_model_ref: ident(&format!("try_{clean_base_field_name}_model_ref")),
+        builder: ident(&builder_name),
+        builder_ref: ident(&builder_ref_name),
+        try_builder: ident(&try_builder_name),
+        try_builder_ref: ident(&try_builder_ref_name),
+    }
+}
+
 /// Generate triangular relation traits for a field.
 /// Only generates traits relevant to the field's mandatory/discretionary
 /// status.
@@ -318,60 +385,68 @@ fn generate_triangular_relation_traits(
     is_mandatory: bool,
     is_discretionary: bool,
 ) -> TokenStream {
+    let methods = triangular_method_idents(field_name, clean_field_name);
+
+    let discretionary_traits = if is_discretionary {
+        generate_discretionary_relation_traits(
+            field_name,
+            table_module,
+            struct_ident,
+            camel_cased_field_name,
+            &methods,
+        )
+    } else {
+        quote! {}
+    };
+
+    let mandatory_traits = if is_mandatory {
+        generate_mandatory_relation_traits(
+            field_name,
+            table_module,
+            struct_ident,
+            camel_cased_field_name,
+            &methods,
+        )
+    } else {
+        quote! {}
+    };
+
+    quote! {
+        #discretionary_traits
+        #mandatory_traits
+    }
+}
+
+/// Generate the discretionary triangular-relation setter traits: the model and
+/// builder setters, each in an infallible and a fallible flavour.
+#[expect(
+    clippy::too_many_lines,
+    reason = "emits the four discretionary triangular accessor traits, each a short trait plus blanket impl"
+)]
+fn generate_discretionary_relation_traits(
+    field_name: &Ident,
+    table_module: &syn::Ident,
+    struct_ident: &Ident,
+    camel_cased_field_name: &str,
+    methods: &TriangularMethods,
+) -> TokenStream {
     let set_field_name_discretionary_model_trait =
         ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
-    // Base method name: if column ends with `_id` strip it (e.g., `c_id` ->
-    // `c`). If it's an `_id` column, use the base name for model/builder
-    // methods (e.g., `.c()`), otherwise generate `{field_name}_model` and
-    // `{field_name}_builder`.
-    let base_field_name = {
-        let s = field_name.to_string();
-        if let Some(stripped) = s.strip_suffix("_id") { stripped.to_string() } else { s }
-    };
-    let clean_base_field_name = {
-        let s = clean_field_name;
-        if let Some(stripped) = s.strip_suffix("_id") { stripped } else { s }
-    };
-    let is_id_col = field_name.to_string().ends_with("_id");
-    // For model methods, always use `{base}_model` (even for `_id` columns) to
-    // avoid generating the same method name for both builder and model methods
-    // which would cause ambiguous trait method resolution in Rust.
-    let set_field_name_model_method = ident(&format!("{clean_base_field_name}_model"));
-    let set_field_name_model_method_ref = ident(&format!("{clean_base_field_name}_model_ref"));
-    let try_set_field_name_model_method = ident(&format!("try_{clean_base_field_name}_model"));
-    let try_set_field_name_model_method_ref =
-        ident(&format!("try_{clean_base_field_name}_model_ref"));
-    let set_field_name_builder_method_name =
-        if is_id_col { base_field_name } else { format!("{clean_base_field_name}_builder") };
-    let set_field_name_builder_method = ident(&set_field_name_builder_method_name);
-    let set_field_name_builder_method_ref_name = if is_id_col {
-        format!("{clean_base_field_name}_ref")
-    } else {
-        format!("{clean_base_field_name}_builder_ref")
-    };
-    let set_field_name_builder_method_ref = ident(&set_field_name_builder_method_ref_name);
-    let try_set_field_name_builder_method_name = if is_id_col {
-        format!("try_{clean_base_field_name}")
-    } else {
-        format!("try_{clean_base_field_name}_builder")
-    };
-    let try_set_field_name_builder_method = ident(&try_set_field_name_builder_method_name);
-    let try_set_field_name_builder_method_ref_name = if is_id_col {
-        format!("try_{clean_base_field_name}_ref")
-    } else {
-        format!("try_{clean_base_field_name}_builder_ref")
-    };
-    let try_set_field_name_builder_method_ref = ident(&try_set_field_name_builder_method_ref_name);
-    let set_field_name_mandatory_builder_trait =
-        ident(&format!("Set{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
     let set_field_name_discretionary_builder_trait =
         ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
     let try_set_field_name_discretionary_model_trait =
         ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
-    let try_set_field_name_mandatory_builder_trait =
-        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
     let try_set_field_name_discretionary_builder_trait =
         ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
+
+    let set_field_name_model_method = &methods.model;
+    let set_field_name_model_method_ref = &methods.model_ref;
+    let try_set_field_name_model_method = &methods.try_model;
+    let try_set_field_name_model_method_ref = &methods.try_model_ref;
+    let set_field_name_builder_method = &methods.builder;
+    let set_field_name_builder_method_ref = &methods.builder_ref;
+    let try_set_field_name_builder_method = &methods.try_builder;
+    let try_set_field_name_builder_method_ref = &methods.try_builder_ref;
 
     let set_discretionary_model_trait_doc_comment = format!(
         "Trait to set the `{field_name}` column model on a table builder relative to a discretionary triangular relation."
@@ -379,14 +454,8 @@ fn generate_triangular_relation_traits(
     let set_discretionary_model_method_doc_comment = format!(
         "Sets the `{field_name}` column model on a table builder relative to a discretionary triangular relation."
     );
-    let set_mandatory_builder_trait_doc_comment = format!(
-        "Trait to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
-    );
     let set_discretionary_builder_trait_doc_comment = format!(
         "Trait to set the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
-    );
-    let set_mandatory_builder_method_doc_comment = format!(
-        "Sets the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
     );
     let set_discretionary_builder_method_doc_comment = format!(
         "Sets the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
@@ -397,227 +466,238 @@ fn generate_triangular_relation_traits(
     let try_set_discretionary_model_method_doc_comment = format!(
         "Tries to set the `{field_name}` column model on a table builder relative to a discretionary triangular relation."
     );
-    let try_set_mandatory_builder_trait_doc_comment = format!(
-        "Trait to try to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
-    );
     let try_set_discretionary_builder_trait_doc_comment = format!(
         "Trait to try to set the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
-    );
-    let try_set_mandatory_builder_method_doc_comment = format!(
-        "Tries to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
     );
     let try_set_discretionary_builder_method_doc_comment = format!(
         "Tries to set the `{field_name}` column builder on a table builder relative to a discretionary triangular relation."
     );
 
-    // Generate discretionary traits only if the field is marked as
-    // discretionary
-    let discretionary_traits = if is_discretionary {
-        let discretionary_model = trait_with_blanket_impl(
-            &set_field_name_discretionary_model_trait,
-            &quote!(diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized),
-            &set_discretionary_model_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #set_discretionary_model_method_doc_comment]
-                fn #set_field_name_model_method_ref(
-                    &mut self,
-                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-                ) -> &mut Self {
-                    use diesel_builders::SetDiscretionaryModelExt;
-                    self.set_discretionary_model_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[must_use]
-                #[doc = #set_discretionary_model_method_doc_comment]
-                fn #set_field_name_model_method(
-                    self,
-                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-                ) -> Self {
-                    use diesel_builders::SetDiscretionaryModelExt;
-                    self.set_discretionary_model::<#table_module::#field_name>(value)
-                }
-            },
-        );
+    let discretionary_model = trait_with_blanket_impl(
+        &set_field_name_discretionary_model_trait,
+        &quote!(diesel_builders::SetDiscretionaryModel<#table_module::#field_name> + Sized),
+        &set_discretionary_model_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #set_discretionary_model_method_doc_comment]
+            fn #set_field_name_model_method_ref(
+                &mut self,
+                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> &mut Self {
+                use diesel_builders::SetDiscretionaryModelExt;
+                self.set_discretionary_model_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[must_use]
+            #[doc = #set_discretionary_model_method_doc_comment]
+            fn #set_field_name_model_method(
+                self,
+                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> Self {
+                use diesel_builders::SetDiscretionaryModelExt;
+                self.set_discretionary_model::<#table_module::#field_name>(value)
+            }
+        },
+    );
 
-        let discretionary_builder = trait_with_blanket_impl(
-            &set_field_name_discretionary_builder_trait,
-            &quote!(diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized),
-            &set_discretionary_builder_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #set_discretionary_builder_method_doc_comment]
-                fn #set_field_name_builder_method_ref(
-                    &mut self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> &mut Self {
-                    use diesel_builders::SetDiscretionaryBuilderExt;
-                    self.set_discretionary_builder_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[must_use]
-                #[doc = #set_discretionary_builder_method_doc_comment]
-                fn #set_field_name_builder_method(
-                    self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Self {
-                    use diesel_builders::SetDiscretionaryBuilderExt;
-                    self.set_discretionary_builder::<#table_module::#field_name>(value)
-                }
-            },
-        );
+    let discretionary_builder = trait_with_blanket_impl(
+        &set_field_name_discretionary_builder_trait,
+        &quote!(diesel_builders::SetDiscretionaryBuilder<#table_module::#field_name> + Sized),
+        &set_discretionary_builder_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #set_discretionary_builder_method_doc_comment]
+            fn #set_field_name_builder_method_ref(
+                &mut self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> &mut Self {
+                use diesel_builders::SetDiscretionaryBuilderExt;
+                self.set_discretionary_builder_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[must_use]
+            #[doc = #set_discretionary_builder_method_doc_comment]
+            fn #set_field_name_builder_method(
+                self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Self {
+                use diesel_builders::SetDiscretionaryBuilderExt;
+                self.set_discretionary_builder::<#table_module::#field_name>(value)
+            }
+        },
+    );
 
-        let try_discretionary_model = trait_with_blanket_impl(
-            &try_set_field_name_discretionary_model_trait,
-            &quote!(diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized),
-            &try_set_discretionary_model_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #try_set_discretionary_model_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the column check constraints are not respected."]
-                fn #try_set_field_name_model_method_ref(
-                    &mut self,
-                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetDiscretionaryModelExt;
-                    self.try_set_discretionary_model_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[doc = #try_set_discretionary_model_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the value cannot be converted to the column type."]
-                fn #try_set_field_name_model_method(
-                    self,
-                    value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
-                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetDiscretionaryModelExt;
-                    self.try_set_discretionary_model::<#table_module::#field_name>(value)
-                }
-            },
-        );
+    let try_discretionary_model = trait_with_blanket_impl(
+        &try_set_field_name_discretionary_model_trait,
+        &quote!(diesel_builders::TrySetDiscretionaryModel<#table_module::#field_name> + Sized),
+        &try_set_discretionary_model_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #try_set_discretionary_model_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the column check constraints are not respected."]
+            fn #try_set_field_name_model_method_ref(
+                &mut self,
+                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetDiscretionaryModelExt;
+                self.try_set_discretionary_model_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[doc = #try_set_discretionary_model_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the value cannot be converted to the column type."]
+            fn #try_set_field_name_model_method(
+                self,
+                value: &<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel_builders::TableExt>::Model
+            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetDiscretionaryModelExt;
+                self.try_set_discretionary_model::<#table_module::#field_name>(value)
+            }
+        },
+    );
 
-        let try_discretionary_builder = trait_with_blanket_impl(
-            &try_set_field_name_discretionary_builder_trait,
-            &quote!(diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized),
-            &try_set_discretionary_builder_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #try_set_discretionary_builder_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the column check constraints are not respected."]
-                fn #try_set_field_name_builder_method_ref(
-                    &mut self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetDiscretionaryBuilderExt;
-                    self.try_set_discretionary_builder_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[doc = #try_set_discretionary_builder_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the value cannot be converted to the column type."]
-                fn #try_set_field_name_builder_method(
-                    self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetDiscretionaryBuilderExt;
-                    self.try_set_discretionary_builder::<#table_module::#field_name>(value)
-                }
-            },
-        );
-
-        quote! {
-            #discretionary_model
-            #discretionary_builder
-            #try_discretionary_model
-            #try_discretionary_builder
-        }
-    } else {
-        quote! {}
-    };
-
-    // Generate mandatory traits only if the field is marked as mandatory
-    let mandatory_traits = if is_mandatory {
-        let mandatory_builder = trait_with_blanket_impl(
-            &set_field_name_mandatory_builder_trait,
-            &quote!(diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized),
-            &set_mandatory_builder_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #set_mandatory_builder_method_doc_comment]
-                fn #set_field_name_builder_method_ref(
-                    &mut self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> &mut Self {
-                    use diesel_builders::SetMandatoryBuilderExt;
-                    self.set_mandatory_builder_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[must_use]
-                #[doc = #set_mandatory_builder_method_doc_comment]
-                fn #set_field_name_builder_method(
-                    self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Self {
-                    use diesel_builders::SetMandatoryBuilderExt;
-                    self.set_mandatory_builder::<#table_module::#field_name>(value)
-                }
-            },
-        );
-
-        let try_mandatory_builder = trait_with_blanket_impl(
-            &try_set_field_name_mandatory_builder_trait,
-            &quote!(diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized),
-            &try_set_mandatory_builder_trait_doc_comment,
-            &quote! {
-                #[inline]
-                #[doc = #try_set_mandatory_builder_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the column check constraints are not respected."]
-                fn #try_set_field_name_builder_method_ref(
-                    &mut self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetMandatoryBuilderExt;
-                    self.try_set_mandatory_builder_ref::<#table_module::#field_name>(value)
-                }
-                #[inline]
-                #[doc = #try_set_mandatory_builder_method_doc_comment]
-                #[doc = ""]
-                #[doc = " # Errors"]
-                #[doc = ""]
-                #[doc = "Returns an error if the value cannot be converted to the column type."]
-                fn #try_set_field_name_builder_method(
-                    self,
-                    value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
-                ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
-                    use diesel_builders::TrySetMandatoryBuilderExt;
-                    self.try_set_mandatory_builder::<#table_module::#field_name>(value)
-                }
-            },
-        );
-
-        quote! {
-            #mandatory_builder
-            #try_mandatory_builder
-        }
-    } else {
-        quote! {}
-    };
+    let try_discretionary_builder = trait_with_blanket_impl(
+        &try_set_field_name_discretionary_builder_trait,
+        &quote!(diesel_builders::TrySetDiscretionaryBuilder<#table_module::#field_name> + Sized),
+        &try_set_discretionary_builder_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #try_set_discretionary_builder_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the column check constraints are not respected."]
+            fn #try_set_field_name_builder_method_ref(
+                &mut self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetDiscretionaryBuilderExt;
+                self.try_set_discretionary_builder_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[doc = #try_set_discretionary_builder_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the value cannot be converted to the column type."]
+            fn #try_set_field_name_builder_method(
+                self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetDiscretionaryBuilderExt;
+                self.try_set_discretionary_builder::<#table_module::#field_name>(value)
+            }
+        },
+    );
 
     quote! {
-        #discretionary_traits
-        #mandatory_traits
+        #discretionary_model
+        #discretionary_builder
+        #try_discretionary_model
+        #try_discretionary_builder
+    }
+}
+
+/// Generate the mandatory triangular-relation builder setter traits, in an
+/// infallible and a fallible flavour.
+fn generate_mandatory_relation_traits(
+    field_name: &Ident,
+    table_module: &syn::Ident,
+    struct_ident: &Ident,
+    camel_cased_field_name: &str,
+    methods: &TriangularMethods,
+) -> TokenStream {
+    let set_field_name_mandatory_builder_trait =
+        ident(&format!("Set{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+    let try_set_field_name_mandatory_builder_trait =
+        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+
+    let set_field_name_builder_method = &methods.builder;
+    let set_field_name_builder_method_ref = &methods.builder_ref;
+    let try_set_field_name_builder_method = &methods.try_builder;
+    let try_set_field_name_builder_method_ref = &methods.try_builder_ref;
+
+    let set_mandatory_builder_trait_doc_comment = format!(
+        "Trait to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
+    );
+    let set_mandatory_builder_method_doc_comment = format!(
+        "Sets the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
+    );
+    let try_set_mandatory_builder_trait_doc_comment = format!(
+        "Trait to try to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
+    );
+    let try_set_mandatory_builder_method_doc_comment = format!(
+        "Tries to set the `{field_name}` column builder on a table builder relative to a mandatory triangular relation."
+    );
+
+    let mandatory_builder = trait_with_blanket_impl(
+        &set_field_name_mandatory_builder_trait,
+        &quote!(diesel_builders::SetMandatoryBuilder<#table_module::#field_name> + Sized),
+        &set_mandatory_builder_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #set_mandatory_builder_method_doc_comment]
+            fn #set_field_name_builder_method_ref(
+                &mut self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> &mut Self {
+                use diesel_builders::SetMandatoryBuilderExt;
+                self.set_mandatory_builder_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[must_use]
+            #[doc = #set_mandatory_builder_method_doc_comment]
+            fn #set_field_name_builder_method(
+                self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Self {
+                use diesel_builders::SetMandatoryBuilderExt;
+                self.set_mandatory_builder::<#table_module::#field_name>(value)
+            }
+        },
+    );
+
+    let try_mandatory_builder = trait_with_blanket_impl(
+        &try_set_field_name_mandatory_builder_trait,
+        &quote!(diesel_builders::TrySetMandatoryBuilder<#table_module::#field_name> + Sized),
+        &try_set_mandatory_builder_trait_doc_comment,
+        &quote! {
+            #[inline]
+            #[doc = #try_set_mandatory_builder_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the column check constraints are not respected."]
+            fn #try_set_field_name_builder_method_ref(
+                &mut self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Result<&mut Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetMandatoryBuilderExt;
+                self.try_set_mandatory_builder_ref::<#table_module::#field_name>(value)
+            }
+            #[inline]
+            #[doc = #try_set_mandatory_builder_method_doc_comment]
+            #[doc = ""]
+            #[doc = " # Errors"]
+            #[doc = ""]
+            #[doc = "Returns an error if the value cannot be converted to the column type."]
+            fn #try_set_field_name_builder_method(
+                self,
+                value: diesel_builders::TableBuilder<<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable>
+            ) -> Result<Self, <Self::Table as diesel_builders::TableExt>::Error> {
+                use diesel_builders::TrySetMandatoryBuilderExt;
+                self.try_set_mandatory_builder::<#table_module::#field_name>(value)
+            }
+        },
+    );
+
+    quote! {
+        #mandatory_builder
+        #try_mandatory_builder
     }
 }
