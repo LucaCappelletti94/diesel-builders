@@ -285,24 +285,7 @@ fn generate_typed_impl(
 
 /// Extract the inner type from `Option<T>`, returning `None` if not an Option.
 fn extract_option_inner_type(field_type: &syn::Type) -> Option<TokenStream> {
-    let syn::Type::Path(type_path) = field_type else {
-        return None;
-    };
-
-    let segment = type_path.path.segments.last()?;
-    if segment.ident != "Option" {
-        return None;
-    }
-
-    let syn::PathArguments::AngleBracketed(args) = &segment.arguments else {
-        return None;
-    };
-
-    let syn::GenericArgument::Type(inner) = args.args.first()? else {
-        return None;
-    };
-
-    Some(quote::quote! { #inner })
+    crate::utils::option_inner_type(field_type).map(|inner| quote::quote! { #inner })
 }
 
 /// Method identifiers for a triangular relation field, derived from whether the

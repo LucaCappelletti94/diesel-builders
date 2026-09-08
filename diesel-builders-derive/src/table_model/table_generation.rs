@@ -5,19 +5,10 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Field, Ident, Type};
 
-use crate::{table_model::attribute_parsing::extract_sql_name, utils::is_option};
-
-/// Extracts the first generic type argument from a type path, if it exists.
-fn extract_first_generic_arg(ty: &Type) -> Option<&Type> {
-    if let Type::Path(type_path) = ty
-        && let syn::PathArguments::AngleBracketed(args) = &type_path.path.segments.last()?.arguments
-        && let syn::GenericArgument::Type(inner_ty) = args.args.first()?
-    {
-        Some(inner_ty)
-    } else {
-        None
-    }
-}
+use crate::{
+    table_model::attribute_parsing::extract_sql_name,
+    utils::{first_generic_arg, is_option},
+};
 
 /// Maps primitive Rust types to their corresponding Diesel SQL types.
 fn map_primitive_type(type_name: &str) -> Option<TokenStream> {
@@ -41,7 +32,7 @@ fn map_primitive_type(type_name: &str) -> Option<TokenStream> {
 fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
     // Handle Option<T> -> Nullable<InnerType>
     if is_option(ty) {
-        let inner_ty = extract_first_generic_arg(ty)?;
+        let inner_ty = first_generic_arg(ty)?;
         let inner_sql_type = infer_sql_type(inner_ty)?;
         return Some(quote! { diesel::sql_types::Nullable<#inner_sql_type> });
     }
@@ -53,7 +44,7 @@ fn infer_sql_type(ty: &Type) -> Option<TokenStream> {
 
         // Handle Vec<T>
         if type_name == "Vec" {
-            let inner_ty = extract_first_generic_arg(ty)?;
+            let inner_ty = first_generic_arg(ty)?;
 
             // Special case: Vec<u8> -> Binary
             if let Type::Path(inner_path) = inner_ty

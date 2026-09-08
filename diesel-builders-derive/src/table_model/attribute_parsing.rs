@@ -278,14 +278,6 @@ pub fn extract_field_default_value(field: &syn::Field) -> Option<syn::Expr> {
         });
     }
 
-    if default_values.len() > 1 {
-        // We can't easily return an error here because the signature returns
-        // Option<Expr>. But we can panic or log. Ideally we should
-        // change the signature or handle it in validation.
-        // For now, let's just return the first one, and we'll add a separate
-        // validation function.
-    }
-
     default_values.into_iter().next()
 }
 
