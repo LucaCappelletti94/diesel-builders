@@ -1,7 +1,7 @@
 //! Fuzzes the shared `index!` / `unique_index!` expansion.
 //!
 //! Input encoding: the token stream inside an `index!(...)` or
-//! `unique_index!(...)` invocation, a comma-terminated list of column types
+//! `unique_index!(...)` invocation, a comma-terminated list of column paths
 //! with an optional trailing comma. The marker trait is chosen from the input
 //! length so both `IndexedColumn` and `UniquelyIndexedColumn` are exercised.
 //! The oracle re-derives the documented expansion from the parsed columns and
@@ -27,20 +27,22 @@ fuzz_target!(|input: &str| {
     };
 
     // The reference parse snapshots the body so both branches can still
-    // consume it in the native expansion.
-    let parsed_columns: syn::punctuated::Punctuated<syn::Type, syn::Token![,]> =
-        match syn::punctuated::Punctuated::<syn::Type, syn::Token![,]>::parse_terminated.parse2(body.clone()) {
+    // consume it in the native expansion. A column is a path, not any type:
+    // a trait-bound type such as `A + B` cannot legally appear as an impl
+    // target, so expand_index only accepts a terminated list of paths.
+    let parsed_columns: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
+        match syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated.parse2(body.clone()) {
             Ok(columns) => columns,
             Err(_) => {
                 diesel_builders_derive_fuzz::expand_index(body, &trait_path)
-                    .expect_err("a body that is not a terminated type list must be rejected");
+                    .expect_err("a body that is not a terminated path list must be rejected");
                 return;
             }
         };
-    let columns: Vec<syn::Type> = parsed_columns.into_iter().collect();
+    let columns: Vec<syn::Path> = parsed_columns.into_iter().collect();
 
     let tokens = diesel_builders_derive_fuzz::expand_index(body, &trait_path)
-        .expect("a terminated type list must expand");
+        .expect("a terminated path list must expand");
     let parsed: syn::File = syn::parse2(tokens).expect("expansion must be valid Rust");
 
     let column_tuple: proc_macro2::TokenStream = quote::quote! { ( #(#columns,)* ) };
