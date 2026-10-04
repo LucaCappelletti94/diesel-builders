@@ -24,7 +24,7 @@ pub use tuplities::prelude::{NestedTupleChain, NestedTupleIntoVec};
 
 ## Required release
 
-Publish compatible packages containing the APIs available at [`fdb304fc`](https://github.com/LucaCappelletti94/tuplities/commit/fdb304fc). Keep the `flatten-nest` exports and canonical nested-reference contracts usable together. After publication, update the consumer's version requirement and verify both archives against registry dependencies.
+Publish compatible packages containing the APIs available at [`fdb304fc`](https://github.com/LucaCappelletti94/tuplities/commit/fdb304fc). Keep the `flatten-nest` exports and canonical nested-reference contracts usable together. The registry incompatibility above blocks publication until then.
 
 ## Prior art and affected branches
 

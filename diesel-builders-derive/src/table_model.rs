@@ -564,7 +564,7 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let empty_new_record = format_as_nested_tuple(&empty_values);
 
     // Tables without a declared record error type get the infallible
-    // whole-record validation; otherwise the model supplies it.
+    // whole-record validation. Otherwise the model supplies it.
     let validate_record_impl = if attributes.record_error.is_none() {
         generate_infallible_validate_record_impl(&table_module)
     } else {

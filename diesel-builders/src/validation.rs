@@ -10,32 +10,14 @@ use crate::{
 };
 
 /// A typed validation failure from either of two stages.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum EitherValidationError<L, R> {
     /// The first stage failed.
+    #[error(transparent)]
     Left(L),
     /// The second stage failed.
+    #[error(transparent)]
     Right(R),
-}
-
-impl<L: std::fmt::Display, R: std::fmt::Display> std::fmt::Display for EitherValidationError<L, R> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Left(error) => error.fmt(f),
-            Self::Right(error) => error.fmt(f),
-        }
-    }
-}
-
-impl<L: std::error::Error + 'static, R: std::error::Error + 'static> std::error::Error
-    for EitherValidationError<L, R>
-{
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        Some(match self {
-            Self::Left(error) => error,
-            Self::Right(error) => error,
-        })
-    }
 }
 
 impl<L: Into<Infallible>, R: Into<Infallible>> From<EitherValidationError<L, R>> for Infallible {

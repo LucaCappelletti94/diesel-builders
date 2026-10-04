@@ -151,7 +151,8 @@ pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
     /// use schema::*;
     ///
     /// let mut conn = connection_with_data()?;
-    /// let posts = <(posts::user_id,)>::load_many((1,), &mut conn)?;
+    /// let mut posts = <(posts::user_id,)>::load_many((1,), &mut conn)?;
+    /// posts.sort_by_key(|post| post.id);
     /// assert_eq!(
     ///     posts,
     ///     vec![
