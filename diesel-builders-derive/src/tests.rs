@@ -886,6 +886,19 @@ fn index_expansion_rejects_trait_bound_type() {
     );
 }
 
+/// A path whose only segment is a reserved keyword parses as a valid
+/// `syn::Path` but cannot appear as an impl target, so the expansion
+/// itself must be rejected rather than producing unparseable output.
+#[test]
+fn index_expansion_rejects_reserved_keyword_path() {
+    let body: TokenStream = quote::quote! { try };
+    assert!(
+        crate::index::expand_index(body, &quote::quote! { ::diesel_builders::IndexedColumn })
+            .is_err(),
+        "expected a reserved-keyword path to be rejected rather than expanded to broken Rust"
+    );
+}
+
 /// The index expansion accepts an empty body.
 #[test]
 fn index_expansion_accepts_empty_body() {
