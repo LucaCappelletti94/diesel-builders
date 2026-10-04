@@ -95,6 +95,20 @@ pub trait ModelDescendantOf<Conn, T: Descendant>: HasTable<Table: DescendantOf<T
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::ancestors::ModelDescendantOf;
+    /// use schema::{Profile, User, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = Profile::find(&1, &mut conn)?;
+    /// let user = ModelDescendantOf::<SqliteConnection, users::table>::ancestor(&profile, &mut conn)?;
+    /// assert_eq!(user, User { id: 1, name: "Ada".into(), age: 20, nickname: Some("Ace".into()) });
+    /// # Ok(())
+    /// # }
+    /// ```
     fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model>;
 }
 
@@ -103,15 +117,36 @@ pub trait ModelDescendantOf<Conn, T: Descendant>: HasTable<Table: DescendantOf<T
 pub trait ModelDescendantExt<Conn> {
     /// Returns the ancestor model associated to this descendant model.
     ///
-    /// # Arguments
-    ///
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query.
-    ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   query fails or if no matching record is found.
+    /// Returns a `diesel::QueryResult` which may contain an error if the query
+    /// fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = Profile::find(&1, &mut conn)?;
+    /// let user: User = profile.ancestor(&mut conn)?;
+    /// assert_eq!(user.id, 1);
+    /// assert_eq!(user.name, "Ada");
+    /// assert_eq!(user.age, 20);
+    /// assert_eq!(user.nickname.as_deref(), Some("Ace"));
+    ///
+    /// let mut fresh = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut fresh)?;
+    /// let parent: Parent = child.ancestor(&mut fresh)?;
+    /// assert_eq!(parent.id, child.id);
+    /// assert_eq!(parent.label, "short");
+    /// # Ok(())
+    /// # }
+    /// ```
     fn ancestor<M>(&self, conn: &mut Conn) -> diesel::QueryResult<M>
     where
         M: HasTable<Table: TableExt<Model = M> + Descendant>,
@@ -123,15 +158,33 @@ pub trait ModelDescendantExt<Conn> {
     /// Deletes the root table record associated with this descendant model,
     /// which will cascade and delete all descendants including this instance.
     ///
-    /// # Arguments
-    ///
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query.
-    ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   delete operation fails.
+    /// Returns a `diesel::QueryResult` which may contain an error if the delete
+    /// operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let ada = profiles::table::try_builder()?.display_name("Ada").visits(3).insert(&mut conn)?;
+    /// let grace =
+    ///     profiles::table::try_builder()?.display_name("Grace").visits(1).insert(&mut conn)?;
+    /// assert_eq!(ada.id, 1);
+    /// assert_eq!(grace.id, 2);
+    ///
+    /// let deleted = ada.delete(&mut conn)?;
+    /// assert_eq!(deleted, 1);
+    /// assert!(!Profile::exists(&ada.id, &mut conn)?);
+    /// assert!(!User::exists(&ada.id, &mut conn)?);
+    /// assert!(Profile::exists(&grace.id, &mut conn)?);
+    /// assert!(User::exists(&grace.id, &mut conn)?);
+    /// assert_eq!(User::find(&grace.id, &mut conn)?.name, "Grace");
+    /// # Ok(())
+    /// # }
+    /// ```
     fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>
     where
         Self: ModelDelete<Conn>,
@@ -174,6 +227,22 @@ where
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::{Post, User};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let ada = User::find(&1, &mut conn)?;
+    /// assert_eq!(ada, User { id: 1, name: "Ada".into(), age: 20, nickname: Some("Ace".into()) });
+    /// let third = Post::find(&3, &mut conn)?;
+    /// assert_eq!(third.title, "Third");
+    /// assert_eq!(third.user_id, 2);
+    /// assert_eq!(User::find(&99, &mut conn), Err(diesel::result::Error::NotFound));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn find(
         id: <&Self as Identifiable>::Id,
         conn: &mut Conn,
@@ -191,6 +260,21 @@ where
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::{Profile, User};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// assert!(User::exists(&1, &mut conn)?);
+    /// assert!(User::exists(&2, &mut conn)?);
+    /// assert!(!User::exists(&3, &mut conn)?);
+    /// assert!(Profile::exists(&1, &mut conn)?);
+    /// assert!(!Profile::exists(&2, &mut conn)?);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn exists(id: <&Self as Identifiable>::Id, conn: &mut Conn) -> QueryResult<bool> {
         use diesel::OptionalExtension;
         match Self::find(id, conn).optional()? {
@@ -223,15 +307,31 @@ pub trait ModelDelete<Conn>: HasTable<Table: Descendant> {
     /// Deletes the root table record associated with this descendant model,
     /// which will cascade and delete all descendants including this instance.
     ///
-    /// # Arguments
-    ///
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query.
-    ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   delete operation fails.
+    /// Returns a `diesel::QueryResult` which may contain an error if the delete
+    /// operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::ModelDelete;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let ada = profiles::table::try_builder()?.display_name("Ada").visits(3).insert(&mut conn)?;
+    /// let grace =
+    ///     profiles::table::try_builder()?.display_name("Grace").visits(1).insert(&mut conn)?;
+    ///
+    /// let deleted = ModelDelete::<SqliteConnection>::delete(&grace, &mut conn)?;
+    /// assert_eq!(deleted, 1);
+    /// assert!(!User::exists(&grace.id, &mut conn)?);
+    /// assert!(!Profile::exists(&grace.id, &mut conn)?);
+    /// assert_eq!(User::find(&ada.id, &mut conn)?.name, "Ada");
+    /// assert!(Profile::exists(&ada.id, &mut conn)?);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>;
 }
 
@@ -277,6 +377,30 @@ pub trait ModelUpsert<Conn>: HasTable<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   upsert operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::User;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let mut ada = User::find(&1, &mut conn)?;
+    /// ada.name = "Ada Lovelace".into();
+    /// ada.age = 36;
+    /// let upserted = ada.upsert(&mut conn)?;
+    /// assert_eq!(upserted.id, 1);
+    /// assert_eq!(upserted.name, "Ada Lovelace");
+    /// assert_eq!(upserted.age, 36);
+    /// assert_eq!(upserted.nickname, Some("Ace".into()));
+    /// assert!(!User::exists(&3, &mut conn)?);
+    ///
+    /// let hopper = User { id: 3, name: "Hopper".into(), age: 85, nickname: None };
+    /// let inserted = hopper.upsert(&mut conn)?;
+    /// assert_eq!(inserted.id, 3);
+    /// assert_eq!(User::find(&3, &mut conn)?.age, 85);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
     where
         Self: Sized;

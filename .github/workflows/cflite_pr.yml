@@ -1,0 +1,68 @@
+name: ClusterFuzzLite PR fuzzing
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  SeedReplay:
+    name: Replay seed corpus
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CARGO_BUILD_JOBS: 2
+    concurrency:
+      group: ${{ github.workflow }}-seed-replay-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
+        with:
+          toolchain: nightly-2026-10-03
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --version 0.13.2 --locked -j 2
+      - name: Build fuzz targets
+        run: cargo fuzz build -O --debug-assertions --fuzz-dir fuzz
+      - name: Replay committed seeds
+        run: |
+          for name in table_model relationship_attributes index; do
+            ./fuzz/target/x86_64-unknown-linux-gnu/release/$name fuzz/seeds/$name -runs=0
+          done
+
+  PR:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.sanitizer }}-${{ github.ref }}
+      cancel-in-progress: true
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer:
+          - address
+    steps:
+      - name: Build Fuzzers (${{ matrix.sanitizer }})
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: rust
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sanitizer: ${{ matrix.sanitizer }}
+      - name: Run Fuzzers (${{ matrix.sanitizer }})
+        id: run
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 600
+          mode: code-change
+          sanitizer: ${{ matrix.sanitizer }}
+          # Starts from the batch corpus. Reading needs no token, so fork PRs work too.
+          storage-repo: https://github.com/${{ github.repository }}.git
+          storage-repo-branch: fuzz-corpus

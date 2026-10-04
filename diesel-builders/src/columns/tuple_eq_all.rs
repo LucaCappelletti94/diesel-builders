@@ -11,7 +11,27 @@ use crate::{TypedColumn, TypedNestedTuple};
 pub trait TupleEqAll: TypedNestedTuple {
     /// The output type of the equality operation.
     type EqAll: FlattenNestedTuple;
-    /// Creates a tuple of equality tuple comparing all elements.
+    /// Creates equality expressions for every column in the nested tuple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::columns::TupleEqAll;
+    /// use schema::users;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let (name, (age,)) = TupleEqAll::eq_all((users::name, (users::age,)), ("Ada".into(), (20,)));
+    /// let ids = users::table.filter(name).filter(age).select(users::id).load::<i32>(&mut conn)?;
+    /// assert_eq!(ids, [1]);
+    /// let missing = users::table
+    ///     .filter(users::name.eq("Ada"))
+    ///     .filter(users::age.eq(30))
+    ///     .select(users::id)
+    ///     .load::<i32>(&mut conn)?;
+    /// assert!(missing.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn eq_all(self, rhs: Self::NestedTupleColumnType) -> Self::EqAll;
 }
 

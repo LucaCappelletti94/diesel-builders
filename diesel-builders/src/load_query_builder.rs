@@ -19,12 +19,27 @@ pub trait LoadQueryBuilder: NonEmptyNestedProjection {
     /// The type of the constructed load query.
     type LoadQuery;
 
-    /// Constructs a load query.
+    /// Constructs a query filtered by the selected columns' nested values.
     ///
-    /// # Arguments
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::LoadQueryBuilder;
+    /// use schema::*;
     ///
-    /// * `values` - A nested tuple of values corresponding to the foreign
-    ///   columns.
+    /// let mut conn = connection_with_data()?;
+    /// let query = <(posts::user_id,)>::load_query((1,));
+    /// let posts: Vec<Post> = query.order(posts::id).load(&mut conn)?;
+    /// assert_eq!(
+    ///     posts,
+    ///     vec![
+    ///         Post { id: 1, user_id: 1, title: "First".to_owned() },
+    ///         Post { id: 2, user_id: 1, title: "Second".to_owned() },
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_query(values: impl NestedTupleInto<Self::NestedTupleValueType>) -> Self::LoadQuery;
 }
 
@@ -75,6 +90,22 @@ pub trait LoadFirst<Conn>: LoadQueryBuilder<Table: DescendantWithSelf> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let post =
+    ///     <(posts::user_id, (posts::title,))>::load_first((1, ("Second".to_owned(),)), &mut conn)?;
+    /// assert_eq!(post, Post { id: 2, user_id: 1, title: "Second".to_owned() });
+    ///
+    /// let missing = <(posts::id,)>::load_first((999,), &mut conn);
+    /// assert!(matches!(missing, Err(diesel::result::Error::NotFound)));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_first(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -113,6 +144,27 @@ pub trait LoadMany<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let posts = <(posts::user_id,)>::load_many((1,), &mut conn)?;
+    /// assert_eq!(
+    ///     posts,
+    ///     vec![
+    ///         Post { id: 1, user_id: 1, title: "First".to_owned() },
+    ///         Post { id: 2, user_id: 1, title: "Second".to_owned() },
+    ///     ]
+    /// );
+    ///
+    /// let missing = <(posts::id,)>::load_many((999,), &mut conn)?;
+    /// assert!(missing.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_many(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -150,6 +202,24 @@ pub trait LoadSorted<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// diesel::insert_into(posts::table)
+    ///     .values((posts::id.eq(5), posts::user_id.eq(1), posts::title.eq("Fifth")))
+    ///     .execute(&mut conn)?;
+    /// diesel::insert_into(posts::table)
+    ///     .values((posts::id.eq(6), posts::user_id.eq(1), posts::title.eq("Sixth")))
+    ///     .execute(&mut conn)?;
+    /// let posts = <(posts::user_id,)>::load_sorted((1,), &mut conn)?;
+    /// assert_eq!(posts.iter().map(|post| post.id).collect::<Vec<_>>(), vec![1, 2, 5, 6],);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -197,6 +267,31 @@ pub trait LoadPaginated<Conn>: LoadQueryBuilder<Table: TableExt> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::load_query_builder::LoadPaginated;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// diesel::insert_into(posts::table)
+    ///     .values((posts::id.eq(5), posts::user_id.eq(1), posts::title.eq("Fifth")))
+    ///     .execute(&mut conn)?;
+    /// diesel::insert_into(posts::table)
+    ///     .values((posts::id.eq(6), posts::user_id.eq(1), posts::title.eq("Sixth")))
+    ///     .execute(&mut conn)?;
+    /// let page = <(posts::user_id,)>::load_many_paginated((1,), 0, 2, &mut conn)?;
+    /// assert_eq!(page.iter().map(|post| post.id).collect::<Vec<_>>(), vec![1, 2]);
+    ///
+    /// let page = <(posts::user_id,)>::load_many_paginated((1,), 2, 2, &mut conn)?;
+    /// assert_eq!(page.iter().map(|post| post.id).collect::<Vec<_>>(), vec![5, 6]);
+    ///
+    /// let past = <(posts::user_id,)>::load_many_paginated((1,), 4, 2, &mut conn)?;
+    /// assert!(past.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_many_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,

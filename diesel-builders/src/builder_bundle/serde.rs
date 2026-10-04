@@ -1,7 +1,7 @@
 //! Submodule implementing serde-related traits for table bundles.
 #![cfg(feature = "serde")]
 
-use crate::{TableBuilderBundle, builder_bundle::BundlableTableExt};
+use crate::{TableBuilderBundle, ValidateStoredValues, builder_bundle::BundlableTableExt};
 
 impl<T: BundlableTableExt> serde::Serialize for TableBuilderBundle<T>
 where
@@ -38,7 +38,7 @@ where
 
 impl<'de, T: BundlableTableExt> serde::Deserialize<'de> for TableBuilderBundle<T>
 where
-    T::NewValues: serde::Deserialize<'de>,
+    T::NewValues: serde::Deserialize<'de> + ValidateStoredValues<T::NewRecord>,
     T::OptionalMandatoryNestedBuilders: serde::Deserialize<'de>,
     T::OptionalDiscretionaryNestedBuilders: serde::Deserialize<'de>,
 {
@@ -59,7 +59,12 @@ where
             nested_discretionary_associated_builders: C,
         }
 
-        let helper = TableBuilderBundleHelper::deserialize(deserializer)?;
+        let helper: TableBuilderBundleHelper<
+            T::NewValues,
+            T::OptionalMandatoryNestedBuilders,
+            T::OptionalDiscretionaryNestedBuilders,
+        > = TableBuilderBundleHelper::deserialize(deserializer)?;
+        helper.insertable_model.validate_stored_values().map_err(serde::de::Error::custom)?;
         Ok(TableBuilderBundle {
             insertable_model: helper.insertable_model,
             nested_mandatory_associated_builders: helper.nested_mandatory_associated_builders,

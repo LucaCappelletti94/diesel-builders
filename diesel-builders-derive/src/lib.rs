@@ -1,26 +1,23 @@
-//! Procedural macros for diesel-builders workspace.
-//!
-//! This crate provides attribute macros that generate trait implementations
-//! for tuples, replacing the complex `macro_rules!` patterns with cleaner
-//! procedural macros.
+#![doc = include_str!("../README.md")]
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::allow_attributes,
+        clippy::allow_attributes_without_reason,
+        clippy::fallible_impl_from,
+    )
+)]
 
 mod descendant;
+mod index;
 mod table_model;
 mod utils;
 use proc_macro::TokenStream;
-/// Derive macro to automatically implement `TypedColumn` for all table columns.
-///
-/// This macro should be derived on Model structs to automatically generate
-/// `TypedColumn` implementations for each column based on the struct's field
-/// types. It also automatically implements `GetColumn` for all fields,
-/// replacing the need for a separate `GetColumn` derive.
-///
-/// Supports a helper attribute to override the insertable model name:
-/// ```ignore
-/// #[derive(TableModel)]
-/// #[diesel(table_name = my_table)]
-/// struct MyModel { ... }
-/// ```
+/// Generates a Diesel table, checked builders, and relationship implementations
+/// for a model.
 #[proc_macro_derive(
     TableModel,
     attributes(table_model, infallible, mandatory, discretionary, diesel, same_as)
@@ -34,44 +31,21 @@ pub fn derive_table_model(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Parsed representation of an index macro invocation.
-struct IndexDefinition {
-    /// The columns that form the index.
-    columns: syn::punctuated::Punctuated<syn::Type, syn::Token![,]>,
-}
-
-impl syn::parse::Parse for IndexDefinition {
-    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
-        let columns = syn::punctuated::Punctuated::parse_terminated(input)?;
-        Ok(IndexDefinition { columns })
-    }
-}
-
-/// Helper function to generate index implementations for each column in the
-/// index.
+/// Converts native index expansion into compiler tokens or diagnostics.
 fn generate_index_impl(input: TokenStream, trait_path: &proc_macro2::TokenStream) -> TokenStream {
-    let index_def = syn::parse_macro_input!(input as IndexDefinition);
-    let columns: Vec<_> = index_def.columns.iter().map(|col| quote::quote! { #col }).collect();
-    let impls = crate::utils::index_impls(trait_path, &columns);
-    quote::quote! {
-        #(#impls)*
+    match index::expand_index(input.into(), trait_path) {
+        Ok(tokens) => tokens.into(),
+        Err(error) => error.to_compile_error().into(),
     }
-    .into()
 }
 
-/// Define a table UNIQUE index using SQL-like syntax.
-///
-/// This macro generates `UniquelyIndexedColumn` implementations for each column
-/// in the index.
+/// Generates `UniquelyIndexedColumn` implementations for each indexed column.
 #[proc_macro]
 pub fn unique_index(input: TokenStream) -> TokenStream {
     generate_index_impl(input, &quote::quote!(::diesel_builders::UniquelyIndexedColumn))
 }
 
-/// Define a table index using SQL-like syntax.
-///
-/// This macro generates `IndexedColumn` implementations for each column in the
-/// index.
+/// Generates `IndexedColumn` implementations for each indexed column.
 #[proc_macro]
 pub fn index(input: TokenStream) -> TokenStream {
     generate_index_impl(input, &quote::quote!(::diesel_builders::IndexedColumn))

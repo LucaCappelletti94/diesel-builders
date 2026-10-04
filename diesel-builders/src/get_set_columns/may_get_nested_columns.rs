@@ -6,6 +6,28 @@ use crate::{MayGetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjecti
 /// Trait indicating a builder which may get multiple columns.
 pub trait MayGetNestedColumns<CS: NonEmptyNestedProjection> {
     /// May get the owned values of the specified columns.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::MayGetNestedColumns;
+    /// use schema::{User, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let user = users::table.find(1).first::<User>(&mut conn)?;
+    /// let present: Option<User> = Some(user);
+    /// let (name, (nickname,)) =
+    ///     MayGetNestedColumns::<(users::name, (users::nickname,))>::may_get_nested_columns(&present);
+    /// assert_eq!(name, Some("Ada".to_string()));
+    /// assert_eq!(nickname, Some(Some("Ace".to_string())));
+    /// let absent: Option<User> = None;
+    /// let (age, (nickname,)) =
+    ///     MayGetNestedColumns::<(users::age, (users::nickname,))>::may_get_nested_columns(&absent);
+    /// assert_eq!(age, None);
+    /// assert_eq!(nickname, None);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn may_get_nested_columns(
         &self,
     ) -> <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions;

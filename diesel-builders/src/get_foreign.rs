@@ -28,6 +28,23 @@ pub trait GetForeign<
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::GetForeign;
+    /// use schema::{Post, User, posts, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let post = Post::find(&1, &mut conn)?;
+    /// let author: User =
+    ///     GetForeign::<SqliteConnection, (posts::user_id,), (users::id,)>::foreign(&post, &mut conn)?;
+    /// assert_eq!(author.id, 1);
+    /// assert_eq!(author.name, "Ada");
+    /// assert_eq!(author.nickname, Some("Ace".into()));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn foreign(
         &self,
         conn: &mut Conn,
@@ -74,6 +91,21 @@ pub trait GetForeignExt<Conn> {
     ///
     /// * Returns a `diesel::QueryResult` which may contain an error if the
     ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::{Post, User, posts, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let post = Post::find(&3, &mut conn)?;
+    /// let author: User = post.foreign::<(posts::user_id,), (users::id,)>(&mut conn)?;
+    /// assert_eq!(author.id, 2);
+    /// assert_eq!(author.name, "Grace");
+    /// assert_eq!(author.nickname, None);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn foreign<HostColumns, ForeignColumns>(
         &self,
         conn: &mut Conn,

@@ -32,7 +32,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(animal.name(), "Generic Animal");
 
     // Insert into dogs table (extends animals)
-    let builder = dogs::table::builder().try_name("Max")?.breed("Golden Retriever");
+    let builder = dogs::table::try_builder()?.try_name("Max")?.breed("Golden Retriever");
     let builder_clone = builder.clone();
     let dog = builder.insert(&mut conn)?;
 
@@ -55,7 +55,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into puppies table (extends dogs, transitively extends animals)
     let builder =
-        puppies::table::builder().try_name("Buddy")?.breed("Labrador").try_age_months(3)?;
+        puppies::table::try_builder()?.try_name("Buddy")?.breed("Labrador").try_age_months(3)?;
 
     let builder_clone = builder.clone();
     let puppy = builder.insert(&mut conn)?;
@@ -142,7 +142,7 @@ fn test_inheritance_chain() -> Result<(), Box<dyn std::error::Error>> {
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder for a Puppy that extends Dogs which extends Animals
     // (chain inheritance)
-    let builder = puppies::table::builder()
+    let builder = puppies::table::try_builder()?
         .try_name("Serialized Puppy")?
         .breed("Beagle")
         .try_age_months(6)?;
@@ -169,21 +169,21 @@ fn test_load_nested_traits_chain() -> Result<(), Box<dyn std::error::Error>> {
     setup_animal_tables(&mut conn)?;
 
     // 1. Insert Animal -> Dog -> Puppy 1
-    let puppy1 = puppies::table::builder()
+    let puppy1 = puppies::table::try_builder()?
         .try_name("Puppy1")?
         .breed("BreedA")
         .try_age_months(1)?
         .insert_nested(&mut conn)?;
 
     // 2. Insert Animal -> Dog -> Puppy 2 (Same Breed)
-    let puppy2 = puppies::table::builder()
+    let puppy2 = puppies::table::try_builder()?
         .try_name("Puppy2")?
         .breed("BreedA")
         .try_age_months(2)?
         .insert_nested(&mut conn)?;
 
     // 3. Insert Animal -> Dog -> Puppy 3 (Different Breed)
-    let puppy3 = puppies::table::builder()
+    let puppy3 = puppies::table::try_builder()?
         .try_name("Puppy3")?
         .breed("BreedB")
         .try_age_months(3)?
@@ -220,7 +220,7 @@ fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // Insert a Puppy (extends Dogs, which extends Animals)
-    let puppy: Puppy = puppies::table::builder()
+    let puppy: Puppy = puppies::table::try_builder()?
         .try_name("NestedPuppy")?
         .breed("NestedDogBreed")
         .try_age_months(5)?

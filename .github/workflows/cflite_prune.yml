@@ -1,0 +1,36 @@
+name: ClusterFuzzLite corpus pruning
+
+on:
+  schedule:
+    - cron: "0 5 * * *" # 05:00 UTC, an hour before batch fuzzing
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  Pruning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    # one writer at a time for the shared fuzz-corpus branch
+    concurrency:
+      group: cflite-corpus
+      cancel-in-progress: false
+    steps:
+      - name: Build Fuzzers
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: rust
+      - name: Run Fuzzers
+        id: run
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: 600
+          mode: prune
+          storage-repo: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          storage-repo-branch: fuzz-corpus

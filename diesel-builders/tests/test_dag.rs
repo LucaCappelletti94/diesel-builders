@@ -28,7 +28,7 @@ fn test_dag() -> Result<(), Box<dyn std::error::Error>> {
 
     // Insert into dogs table (extends animals)
     // Using helper trait methods for fluent API
-    let dog: Dog = dogs::table::builder()
+    let dog: Dog = dogs::table::try_builder()?
         .try_name("Max the Dog")?
         .breed("Golden Retriever")
         .insert(&mut conn)?;
@@ -269,7 +269,8 @@ fn test_upsert_dag() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Upsert on Descendant (Dog)
     // Note: upsert currently only updates the specific table columns.
     // If we update a field belonging to Dog (breed), it should work.
-    let dog = dogs::table::builder().try_name("Original Dog")?.breed("Poodle").insert(&mut conn)?;
+    let dog =
+        dogs::table::try_builder()?.try_name("Original Dog")?.breed("Poodle").insert(&mut conn)?;
 
     let mut dog_update = dog.clone();
     dog_update.set_breed("Standard Poodle".to_string());

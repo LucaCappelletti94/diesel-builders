@@ -9,8 +9,7 @@ use diesel_builders::{
 use diesel_builders_derive::TableModel;
 
 #[derive(Debug, Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
-#[diesel(table_name = user_roles)]
-#[diesel(primary_key(user_id, role_id))]
+#[diesel(table_name = user_roles, primary_key(user_id, role_id))]
 /// A user role assignment model.
 pub struct UserRole {
     /// The ID of the user.
@@ -68,10 +67,6 @@ fn test_composite_primary_key_table() -> Result<(), Box<dyn std::error::Error>> 
     assert_eq!(nested_models.assigned_at(), user_role.assigned_at());
     // Verify part of PK that wasn't changed
     assert_eq!(nested_models.user_id(), user_role.user_id());
-
-    assert_eq!(user_role.user_id(), &1);
-    assert_eq!(user_role.role_id(), &10);
-    assert_eq!(user_role.assigned_at(), "2025-01-01");
 
     assert_eq!(user_role.user_id(), &1);
     assert_eq!(user_role.role_id(), &10);
@@ -236,10 +231,6 @@ fn test_upsert_composite() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(queried_role.assigned_at, "2025-01-02");
 
     // 3. Upsert (Insert)
-    // We need to construct a UserRole manually since we don't have a builder
-    // that returns a struct without inserting. But we can use the struct
-    // constructor since fields are public now. TODO: We will add support
-    // for upsert via builder in the future.
     let new_role = UserRole { user_id: 2, role_id: 20, assigned_at: "2025-02-01".to_string() };
 
     let inserted_role = new_role.upsert(&mut conn)?;

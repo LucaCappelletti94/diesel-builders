@@ -9,8 +9,7 @@ pub trait NestedBuildableTables: NestedTables {
     /// The builders associated with the buildable tables.
     type NestedBuilders: IntoNestedTupleOption<IntoOptions = Self::NestedOptionalBuilders>
         + FlattenNestedTuple
-        + HasNestedTables<NestedTables = Self>
-        + Default;
+        + HasNestedTables<NestedTables = Self>;
     /// The optional builders associated with the buildable tables.
     type NestedOptionalBuilders: NestedTupleOption<Transposed = Self::NestedBuilders>
         + FlattenNestedTuple

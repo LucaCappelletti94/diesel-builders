@@ -11,6 +11,23 @@ pub trait TupleToOrder: TypedNestedTuple {
     /// The output type of the order operation.
     type Order: FlattenNestedTuple + Expression;
     /// Creates a tuple of order expressions.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::columns::TupleToOrder;
+    /// use schema::users;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let order = (users::age, (users::name,)).to_order();
+    /// let rows = users::table
+    ///     .order(order)
+    ///     .select((users::name, users::age))
+    ///     .load::<(String, i32)>(&mut conn)?;
+    /// assert_eq!(rows, [("Ada".into(), 20), ("Grace".into(), 30)]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn to_order(self) -> Self::Order;
 }
 

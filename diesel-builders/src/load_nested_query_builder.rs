@@ -25,12 +25,41 @@ pub trait LoadNestedQueryBuilder<
     /// The type of the constructed load query.
     type LoadQuery;
 
-    /// Constructs a load query.
+    /// Constructs an ancestor join filtered by the selected columns' nested
+    /// values.
     ///
-    /// # Arguments
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::load_nested_query_builder::LoadNestedQueryBuilder;
+    /// use schema::*;
     ///
-    /// * `values` - A nested tuple of values corresponding to the foreign
-    ///   columns.
+    /// let mut conn = connection_with_profiles()?;
+    /// let query =
+    ///     <(profiles::visits,) as LoadNestedQueryBuilder<profiles::table>>::load_nested_query((3,));
+    /// let rows: Vec<(User, (Profile,))> = query.order(users::id).load(&mut conn)?;
+    /// assert!(
+    ///     rows.iter()
+    ///         .map(|(user, (profile,))| {
+    ///             (
+    ///                 user.id,
+    ///                 user.name.as_str(),
+    ///                 user.age,
+    ///                 user.nickname.as_deref(),
+    ///                 profile.id,
+    ///                 profile.display_name.as_str(),
+    ///                 profile.visits,
+    ///             )
+    ///         })
+    ///         .eq([
+    ///             (1, "Ada", 20, Some("Ace"), 1, "Ada", 3),
+    ///             (2, "Grace", 30, None, 2, "Grace", 3),
+    ///             (3, "Bob", 25, None, 3, "Bob", 3),
+    ///         ])
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_nested_query(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
     ) -> Self::LoadQuery;
@@ -79,17 +108,37 @@ where
 {
     /// Returns the first record set matching the load query.
     ///
-    /// # Arguments
-    ///
-    /// * `values` - A nested tuple of values corresponding to the foreign
-    ///   columns.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query
-    ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   query fails or if no matching record is found.
+    /// Returns a database error if the query fails or no record matches.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let (user, (profile,)) =
+    ///     <(profiles::id,) as LoadNestedFirst<profiles::table, _>>::load_nested_first(
+    ///         (1,),
+    ///         &mut conn,
+    ///     )?;
+    /// assert_eq!(user.id, profile.id);
+    /// assert_eq!(user.name, profile.display_name);
+    /// assert_eq!(profile, Profile { id: 1, display_name: "Ada".to_owned(), visits: 3 });
+    /// assert_eq!(
+    ///     user,
+    ///     User { id: 1, name: "Ada".to_owned(), age: 20, nickname: Some("Ace".to_owned()) }
+    /// );
+    ///
+    /// let missing = <(profiles::id,) as LoadNestedFirst<profiles::table, _>>::load_nested_first(
+    ///     (999,),
+    ///     &mut conn,
+    /// );
+    /// assert!(matches!(missing, Err(diesel::result::Error::NotFound)));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_nested_first(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -122,17 +171,49 @@ where
 {
     /// Returns all records matching the load query.
     ///
-    /// # Arguments
-    ///
-    /// * `values` - A nested tuple of values corresponding to the foreign
-    ///   columns.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query
-    ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   query fails.
+    /// Returns a database error if the query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_profiles()?;
+    /// let mut rows = <(profiles::visits,) as LoadNestedMany<profiles::table, _>>::load_nested_many(
+    ///     (3,),
+    ///     &mut conn,
+    /// )?;
+    /// rows.sort_by_key(|(user, _)| user.id);
+    /// assert!(
+    ///     rows.iter()
+    ///         .map(|(user, (profile,))| {
+    ///             (
+    ///                 user.id,
+    ///                 user.name.as_str(),
+    ///                 user.age,
+    ///                 user.nickname.as_deref(),
+    ///                 profile.id,
+    ///                 profile.display_name.as_str(),
+    ///                 profile.visits,
+    ///             )
+    ///         })
+    ///         .eq([
+    ///             (1, "Ada", 20, Some("Ace"), 1, "Ada", 3),
+    ///             (2, "Grace", 30, None, 2, "Grace", 3),
+    ///             (3, "Bob", 25, None, 3, "Bob", 3),
+    ///         ])
+    /// );
+    ///
+    /// let missing = <(profiles::visits,) as LoadNestedMany<profiles::table, _>>::load_nested_many(
+    ///     (999,),
+    ///     &mut conn,
+    /// )?;
+    /// assert!(missing.is_empty());
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_nested_many(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -162,19 +243,29 @@ pub trait LoadNestedSorted<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable>
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
-    /// Returns all records matching the load query, sorted by the leaf table's
-    /// primary key.
-    ///
-    /// # Arguments
-    ///
-    /// * `values` - The values to filter the load query by.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query
+    /// Loads matching records in leaf primary-key order.
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   query fails or if no matching record is found.
+    /// Returns a database error if the query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_profiles()?;
+    /// let rows = <(profiles::visits,) as LoadNestedSorted<profiles::table, _>>::load_nested_sorted(
+    ///     (3,),
+    ///     &mut conn,
+    /// )?;
+    /// assert_eq!(
+    ///     rows.iter().map(|(user, (profile,))| (user.id, profile.id)).collect::<Vec<_>>(),
+    ///     vec![(1, 1), (2, 2), (3, 3)],
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_nested_sorted(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         conn: &mut Conn,
@@ -210,20 +301,40 @@ pub trait LoadNestedPaginated<LeafTable, Conn>: LoadNestedQueryBuilder<LeafTable
 where
     LeafTable: DescendantWithSelf + DescendantOfAll<Self::NestedTables>,
 {
-    /// Constructs a paginated load query.
-    ///
-    /// # Arguments
-    ///
-    /// * `values` - The values to filter the load query by.
-    /// * `offset` - The number of records to skip.
-    /// * `limit` - The maximum number of records to return.
-    /// * `conn` - A mutable reference to the Diesel connection to use for the
-    ///   query
+    /// Loads matching records in leaf primary-key order with an offset and
+    /// limit.
     ///
     /// # Errors
     ///
-    /// * Returns a `diesel::QueryResult` which may contain an error if the
-    ///   query fails.
+    /// Returns a database error if the query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::load_nested_query_builder::LoadNestedPaginated;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_profiles()?;
+    /// let page =
+    ///     <(profiles::visits,) as LoadNestedPaginated<profiles::table, _>>::load_nested_paginated(
+    ///         (3,),
+    ///         1,
+    ///         2,
+    ///         &mut conn,
+    ///     )?;
+    /// assert_eq!(page.iter().map(|(_, (profile,))| profile.id).collect::<Vec<_>>(), vec![2, 3],);
+    ///
+    /// let page =
+    ///     <(profiles::visits,) as LoadNestedPaginated<profiles::table, _>>::load_nested_paginated(
+    ///         (3,),
+    ///         2,
+    ///         5,
+    ///         &mut conn,
+    ///     )?;
+    /// assert_eq!(page.iter().map(|(_, (profile,))| profile.id).collect::<Vec<_>>(), vec![3]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn load_nested_paginated(
         values: impl NestedTupleInto<Self::NestedTupleValueType>,
         offset: i64,

@@ -1,0 +1,7 @@
+# Mutation testing configuration for `cargo mutants`.
+#
+# Scratch trees exclude ignored files and build with the fast `mutants`
+# profile. Target scoping stays on the command line so each run names the
+# file it examines.
+gitignore = true
+profile = "mutants"

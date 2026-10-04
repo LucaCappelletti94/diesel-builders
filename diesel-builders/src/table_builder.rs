@@ -1,49 +1,97 @@
 //! Submodule defining the `TableBuilder` struct for building Diesel table
 //! insertables.
 
+use std::convert::Infallible;
+
 use diesel::{Table, associations::HasTable};
 use tuplities::prelude::*;
 
+use crate::mutation::{
+    ColumnInput, MutationContext, PrepareColumn, PrepareHomogeneous, PrepareOptionalColumns,
+};
+
 mod completed_table_builder;
+/// Delegation impls of the same-as side-preparation traits for `TableBuilder`.
+mod mutation;
 mod serde;
 pub use completed_table_builder::{RecursiveBuilderInsert, RecursiveTableBuilder};
 
 use crate::{
     AncestorOfIndex, BundlableTable, ColumnTyped, DescendantOf, DiscretionarySameAsIndex,
-    ForeignPrimaryKey, MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, MaySetColumns,
-    MayValidateNestedColumns, NestedColumns, SetColumn, SetDiscretionaryBuilder,
-    SetHomogeneousNestedColumns, SetMandatoryBuilder, TableBuilderBundle, TableExt,
-    TryMaySetNestedColumns, TrySetColumn, TrySetDiscretionaryBuilder,
-    TrySetHomogeneousNestedColumns, TrySetMandatoryBuilder, TypedColumn, ValidateColumn,
-    buildable_table::BuildableTable, builder_bundle::BundlableTableExt,
-    vertical_same_as_group::VerticalSameAsGroup,
+    ForeignPrimaryKey, MandatorySameAsIndex, MayGetColumn, MayGetNestedColumns, NestedColumns,
+    SetColumn, SetDiscretionaryBuilder, SetHomogeneousNestedColumns, SetMandatoryBuilder,
+    TableBuilderBundle, TableExt, TrySetColumn, TrySetDiscretionaryBuilder, TrySetMandatoryBuilder,
+    TypedColumn, ValidateColumn, buildable_table::BuildableTable,
+    builder_bundle::BundlableTableExt, vertical_same_as_group::VerticalSameAsGroup,
 };
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 /// A builder for creating insertable models for a Diesel table and its
 /// ancestors.
-///
-/// This struct provides a fluent API for building complex database records
-/// that may have inheritance relationships or triangular dependencies. It
-/// tracks the state of all required fields and ensures proper insertion order.
 ///
 /// # Type Parameters
 ///
 /// * `T`: The table type this builder is for, must implement `BuildableTable`
+///
+/// # Examples
+///
+/// Build a record with a triangular dependency and insert it.
+///
+/// ```rust
+/// # include!("doctest_setup.rs");
+/// # use schema::*;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut conn = connection()?;
+/// let child = children::table::builder()
+///     .mandatory(sides::table::builder())
+///     .discretionary(sides::table::builder())
+///     .child_label("short")
+///     .insert(&mut conn)?;
+/// let mandatory: Side = child.mandatory(&mut conn)?;
+/// assert_eq!(mandatory.get_column::<sides::parent_id>(), child.get_column::<children::id>());
+/// # Ok(())
+/// # }
+/// ```
 pub struct TableBuilder<T: BuildableTable> {
     /// The insertable models for the table and its ancestors.
     pub(crate) bundles: T::NestedAncestorBuilders,
 }
 
 impl<T: BuildableTable> TableBuilder<T> {
-    /// Creates a new `TableBuilder` from the given bundles.
+    /// Creates a new `TableBuilder` from the given checked bundles.
+    ///
+    /// # Examples
+    ///
+    /// Wrap a checked bundle and insert the record it stages.
+    ///
+    /// ```rust
+    /// # include!("doctest_setup.rs");
+    /// # use schema::*;
+    /// # use diesel_builders::TableBuilderBundle;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut conn = connection()?;
+    /// let bundle =
+    ///     TableBuilderBundle::<users::table>::try_from_values(user_values("Ada", 20, Some("Ace")))
+    ///         .expect("valid values must be accepted");
+    /// let builder = TableBuilder::<users::table>::from_bundles((bundle,));
+    /// let user = builder.insert(&mut conn)?;
+    /// assert_eq!(user.get_column::<users::name>(), "Ada");
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn from_bundles(bundles: T::NestedAncestorBuilders) -> Self {
         Self { bundles }
     }
+}
 
-    /// Consumes the builder and returns the nested ancestor bundles.
-    pub fn into_bundles(self) -> T::NestedAncestorBuilders {
-        self.bundles
+impl<T> Default for TableBuilder<T>
+where
+    T: BuildableTable,
+    T::DefaultError: Into<Infallible>,
+{
+    #[inline]
+    fn default() -> Self {
+        <T as BuildableTable>::builder()
     }
 }
 
@@ -128,13 +176,12 @@ where
     C: TypedColumn,
     C::Table: AncestorOfIndex<T> + BundlableTable,
     TableBuilderBundle<C::Table>: ValidateColumn<C>,
-    Self: AncestorBundle<C::Table>,
 {
     type Error = <TableBuilderBundle<C::Table> as ValidateColumn<C>>::Error;
 
     #[inline]
-    fn validate_column_in_context(&self, value: &C::ValueType) -> Result<(), Self::Error> {
-        self.ancestor_bundle().validate_column_in_context(value)
+    fn validate_column(value: &C::ValueType) -> Result<(), Self::Error> {
+        <TableBuilderBundle<C::Table> as ValidateColumn<C>>::validate_column(value)
     }
 }
 
@@ -157,25 +204,79 @@ where
     }
 }
 
-impl<C, T> TrySetColumn<C> for TableBuilder<T>
+/// A prepared column split between the ancestor-owned and the homogeneous
+/// nested parts.
+pub(crate) struct PreparedBuilderColumn<Own, Vertical> {
+    /// The prepared column value of the ancestor table.
+    own: Own,
+    /// The prepared homogeneous nested column values.
+    vertical: Vertical,
+}
+
+impl<C: TypedColumn, Own: ColumnInput<C>, Vertical> ColumnInput<C>
+    for PreparedBuilderColumn<Own, Vertical>
+{
+    fn value(&self) -> &C::ColumnType {
+        self.own.value()
+    }
+
+    fn into_value(self) -> C::ColumnType {
+        self.own.into_value()
+    }
+}
+
+impl<C, T> PrepareColumn<C> for TableBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,
     C: VerticalSameAsGroup,
-    Self: TrySetHomogeneousNestedColumns<C::ValueType, Self::Error, C::VerticalSameAsNestedColumns>
-        + AncestorBundleMut<C::Table>,
     C::Table: AncestorOfIndex<T> + BundlableTable,
-    TableBuilderBundle<C::Table>: TrySetColumn<C>,
+    TableBuilderBundle<C::Table>: PrepareColumn<C>,
+    Self: PrepareHomogeneous<Self::Error, C::ValueType, C::VerticalSameAsNestedColumns>
+        + AncestorBundleMut<C::Table>,
+{
+    type Prepared =
+        PreparedBuilderColumn<
+            <TableBuilderBundle<C::Table> as PrepareColumn<C>>::Prepared,
+            <Self as PrepareHomogeneous<
+                Self::Error,
+                C::ValueType,
+                C::VerticalSameAsNestedColumns,
+            >>::Prepared,
+        >;
+
+    fn prepare_column(
+        &self,
+        value: C::ColumnType,
+        context: &MutationContext,
+    ) -> Result<Self::Prepared, (C::ColumnType, Self::Error)> {
+        let own = self.ancestor_bundle().prepare_column(value, context)?;
+        match self.prepare_homogeneous(own.value(), context) {
+            Ok(vertical) => Ok(PreparedBuilderColumn { own, vertical }),
+            Err(error) => Err((own.into_value(), error)),
+        }
+    }
+
+    fn apply_column(&mut self, prepared: Self::Prepared) {
+        self.apply_homogeneous(prepared.vertical);
+        self.ancestor_bundle_mut().apply_column(prepared.own);
+    }
+}
+
+impl<C, T> TrySetColumn<C> for TableBuilder<T>
+where
+    T: BuildableTable,
+    C: TypedColumn,
+    Self: PrepareColumn<C>,
 {
     #[inline]
     fn try_set_column(
         &mut self,
         value: impl Into<C::ColumnType>,
     ) -> Result<&mut Self, Self::Error> {
-        let value = value.into();
-        // We try to set eventual vertically-same-as columns in nested builders
-        // first.
-        self.try_set_homogeneous_nested_columns(&value)?;
-        self.ancestor_bundle_mut().try_set_column(value)?;
+        let prepared = self
+            .prepare_column(value.into(), &MutationContext::default())
+            .map_err(|(_, error)| error)?;
+        self.apply_column(prepared);
         Ok(self)
     }
 }
@@ -195,6 +296,8 @@ macro_rules! impl_builder_setters {
         method = $method:ident,
         index = $index:ident,
         bundle_trait = $bundle_trait:ident,
+        attach_method = $attach_method:ident,
+        context_fn = $context_fn:ident,
         descendant = [$($descendant:tt)+] $(,)?
     ) => {
         impl<Key, T> $trait<Key> for TableBuilder<T>
@@ -203,11 +306,10 @@ macro_rules! impl_builder_setters {
             Key: $index,
             Key::Table: AncestorOfIndex<T> + BuildableTable,
             Key::ReferencedTable: BuildableTable,
-            Self: TryMaySetNestedColumns<T::Error, Key::NestedHostColumns>
-                + MayValidateNestedColumns<T::Error, Key::NestedHostColumns>
+            Self: PrepareOptionalColumns<T::Error, Key::NestedHostColumns>
                 + AncestorBundleMut<Key::Table>,
             TableBuilder<Key::ReferencedTable>: MayGetNestedColumns<Key::NestedForeignColumns>,
-            TableBuilderBundle<Key::Table>: $bundle_trait<Key, Table = Key::Table>,
+            TableBuilderBundle<Key::Table>: $bundle_trait<Key>,
             T::Error: From<<Key::Table as TableExt>::Error>,
         {
             #[inline]
@@ -217,9 +319,15 @@ macro_rules! impl_builder_setters {
             ) -> Result<&mut Self, T::Error> {
                 let columns = builder.may_get_nested_columns();
                 let converted_columns = columns.nested_tuple_option_into();
-                self.may_validate_nested_columns(&converted_columns)?;
-                self.ancestor_bundle_mut().$method(builder)?;
-                self.try_may_set_nested_columns(converted_columns)?;
+                let context = MutationContext::$context_fn(
+                    std::ptr::from_ref(self.ancestor_bundle()).cast::<()>(),
+                    <<Key as $index>::Idx as typenum::Unsigned>::USIZE,
+                );
+                let prepared = <Self as PrepareOptionalColumns<T::Error, Key::NestedHostColumns>>::prepare_optional_columns(
+                    self, converted_columns, &context,
+                ).map_err(|(_, error)| error)?;
+                <Self as PrepareOptionalColumns<T::Error, Key::NestedHostColumns>>::apply_optional_columns(self, prepared);
+                self.ancestor_bundle_mut().$attach_method(builder);
                 Ok(self)
             }
         }
@@ -229,7 +337,8 @@ macro_rules! impl_builder_setters {
         trait = $trait:ident,
         method = $method:ident,
         index = $index:ident,
-        bundle_trait = $bundle_trait:ident $(,)?
+        bundle_trait = $bundle_trait:ident,
+        context_fn = $context_fn:ident $(,)?
     ) => {
         impl<Key, T> $trait<Key> for TableBuilder<T>
         where
@@ -237,7 +346,7 @@ macro_rules! impl_builder_setters {
             Key: $index,
             Key::Table: AncestorOfIndex<T> + BuildableTable,
             Key::ReferencedTable: BuildableTable,
-            Self: MaySetColumns<Key::NestedHostColumns> + AncestorBundleMut<Key::Table>,
+            Self: PrepareOptionalColumns<Infallible, Key::NestedHostColumns> + AncestorBundleMut<Key::Table>,
             TableBuilderBundle<Key::Table>: $bundle_trait<Key>,
             TableBuilder<<Key as ForeignPrimaryKey>::ReferencedTable>:
                 MayGetNestedColumns<Key::NestedForeignColumns>,
@@ -249,7 +358,15 @@ macro_rules! impl_builder_setters {
             ) -> &mut Self {
                 let columns = builder.may_get_nested_columns();
                 let converted_columns = columns.nested_tuple_option_into();
-                self.may_set_nested_columns(converted_columns);
+                let context = MutationContext::$context_fn(
+                    std::ptr::from_ref(self.ancestor_bundle()).cast::<()>(),
+                    <<Key as $index>::Idx as typenum::Unsigned>::USIZE,
+                );
+                let prepared = match <Self as PrepareOptionalColumns<Infallible, Key::NestedHostColumns>>::prepare_optional_columns(self, converted_columns, &context) {
+                    Ok(prepared) => prepared,
+                    Err((_, error)) => match error {},
+                };
+                <Self as PrepareOptionalColumns<Infallible, Key::NestedHostColumns>>::apply_optional_columns(self, prepared);
                 self.ancestor_bundle_mut().$method(builder);
                 self
             }
@@ -262,7 +379,9 @@ impl_builder_setters! {
     trait = TrySetMandatoryBuilder,
     method = try_set_mandatory_builder,
     index = MandatorySameAsIndex,
-    bundle_trait = TrySetMandatoryBuilder,
+    bundle_trait = SetMandatoryBuilder,
+    attach_method = set_mandatory_builder,
+    context_fn = excluding_mandatory,
     descendant = [DescendantOf<
         Key::Table,
         NestedPrimaryKeyColumns: NestedColumns<
@@ -276,7 +395,9 @@ impl_builder_setters! {
     trait = TrySetDiscretionaryBuilder,
     method = try_set_discretionary_builder,
     index = DiscretionarySameAsIndex,
-    bundle_trait = TrySetDiscretionaryBuilder,
+    bundle_trait = SetDiscretionaryBuilder,
+    attach_method = set_discretionary_builder,
+    context_fn = excluding_discretionary,
     descendant = [DescendantOf<Key::Table>],
 }
 
@@ -286,6 +407,7 @@ impl_builder_setters! {
     method = set_mandatory_builder,
     index = MandatorySameAsIndex,
     bundle_trait = SetMandatoryBuilder,
+    context_fn = excluding_mandatory,
 }
 
 impl_builder_setters! {
@@ -294,4 +416,5 @@ impl_builder_setters! {
     method = set_discretionary_builder,
     index = DiscretionarySameAsIndex,
     bundle_trait = SetDiscretionaryBuilder,
+    context_fn = excluding_discretionary,
 }

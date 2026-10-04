@@ -1,11 +1,23 @@
 //! Test for a child table with multiple mandatory and discretionary triangular
 //! relations.
 
+#![cfg(any(
+    feature = "size-16",
+    feature = "size-32",
+    feature = "size-48",
+    feature = "size-64",
+    feature = "size-96",
+    feature = "size-128",
+))]
+
 mod shared;
 mod shared_triangular;
 use diesel_builders::prelude::*;
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
+
+diesel::allow_tables_to_appear_in_same_query!(child_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_table, satellite_table);
 
 /// The `Child` table ties together multiple intermediate rows using
 /// composite foreign keys. The `payload` field verifies the builder's

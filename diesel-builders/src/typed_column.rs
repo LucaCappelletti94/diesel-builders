@@ -93,12 +93,36 @@ where
 
 impl<V> DynColumn<V> {
     /// Returns the name of the column.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{posts, users};
+    ///
+    /// let columns: [DynColumn<i32>; 2] = [users::id.into(), posts::id.into()];
+    /// assert_eq!(columns.each_ref().map(DynColumn::column_name), ["id", "id"]);
+    /// assert_ne!(columns[0], columns[1]);
+    /// # }
+    /// ```
     #[must_use]
     pub fn column_name(&self) -> &'static str {
         self.name
     }
 
-    /// Returns a reference to the table of the column.
+    /// Returns the name of the column's table.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{posts, users};
+    ///
+    /// let columns: [DynColumn<i32>; 2] = [users::id.into(), posts::id.into()];
+    /// let qualified = columns.each_ref().map(|column| (column.table_name(), column.column_name()));
+    /// assert_eq!(qualified, [("users", "id"), ("posts", "id")]);
+    /// # }
+    /// ```
     #[must_use]
     pub fn table_name(&self) -> &'static str {
         self.table

@@ -8,6 +8,9 @@ use diesel_builders::prelude::*;
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
+diesel::allow_tables_to_appear_in_same_query!(child_with_mixed_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_with_mixed_table, satellite_table);
+
 // Table B models
 #[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[diesel(table_name = child_with_mixed_table)]
