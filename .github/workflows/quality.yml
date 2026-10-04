@@ -28,7 +28,7 @@ jobs:
             | sha256sum --check
           tar xzf actionlint.tar.gz
       - name: Run actionlint
-        run: ./actionlint .github/workflows
+        run: ./actionlint .github/workflows/*.yml
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@a91218c45134530ecc7aefc3eec3f997a279ad37
         with:
