@@ -64,15 +64,6 @@ pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleColl
     ) -> Result<&mut Self, Error>;
 }
 
-impl<T, Error> TrySetColumnsCollection<Error, ()> for T {
-    #[inline]
-    fn try_set_nested_columns_collection(
-        &mut self,
-        _nested_values: (),
-    ) -> Result<&mut Self, Error> {
-        Ok(self)
-    }
-}
 
 impl<C1, T, Error> TrySetColumnsCollection<Error, (C1,)> for T
 where

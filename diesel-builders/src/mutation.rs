@@ -200,24 +200,6 @@ impl_prepare_column_for_tuple! {
     impl[Head, Tail] for (Head, Tail),
 }
 
-impl<T, E> PrepareColumns<E, ()> for T {
-    type Prepared = ();
-
-    #[inline]
-    fn prepare_columns(
-        &self,
-        _values: (),
-        _context: &MutationContext,
-    ) -> Result<Self::Prepared, ((), E)> {
-        Ok(())
-    }
-
-    #[inline]
-    fn restore_columns(_prepared: Self::Prepared) {}
-
-    #[inline]
-    fn apply_columns(&mut self, _prepared: Self::Prepared) {}
-}
 
 impl<C1, T, E> PrepareColumns<E, (C1,)> for T
 where
@@ -296,21 +278,6 @@ where
     }
 }
 
-impl<T, E> PrepareOptionalColumns<E, ()> for T {
-    type Prepared = ();
-
-    #[inline]
-    fn prepare_optional_columns(
-        &self,
-        _values: (),
-        _context: &MutationContext,
-    ) -> Result<Self::Prepared, ((), E)> {
-        Ok(())
-    }
-
-    #[inline]
-    fn apply_optional_columns(&mut self, _prepared: Self::Prepared) {}
-}
 
 impl<C1, T, E> PrepareOptionalColumns<E, (C1,)> for T
 where
@@ -503,21 +470,6 @@ where
     }
 }
 
-impl<T, E> PrepareColumnsCollection<E, ()> for T {
-    type Prepared = ();
-
-    #[inline]
-    fn prepare_columns_collection(
-        &self,
-        _values: (),
-        _context: &MutationContext,
-    ) -> Result<Self::Prepared, ((), E)> {
-        Ok(())
-    }
-
-    #[inline]
-    fn apply_columns_collection(&mut self, _prepared: Self::Prepared) {}
-}
 
 impl<C1, T, E> PrepareColumnsCollection<E, (C1,)> for T
 where

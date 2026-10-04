@@ -52,12 +52,6 @@ pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
     ) -> Result<&mut Self, Error>;
 }
 
-impl<T, Error> TryMaySetNestedColumns<Error, ()> for T {
-    #[inline]
-    fn try_may_set_nested_columns(&mut self, _nested_values: ()) -> Result<&mut Self, Error> {
-        Ok(self)
-    }
-}
 
 impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where

@@ -439,16 +439,6 @@ where
     }
 }
 
-impl<T: diesel::Table, Depth, Bundles> SetTableKeyColumns<()>
-    for RecursiveTableBuilder<T, Depth, Bundles>
-{
-    type Error = std::convert::Infallible;
-
-    #[inline]
-    fn set_table_key_columns(&mut self, _values: ()) -> Result<&mut Self, Self::Error> {
-        Ok(self)
-    }
-}
 
 impl<T: diesel::Table, C, Depth, Bundles> SetTableKeyColumns<(C,)>
     for RecursiveTableBuilder<T, Depth, Bundles>
@@ -492,16 +482,6 @@ where
     }
 }
 
-impl<T: diesel::Table, Depth, Bundles> SetTableKeyColumnsCollection<()>
-    for RecursiveTableBuilder<T, Depth, Bundles>
-{
-    type Error = std::convert::Infallible;
-
-    #[inline]
-    fn set_table_key_columns_collection(&mut self, _values: ()) -> Result<&mut Self, Self::Error> {
-        Ok(self)
-    }
-}
 
 impl<T: diesel::Table, C, Depth, Bundles> SetTableKeyColumnsCollection<(C,)>
     for RecursiveTableBuilder<T, Depth, Bundles>

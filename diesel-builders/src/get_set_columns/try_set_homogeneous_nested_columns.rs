@@ -52,15 +52,6 @@ pub trait TrySetHomogeneousNestedColumns<Type, Error, CS: HomogeneouslyTypedNest
     ) -> Result<&mut Self, Error>;
 }
 
-impl<Type, Error, T> TrySetHomogeneousNestedColumns<Type, Error, ()> for T {
-    #[inline]
-    fn try_set_homogeneous_nested_columns(
-        &mut self,
-        _value: &impl OptionalRef<Type>,
-    ) -> Result<&mut Self, Error> {
-        Ok(self)
-    }
-}
 
 impl<Type: Clone, C1, Error, T> TrySetHomogeneousNestedColumns<Type, Error, (C1,)> for T
 where
