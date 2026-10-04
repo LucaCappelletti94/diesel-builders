@@ -43,6 +43,20 @@ pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
     ///     MayGetColumn::<users::nickname>::may_get_column(&values),
     ///     Some(Some("Ace".to_string()))
     /// );
+    ///
+    /// // A two-column group recurses through the head and the tail.
+    /// TryMaySetNestedColumns::<ValidationError, (users::name, (users::nickname,))>::try_may_set_nested_columns(
+    ///     &mut values,
+    ///     (Some("Grace".to_string()), (Some(Some("Zoe".to_string())),)),
+    /// )?;
+    /// assert_eq!(
+    ///     MayGetColumn::<users::name>::may_get_column(&values),
+    ///     Some("Grace".to_string())
+    /// );
+    /// assert_eq!(
+    ///     MayGetColumn::<users::nickname>::may_get_column(&values),
+    ///     Some(Some("Zoe".to_string()))
+    /// );
     /// # Ok(())
     /// # }
     /// ```

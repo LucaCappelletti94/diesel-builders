@@ -208,6 +208,17 @@ pub trait TrySetNestedColumns<Error, CS: NestedColumns> {
     /// );
     /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(30));
     /// assert_eq!(MayGetColumn::<users::nickname>::may_get_column(&values), Some(None));
+    ///
+    /// // A single-column group goes through its own direct implementation,
+    /// // not the two-column recursive one.
+    /// TrySetNestedColumns::<ValidationError, (users::nickname,)>::try_set_nested_columns(
+    ///     &mut values,
+    ///     (Some("Ace".to_string()),),
+    /// )?;
+    /// assert_eq!(
+    ///     MayGetColumn::<users::nickname>::may_get_column(&values),
+    ///     Some(Some("Ace".to_string()))
+    /// );
     /// # Ok(())
     /// # }
     /// ```

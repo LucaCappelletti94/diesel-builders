@@ -26,6 +26,14 @@ pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
     ///     MayGetColumn::<users::nickname>::may_get_column(&values),
     ///     Some(Some("Ace".to_string()))
     /// );
+    ///
+    /// // A two-column group recurses through the head and the tail.
+    /// MaySetColumns::<(users::name, (users::nickname,))>::may_set_nested_columns(
+    ///     &mut values,
+    ///     (Some("Grace".to_string()), (Some(None),)),
+    /// );
+    /// assert_eq!(MayGetColumn::<users::name>::may_get_column(&values), Some("Grace".to_string()));
+    /// assert_eq!(MayGetColumn::<users::nickname>::may_get_column(&values), Some(None));
     /// # }
     /// ```
     fn may_set_nested_columns(

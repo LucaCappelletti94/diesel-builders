@@ -53,7 +53,18 @@ pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleColl
     ///     .err(),
     ///     Some(ValidationError::EmptyNickname)
     /// );
-    /// assert_eq!(MayGetColumn::<users::name>::may_get_column(&values), Some("Grace".to_string()));
+    /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
+    ///
+    /// // A collection of exactly one group goes through its own direct
+    /// // implementation, not the multi-group recursive one.
+    /// TrySetColumnsCollection::<ValidationError, ((users::nickname,),)>::try_set_nested_columns_collection(
+    ///     &mut values,
+    ///     ((Some("Zoe".to_string()),),),
+    /// )?;
+    /// assert_eq!(
+    ///     MayGetColumn::<users::nickname>::may_get_column(&values),
+    ///     Some(Some("Zoe".to_string()))
+    /// );
     /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
     /// # Ok(())
     /// # }
