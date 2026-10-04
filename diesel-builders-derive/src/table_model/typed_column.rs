@@ -73,7 +73,9 @@ fn generate_field_traits(
     let field_name_str = field_name.to_string();
     let clean_field_name = field_name_str.trim_start_matches("r#");
 
-    let method_name_str = clean_field_name.trim_start_matches('_').to_string();
+    let trimmed = clean_field_name.trim_start_matches('_');
+    let method_name_str =
+        if trimmed.is_empty() { format!("{clean_field_name}_field") } else { trimmed.to_string() };
     let method_name_ident = syn::parse_str::<syn::Ident>(&method_name_str)
         .unwrap_or_else(|_| syn::Ident::new_raw(&method_name_str, proc_macro2::Span::call_site()));
 

@@ -94,6 +94,13 @@ fn process_fields(
             .as_ref()
             .ok_or_else(|| syn::Error::new_spanned(field, "Field must have a name"))?;
 
+        if field_name == "_" {
+            return Err(syn::Error::new_spanned(
+                field,
+                "Field cannot be named `_`: it cannot be referenced as a column path",
+            ));
+        }
+
         // Check if field is a primary key
         let is_pk = primary_key_columns.iter().any(|pk| pk == field_name);
 

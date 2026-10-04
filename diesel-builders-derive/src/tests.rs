@@ -901,3 +901,39 @@ fn index_expansion_rejects_unseparated_columns() {
     let parsed: syn::File = syn::parse2(tokens).expect("expected valid Rust");
     assert_eq!(marker_impls(&parsed, "IndexedColumn"), 2);
 }
+
+/// An all-underscore field name stripped down to nothing must not panic
+/// building its method identifier.
+#[test]
+fn all_underscore_field_name_expands_to_valid_rust() {
+    expansion_is_valid_rust(
+        r"
+struct Reading {
+    id: i32,
+    _________________: Option<String>,
+}
+",
+        "Reading",
+    );
+}
+
+/// A field named with a bare underscore is rejected: it cannot be
+/// referenced as a column path.
+#[test]
+fn bare_underscore_field_name_is_rejected() {
+    invalid_is_rejected_and_counterpart_expands(
+        r"
+struct Probe {
+    id: i32,
+    _: Option<String>,
+}
+",
+        r"
+struct Probe {
+    id: i32,
+    unnamed: Option<String>,
+}
+",
+        "Probe",
+    );
+}
