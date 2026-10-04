@@ -241,10 +241,10 @@ pub fn generate_fpk_impl(column: &syn::Path, referenced_table: &syn::Path) -> Op
     let referenced_table_name = last_segment.ident.to_string();
 
     // Generate method name based on column name
-    let method_name = if let Some(stripped) = column_name.strip_suffix("_id") {
-        stripped.to_string()
-    } else {
-        format!("{column_name}_fk")
+    let stripped = column_name.strip_suffix("_id");
+    let method_name = match stripped {
+        Some(stripped) if !stripped.is_empty() => stripped.to_string(),
+        _ => format!("{column_name}_fk"),
     };
     let method_ident = syn::Ident::new(&method_name, proc_macro2::Span::call_site());
 

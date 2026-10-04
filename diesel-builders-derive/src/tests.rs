@@ -194,6 +194,41 @@ struct Satellite {
     );
 }
 
+/// A foreign key column literally named `_id` strips to nothing and must
+/// not panic building its getter method identifier.
+#[test]
+fn bare_underscore_id_foreign_key_expands_to_valid_rust() {
+    expansion_is_valid_rust(
+        r"
+#[table_model(surrogate_key, foreign_key(_id, (parent_table::id)))]
+#[diesel(table_name = satellite_table)]
+struct Satellite {
+    id: i32,
+    _id: i32,
+    field: String,
+}
+",
+        "Satellite",
+    );
+}
+
+/// A triangular field literally named `_id` strips to nothing and must not
+/// panic building its builder method identifier.
+#[test]
+fn bare_underscore_id_triangular_field_expands_to_valid_rust() {
+    expansion_is_valid_rust(
+        r"
+struct Child {
+    #[same_as(satellite_table::parent_id)]
+    id: i32,
+    #[mandatory(satellite_table)]
+    _id: i32,
+}
+",
+        "Child",
+    );
+}
+
 /// The model with a composite explicit foreign key expands to a parseable
 /// expansion.
 #[test]
