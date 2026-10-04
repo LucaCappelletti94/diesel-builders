@@ -26,44 +26,59 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     /// Returns an iterator over the foreign keys in this table which reference
     /// the given foreign index.
     ///
-    /// # Implementation details
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::{DynColumn, IterDynForeignKeys};
+    /// use schema::{Child, children, sides};
     ///
-    /// This method, due to its dynamic nature, is able to handle the cases
-    /// where a table does not have any foreign keys referencing the given
-    /// dynamic index, returning an empty iterator in such cases. This is not
-    /// as easily achievable with static typing, where it is needfull to
-    /// implement a different trait for each possible foreign unique index,
-    /// since at the time of writing the specialization feature is still
-    /// unstable in Rust. If you need only to work with statically known
-    /// foreign keys, and all tables in your hierarchies have at least one
-    /// foreign key referencing the indices on which you want to join,
-    /// consider using the [`IterForeignKeys`] trait instead, which provides
-    /// better compile-time guarantees and does not require either dynamic
-    /// column handling, or error handling.
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The dynamic index to match foreign keys against.
-    ///
-    /// # Returns
-    ///
-    /// * An iterator over the foreign keys in this table which reference the
-    ///   given foreign index.
+    /// let index: (DynColumn<i32>, (DynColumn<i32>,)) = (sides::id.into(), (sides::parent_id.into(),));
+    /// let columns: Vec<_> = <Child as IterDynForeignKeys<(DynColumn<i32>, (DynColumn<i32>,))>>::iter_foreign_key_dyn_columns(index).collect();
+    /// assert_eq!(columns, vec![
+    ///     (children::mandatory_id.into(), (children::id.into(),)),
+    ///     (children::discretionary_id.into(), (children::id.into(),)),
+    /// ]);
+    /// let unrelated: Vec<_> = <Child as IterDynForeignKeys<_>>::iter_foreign_key_dyn_columns((sides::id.into(),)).collect();
+    /// assert!(unrelated.is_empty());
+    /// # }
+    /// ```
     fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx>;
 
     /// Returns an iterator over the foreign keys in this table which reference
-    /// the given foreign index. Foreign keys with `None` values are included.
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The dynamic index to match foreign keys against.
+    /// the given foreign index, including keys with `None` values.
     ///
     /// # Errors
     ///
     /// As described in the [`IterDynForeignKeys::iter_foreign_key_dyn_columns`]
     /// method, this method is dynamic in nature, and may fail if, due to
-    /// antagonistic parameterization of the provided index, the foreign
-    /// keys cannot be retrieved.
+    /// antagonistic parameterization of the provided index, the foreign keys
+    /// cannot be retrieved.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::{DynColumn, IterDynForeignKeys};
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut conn)?;
+    /// let nested = (child,);
+    /// let index: (DynColumn<i32>, (DynColumn<i32>,)) = (sides::id.into(), (sides::parent_id.into(),));
+    /// let matches: Vec<_> = nested.iter_dyn_match_simple(index).collect::<Result<Vec<_>, _>>()?;
+    /// assert_eq!(
+    ///     matches,
+    ///     vec![
+    ///         (Some(&nested.0.mandatory_id), (Some(&nested.0.id),)),
+    ///         (Some(&nested.0.discretionary_id), (Some(&nested.0.id),)),
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_dyn_match_simple<'a>(
         &'a self,
         index: DynIdx,
@@ -75,18 +90,40 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
     }
 
     /// Returns an iterator over the foreign keys in this table which reference
-    /// the given foreign index. Foreign keys with `None` values are skipped.
-    ///
-    /// # Arguments
-    ///
-    /// * `index` - The dynamic index to match foreign keys against.
+    /// the given foreign index, skipping keys with `None` values.
     ///
     /// # Errors
     ///
     /// As described in the [`IterDynForeignKeys::iter_foreign_key_dyn_columns`]
     /// method, this method is dynamic in nature, and may fail if, due to
-    /// antagonistic parameterization of the provided index, the foreign
-    /// keys cannot be retrieved.
+    /// antagonistic parameterization of the provided index, the foreign keys
+    /// cannot be retrieved.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::{DynColumn, IterDynForeignKeys};
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut conn)?;
+    /// let nested = (child,);
+    /// let index: (DynColumn<i32>, (DynColumn<i32>,)) = (sides::id.into(), (sides::parent_id.into(),));
+    /// let matches: Vec<_> = nested.iter_dyn_match_full(index).collect::<Result<Vec<_>, _>>()?;
+    /// assert_eq!(
+    ///     matches,
+    ///     vec![
+    ///         (&nested.0.mandatory_id, (&nested.0.id,)),
+    ///         (&nested.0.discretionary_id, (&nested.0.id,)),
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_dyn_match_full<'a>(
         &'a self,
         index: DynIdx,
@@ -105,10 +142,17 @@ pub trait IterDynForeignKeys<DynIdx: NestedDynColumns>: TryGetDynamicColumns {
 pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProjection> {
     /// Returns an iterator over the foreign keys in this table.
     ///
-    /// This method will not be available in table hierarchies if any table in
-    /// the hierarchy does not have at least one foreign key referencing the
-    /// given foreign index. If you need to handle such cases, consider using
-    /// the [`IterDynForeignKeys`] trait instead.
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::IterForeignKeys;
+    /// use schema::{Post, posts, users};
+    ///
+    /// let columns: Vec<_> =
+    ///     <Post as IterForeignKeys<(users::id,)>>::iter_foreign_key_columns().collect();
+    /// assert_eq!(columns, vec![(posts::user_id.into(),)]);
+    /// # }
+    /// ```
     fn iter_foreign_key_columns()
     -> impl Iterator<Item = <NestedIdx as HasNestedDynColumns>::NestedDynColumns>;
 
@@ -119,6 +163,21 @@ pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProject
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterDynForeignKeys`] trait instead.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::IterForeignKeys;
+    /// use schema::{Post, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let first = Post::find(&1, &mut conn)?;
+    /// let matches: Vec<_> =
+    ///     <Post as IterForeignKeys<(users::id,)>>::iter_match_simple(&first).collect();
+    /// assert_eq!(matches, vec![(Some(&1),)]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = OptRef<'a, NestedIdx>>
     where
         NestedIdx: 'a;
@@ -130,6 +189,21 @@ pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProject
     /// the hierarchy does not have at least one foreign key referencing the
     /// given foreign index. If you need to handle such cases, consider using
     /// the [`IterDynForeignKeys`] trait instead.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::IterForeignKeys;
+    /// use schema::{Post, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let third = Post::find(&3, &mut conn)?;
+    /// let matches: Vec<_> =
+    ///     <Post as IterForeignKeys<(users::id,)>>::iter_match_full(&third).collect();
+    /// assert_eq!(matches, vec![(&2,)]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_match_full<'a>(&'a self) -> impl Iterator<Item = Ref<'a, NestedIdx>>
     where
         NestedIdx: 'a,
@@ -143,12 +217,31 @@ pub trait IterForeignKeys<NestedIdx: HasNestedDynColumns + NonEmptyNestedProject
 pub trait IterForeignKeyExt {
     #[inline]
     /// Returns an iterator over the foreign keys in this table which reference
-    /// the given foreign index. Foreign keys with `None` values are included.
+    /// the given foreign index, including keys with `None` values.
     ///
-    /// This method will not be available in table hierarchies if any table in
-    /// the hierarchy does not have at least one foreign key referencing the
-    /// given foreign index. If you need to handle such cases, consider using
-    /// the [`IterForeignKeyExt::iter_dynamic_match_simple`] method instead.
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut conn)?;
+    /// assert_eq!(child.id, 1);
+    /// let matches: Vec<_> = child.iter_match_simple::<(sides::id, sides::parent_id)>().collect();
+    /// assert_eq!(
+    ///     matches,
+    ///     vec![
+    ///         (Some(&child.mandatory_id), (Some(&child.id),)),
+    ///         (Some(&child.discretionary_id), (Some(&child.id),)),
+    ///     ]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_match_simple<'a, Idx>(&'a self) -> impl Iterator<Item = OptRef<'a, Idx::Nested>>
     where
         Idx: NonEmptyProjection<Nested: HasNestedDynColumns> + 'a,
@@ -159,23 +252,28 @@ pub trait IterForeignKeyExt {
 
     #[inline]
     /// Returns an iterator over the DYNAMIC foreign keys in this table which
-    /// reference the given foreign index. Foreign keys with `None` values
-    /// are included.
-    ///
-    /// # Implementation details
-    ///
-    /// This method leverages dynamic column retrieval to provide an iterator
-    /// which can handle the case where no foreign keys reference the given
-    /// dynamic index, returning an empty iterator in such cases. If you need
-    /// only to work with statically known foreign keys, and all tables in your
-    /// hierarchies have at least one foreign key referencing the indices on
-    /// which you want to join, consider using the
-    /// [`IterForeignKeyExt::iter_match_simple`]
+    /// reference the given foreign index, including keys with `None` values.
     ///
     /// # Errors
     ///
     /// Read the documentation of [`IterDynForeignKeys::iter_dyn_match_simple`]
     /// for details on possible errors.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{Post, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let first = Post::find(&1, &mut conn)?;
+    /// let nested = (first,);
+    /// let index: (DynColumn<i32>,) = (users::id.into(),);
+    /// let matches: Vec<_> = nested.iter_dynamic_match_simple(index).collect::<Result<Vec<_>, _>>()?;
+    /// assert_eq!(matches, vec![(Some(&1),)]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_dynamic_match_simple<'a, DynIdx>(
         &'a self,
         index: DynIdx,
@@ -189,12 +287,27 @@ pub trait IterForeignKeyExt {
 
     #[inline]
     /// Returns an iterator over the foreign keys in this table which reference
-    /// the given foreign index. Foreign keys with `None` values are skipped.
+    /// the given foreign index, skipping keys with `None` values.
     ///
-    /// This method will not be available in table hierarchies if any table in
-    /// the hierarchy does not have at least one foreign key referencing the
-    /// given foreign index. If you need to handle such cases, consider using
-    /// the [`IterForeignKeyExt::iter_dynamic_match_full`] method instead.
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut conn)?;
+    /// let matches: Vec<_> = child.iter_match_full::<(sides::id, sides::parent_id)>().collect();
+    /// assert_eq!(
+    ///     matches,
+    ///     vec![(&child.mandatory_id, (&child.id,)), (&child.discretionary_id, (&child.id,)),]
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_match_full<'a, Idx>(&'a self) -> impl Iterator<Item = Ref<'a, Idx::Nested>>
     where
         Idx: NonEmptyProjection<Nested: HasNestedDynColumns> + 'a,
@@ -205,23 +318,28 @@ pub trait IterForeignKeyExt {
 
     #[inline]
     /// Returns an iterator over the DYNAMIC foreign keys in this table which
-    /// reference the given foreign index. Foreign keys with `None` values
-    /// are skipped.
-    ///
-    /// # Implementation details
-    ///
-    /// This method leverages dynamic column retrieval to provide an iterator
-    /// which can handle the case where no foreign keys reference the given
-    /// dynamic index, returning an empty iterator in such cases. If you need
-    /// only to work with statically known foreign keys, and all tables in your
-    /// hierarchies have at least one foreign key referencing the indices on
-    /// which you want to join, consider using the
-    /// [`IterForeignKeyExt::iter_match_full`] method instead.
+    /// reference the given foreign index, skipping keys with `None` values.
     ///
     /// # Errors
     ///
     /// Read the documentation of [`IterDynForeignKeys::iter_dyn_match_full`]
     /// for details on possible errors.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{Post, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let third = Post::find(&3, &mut conn)?;
+    /// let nested = (third,);
+    /// let index: (DynColumn<i32>,) = (users::id.into(),);
+    /// let matches: Vec<_> = nested.iter_dynamic_match_full(index).collect::<Result<Vec<_>, _>>()?;
+    /// assert_eq!(matches, vec![(&2,)]);
+    /// # Ok(())
+    /// # }
+    /// ```
     fn iter_dynamic_match_full<'a, DynIdx>(
         &'a self,
         index: DynIdx,
@@ -237,11 +355,24 @@ pub trait IterForeignKeyExt {
     #[inline]
     /// Returns an iterator over the foreign keys in this table.
     ///
-    /// This method will not be available in table hierarchies if any table in
-    /// the hierarchy does not have at least one foreign key referencing the
-    /// given foreign index. If you need to handle such cases, consider using
-    /// the [`IterForeignKeyExt::iter_dynamic_foreign_key_columns`] method
-    /// instead.
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use schema::{Child, children, parents, sides};
+    ///
+    /// let columns: Vec<_> =
+    ///     Child::iter_foreign_key_columns::<(sides::id, sides::parent_id)>().collect();
+    /// assert_eq!(
+    ///     columns,
+    ///     vec![
+    ///         (children::mandatory_id.into(), (children::id.into(),)),
+    ///         (children::discretionary_id.into(), (children::id.into(),)),
+    ///     ]
+    /// );
+    /// let inherited: Vec<_> = Child::iter_foreign_key_columns::<(parents::id,)>().collect();
+    /// assert_eq!(inherited, vec![(children::id.into(),)]);
+    /// # }
+    /// ```
     fn iter_foreign_key_columns<Idx>()
     -> impl Iterator<Item = <Idx::Nested as HasNestedDynColumns>::NestedDynColumns>
     where
@@ -254,18 +385,25 @@ pub trait IterForeignKeyExt {
     #[inline]
     /// Returns an iterator over the DYNAMIC foreign keys in this table.
     ///
-    /// This method can handle the case where no foreign keys reference the
-    /// given foreign index, returning an empty iterator in such cases. If you
-    /// need only to work with statically known foreign keys, and all tables in
-    /// your hierarchies have at least one foreign key referencing the indices
-    /// on which you want to join, consider using the
-    /// [`IterForeignKeyExt::iter_foreign_key_columns`] method instead.
-    ///
     /// # Errors
     ///
-    /// * Read the documentation of
-    ///   [`IterDynForeignKeys::iter_foreign_key_dyn_columns`] for details on
-    ///   possible errors.
+    /// Read the documentation of
+    /// [`IterDynForeignKeys::iter_foreign_key_dyn_columns`] for details on
+    /// possible errors.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{Post, posts, sides, users};
+    ///
+    /// let index: (DynColumn<i32>,) = (users::id.into(),);
+    /// let columns: Vec<_> = Post::iter_dynamic_foreign_key_columns(index).collect();
+    /// assert_eq!(columns, vec![(posts::user_id.into(),)]);
+    /// let unrelated: Vec<_> = Post::iter_dynamic_foreign_key_columns((sides::id.into(),)).collect();
+    /// assert!(unrelated.is_empty());
+    /// # }
+    /// ```
     fn iter_dynamic_foreign_key_columns<DynIdx>(index: DynIdx) -> impl Iterator<Item = DynIdx>
     where
         DynIdx: NestedDynColumns,

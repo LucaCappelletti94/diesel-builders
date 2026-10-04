@@ -4,6 +4,11 @@ use diesel::prelude::*;
 use diesel_builders::{IterForeignKeyExt, prelude::*};
 mod shared;
 
+diesel::allow_tables_to_appear_in_same_query!(edges, nodes);
+diesel::allow_tables_to_appear_in_same_query!(heterogenous_edges, edge_types);
+diesel::allow_tables_to_appear_in_same_query!(heterogenous_edges, edges);
+diesel::allow_tables_to_appear_in_same_query!(heterogenous_edges, nodes);
+
 /// Node table.
 #[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]

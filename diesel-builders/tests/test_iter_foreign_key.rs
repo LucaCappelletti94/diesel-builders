@@ -3,6 +3,10 @@
 use diesel::prelude::*;
 use diesel_builders::{IterForeignKeyExt, prelude::*};
 
+diesel::allow_tables_to_appear_in_same_query!(edges, nodes);
+diesel::allow_tables_to_appear_in_same_query!(optional_edges, nodes);
+diesel::allow_tables_to_appear_in_same_query!(mixed_optional_edges, nodes);
+
 /// Node table.
 #[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = nodes)]

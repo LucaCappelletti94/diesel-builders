@@ -46,6 +46,17 @@ impl<C: ColumnTyped + ?Sized> ColumnTyped for &C {
 /// Trait providing a method to get an optional reference to another type.
 pub trait OptionalRef<Other> {
     /// Get an optional reference to the other type.
+    ///
+    /// ```
+    /// use diesel_builders::OptionalRef;
+    ///
+    /// let required = 18;
+    /// let nullable = Some(18);
+    /// let missing: Option<i32> = None;
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&required), Some(&18));
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&nullable), Some(&18));
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&missing), None);
+    /// ```
     fn as_optional_ref(&self) -> Option<&Other>;
 }
 

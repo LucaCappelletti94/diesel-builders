@@ -36,3 +36,5 @@ pub struct Child {
 }
 
 fn main() {}
+
+diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table, child_table);

@@ -8,6 +8,28 @@ use crate::{
 /// Trait indicating a builder can set multiple columns.
 pub trait SetHomogeneousNestedColumns<Type, CS: HomogeneouslyTypedNestedColumns<Type>> {
     /// Set the `nested_values` of the specified columns.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::{MayGetColumn, SetHomogeneousNestedColumns};
+    /// use schema::intervals;
+    ///
+    /// let mut values = intervals::table::empty_new_values();
+    /// SetHomogeneousNestedColumns::<i32, (intervals::start, (intervals::end,))>::set_homogeneous_nested_columns(
+    ///     &mut values,
+    ///     &None::<i32>,
+    /// );
+    /// assert_eq!(MayGetColumn::<intervals::start>::may_get_column(&values), None);
+    /// SetHomogeneousNestedColumns::<i32, (intervals::start, (intervals::end,))>::set_homogeneous_nested_columns(
+    ///     &mut values,
+    ///     &3,
+    /// );
+    /// assert_eq!(MayGetColumn::<intervals::start>::may_get_column(&values), Some(3));
+    /// assert_eq!(MayGetColumn::<intervals::end>::may_get_column(&values), Some(3));
+    /// assert!(values.validate_record().is_err());
+    /// # }
+    /// ```
     fn set_homogeneous_nested_columns(&mut self, value: &impl OptionalRef<Type>) -> &mut Self;
 }
 

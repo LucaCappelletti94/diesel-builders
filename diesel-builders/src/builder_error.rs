@@ -13,6 +13,18 @@ pub enum BuilderError<E> {
     Validation(E),
 }
 
+impl<E> BuilderError<E> {
+    /// Maps validation causes while preserving database and completeness
+    /// errors.
+    pub(crate) fn map_validation<F>(self, map: impl FnOnce(E) -> F) -> BuilderError<F> {
+        match self {
+            Self::Diesel(error) => BuilderError::Diesel(error),
+            Self::Incomplete(error) => BuilderError::Incomplete(error),
+            Self::Validation(error) => BuilderError::Validation(map(error)),
+        }
+    }
+}
+
 impl<E: std::error::Error + 'static> std::fmt::Display for BuilderError<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

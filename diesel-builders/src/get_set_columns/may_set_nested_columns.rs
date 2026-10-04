@@ -7,6 +7,35 @@ use crate::{MaySetColumn, TableExt, TypedColumn, columns::NonEmptyNestedProjecti
 /// Trait indicating a builder which may set multiple columns.
 pub trait MaySetColumns<CS: NonEmptyNestedProjection> {
     /// May set the `nested_values` of the specified columns.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::{MayGetColumn, MaySetColumns};
+    /// use schema::users;
+    ///
+    /// let mut values = user_values("Ada", 20, None);
+    /// let nickname = (Some(Some("Ace".to_string())),);
+    /// MaySetColumns::<(users::nickname,)>::may_set_nested_columns(&mut values, nickname);
+    /// assert_eq!(
+    ///     MayGetColumn::<users::nickname>::may_get_column(&values),
+    ///     Some(Some("Ace".to_string()))
+    /// );
+    /// MaySetColumns::<(users::nickname,)>::may_set_nested_columns(&mut values, (None,));
+    /// assert_eq!(
+    ///     MayGetColumn::<users::nickname>::may_get_column(&values),
+    ///     Some(Some("Ace".to_string()))
+    /// );
+    ///
+    /// // A two-column group recurses through the head and the tail.
+    /// MaySetColumns::<(users::name, (users::nickname,))>::may_set_nested_columns(
+    ///     &mut values,
+    ///     (Some("Grace".to_string()), (Some(None),)),
+    /// );
+    /// assert_eq!(MayGetColumn::<users::name>::may_get_column(&values), Some("Grace".to_string()));
+    /// assert_eq!(MayGetColumn::<users::nickname>::may_get_column(&values), Some(None));
+    /// # }
+    /// ```
     fn may_set_nested_columns(
         &mut self,
         nested_values: <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions,

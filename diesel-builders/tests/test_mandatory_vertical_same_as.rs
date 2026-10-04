@@ -7,6 +7,9 @@ mod shared;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
+diesel::allow_tables_to_appear_in_same_query!(child_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_table, satellite_table);
+
 #[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
 #[table_model(surrogate_key)]

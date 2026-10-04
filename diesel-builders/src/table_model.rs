@@ -24,6 +24,26 @@ pub trait TableModel: HasTableExt<Table: TableExt<Model = Self>> + Sized + Clone
     /// # Errors
     ///
     /// Returns a [`diesel::result::Error`] if the database query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::TableModel;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = Profile::find(&1, &mut conn)?;
+    /// let (user, (profile,)) = profile.nested(&mut conn)?;
+    /// assert_eq!(user.id, profile.id);
+    /// assert_eq!(user.name, profile.display_name);
+    /// assert_eq!(profile.visits, 3);
+    ///
+    /// let ghost = Post { id: 42, user_id: 1, title: "Ghost".to_owned() };
+    /// let missing = ghost.nested(&mut conn);
+    /// assert!(matches!(missing, Err(diesel::result::Error::NotFound)));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn nested<Conn>(
         &self,
         conn: &mut Conn,

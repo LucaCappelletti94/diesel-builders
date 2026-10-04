@@ -7,16 +7,39 @@ use crate::{
     get_set_columns::TrySetColumnsCollection,
 };
 
-/// Trait indicating a builder can try to set multiple homogeneous
-/// columns.
+/// Trait indicating a builder can try to set multiple homogeneous columns.
 pub trait TrySetHomogeneousNestedColumnsCollection<Error, Type, NCC: NestedColumnsCollection>:
     TrySetColumnsCollection<Error, NCC>
 {
-    /// Attempt to set the values of the specified columns.
+    /// Assigns the same value group to each selected column group.
     ///
     /// # Errors
     ///
     /// Returns an error if any column cannot be set.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::{MayGetColumn, TrySetHomogeneousNestedColumnsCollection};
+    /// use schema::{ValidationError, checked_children};
+    ///
+    /// let mut values = checked_children::table::empty_new_values();
+    /// type Groups = ((checked_children::mandatory_id,), ((checked_children::discretionary_id,),));
+    /// TrySetHomogeneousNestedColumnsCollection::<ValidationError, (i32,), Groups>::try_set_homogeneous_nested_columns_collection(
+    ///     &mut values,
+    ///     (1,),
+    /// )?;
+    /// assert_eq!(
+    ///     MayGetColumn::<checked_children::mandatory_id>::may_get_column(&values),
+    ///     Some(1)
+    /// );
+    /// assert_eq!(
+    ///     MayGetColumn::<checked_children::discretionary_id>::may_get_column(&values),
+    ///     Some(1)
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn try_set_homogeneous_nested_columns_collection(
         &mut self,
         value: Type,

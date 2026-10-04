@@ -7,6 +7,26 @@ use crate::{MayGetColumn, TableExt, TypedColumn, columns::NestedColumns};
 /// Variant of `MayGetNestedColumns` for n-uples.
 pub trait TupleMayGetNestedColumns<CS: NestedColumns> {
     /// May get the values of the specified columns as an n-uple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::TupleMayGetNestedColumns;
+    /// use schema::{Profile, User, profiles, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let user = users::table.find(2).first::<User>(&mut conn)?;
+    /// let absent_profile: Option<Profile> = None;
+    /// let present_user: Option<User> = Some(user);
+    /// let (visits, (age,)) =
+    ///     TupleMayGetNestedColumns::<(profiles::visits, (users::age,))>::tuple_may_get_nested_columns(
+    ///         &(absent_profile, (present_user,)),
+    ///     );
+    /// assert_eq!(visits, None);
+    /// assert_eq!(age, Some(30));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn tuple_may_get_nested_columns(
         &self,
     ) -> <CS::NestedTupleColumnType as IntoNestedTupleOption>::IntoOptions;

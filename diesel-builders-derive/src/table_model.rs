@@ -1,27 +1,40 @@
-//! Module for `TableModel` derive macro implementation.
-//!
-//! This module contains the implementation of the `TableModel` derive macro,
-//! split into logical components for better maintainability.
+//! Generates `TableModel` schemas and builder implementations.
 
+#[path = "table_model/accumulated_traits.rs"]
 mod accumulated_traits;
+#[path = "table_model/attribute_parsing.rs"]
 mod attribute_parsing;
+#[path = "table_model/foreign_keys.rs"]
 mod foreign_keys;
+#[path = "table_model/get_column.rs"]
 mod get_column;
+#[path = "table_model/may_get_columns.rs"]
 mod may_get_columns;
+#[path = "table_model/primary_key.rs"]
 mod primary_key;
+#[path = "table_model/set_columns.rs"]
 mod set_columns;
+#[path = "table_model/table_generation.rs"]
 mod table_generation;
+#[path = "table_model/take_column.rs"]
+mod take_column;
+#[cfg(test)]
+#[path = "tests.rs"]
+mod tests;
+#[path = "table_model/typed_column.rs"]
 mod typed_column;
+#[path = "table_model/validate_record.rs"]
+mod validate_record;
+#[path = "table_model/vertical_same_as.rs"]
 mod vertical_same_as;
 
 use std::collections::HashMap;
 
 use accumulated_traits::generate_accumulated_traits;
 use attribute_parsing::{
-    extract_discretionary_table, extract_field_default_value, extract_mandatory_table,
-    extract_primary_key_columns, extract_same_as_columns, extract_table_model_attributes,
-    extract_table_module, is_field_discretionary, is_field_infallible, is_field_mandatory,
-    validate_field_attributes,
+    extract_diesel_attributes, extract_discretionary_table, extract_field_default_value,
+    extract_mandatory_table, extract_same_as_columns, extract_table_model_attributes,
+    is_field_discretionary, is_field_infallible, is_field_mandatory, validate_field_attributes,
 };
 use foreign_keys::{
     generate_explicit_foreign_key_impls, generate_foreign_key_impls,
@@ -33,7 +46,9 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Ident, spanned::Spanned};
 use table_generation::generate_table_macro;
+use take_column::generate_take_column_impls;
 use typed_column::generate_typed_column_impls;
+use validate_record::generate_infallible_validate_record_impl;
 use vertical_same_as::generate_vertical_same_as_impls;
 
 use crate::utils::{format_as_nested_tuple, is_option};
@@ -51,6 +66,10 @@ struct ProcessedFields {
     infallible_records: Vec<syn::Path>,
     /// Default values for fields.
     default_values: Vec<proc_macro2::TokenStream>,
+    /// Columns with an explicit default for the `DefaultColumns` group.
+    default_columns: Vec<syn::Path>,
+    /// Empty-state values for the new record tuple.
+    empty_values: Vec<proc_macro2::TokenStream>,
     /// Warnings to be emitted.
     warnings: Vec<proc_macro2::TokenStream>,
 }
@@ -65,6 +84,8 @@ fn process_fields(
     let mut new_record_columns = Vec::new();
     let mut infallible_records = Vec::new();
     let mut default_values = Vec::new();
+    let mut default_columns = Vec::new();
+    let mut empty_values = Vec::new();
     let mut warnings = Vec::new();
 
     for field in fields {
@@ -72,6 +93,13 @@ fn process_fields(
             .ident
             .as_ref()
             .ok_or_else(|| syn::Error::new_spanned(field, "Field must have a name"))?;
+
+        if field_name == "_" {
+            return Err(syn::Error::new_spanned(
+                field,
+                "Field cannot be named `_`: it cannot be referenced as a column path",
+            ));
+        }
 
         // Check if field is a primary key
         let is_pk = primary_key_columns.iter().any(|pk| pk == field_name);
@@ -107,9 +135,21 @@ fn process_fields(
         }
 
         default_values.push(field_default_value(field));
+        if extract_field_default_value(field).is_some() {
+            default_columns.push(syn::parse_quote!(#table_module::#field_name));
+        }
+
+        empty_values.push(field_empty_value(field));
     }
 
-    Ok(ProcessedFields { new_record_columns, infallible_records, default_values, warnings })
+    Ok(ProcessedFields {
+        new_record_columns,
+        infallible_records,
+        default_values,
+        default_columns,
+        empty_values,
+        warnings,
+    })
 }
 
 /// Collect mandatory and discretionary triangular relation columns.
@@ -258,16 +298,19 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let struct_ident = &input.ident;
 
     // Parse attributes
-    let table_module_opt = extract_table_module(input);
-    let primary_key_columns = extract_primary_key_columns(input);
+    let (table_module_opt, primary_key_columns) = extract_diesel_attributes(input)?;
     let attributes = extract_table_model_attributes(input)?;
 
     let table_module = if let Some(module) = table_module_opt {
         module
     } else {
-        let struct_name = struct_ident.to_string();
+        use syn::ext::IdentExt;
+        let struct_name = struct_ident.unraw().to_string();
         let table_name_str = format!("{}s", crate::utils::camel_to_snake_case(&struct_name));
-        syn::Ident::new(&table_name_str, struct_ident.span())
+        let mut table_ident = syn::parse_str::<syn::Ident>(&table_name_str)
+            .or_else(|_| syn::parse_str::<syn::Ident>(&format!("r#{table_name_str}")))?;
+        table_ident.set_span(struct_ident.span());
+        table_ident
     };
 
     if let Some(ancestors) = &attributes.ancestors {
@@ -365,8 +408,14 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         primary_key_columns.iter().map(|col| quote::quote! { #table_module::#col }),
     );
 
-    let ProcessedFields { new_record_columns, infallible_records, default_values, warnings } =
-        process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
+    let ProcessedFields {
+        new_record_columns,
+        infallible_records,
+        default_values,
+        default_columns,
+        empty_values,
+        warnings,
+    } = process_fields(fields, &table_module, &primary_key_columns, &attributes)?;
 
     // Collect triangular relation columns for BundlableTable implementation
     let (mandatory_columns, discretionary_columns) =
@@ -396,17 +445,29 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
                 if let Some(pk_field) = pk_field {
                     let same_as_cols_groups = extract_same_as_columns(pk_field)?;
 
-                    let mandatory_table_ident = &mandatory_table.segments.last().unwrap().ident;
+                    let mandatory_table_ident = crate::utils::last_segment_ident(&mandatory_table)?;
                     let mut has_same_as_to_mandatory = false;
-                    for path in same_as_cols_groups.iter().flatten() {
+                    for (index, path) in
+                        same_as_cols_groups.iter().flat_map(|group| group.iter().enumerate())
+                    {
                         let number_of_segments = path.segments.len();
                         if number_of_segments < 2 {
+                            // Bare suffix paths identify relation keys.
+                            if index > 0 {
+                                continue;
+                            }
                             return Err(syn::Error::new_spanned(
                                 path,
                                 "Column path in `#[same_as(...)]` must be in the format `table::column`",
                             ));
                         }
-                        if path.segments[number_of_segments - 2].ident == *mandatory_table_ident {
+                        if path
+                            .segments
+                            .iter()
+                            .rev()
+                            .nth(1)
+                            .is_some_and(|segment| segment.ident == *mandatory_table_ident)
+                        {
                             has_same_as_to_mandatory = true;
                             break;
                         }
@@ -433,26 +494,49 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     // Generate `fpk!` implementations for triangular relation fields
     let triangular_fpk_impls = generate_triangular_fpk_impls(fields, &table_module)?;
 
-    // Generate `diesel::joinable!` calls for ancestors
-    let joinable_impls = if let Some(ancestors) = &attributes.ancestors
-        && primary_key_columns.len() == 1
-    {
-        let pk = &primary_key_columns[0];
-        ancestors
-            .iter()
-            .map(|ancestor| {
-                quote! {
-                    ::diesel::joinable!(#table_module -> #ancestor (#pk));
+    let joinable_impls = attributes.ancestors.iter().flatten().map(|ancestor| {
+        if let [pk] = primary_key_columns.as_slice() {
+            quote! {
+                ::diesel::joinable!(#table_module -> #ancestor (#pk));
+            }
+        } else {
+            quote! {
+                impl ::diesel::query_source::JoinTo<#ancestor::table> for #table_module::table {
+                    type FromClause = #ancestor::table;
+                    type OnClause = <<
+                        #table_module::table as ::diesel::Table
+                    >::PrimaryKey as ::diesel::expression_methods::EqAll<
+                        <#ancestor::table as ::diesel::Table>::PrimaryKey
+                    >>::Output;
+
+                    fn join_target(rhs: #ancestor::table) -> (Self::FromClause, Self::OnClause) {
+                        (rhs, ::diesel::expression_methods::EqAll::eq_all(
+                            ::diesel::Table::primary_key(&#table_module::table),
+                            ::diesel::Table::primary_key(&rhs),
+                        ))
+                    }
                 }
-            })
-            .collect::<Vec<_>>()
-    } else {
-        Vec::new()
-    };
+
+                impl ::diesel::query_source::JoinTo<#table_module::table> for #ancestor::table {
+                    type FromClause = #table_module::table;
+                    type OnClause = <<
+                        #ancestor::table as ::diesel::Table
+                    >::PrimaryKey as ::diesel::expression_methods::EqAll<
+                        <#table_module::table as ::diesel::Table>::PrimaryKey
+                    >>::Output;
+
+                    fn join_target(rhs: #table_module::table) -> (Self::FromClause, Self::OnClause) {
+                        (rhs, ::diesel::expression_methods::EqAll::eq_all(
+                            ::diesel::Table::primary_key(&#ancestor::table),
+                            ::diesel::Table::primary_key(&rhs),
+                        ))
+                    }
+                }
+            }
+        }
+    }).collect::<Vec<_>>();
 
     let table_name = table_module.to_string();
-    let allow_same_query_calls =
-        generate_allow_same_query_calls(&table_module, &attributes, &triangular_relation_tables);
 
     let new_record = format_as_nested_tuple(&new_record_columns);
     let default_new_record = format_as_nested_tuple(&default_values);
@@ -469,11 +553,30 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
     let set_column_impls =
         set_columns::generate_set_column_impls(&new_record_columns, &table_module);
 
+    let take_column_impls = generate_take_column_impls(&new_record_columns, &table_module);
+
     let error_type = attributes
         .error
         .as_ref()
         .map(|t| quote::quote! { #t })
         .unwrap_or(quote::quote! { std::convert::Infallible });
+
+    let record_error_type = attributes
+        .record_error
+        .as_ref()
+        .map(|t| quote::quote! { #t })
+        .unwrap_or(quote::quote! { std::convert::Infallible });
+
+    let default_columns_tuple = format_as_nested_tuple(&default_columns);
+    let empty_new_record = format_as_nested_tuple(&empty_values);
+
+    // Tables without a declared record error type get the infallible
+    // whole-record validation. Otherwise the model supplies it.
+    let validate_record_impl = if attributes.record_error.is_none() {
+        generate_infallible_validate_record_impl(&table_module)
+    } else {
+        TokenStream::new()
+    };
 
     // Generate Root/Descendant implementations
     // If ancestors are specified, generate Descendant; otherwise generate Root
@@ -484,7 +587,12 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         let ancestor_tables: Vec<syn::Type> =
             ancestors.iter().map(|a| syn::parse_quote!(#a::table)).collect();
         let nested_ancestors = format_as_nested_tuple(&ancestor_tables);
-        let root: &syn::Type = ancestor_tables.first().unwrap();
+        let Some(root) = ancestor_tables.first() else {
+            return Err(syn::Error::new_spanned(
+                input,
+                "`#[table_model(ancestors(...))]` must list at least one ancestor table",
+            ));
+        };
         let aux_impls =
             crate::descendant::generate_auxiliary_descendant_impls(&table_type, &ancestor_tables);
 
@@ -568,6 +676,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         #(#indexed_column_impls)*
         #may_get_column_impls
         #set_column_impls
+        #take_column_impls
+        #validate_record_impl
         #infallible_validate_column_impls
         #descendant_impls
         #bundlable_table_impl
@@ -585,11 +695,8 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
         // Foreign primary key implementations for triangular relations
         #(#triangular_fpk_impls)*
 
-        // Joinable implementations for ancestors (only if single primary key)
         #(#joinable_impls)*
 
-        // Allow tables to appear in same query with ancestors
-        #(#allow_same_query_calls)*
 
         // Warnings
         #(#warnings)*
@@ -602,9 +709,15 @@ pub fn derive_table_model_impl(input: &DeriveInput) -> syn::Result<TokenStream> 
             type Model = #struct_ident;
             type NestedPrimaryKeyColumns = #nested_primary_keys;
             type Error = #error_type;
+            type DefaultColumns = #default_columns_tuple;
+            type RecordError = #record_error_type;
 
             fn default_new_values() -> Self::NewValues {
                 #default_new_record
+            }
+
+            fn empty_new_values() -> Self::NewValues {
+                #empty_new_record
             }
         }
     })
@@ -671,78 +784,121 @@ fn generate_model_upsert_impl(struct_ident: &Ident, table_module: &Ident) -> Tok
                         ::diesel_builders::GetNestedColumns::<#upsert_nested_columns>::get_nested_columns(self),
                     ),
                 );
-                let results: ::std::vec::Vec<<#model_table_type as ::diesel_builders::TableExt>::Model> =
-                    ::diesel::insert_into(table)
-                        .values(values)
-                        .on_conflict(table.primary_key())
-                        .do_update()
-                        .set(changes)
-                        .get_results(conn)?;
-                match results.into_iter().next() {
-                    ::core::option::Option::Some(first) => ::core::result::Result::Ok(first),
-                    ::core::option::Option::None => {
-                        ::core::result::Result::Err(::diesel::result::Error::NotFound)
-                    }
-                }
+                ::diesel::insert_into(table)
+                    .values(values)
+                    .on_conflict(table.primary_key())
+                    .do_update()
+                    .set(changes)
+                    .get_result(conn)
             }
         }
     }
 }
 
-/// Generates the `BuildableTable` implementation, applying any
-/// `#[table_model(default(Table::column, value))]` overrides inside
-/// `default_bundles`.
+/// Generates the `BuildableTable` implementation.
+///
+/// Struct default overrides are applied as raw sets on the staged default
+/// builder, before any validation. `DefaultError` composes one stage for the
+/// base defaults and one stage per override, covering the overridden column
+/// and its vertical same-as group.
+#[expect(
+    clippy::too_many_lines,
+    reason = "Default validation stages and constructor generation share one ordered pipeline."
+)]
 fn generate_buildable_table_impl(
     table_module: &Ident,
     attributes: &attribute_parsing::TableModelAttributes,
 ) -> syn::Result<TokenStream> {
-    let mut overrides = Vec::new();
+    let mut overrides: Vec<(&syn::Path, &syn::Expr)> = Vec::new();
     for (col_path, value) in &attributes.struct_defaults {
-        let segments: Vec<_> = col_path.segments.iter().collect();
-        if segments.len() < 2 {
-            return Err(syn::Error::new_spanned(
-                col_path,
-                "Column path in `default(...)` must be in the format `Table::Column`",
-            ));
-        }
-        let table_ident = &segments[segments.len() - 2].ident;
+        let table_ident =
+            col_path.segments.iter().rev().nth(1).map(|segment| &segment.ident).ok_or_else(
+                || {
+                    syn::Error::new_spanned(
+                        col_path,
+                        "Column path in `default(...)` must be in the format `Table::Column`",
+                    )
+                },
+            )?;
 
-        let mut found_idx = None;
-        let mut ancestor_count = 0;
+        let in_ancestors = attributes.ancestors.as_deref().is_some_and(|ancestors| {
+            ancestors.iter().any(|ancestor_path| {
+                ancestor_path
+                    .segments
+                    .last()
+                    .is_some_and(|last_segment| last_segment.ident == *table_ident)
+            })
+        });
 
-        if let Some(ancestors) = &attributes.ancestors {
-            ancestor_count = ancestors.len();
-            for (i, ancestor_path) in ancestors.iter().enumerate() {
-                if let Some(last_segment) = ancestor_path.segments.last()
-                    && last_segment.ident == *table_ident
-                {
-                    found_idx = Some(i);
-                    break;
-                }
-            }
-        }
-
-        if found_idx.is_none() && *table_module == *table_ident {
-            found_idx = Some(ancestor_count);
-        }
-
-        if found_idx.is_some() {
-            overrides.push(quote! {
-                {
-                    use ::diesel_builders::TrySetColumn;
-                    ::diesel_builders::TrySetColumn::<#col_path>::try_set_column(
-                        &mut builder,
-                        (#value).to_owned()
-                    ).expect(concat!("Invalid default value for column ", stringify!(#col_path)));
-                }
-            });
-        } else {
+        if !in_ancestors && *table_module != *table_ident {
             return Err(syn::Error::new_spanned(
                 col_path,
                 format!("Table `{table_ident}` not found in ancestors or self"),
             ));
         }
+
+        overrides.push((col_path, value));
     }
+
+    let builder_type = quote! { ::diesel_builders::DefaultBuilder<Self> };
+
+    // Validation stages: the base default stage, then one stage per struct
+    // default override covering the overridden column and its vertical
+    // same-as group.
+    let mut stage_errors = vec![quote! {
+        <Self::NestedDefaultBundles as ::diesel_builders::BuildDefaults>::Error
+    }];
+    let mut check_statements = Vec::new();
+    let stage_count = 1 + overrides.len();
+
+    for (i, (col_path, _)) in overrides.iter().enumerate() {
+        let override_group = quote! {
+            <<#col_path as ::diesel_builders::VerticalSameAsGroup>::VerticalSameAsNestedColumns
+                as ::diesel_builders::tuplities::NestedTuplePushFront<#col_path>>::Output
+        };
+
+        stage_errors.push(quote! {
+            <#builder_type as ::diesel_builders::CheckAndMoveColumns<#override_group>>::Error
+        });
+
+        let mapping = stage_error_mapping(i + 1, stage_count);
+        check_statements.push(quote! {
+            <#builder_type as ::diesel_builders::CheckAndMoveColumns<#override_group>>::check_and_move_columns(
+                &mut builder,
+            )#mapping?;
+        });
+    }
+
+    let default_error = composed_stage_errors(stage_errors);
+
+    let raw_sets: Vec<TokenStream> = overrides
+        .iter()
+        .map(|(col_path, value)| {
+            quote! {
+                <#builder_type as ::diesel_builders::SetColumn<#col_path>>::set_column(
+                    &mut builder,
+                    (#value).to_owned(),
+                );
+            }
+        })
+        .collect();
+
+    let base_mapping = stage_error_mapping(0, stage_count);
+
+    let ancestor_empties: Vec<TokenStream> = attributes
+        .ancestors
+        .iter()
+        .flatten()
+        .map(|ancestor| {
+            quote! {
+                ::diesel_builders::TableBuilderBundle::<#ancestor::table>::empty()
+            }
+        })
+        .collect();
+    let empty_bundles = ancestor_empties.iter().rev().fold(
+        quote! { (::diesel_builders::TableBuilderBundle::<#table_module::table>::empty(),) },
+        |tail, head| quote! { (#head, #tail) },
+    );
 
     Ok(quote! {
         impl ::diesel_builders::BuildableTable for #table_module::table {
@@ -750,16 +906,72 @@ fn generate_buildable_table_impl(
                 <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedBundleBuilders;
             type NestedCompletedAncestorBuilders =
                 <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedCompletedBundleBuilders;
+            type NestedDefaultBundles =
+                <<#table_module::table as ::diesel_builders::DescendantWithSelf>::NestedAncestorsWithSelf as ::diesel_builders::NestedBundlableTables>::NestedDefaultBundleBuilders;
+            type DefaultError = #default_error;
 
-            fn default_bundles() -> Self::NestedAncestorBuilders {
-                #[allow(unused_mut)]
-                let mut bundles = <Self::NestedAncestorBuilders as Default>::default();
-                let mut builder = ::diesel_builders::TableBuilder::<Self>::from_bundles(bundles);
-                #(#overrides)*
-                builder.into_bundles()
+            fn try_builder() -> core::result::Result<
+                ::diesel_builders::TableBuilder<Self>,
+                Self::DefaultError,
+            > {
+                let mut builder = ::diesel_builders::DefaultBuilder::<Self>::new();
+                #(#raw_sets)*
+                <#builder_type as ::diesel_builders::BuildDefaults>::check_defaults(
+                    &mut builder,
+                )#base_mapping?;
+                #(#check_statements)*
+                Ok(<#builder_type as ::diesel_builders::BuildDefaults>::into_checked(builder))
+            }
+
+            fn empty_builder() -> ::diesel_builders::TableBuilder<Self> {
+                ::diesel_builders::TableBuilder::from_bundles(#empty_bundles)
             }
         }
     })
+}
+
+/// Builds the `map_err` expression placing a stage error at its position in
+/// the right-nested `EitherValidationError` tree over `stages` stages: the
+/// stage at depth `k` is reached by `k` `Right` steps, plus one `Left` step
+/// unless it is the rightmost stage. A single stage maps directly.
+fn stage_error_mapping(stage: usize, stages: usize) -> TokenStream {
+    if stages == 1 {
+        return TokenStream::new();
+    }
+
+    let error_ident = syn::Ident::new("err", proc_macro2::Span::call_site());
+    let core = if stage == stages - 1 {
+        quote! { #error_ident }
+    } else {
+        quote! {
+            ::diesel_builders::EitherValidationError::Left(#error_ident)
+        }
+    };
+    let mut mapping = core;
+    for _ in 0..stage {
+        mapping = quote! {
+            ::diesel_builders::EitherValidationError::Right(#mapping)
+        };
+    }
+
+    quote! { .map_err(|#error_ident| #mapping) }
+}
+
+/// Builds the `DefaultError` type over the validation stage errors. A single
+/// stage retains its own error type, and multiple stages compose as a
+/// right-nested `EitherValidationError`.
+fn composed_stage_errors(mut stage_errors: Vec<TokenStream>) -> TokenStream {
+    let Some(last) = stage_errors.pop() else {
+        return quote! { std::convert::Infallible };
+    };
+
+    let mut composed = last;
+    for type_expr in stage_errors.iter().rev() {
+        composed = quote! {
+            ::diesel_builders::EitherValidationError<#type_expr, #composed>
+        };
+    }
+    composed
 }
 
 /// Computes the horizontal (triangular) same-as `HorizontalKey` and
@@ -843,14 +1055,18 @@ fn generate_horizontal_key_impls(
                         continue;
                     }
 
-                    let number_of_segments = col_path.segments.len();
-                    if number_of_segments < 2 {
-                        return Err(syn::Error::new_spanned(
-                            col_path,
-                            "Non-key column path in #[same_as(...)] must be in the format `table::column` or a `#[mandatory]`/`#[discretionary]` attribute is missing.",
-                        ));
-                    }
-                    let table_ident = &col_path.segments[number_of_segments - 2].ident;
+                    let table_ident = col_path
+                        .segments
+                        .iter()
+                        .rev()
+                        .nth(1)
+                        .map(|segment| &segment.ident)
+                        .ok_or_else(|| {
+                            syn::Error::new_spanned(
+                                col_path,
+                                "Non-key column path in #[same_as(...)] must be in the format `table::column` or a `#[mandatory]`/`#[discretionary]` attribute is missing.",
+                            )
+                        })?;
 
                     // Check if this matches a target table
                     if let Some(keys) = potential_keys.get(table_ident) {
@@ -863,21 +1079,18 @@ fn generate_horizontal_key_impls(
                             if keys.iter().any(|(kf, _, _)| kf == &k_ident) {
                                 Some(k_ident.clone())
                             } else {
-                                // Explicit key provided but doesn't match this
-                                // target table
-                                // This might happen if we have
-                                // #[same_as(Target1, KeyForTarget2)]
-                                // We ignore it for Target1.
+                                // The explicit key belongs to a different
+                                // target table.
                                 None
                             }
-                        } else if keys.len() == 1 {
-                            Some(keys[0].0.clone())
+                        } else if let [(key, _, _)] = keys.as_slice() {
+                            Some((*key).clone())
                         } else {
                             // Ambiguous
                             let available_keys: Vec<String> =
                                 keys.iter().map(|(k, _, _)| format!("`{k}`")).collect();
                             let available_keys_str = available_keys.join(", ");
-                            let col_name = &col_path.segments.last().unwrap().ident;
+                            let col_name = crate::utils::last_segment_ident(col_path)?;
 
                             return Err(syn::Error::new_spanned(
                                 f,
@@ -1015,38 +1228,6 @@ fn generate_horizontal_key_impls(
     Ok((horizontal_key_impls, column_horizontal_impls))
 }
 
-/// Builds the `allow_tables_to_appear_in_same_query!` invocations that let the
-/// table join with every ancestor pair and with each triangular relation.
-///
-/// The nested inner join over a table's ancestors touches every ancestor pair,
-/// not just self-to-ancestor pairs, so every unordered pair among the table and
-/// its ancestors must be declared; triangular relations only need to co-occur
-/// with the table itself.
-fn generate_allow_same_query_calls(
-    table_module: &Ident,
-    attributes: &attribute_parsing::TableModelAttributes,
-    triangular_relation_tables: &[syn::Path],
-) -> Vec<TokenStream> {
-    let table_module_path: syn::Path = table_module.clone().into();
-    let ancestor_paths: Vec<&syn::Path> =
-        attributes.ancestors.iter().flat_map(|paths| paths.iter()).collect();
-    let mut allow_same_query_pairs: Vec<(&syn::Path, &syn::Path)> = Vec::new();
-    for (i, first) in ancestor_paths.iter().enumerate() {
-        allow_same_query_pairs.push((&table_module_path, first));
-        for second in &ancestor_paths[i + 1..] {
-            allow_same_query_pairs.push((first, second));
-        }
-    }
-    allow_same_query_pairs
-        .extend(triangular_relation_tables.iter().map(|other| (&table_module_path, other)));
-    allow_same_query_pairs
-        .into_iter()
-        .filter_map(|(first, second)| {
-            crate::utils::allow_tables_to_appear_in_same_query(first, second)
-        })
-        .collect()
-}
-
 /// Computes the default-value expression for a field's slot in the new-record
 /// tuple: a user default if present, `Some(None)` for nullable columns, or
 /// `None` otherwise.
@@ -1056,6 +1237,17 @@ fn field_default_value(field: &syn::Field) -> TokenStream {
     if let Some(def) = user_default {
         quote::quote! { Some((#def).to_owned().into()) }
     } else if is_nullable {
+        quote::quote! { Some(None) }
+    } else {
+        quote::quote! { None }
+    }
+}
+
+/// Computes the empty-state value expression for a field's slot in the
+/// new-record tuple: `Some(None)` for nullable columns and `None` otherwise,
+/// without applying any explicit defaults.
+fn field_empty_value(field: &syn::Field) -> TokenStream {
+    if is_option(&field.ty) {
         quote::quote! { Some(None) }
     } else {
         quote::quote! { None }
