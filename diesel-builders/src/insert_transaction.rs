@@ -60,15 +60,6 @@ pub(crate) trait CheckNestedStoredOptions<H> {
     fn first_missing_with(self, names: Self::SameDepth) -> Option<H>;
 }
 
-impl<H> CheckNestedStoredOptions<H> for () {
-    type SameDepth = ();
-
-    #[inline]
-    fn first_missing_with(self, _names: ()) -> Option<H> {
-        None
-    }
-}
-
 impl<T, H> CheckNestedStoredOptions<H> for (&Option<T>,) {
     type SameDepth = (H,);
 
