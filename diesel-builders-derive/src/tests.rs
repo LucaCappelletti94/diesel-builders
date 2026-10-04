@@ -229,6 +229,22 @@ struct Child {
     );
 }
 
+/// A field name whose leading underscores shield a digit must not panic:
+/// stripping them bare would leave something that starts with a digit,
+/// which is not a valid identifier even as a raw identifier.
+#[test]
+fn underscore_digit_field_name_expands_to_valid_rust() {
+    expansion_is_valid_rust(
+        r"
+struct Reading {
+    id: i32,
+    _9sensor: i32,
+}
+",
+        "Reading",
+    );
+}
+
 /// The model with a composite explicit foreign key expands to a parseable
 /// expansion.
 #[test]
