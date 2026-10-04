@@ -17,5 +17,33 @@ pub trait NestedInnerJoin: TableExt {
     type JoinQuery;
 
     /// Constructs an inner join query over the table and its ancestors.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::load_nested_query_builder::NestedInnerJoin;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let join = <profiles::table as NestedInnerJoin>::nested_inner_join();
+    /// let rows: Vec<(Profile, User)> = join.load(&mut conn)?;
+    /// assert!(
+    ///     rows.iter()
+    ///         .map(|(profile, user)| {
+    ///             (
+    ///                 profile.id,
+    ///                 profile.display_name.as_str(),
+    ///                 profile.visits,
+    ///                 user.id,
+    ///                 user.name.as_str(),
+    ///                 user.age,
+    ///                 user.nickname.as_deref(),
+    ///             )
+    ///         })
+    ///         .eq([(1, "Ada", 3, 1, "Ada", 20, Some("Ace"))])
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn nested_inner_join() -> Self::JoinQuery;
 }

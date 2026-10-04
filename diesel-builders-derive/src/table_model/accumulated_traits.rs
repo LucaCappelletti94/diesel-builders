@@ -20,10 +20,12 @@ pub fn generate_accumulated_traits(
     is_surrogate_key: bool,
     has_error_type: bool,
 ) -> TokenStream {
+    use syn::ext::IdentExt;
+    let naming_ident = struct_ident.unraw();
     let table_builder_trait_ident =
-        Ident::new(&format!("{struct_ident}TableBuilder"), Span::call_site());
+        Ident::new(&format!("{naming_ident}TableBuilder"), Span::call_site());
     let table_model_trait_ident =
-        Ident::new(&format!("{struct_ident}TableModel"), Span::call_site());
+        Ident::new(&format!("{naming_ident}TableModel"), Span::call_site());
 
     let mut set_bounds = Vec::new();
     let mut get_bounds = Vec::new();

@@ -1,22 +1,11 @@
 //! Submodule with utilities for the diesel-builders macros.
 
-use std::{
-    collections::HashSet,
-    hash::{Hash, Hasher},
-    sync::{Mutex, OnceLock},
-};
-
 use quote::ToTokens;
 
 /// Builds the `typenum` unsigned marker identifier `U{index}` such as `U0`.
 pub(crate) fn typenum_ident(index: usize) -> syn::Ident {
     syn::Ident::new(&format!("U{index}"), proc_macro2::Span::call_site())
 }
-
-/// Static lookup struct to track which table pairs have already had
-/// `diesel::allow_tables_to_appear_in_same_query!` generated.
-/// This prevents duplicate macro invocations which would cause compile errors.
-static GENERATED_LINKS: OnceLock<Mutex<HashSet<u64>>> = OnceLock::new();
 
 /// Convert a `snake_case` string to `CamelCase`.
 ///
@@ -131,57 +120,6 @@ pub(crate) fn camel_to_snake_case(s: &str) -> String {
     result
 }
 
-/// Helper to determine if we should generate
-/// `allow_tables_to_appear_in_same_query`.
-///
-/// Returns `true` if this pair hasn't been generated yet.
-/// Uses a static lookup struct to track pairs.
-fn should_generate_allow_tables_to_appear_in_same_query(t1: &syn::Path, t2: &syn::Path) -> bool {
-    // Initialize the static map if needed
-    let map = GENERATED_LINKS.get_or_init(|| Mutex::new(HashSet::new()));
-
-    let Some(s1) = t1.segments.last().map(|seg| &seg.ident) else {
-        return false;
-    };
-    let Some(s2) = t2.segments.last().map(|seg| &seg.ident) else {
-        return false;
-    };
-
-    // Same table, no need to generate
-    if s1 == s2 {
-        return false;
-    }
-
-    // Sort to handle symmetry (A, B) == (B, A)
-    let pair = if s1 < s2 { (s1, s2) } else { (s2, s1) };
-
-    let hash = {
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        pair.hash(&mut hasher);
-        hasher.finish()
-    };
-
-    let mut lock = map.lock().unwrap();
-    lock.insert(hash)
-}
-
-/// Emits a `diesel::allow_tables_to_appear_in_same_query!` invocation for the
-/// pair of tables, or `None` when the pair has already been generated.
-///
-/// Wraps `should_generate_allow_tables_to_appear_in_same_query` so callers
-/// declare a joinable pair in one expression instead of repeating the guard and
-/// the macro call.
-pub(crate) fn allow_tables_to_appear_in_same_query(
-    t1: &syn::Path,
-    t2: &syn::Path,
-) -> Option<proc_macro2::TokenStream> {
-    should_generate_allow_tables_to_appear_in_same_query(t1, t2).then(|| {
-        quote::quote! {
-            ::diesel::allow_tables_to_appear_in_same_query!(#t1, #t2);
-        }
-    })
-}
-
 /// Extracts the table path from a column path.
 /// Assumes standard Diesel format `Module::Table::Column`.
 /// Returns the path without the last segment.
@@ -193,4 +131,16 @@ pub(crate) fn extract_table_path_from_column(path: &syn::Path) -> Option<syn::Pa
     table_path.segments.pop();
     table_path.segments.pop_punct();
     Some(table_path)
+}
+
+/// Returns the identifier of the final segment of a parsed path.
+///
+/// # Errors
+/// Fails when the path has no segments, which a parsed `syn::Path` cannot
+/// produce.
+pub(crate) fn last_segment_ident(path: &syn::Path) -> syn::Result<&syn::Ident> {
+    path.segments
+        .last()
+        .map(|segment| &segment.ident)
+        .ok_or_else(|| syn::Error::new_spanned(path, "Expected a non-empty path"))
 }

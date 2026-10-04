@@ -7,6 +7,8 @@ use diesel_builders::{
     prelude::*,
 };
 
+diesel::allow_tables_to_appear_in_same_query!(animals, cats, dogs, pets, puppies);
+
 /// Setups the animal hierarchy tables in the given `SQLite` connection.
 ///
 /// # Errors

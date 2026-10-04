@@ -3,13 +3,13 @@ name = "diesel-builders-derive"
 description = "Procedural macros for diesel-builders to generate type-safe builders for Diesel ORM."
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 authors.workspace = true
-readme.workspace = true
+readme = "README.md"
 license-file.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-homepage.workspace = true
 
 [lib]
 proc-macro = true

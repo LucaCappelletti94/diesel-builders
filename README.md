@@ -7,9 +7,15 @@
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity. It provides fluent APIs for getting/setting column values and associated builders and models, executing foreign key queries, and [`serde`](https://github.com/serde-rs/serde) support.
 
-[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](examples/composite_primary_keys.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types [that implement the required Diesel traits](https://github.com/diesel-rs/diesel/blob/main/guide_drafts/custom_types.md).
+Requires Rust `1.88` and the upstream `main` branches of `diesel` and `tuplities`. Registry publication requires compatible releases of both dependencies.
 
-The `TableModel` derive macro generates Diesel's [`table!`](https://docs.rs/diesel/latest/diesel/macro.table.html) macro, eliminating manual schema definitions. Furthermore, its also automatically keeps track of foreign key relationships to generate [`allow_tables_to_appear_in_same_query!`](https://docs.rs/diesel/latest/diesel/macro.allow_tables_to_appear_in_same_query.html) declarations as needed. You will still need to specify [`allow_tables_to_appear_in_same_query`](https://docs.rs/diesel/latest/diesel/macro.allow_tables_to_appear_in_same_query.html) for second-order joins (i.e., joins involving three or more tables).
+Tuple-size features select the maximum tuple arity. `size-32` is enabled by default, and disabling all size features limits tuples to eight elements.
+
+[Custom Diesel types](diesel-builders/tests/test_custom_type.rs) and [tables with multi-column primary keys](diesel-builders/tests/test_composite_primary_key.rs) are fully supported. The builder pattern works seamlessly with custom SQL and Rust types [that implement the required Diesel traits](https://github.com/diesel-rs/diesel/blob/main/guide_drafts/custom_types.md).
+
+[Composite-key inheritance](diesel-builders/tests/test_composite_inheritance.rs) propagates the complete ancestor key and joins every component. Set key components through the ancestor-column setters.
+
+The `TableModel` derive macro generates Diesel's [`table!`](https://docs.rs/diesel/latest/diesel/macro.table.html) macro, eliminating manual schema definitions. Query groups are declared explicitly with [`diesel::allow_tables_to_appear_in_same_query!`](https://docs.rs/diesel/latest/diesel/macro.allow_tables_to_appear_in_same_query.html) after the related `TableModel` definitions, covering every pair of tables that appears together in a Diesel query.
 
 ## Installation
 
@@ -92,6 +98,8 @@ pub struct Puppy {
     #[table_model(default = 6)]
     age_months: i32,
 }
+
+diesel::allow_tables_to_appear_in_same_query!(animals, dogs, puppies);
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
@@ -177,6 +185,8 @@ pub struct Pet {
     owner_name: String,
 }
 
+diesel::allow_tables_to_appear_in_same_query!(animals, dogs, cats, pets);
+
 let mut conn = SqliteConnection::establish(":memory:")?;
 
 diesel::sql_query("PRAGMA foreign_keys = ON").execute(&mut conn)?;
@@ -232,6 +242,8 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 **Horizontal Same-As**: Like Vertical Same-As, but propagates values from referenced tables via foreign keys. Here, `remote_mandatory_field` mirrors `mandatory_table::mandatory_field` via `HorizontalKey`.
 
+Use `#[same_as(table::column, key_field)]` to choose an explicit relation key, including [mandatory relations to distinct target tables](diesel-builders/tests/test_explicit_mandatory_keys.rs).
+
 ```rust
 use diesel_builders::prelude::*;
 
@@ -269,6 +281,8 @@ pub struct Child {
     #[same_as(mandatory_table::mandatory_field)]
     remote_mandatory_field: Option<String>,
 }
+
+diesel::allow_tables_to_appear_in_same_query!(parent_table, mandatory_table, child_table);
 
 let mut conn = SqliteConnection::establish(":memory:")?;
 
@@ -338,6 +352,8 @@ pub struct Child {
     remote_discretionary_field: Option<String>,
 }
 
+diesel::allow_tables_to_appear_in_same_query!(parent_table, discretionary_table, child_with_discretionary_table);
+
 let mut conn = SqliteConnection::establish(":memory:")?;
 
 diesel::sql_query("CREATE TABLE parent_table (id INTEGER PRIMARY KEY NOT NULL, parent_field TEXT NOT NULL);").execute(&mut conn)?;
@@ -397,6 +413,8 @@ pub struct Edge {
     target_id: i32,
 }
 
+diesel::allow_tables_to_appear_in_same_query!(nodes, edges);
+
 let mut conn = SqliteConnection::establish(":memory:")?;
 
 diesel::sql_query("CREATE TABLE nodes (id INTEGER PRIMARY KEY, name TEXT NOT NULL);").execute(&mut conn)?;
@@ -444,7 +462,13 @@ Ok::<(), Box<dyn std::error::Error>>(())
 
 ### Validation with Check Constraints
 
-[Custom validation](diesel-builders/tests/test_inheritance.rs) via `ValidateColumn` mirrors SQL CHECK constraints.
+[`ValidateColumn::validate_column`] checks a single value, including values supplied by defaults. [`ValidateRecord::validate_record`] checks relationships between final record values before insertion.
+
+Use [`BuildableTable::try_builder`] for fallible defaults or [`BuildableTable::empty_builder`] to supply explicit values without evaluating defaults.
+
+Deserialization validates stored values before exposing builders. [`TableBuilderBundle::try_from_values`] returns rejected raw values with their typed intrinsic error, while deserialization reports validation failures through the decoder's error type.
+
+Fallible setters and [`TrySetDiscretionaryModel::try_set_discretionary_model`] prepare the complete propagation group before changing fields or associated builders. [`TrySetValues::try_set_values`] and [`TryMaySetValues::try_may_set_values`] return rejected batch inputs without partially applying the batch.
 
 ```rust
 use diesel_builders::prelude::*;
@@ -480,7 +504,7 @@ let mut conn = SqliteConnection::establish(":memory:")?;
 diesel::sql_query("CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT NOT NULL, age INTEGER NOT NULL DEFAULT 18 CHECK (age >= 18));").execute(&mut conn)?;
 
 // Valid insertion using default age
-let user = users::table::builder()
+let user = users::table::try_builder()?
     .username("alice")
     .insert(&mut conn)?;
 
@@ -488,7 +512,7 @@ assert_eq!(user.username(), "alice");
 assert_eq!(*user.age(), 18);
 
 // Valid insertion with explicit age
-let user2 = users::table::builder()
+let user2 = users::table::try_builder()?
     .username("bob")
     .try_age(25)?
     .insert(&mut conn)?;
@@ -496,8 +520,8 @@ let user2 = users::table::builder()
 assert_eq!(*user2.age(), 25);
 
 // Runtime validation errors
-let result = users::table::builder().try_age(7);  // Error: AgeTooYoung
-assert_eq!(result.unwrap_err(), UserError::AgeTooYoung);
+let result = users::table::try_builder()?.try_age(7);
+assert_eq!(result.err(), Some(UserError::AgeTooYoung));
 
 Ok::<(), Box<dyn std::error::Error>>(())
 ```

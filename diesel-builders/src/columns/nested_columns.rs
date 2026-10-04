@@ -65,11 +65,32 @@ pub trait NestedDynColumns: TypedNestedTuple {
         + NestedTupleIntoVec<&'static str>
         + PartialEq
         + Eq;
-    /// Returns the names of the dynamic columns as a nested tuple of static
-    /// strings.
+    /// Returns the dynamic column names as a nested tuple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::{DynColumn, NestedDynColumns};
+    /// use schema::users;
+    ///
+    /// let columns = (DynColumn::<String>::from(users::name), (DynColumn::<i32>::from(users::age),));
+    /// assert_eq!(columns.nested_dyn_column_names(), ("name", ("age",)));
+    /// # }
+    /// ```
     fn nested_dyn_column_names(&self) -> Self::NestedDynNames;
-    /// Returns the names of the tables associated with the dynamic columns as a
-    /// nested tuple of static strings.
+    /// Returns the dynamic columns' table names as a nested tuple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() {
+    /// use diesel_builders::{DynColumn, NestedDynColumns};
+    /// use schema::{posts, users};
+    ///
+    /// let columns = (DynColumn::<i32>::from(users::id), (DynColumn::<i32>::from(posts::id),));
+    /// assert_eq!(columns.nested_dyn_column_names(), ("id", ("id",)));
+    /// assert_eq!(columns.nested_dyn_column_table_names(), ("users", ("posts",)));
+    /// # }
+    /// ```
     fn nested_dyn_column_table_names(&self) -> Self::NestedDynNames;
 }
 
@@ -117,6 +138,25 @@ pub trait HasNestedDynColumns: NestedColumns {
         >;
 
     /// Returns the dynamic columns as a nested tuple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::{HasNestedDynColumns, TryGetDynamicColumns};
+    /// use schema::{User, users};
+    ///
+    /// type Columns = (users::name, (users::age,));
+    /// let row = User { id: 1, name: "Ada".into(), age: 20, nickname: None };
+    /// let borrowed = &row;
+    /// let (name, (age,)) = <&User as TryGetDynamicColumns>::try_get_dynamic_columns_ref(
+    ///     &borrowed,
+    ///     Columns::nested_dyn_columns(),
+    /// )?;
+    /// assert_eq!(name.map(String::as_str), Some("Ada"));
+    /// assert_eq!(age, Some(&20));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn nested_dyn_columns() -> Self::NestedDynColumns;
 }
 

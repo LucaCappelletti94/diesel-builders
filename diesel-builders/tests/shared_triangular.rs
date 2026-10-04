@@ -1,6 +1,8 @@
 //! Shared code to setup triangular relation tests.
 use diesel_builders::prelude::*;
 
+diesel::allow_tables_to_appear_in_same_query!(parent_table, satellite_table);
+
 // Table A models
 #[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[table_model(surrogate_key)]

@@ -38,18 +38,14 @@ pub fn generate_vertical_same_as_impls(
             // #[same_as(Target::Col, Key)]
             let is_horizontal_with_key = if let [first, second] = &attr_paths[..] {
                 // Check if first is triangular
-                let first_is_triangular = if first.segments.len() < 2 {
-                    false
-                } else {
-                    let number_of_segments = first.segments.len();
-                    let table_name = &first.segments[number_of_segments - 2].ident;
-                    triangular_tables.iter().any(|t| {
-                        if let Some(segment) = t.segments.last() {
-                            return segment.ident == *table_name;
-                        }
-                        false
-                    })
-                };
+                let first_is_triangular =
+                    first.segments.iter().rev().nth(1).is_some_and(|table_segment| {
+                        triangular_tables.iter().any(|t| {
+                            t.segments
+                                .last()
+                                .is_some_and(|segment| segment.ident == table_segment.ident)
+                        })
+                    });
 
                 // Check if second looks like a key (local table reference or
                 // single segment)
@@ -78,15 +74,18 @@ pub fn generate_vertical_same_as_impls(
 
                 // Extract the table name from the column path (e.g.,
                 // parent_table from parent_table::column)
-                if column_path.segments.len() < 2 {
-                    return Err(syn::Error::new_spanned(
-                        column_path,
-                        "Column path in #[same_as(...)] must be in the format `table::column`",
-                    ));
-                }
-
-                let number_of_segments = column_path.segments.len();
-                let table_name = &column_path.segments[number_of_segments - 2].ident;
+                let table_name = column_path
+                    .segments
+                    .iter()
+                    .rev()
+                    .nth(1)
+                    .map(|segment| &segment.ident)
+                    .ok_or_else(|| {
+                        syn::Error::new_spanned(
+                            column_path,
+                            "Column path in #[same_as(...)] must be in the format `table::column`",
+                        )
+                    })?;
 
                 // Check if this table is in the ancestors list
                 let is_ancestor = if let Some(ancestors) = &attributes.ancestors {

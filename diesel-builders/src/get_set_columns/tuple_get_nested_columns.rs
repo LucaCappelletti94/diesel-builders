@@ -5,6 +5,25 @@ use crate::{GetColumn, TableExt, TypedColumn, TypedNestedTuple, columns::NestedC
 /// Variant of `GetNestedColumns` for n-uples.
 pub trait TupleGetNestedColumns<CS: NestedColumns> {
     /// Get the values of the specified columns as an n-uple.
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::TupleGetNestedColumns;
+    /// use schema::{Profile, User, profiles, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = profiles::table.find(1).first::<Profile>(&mut conn)?;
+    /// let user = users::table.find(1).first::<User>(&mut conn)?;
+    /// let (display, (name,)) =
+    ///     TupleGetNestedColumns::<(profiles::display_name, (users::name,))>::tuple_get_nested_columns(
+    ///         &(profile, (user,)),
+    ///     );
+    /// assert_eq!(display, "Ada");
+    /// assert_eq!(name, "Ada");
+    /// # Ok(())
+    /// # }
+    /// ```
     fn tuple_get_nested_columns(&self) -> <CS as TypedNestedTuple>::NestedTupleColumnType;
 }
 

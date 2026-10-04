@@ -8,6 +8,9 @@ use std::convert::Infallible;
 use diesel::prelude::*;
 use diesel_builders::prelude::*;
 
+diesel::allow_tables_to_appear_in_same_query!(child_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_table_checked, parent_table_checked);
+
 #[allow(clippy::struct_field_names)]
 #[derive(Queryable, Clone, Selectable, Identifiable, TableModel)]
 #[diesel(table_name = parent_table)]
@@ -211,4 +214,39 @@ fn test_inheritance_vertical_same_as_checked() -> Result<(), Box<dyn std::error:
     assert_eq!(parent.parent_field(), "Child Value");
 
     Ok(())
+}
+
+#[test]
+fn test_rejected_propagation_preserves_all_fields() {
+    let mut builder = child_table_checked::table::builder().try_child_field("Original").unwrap();
+    let rejected = "x".repeat(51);
+    assert!(matches!(
+        builder.try_child_field_ref(rejected),
+        Err(ChildCheckedError::ExcessiveLength)
+    ));
+    assert_eq!(
+        builder.may_get_column::<parent_table_checked::parent_field>().as_deref(),
+        Some("Original")
+    );
+    assert_eq!(
+        builder.may_get_column::<parent_table_checked::another_field>().as_deref(),
+        Some("Original")
+    );
+    assert_eq!(
+        builder.may_get_column::<child_table_checked::child_field>().as_deref(),
+        Some("Original")
+    );
+    builder.try_child_field_ref("Accepted").unwrap();
+    assert_eq!(
+        builder.may_get_column::<parent_table_checked::parent_field>().as_deref(),
+        Some("Accepted")
+    );
+    assert_eq!(
+        builder.may_get_column::<parent_table_checked::another_field>().as_deref(),
+        Some("Accepted")
+    );
+    assert_eq!(
+        builder.may_get_column::<child_table_checked::child_field>().as_deref(),
+        Some("Accepted")
+    );
 }

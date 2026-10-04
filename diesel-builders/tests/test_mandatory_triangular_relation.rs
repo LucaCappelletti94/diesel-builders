@@ -11,6 +11,11 @@ use diesel_builders::{
 use diesel_builders_derive::TableModel;
 use shared_triangular::*;
 
+diesel::allow_tables_to_appear_in_same_query!(child_with_satellite_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_with_satellite_table, satellite_table);
+diesel::allow_tables_to_appear_in_same_query!(simple_child_with_satellite_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(simple_child_with_satellite_table, satellite_table);
+
 #[derive(Queryable, Clone, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error=ErrorChildWithMandatory, ancestors = parent_table)]
 #[diesel(table_name = child_with_satellite_table)]

@@ -17,6 +17,31 @@ pub trait TryGetDynamicColumn {
     /// # Errors
     ///
     /// Returns an error if the column cannot be retrieved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::builder_error::DynamicColumnError;
+    /// use diesel_builders::{DynColumn, TryGetDynamicColumn};
+    /// use schema::{posts, User, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let ada: User = users::table.find(1).first(&mut conn)?;
+    /// let grace: User = users::table.find(2).first(&mut conn)?;
+    ///
+    /// assert_eq!((&ada).try_get_dynamic_column_ref::<String>(DynColumn::from(users::name))?.map(String::as_str), Some("Ada"));
+    /// assert_eq!((&ada).try_get_dynamic_column_ref::<String>(DynColumn::from(users::nickname))?.map(String::as_str), Some("Ace"));
+    /// assert_eq!((&grace).try_get_dynamic_column_ref::<String>(DynColumn::from(users::nickname))?, None);
+    ///
+    /// let ada_ref = &ada;
+    /// let foreign = ada_ref.try_get_dynamic_column_ref::<String>(DynColumn::from(posts::title));
+    /// assert!(matches!(foreign, Err(DynamicColumnError::UnknownColumn { table_name, column_name })
+    ///     if (table_name, column_name) == ("posts", "title")));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn try_get_dynamic_column_ref<VT: 'static>(
         &self,
         column: DynColumn<VT>,
@@ -31,6 +56,30 @@ pub trait TryGetDynamicColumn {
     /// # Errors
     ///
     /// Returns an error if the column cannot be retrieved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::DynColumn;
+    /// use schema::{User, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let ada: User = users::table.find(1).first(&mut conn)?;
+    ///
+    /// assert_eq!((&ada).try_get_dynamic_column::<i32>(DynColumn::from(users::age))?, Some(20));
+    /// let mut nickname = (&ada).try_get_dynamic_column::<String>(DynColumn::from(users::nickname))?;
+    /// assert_eq!(nickname, Some("Ace".to_owned()));
+    /// nickname = None;
+    /// assert_eq!(nickname, None);
+    /// assert_eq!(
+    ///     (&ada).try_get_dynamic_column::<String>(DynColumn::from(users::nickname))?,
+    ///     Some("Ace".to_owned())
+    /// );
+    /// # Ok(())
+    /// # }
+    /// ```
     fn try_get_dynamic_column<VT: Clone + 'static>(
         &self,
         column: DynColumn<VT>,

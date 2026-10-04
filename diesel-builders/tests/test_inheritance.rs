@@ -23,7 +23,7 @@ fn test_dog_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(loaded_animal.id(), animal.id());
 
     // Now create a dog (which also creates an animal entry via inheritance)
-    let dog_builder = dogs::table::builder().try_name("Max")?;
+    let dog_builder = dogs::table::try_builder()?.try_name("Max")?;
 
     // Test generated helper traits - fluent API for setting columns
     let dog_builder = dog_builder.breed("Golden Retriever");
@@ -121,8 +121,10 @@ fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
     shared_animals::setup_animal_tables(&mut conn)?;
 
     // Create a dog (inherits from Animal)
-    let dog: Dog =
-        dogs::table::builder().try_name("NestedDog")?.breed("NestedBreed").insert(&mut conn)?;
+    let dog: Dog = dogs::table::try_builder()?
+        .try_name("NestedDog")?
+        .breed("NestedBreed")
+        .insert(&mut conn)?;
 
     // Load nested model using .nested()
     // For Dog, NestedModel is (Animal, (Dog,))
@@ -139,7 +141,7 @@ fn test_nested_method() -> Result<(), Box<dyn std::error::Error>> {
 #[cfg(feature = "serde")]
 fn test_builder_serde_serialization() -> Result<(), Box<dyn std::error::Error>> {
     // Create a builder for a Dog that extends Animals
-    let builder = dogs::table::builder().try_name("Serialized Dog")?.breed("German Shepherd");
+    let builder = dogs::table::try_builder()?.try_name("Serialized Dog")?.breed("German Shepherd");
 
     // Serialize to JSON
     let serialized = serde_json::to_string(&builder)?;
@@ -166,7 +168,7 @@ fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::E
     let dyn_breed_column = dogs::breed.into();
     let dyn_name_column = animals::name.into();
 
-    let dog = dogs::table::builder()
+    let dog = dogs::table::try_builder()?
         .try_set_dynamic_column(dyn_name_column, &"Dynamic Dog".to_owned())?
         .try_set_dynamic_column(dyn_breed_column, &"Dynamic Breed".to_owned())?
         .insert(&mut conn)?;
@@ -183,7 +185,7 @@ fn test_dynamic_column_setting_inheritance() -> Result<(), Box<dyn std::error::E
     assert_eq!(queried_dog.breed(), "Dynamic Breed");
 
     // Test Variadic retrieval with insert_nested
-    let dog_builder = dogs::table::builder()
+    let dog_builder = dogs::table::try_builder()?
         .try_set_dynamic_column(dyn_name_column, &"Dynamic Dog 2".to_owned())?
         .try_set_dynamic_column(dyn_breed_column, &"Dynamic Breed 2".to_owned())?;
 
@@ -202,7 +204,7 @@ fn test_get_model_ext_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = shared::establish_connection()?;
     shared_animals::setup_animal_tables(&mut conn)?;
 
-    let dog_builder = dogs::table::builder().try_name("Rex")?.breed("Labrador");
+    let dog_builder = dogs::table::try_builder()?.try_name("Rex")?.breed("Labrador");
     let nested_dog = dog_builder.insert_nested(&mut conn)?;
 
     // nested_dog should allow accessing both Dog and Animal models
@@ -218,4 +220,65 @@ fn test_get_model_ext_inheritance() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(dog_owned.breed(), "Labrador");
 
     Ok(())
+}
+
+/// Failed descendant insertion preserves existing rows inside and outside a
+/// transaction.
+#[test]
+fn test_insert_rolls_back_ancestors() {
+    for nested in [false, true] {
+        for outer_transaction in [false, true] {
+            let mut conn = shared::establish_connection().unwrap();
+            setup_animal_tables(&mut conn).unwrap();
+            diesel::sql_query("CREATE UNIQUE INDEX dogs_unique_breed ON dogs(breed)")
+                .execute(&mut conn)
+                .unwrap();
+            dogs::table::try_builder()
+                .unwrap()
+                .try_name("Existing")
+                .unwrap()
+                .breed("Duplicate")
+                .insert(&mut conn)
+                .unwrap();
+
+            let operation = |conn: &mut diesel::SqliteConnection| -> diesel::QueryResult<()> {
+                let builder = dogs::table::try_builder()
+                    .unwrap()
+                    .try_name("Rejected")
+                    .unwrap()
+                    .breed("Duplicate");
+                let result = if nested {
+                    builder.insert_nested(conn).map(|_| ())
+                } else {
+                    builder.insert(conn).map(|_| ())
+                };
+                assert!(matches!(
+                    result,
+                    Err(diesel_builders::BuilderError::Diesel(
+                        diesel::result::Error::DatabaseError(
+                            diesel::result::DatabaseErrorKind::UniqueViolation,
+                            _
+                        )
+                    ))
+                ));
+                assert_eq!(animals::table.count().get_result::<i64>(conn)?, 1);
+                assert_eq!(dogs::table.count().get_result::<i64>(conn)?, 1);
+                dogs::table::try_builder()
+                    .unwrap()
+                    .try_name("Accepted")
+                    .unwrap()
+                    .breed("Distinct")
+                    .insert(conn)
+                    .unwrap();
+                assert_eq!(animals::table.count().get_result::<i64>(conn)?, 2);
+                Ok(())
+            };
+            if outer_transaction {
+                conn.transaction(operation).unwrap();
+            } else {
+                operation(&mut conn).unwrap();
+            }
+            assert_eq!(dogs::table.count().get_result::<i64>(&mut conn).unwrap(), 2);
+        }
+    }
 }

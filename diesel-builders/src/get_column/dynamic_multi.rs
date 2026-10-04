@@ -20,6 +20,42 @@ pub trait TryGetDynamicColumns {
     ///
     /// Returns an error if any column cannot be retrieved (e.g., unknown
     /// column).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # include!("../doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::{DynColumn, TryGetDynamicColumns, builder_error::DynamicColumnError};
+    /// use schema::{User, posts, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let ada: User = users::table.find(1).first(&mut conn)?;
+    /// let grace: User = users::table.find(2).first(&mut conn)?;
+    /// let ada_ref = &ada;
+    /// let grace_ref = &grace;
+    ///
+    /// let (name, (age,)) = <&User as TryGetDynamicColumns>::try_get_dynamic_columns_ref(
+    ///     &ada_ref,
+    ///     (DynColumn::from(users::name), (DynColumn::from(users::age),)),
+    /// )?;
+    /// assert_eq!(name.map(String::as_str), Some("Ada"));
+    /// assert_eq!(age, Some(&20));
+    ///
+    /// let (nickname,) = <&User as TryGetDynamicColumns>::try_get_dynamic_columns_ref(
+    ///     &grace_ref,
+    ///     (DynColumn::from(users::nickname),),
+    /// )?;
+    /// assert_eq!(nickname, None);
+    ///
+    /// let foreign = <&User as TryGetDynamicColumns>::try_get_dynamic_columns_ref(
+    ///     &ada_ref,
+    ///     (DynColumn::from(posts::title),),
+    /// );
+    /// assert!(matches!(foreign, Err(DynamicColumnError::UnknownColumn { .. })));
+    /// # Ok(())
+    /// # }
+    /// ```
     fn try_get_dynamic_columns_ref<'a, DCS>(
         &'a self,
         columns: DCS,

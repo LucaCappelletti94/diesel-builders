@@ -8,6 +8,11 @@ use diesel::prelude::*;
 use diesel_builders::prelude::*;
 use shared_triangular::*;
 
+diesel::allow_tables_to_appear_in_same_query!(child_with_satellite_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(child_with_satellite_table, satellite_table);
+diesel::allow_tables_to_appear_in_same_query!(simple_child_with_satellite_table, parent_table);
+diesel::allow_tables_to_appear_in_same_query!(simple_child_with_satellite_table, satellite_table);
+
 // Table B models
 #[derive(Debug, Clone, Queryable, Selectable, Identifiable, PartialEq, TableModel)]
 #[table_model(error = ErrorB, ancestors = shared_triangular::parent_table)]
@@ -127,7 +132,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
     // reference an existing C model Using generated trait methods like
     // try_discretionary_ref for type-safe builders
     let mut child_builder =
-        child_with_satellite_table::table::builder().parent_field("Value A for B");
+        child_with_satellite_table::table::try_builder()?.parent_field("Value A for B");
 
     let saved_child_builder = child_builder.clone();
 
@@ -182,7 +187,7 @@ fn test_discretionary_triangular_relation() -> Result<(), Box<dyn std::error::Er
         associated_parent.get_column::<parent_table::id>()
     );
 
-    let independent_child = child_with_satellite_table::table::builder()
+    let independent_child = child_with_satellite_table::table::try_builder()?
         .parent_field("Independent A for B")
         .child_field("Independent B")
         .try_discretionary_model(&discretionary)?
