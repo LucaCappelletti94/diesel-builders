@@ -52,7 +52,6 @@ pub trait TryMaySetNestedColumns<Error, CS: NestedColumns> {
     ) -> Result<&mut Self, Error>;
 }
 
-
 impl<C1, T, Error> TryMaySetNestedColumns<Error, (C1,)> for T
 where
     T: PrepareColumn<C1>,

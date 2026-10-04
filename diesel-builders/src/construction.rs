@@ -327,15 +327,6 @@ where
     }
 }
 
-impl<T: BuildableTable> CheckAndMoveColumns<()> for DefaultBuilder<T> {
-    type Error = Infallible;
-
-    #[inline]
-    fn check_and_move_columns(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
 impl<C, T> CheckAndMoveColumns<(C,)> for DefaultBuilder<T>
 where
     T: BuildableTable + DescendantOf<C::Table>,

@@ -27,6 +27,6 @@ Cargo.lock
 #.idea/
 rustc-ice-*
 cobertura.xml
-build_rs_cov.profraw
+*.profraw
 coverage
 __pycache__/

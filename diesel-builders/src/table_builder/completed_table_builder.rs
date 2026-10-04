@@ -439,7 +439,6 @@ where
     }
 }
 
-
 impl<T: diesel::Table, C, Depth, Bundles> SetTableKeyColumns<(C,)>
     for RecursiveTableBuilder<T, Depth, Bundles>
 where
@@ -481,7 +480,6 @@ where
         Ok(self)
     }
 }
-
 
 impl<T: diesel::Table, C, Depth, Bundles> SetTableKeyColumnsCollection<(C,)>
     for RecursiveTableBuilder<T, Depth, Bundles>

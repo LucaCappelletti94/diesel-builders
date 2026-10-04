@@ -134,10 +134,6 @@ trait ExtractNestedModels<T: NestedTables> {
     fn extract(&self) -> T::NestedModels;
 }
 
-impl<S> ExtractNestedModels<()> for S {
-    fn extract(&self) {}
-}
-
 impl<S, T> ExtractNestedModels<(T,)> for S
 where
     T: DescendantWithSelf,

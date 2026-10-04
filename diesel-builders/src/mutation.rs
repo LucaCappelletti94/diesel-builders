@@ -200,7 +200,6 @@ impl_prepare_column_for_tuple! {
     impl[Head, Tail] for (Head, Tail),
 }
 
-
 impl<C1, T, E> PrepareColumns<E, (C1,)> for T
 where
     T: PrepareColumn<C1>,
@@ -277,7 +276,6 @@ where
         <T as PrepareColumns<E, CTail>>::apply_columns(self, tail);
     }
 }
-
 
 impl<C1, T, E> PrepareOptionalColumns<E, (C1,)> for T
 where
@@ -469,7 +467,6 @@ where
         <T as PrepareHomogeneous<E, Type, CTail>>::apply_homogeneous(self, tail);
     }
 }
-
 
 impl<C1, T, E> PrepareColumnsCollection<E, (C1,)> for T
 where
