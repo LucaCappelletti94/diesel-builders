@@ -35,6 +35,14 @@ pub trait TrySetHomogeneousNestedColumns<Type, Error, CS: HomogeneouslyTypedNest
     ///     Some(ValidationError::AgeTooYoung)
     /// );
     /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
+    ///
+    /// // A missing value, such as an unattached optional same-as target,
+    /// // leaves every column in the group untouched.
+    /// TrySetHomogeneousNestedColumns::<i32, ValidationError, (users::age,)>::try_set_homogeneous_nested_columns(
+    ///     &mut values,
+    ///     &None::<i32>,
+    /// )?;
+    /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
     /// # Ok(())
     /// # }
     /// ```

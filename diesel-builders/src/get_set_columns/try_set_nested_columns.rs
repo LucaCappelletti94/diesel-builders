@@ -195,6 +195,19 @@ pub trait TrySetNestedColumns<Error, CS: NestedColumns> {
     ///     Some("Grace".to_string())
     /// );
     /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(30));
+    ///
+    /// // The head column failing its own validation is rejected before the
+    /// // tail is even evaluated.
+    /// assert_eq!(
+    ///     TrySetNestedColumns::<ValidationError, (users::age, (users::nickname,))>::try_set_nested_columns(
+    ///         &mut values,
+    ///         (15, (Some("Ace".to_string()),)),
+    ///     )
+    ///     .err(),
+    ///     Some(ValidationError::AgeTooYoung)
+    /// );
+    /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(30));
+    /// assert_eq!(MayGetColumn::<users::nickname>::may_get_column(&values), Some(None));
     /// # Ok(())
     /// # }
     /// ```
