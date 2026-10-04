@@ -239,15 +239,16 @@ where
             })?;
 
         let columns = T::NewRecord::default();
+        #[expect(
+            clippy::expect_used,
+            reason = "the earlier first_missing_with check already proved every \
+                      required column is present, and nothing mutates insertable_model \
+                      in between, so transpose_or cannot observe a missing column here"
+        )]
         let values: T::CompletedNewValues = self
             .insertable_model
             .transpose_or(T::NewRecord::NESTED_COLUMN_NAMES)
-            .map_err(|column_name| {
-                BuilderError::Incomplete(IncompleteBuilderError::MissingMandatoryField {
-                    table_name: T::TABLE_NAME,
-                    field_name: column_name,
-                })
-            })?;
+            .expect("every required column was already proven present");
 
         Ok(diesel::insert_into(T::default())
             .values(columns.eq_all(values).flatten())
