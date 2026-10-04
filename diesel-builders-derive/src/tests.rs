@@ -408,6 +408,25 @@ struct Child {
     );
 }
 
+/// A raw identifier model name with a mandatory triangular field expands to
+/// a parseable expansion.
+#[test]
+fn raw_model_name_with_mandatory_field_expands_to_valid_rust() {
+    expansion_is_valid_rust(
+        r"
+#[diesel(table_name = types)]
+struct r#type {
+    #[same_as(satellite_table::parent_id)]
+    id: i32,
+    #[mandatory(satellite_table)]
+    mandatory_id: i32,
+    note: String,
+}
+",
+        "r#type",
+    );
+}
+
 /// An empty `ancestors` list is rejected while the accepted counterpart
 /// expands.
 #[test]

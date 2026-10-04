@@ -417,14 +417,15 @@ fn generate_discretionary_relation_traits(
     camel_cased_field_name: &str,
     methods: &TriangularMethods,
 ) -> TokenStream {
+    let naming = struct_ident.unraw();
     let set_field_name_discretionary_model_trait =
-        ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
+        ident(&format!("Set{naming}{camel_cased_field_name}DiscretionaryModel"));
     let set_field_name_discretionary_builder_trait =
-        ident(&format!("Set{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
+        ident(&format!("Set{naming}{camel_cased_field_name}DiscretionaryBuilder"));
     let try_set_field_name_discretionary_model_trait =
-        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryModel"));
+        ident(&format!("TrySet{naming}{camel_cased_field_name}DiscretionaryModel"));
     let try_set_field_name_discretionary_builder_trait =
-        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}DiscretionaryBuilder"));
+        ident(&format!("TrySet{naming}{camel_cased_field_name}DiscretionaryBuilder"));
 
     let set_field_name_model_method = &methods.model;
     let set_field_name_model_method_ref = &methods.model_ref;
@@ -599,10 +600,11 @@ fn generate_mandatory_relation_traits(
     camel_cased_field_name: &str,
     methods: &TriangularMethods,
 ) -> TokenStream {
+    let naming = struct_ident.unraw();
     let set_field_name_mandatory_builder_trait =
-        ident(&format!("Set{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+        ident(&format!("Set{naming}{camel_cased_field_name}MandatoryBuilder"));
     let try_set_field_name_mandatory_builder_trait =
-        ident(&format!("TrySet{struct_ident}{camel_cased_field_name}MandatoryBuilder"));
+        ident(&format!("TrySet{naming}{camel_cased_field_name}MandatoryBuilder"));
 
     let set_field_name_builder_method = &methods.builder;
     let set_field_name_builder_method_ref = &methods.builder_ref;
