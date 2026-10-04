@@ -8,7 +8,6 @@ authors = ["Luca Cappelletti"]
 edition = "2024"
 license-file = "LICENSE"
 repository = "https://github.com/lucacappelletti94/diesel-builders"
-homepage = "https://github.com/lucacappelletti94/diesel-builders"
 keywords = [
 	"diesel",
 	"orm",
@@ -22,7 +21,6 @@ categories = [
 	"development-tools::libraries",
 ]
 version = "0.1.0"
-readme = "../README.md"
 rust-version = "1.88"
 
 [workspace.dependencies]
@@ -52,7 +50,8 @@ unsafe_code = "deny"
 
 [workspace.lints.clippy]
 unreadable_literal = "allow"
-missing_panics_doc = "allow"
+missing_errors_doc = "forbid"
+missing_panics_doc = "forbid"
 new_ret_no_self = "allow"
 struct_excessive_bools = "allow"
 should_panic_without_expect = "allow"
@@ -82,3 +81,7 @@ redundant_guards = "deny"
 complexity = { level = "deny", priority = -1 }
 style = { level = "deny", priority = -1 }
 perf = { level = "deny", priority = -1 }
+
+[profile.mutants]
+inherits = "test"
+debug = "none"

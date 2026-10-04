@@ -1,5 +1,17 @@
 //! Crate providing common validation errors.
 
+#![cfg_attr(
+    not(test),
+    deny(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::indexing_slicing,
+        clippy::allow_attributes,
+        clippy::allow_attributes_without_reason,
+        clippy::fallible_impl_from,
+    )
+)]
+
 use core::convert::Infallible;
 
 use diesel::result::DatabaseErrorInformation;
