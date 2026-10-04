@@ -49,6 +49,9 @@ use crate::{
 ///     .insert(&mut conn)?;
 /// let mandatory: Side = child.mandatory(&mut conn)?;
 /// assert_eq!(mandatory.get_column::<sides::parent_id>(), child.get_column::<children::id>());
+///
+/// // `Default` is equivalent to the empty builder.
+/// let _default_builder = diesel_builders::TableBuilder::<children::table>::default();
 /// # Ok(())
 /// # }
 /// ```
