@@ -42,6 +42,19 @@ pub trait TrySetColumnsCollection<Error, ColumnsCollection: TypedNestedTupleColl
     /// );
     /// assert_eq!(MayGetColumn::<users::name>::may_get_column(&values), Some("Grace".to_string()));
     /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
+    ///
+    /// // A later group's rejection rolls back an earlier group that had
+    /// // already prepared successfully.
+    /// assert_eq!(
+    ///     TrySetColumnsCollection::<ValidationError, Groups>::try_set_nested_columns_collection(
+    ///         &mut values,
+    ///         (("Bob".to_string(), (25,)), ((Some(String::new()),),)),
+    ///     )
+    ///     .err(),
+    ///     Some(ValidationError::EmptyNickname)
+    /// );
+    /// assert_eq!(MayGetColumn::<users::name>::may_get_column(&values), Some("Grace".to_string()));
+    /// assert_eq!(MayGetColumn::<users::age>::may_get_column(&values), Some(20));
     /// # Ok(())
     /// # }
     /// ```
