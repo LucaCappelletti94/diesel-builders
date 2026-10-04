@@ -4,7 +4,7 @@
 /// Parsed representation of an index macro invocation.
 struct IndexDefinition {
     /// The columns that form the index.
-    columns: syn::punctuated::Punctuated<syn::Type, syn::Token![,]>,
+    columns: syn::punctuated::Punctuated<syn::Path, syn::Token![,]>,
 }
 
 impl syn::parse::Parse for IndexDefinition {
@@ -15,7 +15,7 @@ impl syn::parse::Parse for IndexDefinition {
 }
 
 /// Expands an `index!` or `unique_index!` body into one marker impl per
-/// column, rejecting bodies that are not a terminated list of types.
+/// column, rejecting bodies that are not a terminated list of column paths.
 pub fn expand_index(
     body: proc_macro2::TokenStream,
     trait_path: &proc_macro2::TokenStream,

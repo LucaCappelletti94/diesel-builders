@@ -874,6 +874,18 @@ fn unique_index_expansion_accepts_single_column() {
     assert_eq!(marker_impls(&parsed, "UniquelyIndexedColumn"), 1);
 }
 
+/// A trait-bound compound type is not a column path and must be rejected
+/// instead of producing an impl target Rust cannot parse.
+#[test]
+fn index_expansion_rejects_trait_bound_type() {
+    let body: TokenStream = quote::quote! { Foo + Bar };
+    assert!(
+        crate::index::expand_index(body, &quote::quote! { ::diesel_builders::IndexedColumn })
+            .is_err(),
+        "expected a trait-bound type to be rejected as a column"
+    );
+}
+
 /// The index expansion accepts an empty body.
 #[test]
 fn index_expansion_accepts_empty_body() {
