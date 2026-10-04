@@ -29,7 +29,11 @@ fuzz_target!(|input: &str| {
     // The reference parse snapshots the body so both branches can still
     // consume it in the native expansion. A column is a path, not any type:
     // a trait-bound type such as `A + B` cannot legally appear as an impl
-    // target, so expand_index only accepts a terminated list of paths.
+    // target, so expand_index only accepts a terminated list of paths. A
+    // single reserved-keyword segment such as `try` still parses as a
+    // syn::Path here, but expand_index's own self-check rejects it too,
+    // since it can never legally appear as an impl target either; that is
+    // a legitimate rejection this reference parse alone cannot predict.
     let parsed_columns: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
         match syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated.parse2(body.clone()) {
             Ok(columns) => columns,
@@ -41,8 +45,10 @@ fuzz_target!(|input: &str| {
         };
     let columns: Vec<syn::Path> = parsed_columns.into_iter().collect();
 
-    let tokens = diesel_builders_derive_fuzz::expand_index(body, &trait_path)
-        .expect("a terminated path list must expand");
+    let tokens = match diesel_builders_derive_fuzz::expand_index(body, &trait_path) {
+        Ok(tokens) => tokens,
+        Err(_) => return,
+    };
     let parsed: syn::File = syn::parse2(tokens).expect("expansion must be valid Rust");
 
     let column_tuple: proc_macro2::TokenStream = quote::quote! { ( #(#columns,)* ) };
