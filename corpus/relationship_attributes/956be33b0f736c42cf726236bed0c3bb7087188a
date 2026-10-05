@@ -1,0 +1,3 @@
+#[table_model(error = NewAnimalErr/or)]
+#[table_model(record_error = NewAnimr)]
+#[infallible]

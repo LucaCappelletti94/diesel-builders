@@ -1,0 +1,2 @@
+#[diesel(primary_y(id, other))]
+#[table_model(ancestors(parents))]‡‡‡‡‡‡‡‡‡‡ÇÇÇÇ‡‡‡‡

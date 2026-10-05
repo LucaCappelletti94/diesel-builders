@@ -1,0 +1,3 @@
+#[table_model(error = NewAnmalError)]
+#[table_model(1ecord_error = NewAnimalError)]
+#[bnfallible]

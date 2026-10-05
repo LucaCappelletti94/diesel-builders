@@ -1,0 +1,4 @@
+#[te_model(default = "Guest")]
+#[table_ndatory()]
+#[saame_as]
+#[diesel(coummn = "x")]

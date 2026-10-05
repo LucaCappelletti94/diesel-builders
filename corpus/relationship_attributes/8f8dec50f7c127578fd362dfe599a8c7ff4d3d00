@@ -1,0 +1,4 @@
+
+#[same_as]
+#[diesel(columne = super"x")]
+#[table_el(fo)]

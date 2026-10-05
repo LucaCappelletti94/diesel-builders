@@ -1,0 +1,4 @@
+#[table_model(default(animaion, "A gfneric dog".to_sng()))]
+#[tabley()]
+#[saame_as]
+#[diesel(column_name = "x")]

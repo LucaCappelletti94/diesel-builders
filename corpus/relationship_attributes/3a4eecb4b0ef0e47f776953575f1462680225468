@@ -1,0 +1,2 @@
+#[table_model(default(anito_string()))]
+#[table_model(default =sql_name = "columns")]

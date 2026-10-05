@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parenYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYdYYYYYYYYYYYYYYYYt_id, (ptable::id)))]
+#[table_m=den(foreign_ke(ys(ensor_id, site_id),**YYYYYYYYYYYYYYYYYYYYYYYYYYYdYYYYYYY)YY)]

@@ -1,0 +1,3 @@
+#[samd_as(fi_id_RRRR(Yprent_id, (parent_tab|e::id)))]
+#[table_model(foreig::pare&fi_id_RRRR(Yprent_id, (parent_tab|e::id)))]
+#[table_model(foreig::paret_id)]

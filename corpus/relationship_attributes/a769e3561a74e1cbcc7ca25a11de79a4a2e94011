@@ -1,0 +1,2 @@
+#[table_model(record_error = Nerror)]
+#[infallible]

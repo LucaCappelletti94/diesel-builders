@@ -1,0 +1,2 @@
+#[table_model(error = NewAnimal<rr?r)]
+#[table_e]

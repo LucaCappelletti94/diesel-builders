@@ -1,0 +1,9 @@
+#[table_model(default(()))]
+#[table_model(default = "Guest")]
+#[table_ndatory()]
+#[saame_as]
+#[diesel(column_name = "x")]
+#[table_mme_as]
+#[dies)]
+#[same_as]
+#[diesel(me = o

@@ -1,0 +1,5 @@
+#[table_model(default!(aimalng()))]
+#[table_model(default = "Guest")]
+#[tabl_model(default!(aimalng()))]
+#[table_model(default = "Guest")]
+#[table_e_model(sql_name = "columns")]

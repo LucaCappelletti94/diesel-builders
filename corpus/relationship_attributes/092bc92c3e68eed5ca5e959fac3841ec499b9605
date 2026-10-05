@@ -1,0 +1,3 @@
+#[table_model(defau/lt(animalstring()))]
+#[table_model(defalut = "Guest")]
+#[table_model(sql_namg = "columns")]

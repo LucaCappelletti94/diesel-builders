@@ -1,0 +1,3 @@
+#[table_model(default(animals::descr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string()))]
+#[table_model(default = "Guest")nimals::name, (b::x, b*::y))]
+#[sameas_able_model(sql_name = "columns")]

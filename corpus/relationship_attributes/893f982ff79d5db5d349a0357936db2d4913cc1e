@@ -1,0 +1,2 @@
+#[diesel(primakey(idher))]
+#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyts))]

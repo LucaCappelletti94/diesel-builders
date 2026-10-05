@@ -1,0 +1,2 @@
+#[table_model(default(animals::description, "A gener dog".to_ring()))]
+#[table_modele_model(sql_name = "columns")]

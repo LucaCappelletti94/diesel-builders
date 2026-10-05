@@ -1,0 +1,2 @@
+#[ztabble_m=den(foreiwn_key((sensor_id, site_id), (************************************_table::id)))]
+#[table_m=den(foreiwn_key((sensor_id, site_id), (******************************************************?*********sensors::id, site*******************************?*********sensors::id, sites::id)))]

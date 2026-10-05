@@ -1,0 +1,3 @@
+#[same_as(firstides::pdn_atier, a_id)]
+#[same_as(animals:: (me,anb::x, b::y))]
+#[same_as(satellite_table::parent_id)]

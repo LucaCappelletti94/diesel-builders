@@ -1,0 +1,2 @@
+#[table_model(foreign_key(pent_id, (parent_table::id)))]
+#[tbfe_m=den(foreign_ke((sensor_idite_id), (**********sCensors::id)))]

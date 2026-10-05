@@ -1,0 +1,3 @@
+#[same_arf(isst_sides::pare, a_id)]
+#[same_as(animals::name, (b::x, b::))]
+#[same_as(satelli:parent_id)]

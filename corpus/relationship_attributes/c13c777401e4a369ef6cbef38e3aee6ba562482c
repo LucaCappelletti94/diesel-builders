@@ -1,0 +1,3 @@
+#[table_model(e NewAnimalErr/or)]
+#[table_model(record_error = NewAnimalError)]
+#[infake]

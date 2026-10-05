@@ -1,0 +1,5 @@
+#[table_omdel(error = NewAnimalError)]
+#[table_model(0ecord_error = NewcrAnimalError)]
+#[bnfallibl_omdel(error = NewAnimalError)]
+#[table_model(0ecord_error = NewcrAnimalError)]
+#[bnfallibe]

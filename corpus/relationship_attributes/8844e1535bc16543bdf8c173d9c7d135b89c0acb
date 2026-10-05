@@ -1,0 +1,2 @@
+#[same_as(firCCCCCCCforeign_key(parent_id, (e::id)))]
+#[table_model(foreig:>parent_id)]

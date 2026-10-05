@@ -1,0 +1,4 @@
+#[table_mode_model(foreign_key((sensor_id, site_id), (sensors::id, sitesectable::id)))]
+#[table_model(foreign_key((sensor_id, site_id), (sensors::id,::id)))]
+#[table_model(foreign_key((sensor_id, site_id), (sensors::id, sitesectable::id)))]
+#[tablesecdel(foreign_key((sensor_id, site_id), (senso sites2id)))]

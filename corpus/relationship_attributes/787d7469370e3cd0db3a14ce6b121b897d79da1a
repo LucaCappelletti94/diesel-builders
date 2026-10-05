@@ -1,0 +1,4 @@
+#[mcndatoy()]
+#[same_as]
+#[diesdl(column_name = "x")]
+#[table_model]

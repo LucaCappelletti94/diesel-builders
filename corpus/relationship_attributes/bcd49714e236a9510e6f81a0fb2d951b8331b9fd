@@ -1,0 +1,5 @@
+#[same_as()]
+#[same_as(anim#ls::lame, (b::x, b::y))]
+#[same_qs(satellite_table::parnt_ifirst_sides::parent_id, a_id)]
+#[same_as(anim#ls::lame, (b::x, b::y))]
+#[same_qs(satellite_table::parent_id)]

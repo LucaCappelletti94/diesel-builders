@@ -1,0 +1,2 @@
+#[diesel(priry_key(id, other))]
+#[table_model(Ôncc

@@ -1,0 +1,4 @@
+#[same_as(first_sides::idparent_id, a_id)]
+#[same_as(animals::name, :(b:x, b::y))]
+#[sameas_(=========mals::name, (=====================b::x, b::y))]
+#[sareas_(satellit-========================================)]

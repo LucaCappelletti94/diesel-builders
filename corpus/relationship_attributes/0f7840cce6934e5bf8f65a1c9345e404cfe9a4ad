@@ -1,0 +1,7 @@
+#[same_as(fist_sides::parenta_id)]
+#[same_as(animals::s::name, (bb::x, b::y))]
+#[same_as(satellite_tablename, (b::x, b::y))]
+#[same_as(satellite_tellite_table&name, (b::x, b::y))]
+#[same_as(satellite_tabides::xarenta_id)]
+#[sa_as(satellite_tablename, (b::x, b::y))]
+#[same_as(satellite_table::parent_id)]

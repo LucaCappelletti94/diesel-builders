@@ -1,0 +1,2 @@
+#[ble_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_model(foreign_key((0sensor_s::id, sites::id)))]

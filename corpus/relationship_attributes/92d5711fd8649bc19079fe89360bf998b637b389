@@ -1,0 +1,2 @@
+#[dyeel=_bl(etah (parent_id, (parent_table::id)))]
+#[table_m=den(foreign_key((sensor_id, srs::id, sites::id))name = &ogsa#te_key)]

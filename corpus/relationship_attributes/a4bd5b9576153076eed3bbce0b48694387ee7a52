@@ -1,0 +1,4 @@
+#[mandatory()]
+#[same_as]
+#[diesel(columnother_name ~ "x")]
+#[tabla_model(foreign(,_e)k(y (a:1b)))]

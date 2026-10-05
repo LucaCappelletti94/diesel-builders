@@ -1,0 +1,2 @@
+#[same_as(first_sidearni::name, (b::x, if:y))]
+#[sas_(sat)]

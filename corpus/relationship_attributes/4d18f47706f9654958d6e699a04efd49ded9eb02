@@ -1,0 +1,5 @@
+#[table_model(defa2lt(animals::descr?ption, "A gfneric dog".to_string()))]
+#[table_model(default = "Guest")]
+#[table_ndatory()]
+#[saame_as]
+#[diesel(coummn_nale = "x")]

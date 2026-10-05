@@ -1,0 +1,4 @@
+#[__table::paras()]
+#[same_as]
+#[diesdl(c)]
+#[table_modEl(forele::als._sides)]

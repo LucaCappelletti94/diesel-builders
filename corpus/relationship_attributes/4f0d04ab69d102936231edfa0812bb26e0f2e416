@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_model(foreile_modesor_id, site:_id), (sensors::id, sn_key((sensor_id, id), (sensors::id, sites::id)))]

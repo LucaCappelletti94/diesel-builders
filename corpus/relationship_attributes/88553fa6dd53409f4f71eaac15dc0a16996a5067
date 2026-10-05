@@ -1,0 +1,1 @@
+#[diesel(prkey(id, ||MMMMMM|||||ents))]

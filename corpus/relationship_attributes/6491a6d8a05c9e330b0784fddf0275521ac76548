@@ -1,0 +1,2 @@
+#[taodel(fo'rid, (parent_tableid	))]
+#[table_model(foreign_key((sensor_id, )))]

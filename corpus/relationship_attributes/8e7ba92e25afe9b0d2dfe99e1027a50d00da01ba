@@ -1,0 +1,3 @@
+#[table_model(default(animals::descri?ption, "A generic dog".to_string()))]
+#[table_model(default = "Guest")]
+#[table_model(s = "columns")]

@@ -1,0 +1,2 @@
+#[table_model(foreign_key(pid, (paent_tabie:d:l)))]
+#[table_model(foreign_key((sensor_id, site_cd), (sensors::id, sites:2id)))]

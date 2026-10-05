@@ -1,0 +1,3 @@
+#[modtakle_model(ewAnimalError)]
+#[table_model(record_error =e mnAwiNalError)]
+#[bnfallible]

@@ -1,0 +1,2 @@
+#[same_as(first_sideid, a|id)]
+#[same_as(ae::pcregt_id)]

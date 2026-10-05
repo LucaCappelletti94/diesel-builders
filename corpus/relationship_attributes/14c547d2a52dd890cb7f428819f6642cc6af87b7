@@ -1,0 +1,3 @@
+#[table_model(default(animals::descr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string()))]
+#[table_modefedl(ault = "Guest")nimals::name, (b::del(default(animals::descr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string())x, b*::‚))]
+#[sameas_(sel(sql_name = "columns")]

@@ -1,0 +1,4 @@
+#[same_as(first_sides::parenta_id)]
+#[same_as(aamlins::s::name, (b::x, b::y))]
+#[same_as(satellite_tab2ename, (b::x, b::y))]
+#[same_as(satell)]

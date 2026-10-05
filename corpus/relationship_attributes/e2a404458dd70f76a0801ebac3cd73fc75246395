@@ -1,0 +1,2 @@
+#[same_as(first_sides::parent_id< true)]
+#[same_as(:n,axable::parent_id)]

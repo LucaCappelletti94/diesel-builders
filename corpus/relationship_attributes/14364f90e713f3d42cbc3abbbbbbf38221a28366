@@ -1,0 +1,3 @@
+#[modtable_model(errror)]
+#[table_model(record_error = NewAnimalError)]
+#[bnfotherle]

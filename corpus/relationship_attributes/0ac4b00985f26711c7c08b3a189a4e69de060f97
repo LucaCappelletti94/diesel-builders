@@ -1,0 +1,4 @@
+#[mandatory()]
+#[same_as]
+#[diesle(column_name = super"x")]
+#[table_model(fo)]

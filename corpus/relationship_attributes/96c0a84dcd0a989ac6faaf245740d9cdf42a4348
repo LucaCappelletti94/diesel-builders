@@ -1,0 +1,6 @@
+#[mandatory()]
+#[same_as]
+#[diesely()]
+#[same_]
+#[diesel]
+#[table_model(fo)]

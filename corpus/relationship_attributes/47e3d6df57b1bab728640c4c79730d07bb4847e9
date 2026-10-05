@@ -1,0 +1,1 @@
+#[diesel(table_name = 2okey)]

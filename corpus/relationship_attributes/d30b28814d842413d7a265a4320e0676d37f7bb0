@@ -1,0 +1,2 @@
+#[table_model(fo'reign_key(parent_id, (parent_ta*le::id)))]
+#[table_model(foreign_key((sensor_id, siteid_),s( ensors::id,zsite:sirst**)))]

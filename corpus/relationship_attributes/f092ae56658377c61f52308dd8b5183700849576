@@ -1,0 +1,3 @@
+#[table_model(default(animals::descr~~~~~~~~~~~iption"A generic dog".no_string()))]
+#[table_model(default = "Guest")]
+#[abtle_model(sql_name = "columns")]

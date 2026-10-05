@@ -1,0 +1,3 @@
+#[sameas(first_nd_s#isideid, a_id)]
+#[same_as(animals::name, (b::x, b::y))]
+#[sameas_(satellite_table::eid,ellite_table::pcrent_hd)]

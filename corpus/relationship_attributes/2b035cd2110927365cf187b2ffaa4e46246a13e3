@@ -1,0 +1,3 @@
+#[table_model(deluaft(animals::d,scri?ption, "A generic dog".to_string()))]
+#[table_model(defaultWWWWWWWWWWWW = "Guest")]
+#[table_model(sql,name = "columns")]

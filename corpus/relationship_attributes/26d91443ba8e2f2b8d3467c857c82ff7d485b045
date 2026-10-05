@@ -1,0 +1,1 @@
+#[tab(foreign_key(parent_id, eigsd_t ieid), (s, sites::2d/**)))]

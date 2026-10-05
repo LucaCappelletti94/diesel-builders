@@ -1,0 +1,4 @@
+#[mandatory()]
+#[same_a]
+#[diesdl(c_name = "x")]
+#[table_ml(foreign(,_e)k(y (a::b)))]

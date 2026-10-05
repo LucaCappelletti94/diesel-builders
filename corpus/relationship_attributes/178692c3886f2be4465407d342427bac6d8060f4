@@ -1,0 +1,5 @@
+#[mandatory()]
+#[same_as]
+#[diesel(column_name = "x")]
+#[table_model(f::id)]
+#[same_as(animent_idoreign_key((), (a::b)))]

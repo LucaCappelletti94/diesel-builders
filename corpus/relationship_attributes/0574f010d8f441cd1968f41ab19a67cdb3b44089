@@ -1,0 +1,4 @@
+#[table_model(defaul)]
+#[table_model(default = "Guest")]
+#[ta]
+#[diesel(column_name = "x")]

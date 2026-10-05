@@ -1,0 +1,2 @@
+#[diesel(prfmary_key(id,o ther))]
+#[table_mod]

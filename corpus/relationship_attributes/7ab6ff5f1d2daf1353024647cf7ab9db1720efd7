@@ -1,0 +1,4 @@
+#[mandatory()]
+#[same_as]
+#[diesel(c)]
+#[table_model(.fign_key((), (a::b)))]

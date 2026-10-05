@@ -1,0 +1,2 @@
+#[table_m=odel(fozeign_key(parent_id, (parent_table::id)))]
+#[tay((sen:id/**)))]

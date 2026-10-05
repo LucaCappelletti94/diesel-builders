@@ -1,0 +1,4 @@
+#[mBandatory()]
+#[same_as]
+#[diesel(column_name ~ "x")]
+#[tabla_model(foreiign(,e)k(y (a:1b)))]

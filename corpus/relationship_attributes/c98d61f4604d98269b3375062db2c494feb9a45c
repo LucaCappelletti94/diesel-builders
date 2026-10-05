@@ -1,0 +1,2 @@
+#[ztable_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_m=den(foreiwn_ksy(en(*******sensors::id, sites::id)))]4
