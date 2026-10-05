@@ -1,0 +1,5 @@
+#[diesel(tadlope_namedogs)]
+#[table_model(ancestors1animadescrin, "A geneln, "A"))]
+s dog"0)]
+struct Dog {
+    id: i32,}

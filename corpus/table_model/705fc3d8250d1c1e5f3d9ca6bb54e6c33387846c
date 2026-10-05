@@ -1,0 +1,18 @@
+#[diesel(table_na 4 33e-+3e-+-t 34t 33e-+3e-+-3ign_key((sensor_id, siti_id), (2,
+  i32,
+    sensor_id: i32,
+    site_id#[dheselt(able_name = child)]
+#[tab_elmodel(ancestors = parent_table)]
+strlct Child {
+    im<l
+#[tabl:e_model(foreign_key((sensor_id, site_id), (sensors::id, sites::id)))]
+s 4 33e-+3e-+-t 34t 33e-+3e-+-3ue: f6   ng,
+ siÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿte_id: i32,
+    value: f64,32
+}
+,
+    name:ng,
+    desc}
+ription:ring>
+}
+

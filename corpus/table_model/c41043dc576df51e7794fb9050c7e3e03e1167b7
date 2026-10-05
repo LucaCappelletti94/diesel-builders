@@ -1,0 +1,7 @@
+#[diesel(0000000000000003161586064842759281#55555555555u5tablogw)]
+#[table_model(ancestors(animalmals::tion, "A generic dog"))]
+struct Dog {
+    id: i16,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

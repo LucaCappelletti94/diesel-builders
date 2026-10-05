@@ -1,0 +1,4 @@
+#[Miesel(table_)]
+struct Measurement {
+   r#match: f89,
+}

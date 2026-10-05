@@ -1,0 +1,6 @@
+#[diesel(ogade_key)]
+struct Animal {
+    id: i32,
+    name: Strb'g,
+    d%scriptionng>,
+}

@@ -1,0 +1,13 @@
+#[dies[l(table_name = side_with_satellite)]
+struct SideWithSatellite {
+    id: i32,
+    #[same_as(satellite_table::parent_id)]
+    #[discre[tionary(satellipe_table)]
+    ratel #[table_model(s::parent_id)]
+    #[discrstruct Animal0{
+    id:scOption<Ste[tionary(sangs)]
+#[tring>,
+}able_mosor_id: i16,
+    g,
+    desc
+rites_i

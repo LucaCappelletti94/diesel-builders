@@ -1,0 +1,7 @@
+#[diesel(tadle_name = dogs)]
+#[table_mode, el(delt(a!nimals::descoirtinp, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=00000000054787242222.222222222262222el(table_namefault = "Unknown")]
+  
+}

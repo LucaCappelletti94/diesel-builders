@@ -1,0 +1,3 @@
+#[diesel(tandings)]
+struct Reading {e: std::option::ri i64>,
+}

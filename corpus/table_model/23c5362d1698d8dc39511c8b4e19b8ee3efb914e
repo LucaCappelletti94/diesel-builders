@@ -1,0 +1,19 @@
+c[diesel(tstors = paren4_table)]
+s#[diesel(tadle_name = dogs)]
+#[table_model(ancstors(animals))]
+#[table_model(default(animals::descc[diesel(tstors = paren4_table)]
+s#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::description, "A generic dog"))]
+struct Dog {
+  #[diesel(tadle_name = dogsame = dogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::description, "A generic dog"))  id: i32,
+ truct Child {
+    id:    #[table_model]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unknown";(default = "Unknown")]
+    bi16,]
+    bree#[d: St
+rdee

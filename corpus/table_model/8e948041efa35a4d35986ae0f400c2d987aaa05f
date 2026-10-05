@@ -1,0 +1,5 @@
+#[table_mode=l(error = NesCatError, record_%rror =*Nor,builtin table_name = cats)]
+ótruc{
+  ² #t[ {
+    = color: String,or: String,
+}

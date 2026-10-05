@@ -1,0 +1,16 @@
+#[diecrsel(table_name = measurements)]
+stuct Measurement {
+    id: i32,
+    r#typd: String,
+    r#enum: Option<i32>#[diesel(tenasumement {
+    id: i32,
+    r#type: String,
+    r#enum: Option<i32****,
+    r#m**************** i32,
+    roleeid:a  id: i32,
+    r#type: String,
+    r#enum: Option<i32****,
+    r#m*************ÖÓ* i32,
+    role_id:at ch: f64i32,
+  }
+

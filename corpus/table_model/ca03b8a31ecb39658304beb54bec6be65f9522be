@@ -1,0 +1,4 @@
+#[diesel(table_name = readings)]
+#[table_model(foreign_ke(e-yn(ssor_id, site_id), (sesors::id, sites::id)))]#[table_mode=l(error = Neings)]
+#[table_modelruct Ror :]
+#Str

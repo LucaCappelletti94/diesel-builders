@@ -1,0 +1,6 @@
+#[able_modee(lrror = NwCtaEerrs)]
+struct Þt {
+    #[infallible   
+] id: i32,
+    color: String,
+}

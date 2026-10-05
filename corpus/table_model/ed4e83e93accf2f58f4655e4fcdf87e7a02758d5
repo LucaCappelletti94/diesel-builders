@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[tablm_mod=el(default(ption, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=d*el(defaul.t = "o"nwnknU)]
+    breed: St1ing,
+}

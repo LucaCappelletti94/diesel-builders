@@ -1,0 +1,5 @@
+#[table_mod32,
+    color:[diescrel(table_name = saTellite_table)]
+struct Satellite {
+ pare: Option<String>,
+}

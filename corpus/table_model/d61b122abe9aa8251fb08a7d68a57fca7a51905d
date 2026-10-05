@@ -1,0 +1,11 @@
+#[dit(eeslable_name = children)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[same_s(second_sides::parent_id, b_id)]
+    id: i64,
+    #[mandatory(first_sides)]
+    a_id: i64,
+    #[mandatory(second_sides)]
+    b_id: i32,
+    note: String,
+}

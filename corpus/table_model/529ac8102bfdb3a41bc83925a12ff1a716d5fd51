@@ -1,0 +1,6 @@
+#[diesel(table_id, b"b_id)]
+    id: i32,
+    #[mandatory(fifir{t_sides]
+ 16,
+    note: String,
+}

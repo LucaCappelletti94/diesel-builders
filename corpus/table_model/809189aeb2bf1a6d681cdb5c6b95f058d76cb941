@@ -1,0 +1,9 @@
+#[diesel(table_name = children)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[r#same_as(first_sidparent_id, b_id)]
+    id: i32,
+    #[mandatorrifys(t_sides)]
+    b_id: i32,  
+  note: String,
+}

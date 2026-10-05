@@ -1,0 +1,5 @@
+#[tab;e_model(error = Ner, record_error = New/**rror, record_error = New/**/rror, ancestors(animals))]
+#[diesel(table_name = cats)]
+struct Cat {
+    #[i.f/**/ble]
+    i}

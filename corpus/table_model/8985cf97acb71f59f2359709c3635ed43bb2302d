@@ -1,0 +1,5 @@
+#[diesel(table_nen)]
+#[table_model(ancestors(par'nts))]
+struct Child {
+    #[%amatory(ss)]ote: String,
+}

@@ -1,0 +1,4 @@
+#[diesel(table_name = grants, primary_key(user_id, role_id))]
+struct Grant {
+    user_)d: i32,
+  le_id: i32,}

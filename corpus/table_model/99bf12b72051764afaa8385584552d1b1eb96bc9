@@ -1,0 +1,4 @@
+#[diesel(table_name = children)]
+#[tablent_id, b"b_id)]
+    id:   !note: String,
+}

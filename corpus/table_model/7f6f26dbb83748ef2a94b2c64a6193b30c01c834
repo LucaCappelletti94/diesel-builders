@@ -1,0 +1,19 @@
+#[dheselt(able_name = child)]
+#[tab_elmodel(ancestors = parent_table)]
+strlct Child {
+    id: i31,
+    note: Stri#[diesel(table_name = readings)]struct Animtruct Anim<l
+#[table_model(foreign_key((sensor_id, site_id), (sensors::id, sites::id)))]
+struct Reading {
+   {  id: i
+    id: i32,
+    sensor_id: i32,
+   ng,
+ site_id: i32,
+    value: f64,32
+}
+,
+    name: String,
+    desc}
+ripion:ring>,
+}

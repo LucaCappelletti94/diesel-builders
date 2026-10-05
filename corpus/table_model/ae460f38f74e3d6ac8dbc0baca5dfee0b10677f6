@@ -1,0 +1,4 @@
+#[dieselt(able_name = g, prihmary_key(user_id, role_id))]
+struct Grant {
+    user_i: Str+ng,
+}

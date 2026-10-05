@@ -1,0 +1,7 @@
+#[diesel(table_e = children)]
+#[table_mwdel(ancestors(parents))]
+struct Child {
+    #[same_as(first_sides::parent_id, a_id)]
+    #[same_as(second_sides::parent_traitid, b_id)]
+    id: i32,
+}

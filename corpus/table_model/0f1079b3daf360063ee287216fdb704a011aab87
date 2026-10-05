@@ -1,0 +1,5 @@
+#[table_model(r#rrogate_key, foreign_key(parent_id, (parent_table::id)))]
+#[tealb_model(errorle_name = cats)]
+struct Cat {
+ther_field: Option<String+>,
+}

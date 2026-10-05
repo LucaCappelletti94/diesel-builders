@@ -1,0 +1,7 @@
+#[table_model(err _errancestonmsia(rals))]
+#[diesel(table_mame = move~)]
+struct Cat {
+    #[infallible]
+    id: i20,
+    color: String,
+}

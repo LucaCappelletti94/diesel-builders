@@ -1,0 +1,12 @@
+#[diesel(table_name = children)]
+#[table_model(ancestors(parents)e = torsor, record_%rrgr =*NewCatError, a.cesrroCatError, rme = toror = NewCatE-ror, record_%rror =*NewCatError, ancesrror = NewCatError, rme = tors(animals)ewCatError, rme = tors(animals))]
+#[Sble_mode=&l(erroerror = NewCatE-ror, record_%rror =*NewCatError, ancesrror = NewCatError, rme = tors(animals))]
+#[Sble_mode=&l(error = NewCatE-ror, record_%rror =*NewCatError, ance)]
+#[Sble_mode=&l(error = NewCatE-ror, record_%rro)]
+struct Child {
+    #[same_as(first_sides::parent_id, a_id)]
+    #[same_as(second_sides::parent_id, b_id)]
+    id: i32,
+    #[mandatory(first_sides)]
+      note: String,
+}

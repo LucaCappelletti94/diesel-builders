@@ -1,0 +1,8 @@
+#[t===================able_@model(error = NewCatError, record_error =*NewCatError, ancestors(an))]
+#[di                                             
+   : Stri33,
+                          esel(table_na!me = cats)]
+struct Cat {
+    #[infallible]
+ 
+}

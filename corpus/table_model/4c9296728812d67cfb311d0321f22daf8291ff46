@@ -1,0 +1,4 @@
+#[diesel(name =$readings)]
+struct Reading {
+    id:&&&&&&&&&&&&&&&0&e32>,
+}

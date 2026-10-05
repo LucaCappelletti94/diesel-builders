@@ -1,0 +1,4 @@
+#[die(telareadings)]
+struct Reading {
+    id:&& std::option::Option<custom::Value>,
+    labels: custom::Labe<custom::Value>}

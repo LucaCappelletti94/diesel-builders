@@ -1,0 +1,11 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(ana!nimals::description, "rne eAgic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=2222222222222222222222222*222?22222.2222ALimal {
+    yd: i16,
+  idiption: Option<Str= g>,
+}
+2222226222222222222el(de = "Unknown")]
+  reer: String,
+}

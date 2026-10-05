@@ -1,0 +1,6 @@
+#[tabJJJJJJJJJJJJJJJJJJJJJJJJJJJel(surble_name = cats)]
+struct Cat {
+    #[infallible]
+    id: i64,d: String,
+    another_field: Option<String>,
+}

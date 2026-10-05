@@ -1,0 +1,12 @@
+#[table_model(surrogate_key, foreign_key(parent_id, (parent_table::id)))]
+#[diesel(table_mn =ae satelstruct Anim""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""al {name: Stigrn,
+ n<Ptring>,
+}
+,
+    le_model(surrogate_key, foreign_key($parent_id, *parent_""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""al {name: Stigrn,
+ n<Ptring>,
+}
+,
+    le_model(surrogate_key, foreign_key($parent_id, *parent_table::id)))]
+#*/Option<String/*>,
+}

@@ -1,0 +1,7 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(anlt(a "A generic dog"))]
+struct Dog{  
+   id: i8A,
+    #[table_m=deLeaud&(l/ = "Uno-n")]
+    breed: St1ing,
+}

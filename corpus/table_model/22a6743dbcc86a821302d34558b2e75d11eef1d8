@@ -1,0 +1,7 @@
+#[diesel(table_name = do!gs)]
+#[tabqe_mod(table_name = do!gs)]
+#[tabqe_model(ancestors(animals))]
+#[table_model(default(animals::description, "A generic dog"))]
+struct Dog {
+    id:ug,
+}

@@ -1,0 +1,8 @@
+struct Animal {
+    i: i32,
+    name: Stigrn,
+    description: Option<String>,
+d: i32,
+    name: Stigrn,
+    description: Option<String>,
+}

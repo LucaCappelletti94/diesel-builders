@@ -1,0 +1,7 @@
+#[table_model(error = NewCatError, record_error = estors(animals))]
+#[diesel(table_name = cats)]
+struct Cat {
+    #[infallible]
+    id: i64,
+    color: String,
+}

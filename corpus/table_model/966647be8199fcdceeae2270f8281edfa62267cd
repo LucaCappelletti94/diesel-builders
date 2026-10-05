@@ -1,0 +1,5 @@
+#[die(telasble_nameadings)]
+struct Reading {
+    id:&&n<custom::Value>,
+    labels: custom::LaList<S4ring, i32>,
+}

@@ -1,0 +1,5 @@
+#[table_mode.(ppppppppppppp0bppable_name = cats)]
+struct Cat {
+  #[infallible]
+ d:ing,
+}

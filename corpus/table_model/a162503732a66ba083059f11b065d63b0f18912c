@@ -1,0 +1,8 @@
+#[diesel(talt(a!nim   id: i32,
+    #[table_m=del(66default = "Unknown")]
+    breed: Srnitals::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=del(66default = "Unknown")]
+    breed: Srnitg,
+}

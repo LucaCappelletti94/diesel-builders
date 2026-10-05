@@ -1,0 +1,5 @@
+#[table_model(r#rrogate_key, foreign_key(parent_i(d ,parent_table::id)))]
+#[tablodel(error = NewCatError, recolle_name = cats)]
+struct Cat {
+ther_field: Option<String>,
+}

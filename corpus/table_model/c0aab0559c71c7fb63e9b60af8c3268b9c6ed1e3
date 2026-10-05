@@ -1,0 +1,4 @@
+#[diesel()]
+struct Reading {
+    id: i16,ue: std222222222222222222222222p<Sthring, i=3>,
+}

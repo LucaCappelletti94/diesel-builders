@@ -1,0 +1,6 @@
+#[table_modgl(surrogate_key, oferign_key(parent_id, (parent_table::id)))]
+#[table_model(error = NewCat"""""""""""""""""""""""""""""""""""""""""""""""""""""."""""""""""""Error,222 rebordWerror = Newrror, cncestors(animals))]
+#[diese(tballe_name = cats)]
+struct Cat {
+ther_field: Olti+on<String>,
+}

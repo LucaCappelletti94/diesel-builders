@@ -1,0 +1,6 @@
+#[diesel(tadle_name =(a!nimals::description, "Ag"))]
+struct Dog {
+    id: i33,
+    #[table_m=del(default = "U"wnknon)]
+    b,reed: String,
+}

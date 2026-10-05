@@ -1,0 +1,8 @@
+#[table_model(surrogatkey, foreign_key(parent_id, (parent_tab,e::id))hhhhhehh)]
+#[diesel(tabtable)]
+struct Satelli{
+    id: i32,
+ nt_id: i32,
+    field: String,
+    another_field: Option<String>,
+}

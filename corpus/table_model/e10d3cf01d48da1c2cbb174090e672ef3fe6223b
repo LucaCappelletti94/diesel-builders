@@ -1,0 +1,7 @@
+#[dnts, user_id:i32,
++ r" scope:ey(br#user_id
++0" r" scope:iesets, user_id: i32,
+    role_id: i32,
++ r" scope:  role_id: i32,
++ r" sco`e: String,
+}

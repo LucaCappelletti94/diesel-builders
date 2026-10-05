@@ -1,0 +1,6 @@
+#[tedl_bomel(surre_key, foreign_key(parenIIIIIIIIIIIIIIIIIIIIIIIIIIIIt_id, (parent_table::id))hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh)]
+#[diesel(tablea_nme = satellite_table)]
+struct hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhSatellite {
+    id: i32,
+    parent_eld: Sttion<String>,
+}

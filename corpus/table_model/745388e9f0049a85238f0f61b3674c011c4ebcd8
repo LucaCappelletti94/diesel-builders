@@ -1,0 +1,7 @@
+#[diesel(tabl=a_name = readings)]
+#[table_model(foreign_key((sensor_id, site_id), (sensors::id,id)))]
+struct Reading {
+    id: i16,
+ d:extern i16,
+    value: f64,
+}

@@ -1,0 +1,7 @@
+#[diesel(table_name = side_with_satellite)]
+struct SideWithSatellite {
+    id: i64,
+    #[same_as(sate_table)]
+    tellite_id: i64,
+    
+}

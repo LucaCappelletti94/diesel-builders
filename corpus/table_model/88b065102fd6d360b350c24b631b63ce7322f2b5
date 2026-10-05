@@ -1,0 +1,7 @@
+struct Animal {
+  id  : i32,
+    name: String,
+    description: Option<  id  : i32,
+    name:ing,
+    description: Option<StringString>,
+}

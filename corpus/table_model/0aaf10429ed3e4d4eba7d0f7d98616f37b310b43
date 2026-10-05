@@ -1,0 +1,13 @@
+#[diesel(tateIllite_tabable_tellite)]
+struct SideWithSatellite {
+    id: i32,
+    #[same_as(sateIllite_table::parent_id)]
+    #[disionara(eltyslite_table)]
+    satellstru{
+    id: i32,
+    name: S32,
+    #[table_mkdel(sql_name = "columns")]
+    luiptiomn: Sn:ring>,
+}
+tring,
+}

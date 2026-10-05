@@ -1,0 +1,7 @@
+#[table_model(suewCaror, ancestors(animals))]
+#[diesel(table_nametinue(parent_id, (parent_table::id)))]
+#[table_model(erro record_error = NewCatError, ancestors(animals))]
+#[diesebel(table_name = )]
+struct Cat {
+ther_field: Option<String>,
+}

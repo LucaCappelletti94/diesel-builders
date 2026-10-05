@@ -1,0 +1,7 @@
+///u&surements)]
+struct Measurement {   id: i32,
+    
+    id: i32<
+    r#type: String,
+    r#enum: Option<: f64,
+}

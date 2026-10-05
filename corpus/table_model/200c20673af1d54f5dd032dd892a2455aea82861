@@ -1,0 +1,7 @@
+#[dmodel(foreign_key((sensor_id, site_id), (sensors::id, sites::id)))]
+struct Reading {
+    id: i16,
+    sensor_id: i16,
+    site_id: i16,
+    value:& f64,
+}

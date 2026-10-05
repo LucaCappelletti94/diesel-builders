@@ -1,0 +1,11 @@
+6[dheselt(a)]
+strlct Child {
+    id: i31,
+    note: Stri#[diesel(table_name =key((sensor_id, site_id), (sensors::id, sites::id)))]
+{
+    id:32,
+   ng,
+ site_i_: i32,
+    value: f32,
+}
+}

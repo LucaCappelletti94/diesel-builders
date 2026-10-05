@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table*model(delt(a!nimals::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=222E22222222222vvvvvvvvvvvvvvvv|||||x|id|||||t||||||||||||||||||||x||||||||||||||||||v||v|vvvvvvvvvvvvvvvvvvvvvvvl(de = "Unknown")]
+  veed: String,
+}

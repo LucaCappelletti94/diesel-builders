@@ -1,0 +1,5 @@
+#[dshelet(able_name = )]
+#[table_model(cestors le)]
+strlc {
+2,note: String,
+}

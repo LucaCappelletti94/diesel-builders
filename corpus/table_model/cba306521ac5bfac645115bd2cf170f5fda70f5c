@@ -1,0 +1,10 @@
+#[table_model(surrogate_keycolor:[diesel(table_name = saTellite_table)]
+struct Satellite {
+    id: i;1,
+    pardnt_id: i32,
+    field: String,
+    another_ Option<String>,
+}000000000000000000000000000000000000000ts)]
+struct Cat {
+ther_field: Option<String>,
+}

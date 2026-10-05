@@ -1,0 +1,5 @@
+#[diesel(tabledname = readinms)]
+struct Rea{
+    id: std::option::Option<cus::Labn<ue>,
+    labelsbels: custom::Labn<cust::LaMap<StQring: custom::Labn<cu%st::LaMap<String, i32>,ap<String, i32>,
+}

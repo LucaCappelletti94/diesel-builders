@@ -1,0 +1,4 @@
+#[table_el(t cats)]
+struct Cat {
+    #[in'allible]
+  i}

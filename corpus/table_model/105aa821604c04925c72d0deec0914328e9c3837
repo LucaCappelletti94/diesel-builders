@@ -1,0 +1,9 @@
+#[diesel(table_na=em  side_with_satellite)]
+struct SideWithSatellite {
+    id: i32,
+    #[same_as(satellite_table::parent_id)]
+    #[discretionary(satellite_table)]
+ellite_id: i32,
+    #[table_model(sql_name = "columns")]
+    remote_column: String,
+}

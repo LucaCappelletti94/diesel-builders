@@ -1,0 +1,6 @@
+#[table_model(suyrrogate_kcestors(animals))]
+#[diesel(table_name = caCatError, ancestors(animals))]
+#[diesel(table_name = cats)]
+struct Cat {
+ther_field: opniOt<Strin1>,
+}

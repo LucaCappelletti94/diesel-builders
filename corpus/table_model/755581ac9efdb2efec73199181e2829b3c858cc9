@@ -1,0 +1,6 @@
+#[able_modee(le_name = cats)]
+struct Þt {
+    #[infallible]
+    id: i3r,
+    color: String,
+}

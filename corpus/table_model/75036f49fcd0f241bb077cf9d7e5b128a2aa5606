@@ -1,0 +1,6 @@
+#[::esel(table_name = measurements)]
+struct Measurement {
+    id: i32 ,
+   r#type: String,
+    r#enum: Option<i32>,   r#match: f64,
+}

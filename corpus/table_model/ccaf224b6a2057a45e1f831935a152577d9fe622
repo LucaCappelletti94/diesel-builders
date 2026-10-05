@@ -1,0 +1,7 @@
+#[diesel(tablggs)]
+#[table_model(ancestors(animZZZZZZZZZZZZZLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLs::description< "A animZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZaDDDDDDDDDDDDDeneric dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

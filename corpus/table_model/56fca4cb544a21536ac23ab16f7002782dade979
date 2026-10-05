@@ -1,0 +1,6 @@
+#[table_model(err###msia(rals))]
+#[diesel(table_name cats)]
+struct Cat {
+    #[inf%llible]
+    color: String,
+}

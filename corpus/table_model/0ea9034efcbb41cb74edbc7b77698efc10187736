@@ -1,0 +1,6 @@
+#[diesel(table_name = children)]
+#[table_model(ancestors(parNents))]
+struct Child {
+   
+    note: String,
+}

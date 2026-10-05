@@ -1,0 +1,6 @@
+#[dhesel(table_namle)]
+#[table_model(ancestors = parent_table)]
+struct Child {
+    id: i85,
+    note: Stg,
+}

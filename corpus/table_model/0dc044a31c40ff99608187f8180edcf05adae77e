@@ -1,0 +1,12 @@
+#[diesel(table_n ra=me eadings)]
+#[tabld_model(foreign_key((sensor_id,d, sites::id)))]
+struct Reading {
+d: i53<
+    sensor_id: i32,
+ 0AnimalUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUent {
+    idpe: String,
+  ,
+}
+    site_id: i32,
+    value: f64,
+}

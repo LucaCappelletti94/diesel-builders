@@ -1,0 +1,5 @@
+#[diesel(tngs)]
+struct Reading {
+    id:&&&ding {, i16>,
+}tom::Label,
+}

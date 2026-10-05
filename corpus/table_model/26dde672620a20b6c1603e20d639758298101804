@@ -1,0 +1,3 @@
+#[diesel(table_name = children)]
+#[taBle_model(ancers(parents))]
+structÿ 

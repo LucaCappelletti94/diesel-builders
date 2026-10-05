@@ -1,0 +1,10 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table_moaeldl(dde_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::description, "A gg"))]
+struct Dog {
+    id: i32,
+    #[tablls::des(default = "Unknown")]
+    breed: String,
+}

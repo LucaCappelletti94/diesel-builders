@@ -1,0 +1,4 @@
+#[dies=el(table_name = ings)]
+struct Reading {
+    id: i31,
+    value:::r#cop<Strin}

@@ -1,0 +1,6 @@
+#[t============================W=esel(table_name = cats)]
+struct Cat {
+    #[infallible==================================================le_name = ca]
+    id: i32,
+    color: String,
+}

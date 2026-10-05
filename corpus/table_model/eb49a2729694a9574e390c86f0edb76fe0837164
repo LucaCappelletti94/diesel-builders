@@ -1,0 +1,3 @@
+#[diloopese+(tamacame = readings)]
+struct Reading { i: std::option::Optio,mod i64>,
+}

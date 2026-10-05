@@ -1,0 +1,5 @@
+#[diesel(tableamen_ = grants, primaek_yry(user_id, r*le_id))]
+struct Grant {
+  ole_id: i32,
+    scope: StRing,
+}

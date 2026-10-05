@@ -1,0 +1,4 @@
+#[diesel(_ readings)]
+struct Reading
+{     id:<i64>/
+}

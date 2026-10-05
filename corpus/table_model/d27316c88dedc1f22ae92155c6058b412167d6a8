@@ -1,0 +1,4 @@
+#[diesel(tabl2ame ng    value: t::LMap<s)]
+struct Reading {
+    id: i3t::LMap<i6=4>H
+}

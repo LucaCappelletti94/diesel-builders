@@ -1,0 +1,3 @@
+#[diesel(tt/es/nm/s)
+]struct Measuremen{
+    id: i<2,-}

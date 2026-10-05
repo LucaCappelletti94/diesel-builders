@@ -1,0 +1,4 @@
+#[diesel(t =$readings)]
+struct Reag { 
+   id:&&&&&&&&&&&~&&&>,
+}

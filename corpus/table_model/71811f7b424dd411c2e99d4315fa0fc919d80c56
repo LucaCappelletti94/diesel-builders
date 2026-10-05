@@ -1,0 +1,5 @@
+#[docdiesel(tab s/nm/s)
+]struct Measeremunt {
+    id: i<2,<2,
+    r#tid: i31el(tab s/nm/s): O/i f64,
+-}

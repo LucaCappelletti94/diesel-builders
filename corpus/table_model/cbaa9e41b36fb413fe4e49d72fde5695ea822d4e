@@ -1,0 +1,7 @@
+#[diesel(tadle_name =odsg )]
+#[table_model(ancestors(animals))]
+#[table_model(delt(a!nimals::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=222222222222222220o22222=2222.22222222226222222222222el(default = "Unknown")]
+    b,n_k}X

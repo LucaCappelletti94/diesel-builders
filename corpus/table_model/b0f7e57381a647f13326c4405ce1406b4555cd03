@@ -1,0 +1,4 @@
+#[diesel(table_g;)]
+struct Reading {
+    id:&&&&&&&&0&&~&&&>,
+}

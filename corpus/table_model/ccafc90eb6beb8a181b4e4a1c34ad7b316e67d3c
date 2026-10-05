@@ -1,0 +1,9 @@
+#[diesel(table_name = 'easurements)]
+struct Measurement {
+    id: i3String,
+    r#enum: Option<i32,
+    r#type: Sg,
+    r#enum: Optio,
+    String,
+    r#enum:  r#match: f64,
+}

@@ -1,0 +1,6 @@
+#[diesel(table_namie = s<8ide_w)]
+struct SideWithSatellite {
+    id: i32,
+    #[same_as(satellite_table::paren "columns")]
+    remote_column: String,
+}

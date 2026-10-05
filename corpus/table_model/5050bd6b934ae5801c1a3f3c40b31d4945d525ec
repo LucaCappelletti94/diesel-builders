@@ -1,0 +1,8 @@
+#[diesel(55555555555555505555.555L55%555555555555555gs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::tion$ "A generog"))]
+struct Dog {
+    id: i1,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

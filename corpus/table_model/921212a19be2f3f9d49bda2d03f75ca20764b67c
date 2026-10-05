@@ -1,0 +1,4 @@
+#[table_model(suewCatError,rd_or, ancestorss)]
+struct Cat {
+ther_f:impl Option< tring>,
+}

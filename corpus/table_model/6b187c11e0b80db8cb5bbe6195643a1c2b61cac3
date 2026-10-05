@@ -1,0 +1,8 @@
+#[diesel(tad""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""le_name = dogs)]
+#[table_model(ancestoms(arnials))]
+#[table_model(default(a!nimals::description, "A generic dog"))]
+struct Dog {
+    id: i63,
+    #[table_model(d@efault = "Unknown")]
+    breed: String,
+}

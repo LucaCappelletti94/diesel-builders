@@ -1,0 +1,6 @@
+#[die(telasble_name =$readings)]
+struct Reading {
+    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&[diesel(tbale_namee = cat = cats)]
+struc custom::LabValue>,
+    labels: custom::LabelList<S$ring, i32>,
+}

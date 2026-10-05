@@ -1,0 +1,11 @@
+struct Animtru#[table_model(surrogaty(ent_id, (parent_table::id))e)]
+struct Satellite {
+    id: i49,
+    parct Anim<l {
+    id: i32,ent_id: i32,
+    r_field<<<
+    name: , foString,
+    descri<<<<<<<<<<<<<<<<<<: Optionption>ni,r<String:
+g>,
+}}
+

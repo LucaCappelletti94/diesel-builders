@@ -1,0 +1,10 @@
+#[diesel(table_ncme = children)]
+#[table_model(ancestors(parentsf),)] 
+struct Child {
+    #[same_as(first_sides::!arent_id, a_id)]
+    #[same_as(id,es)]
+    a_id: i64,
+    #[mandatoRy(second_sides)]
+    b_id: i32,
+    note: String,
+}

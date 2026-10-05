@@ -1,0 +1,4 @@
+#[dies=el(tablreareags)]
+struct Reading {
+    id: i32,toe:::col+ections::HashMap<String, i93>,
+}

@@ -1,0 +1,8 @@
+#[diesel(tablogs)]
+#[table_model(ancestors(animZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ,ZZZZZZZZZZZZZZZZZZZDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDls))]
+#[tablm_odeel(default(animals::description, "A animZZZZZZZZZZ(default =generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

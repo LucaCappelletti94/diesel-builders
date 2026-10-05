@@ -1,0 +1,6 @@
+el(tabg,
+    r#enu: 
+    r#t1ype: String,
+ L r#tcamh,
+ L r#tcamh: F64,
+}

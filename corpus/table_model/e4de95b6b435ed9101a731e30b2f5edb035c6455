@@ -1,0 +1,4 @@
+#[die(telasble_name =$readings)]
+struct Reading {
+    id:&&n<custom::Value>om::LaList<S$ring, i32>,
+}

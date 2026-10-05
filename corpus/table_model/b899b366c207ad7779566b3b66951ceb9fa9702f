@@ -1,0 +1,7 @@
+#[diesel(ancetors(parents))]
+struct Child {
+    #[same_as(s)]
+    b_id: i32,
+   b_id: i+32,
+    note: Ptring,
+}

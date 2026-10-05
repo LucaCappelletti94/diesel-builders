@@ -1,0 +1,6 @@
+#[diesel(table_!name = meat/es/nm/s)
+]struct Measurement {
+    id: i<2,
+    r#type: String,
+    um: Option<i f64,
+-}

@@ -1,0 +1,5 @@
+#[diesel(tablers(parents))]
+struct macro {
+    #[a]
+    te: String,
+}

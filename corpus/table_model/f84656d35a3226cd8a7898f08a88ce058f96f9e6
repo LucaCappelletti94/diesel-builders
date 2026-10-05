@@ -1,0 +1,5 @@
+#[diesel(tl)]
+#[diesel(table_name = cats)]
+struct Catµ {
+  tring,
+}

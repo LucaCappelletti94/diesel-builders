@@ -1,0 +1,5 @@
+#[table_model(sui)]
+struct S{
+id: i16,
+    parent_id: i3i<Strinpubg>,
+}

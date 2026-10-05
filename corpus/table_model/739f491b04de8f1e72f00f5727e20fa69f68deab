@@ -1,0 +1,5 @@
+#[diesel(tabl_ne = dogs)]
+#[table_model(ancestors(animal:description, "A generic dog"))]
+struct Dog {
+    d: String,
+}

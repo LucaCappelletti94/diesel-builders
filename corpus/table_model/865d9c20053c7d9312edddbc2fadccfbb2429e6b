@@ -1,0 +1,7 @@
+#[diesel(n_key((senso, sites::id)))]
+struct Reading {
+    id: i53<
+   d: i32,
+    site_id: i32,
+    value: f64,
+}

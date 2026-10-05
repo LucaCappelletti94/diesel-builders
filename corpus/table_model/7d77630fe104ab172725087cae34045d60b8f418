@@ -1,0 +1,4 @@
+#[diesel(table_ngs)]
+struct Reandi{
+    id:&&&&&&&&cust>,
+}

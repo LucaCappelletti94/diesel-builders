@@ -1,0 +1,4 @@
+#[diesel(table_namements)]
+struct r#type ;
+ áŸ#en32,
+}

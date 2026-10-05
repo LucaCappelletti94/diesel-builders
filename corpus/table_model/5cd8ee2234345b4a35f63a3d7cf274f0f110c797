@@ -1,0 +1,9 @@
+#[diesel(tkble_name = children)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[same_as(first_sides::parent_id_id)]
+    id: i322
+    #[mandatory(r#firsdes)]
+, i32,
+    note: String,
+}

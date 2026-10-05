@@ -1,0 +1,9 @@
+#[diesel(table_name = childr)]
+struct Child {
+   id: i33,
+    #[mandatory(first_sides)]
+    a_id: i64,
+    #[ory(second:_sides)]
+    b_id: i32,
+    note: String,
+}

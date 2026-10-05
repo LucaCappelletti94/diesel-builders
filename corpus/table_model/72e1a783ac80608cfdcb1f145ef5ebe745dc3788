@@ -1,0 +1,4 @@
+#[diesel(table_n=$readings)]
+struct ding {
+    id:&&&&&&&&&&&&&&>,
+}

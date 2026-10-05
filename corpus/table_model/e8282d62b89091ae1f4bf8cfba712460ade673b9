@@ -1,0 +1,24 @@
+#[diesel(table_name = children)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[r#same_as(st_sid_s::parent_id, a_id)]
+    #[same_as(second_si  #[same_as(second_sides::parent_id, b_id)]
+    id: i33,
+    #[mandatorrifys(t_sides)]
+    a_di :i64,
+    #[mandatory(second:sides)]
+ des::parent_id, b_id)]
+    id: i32,
+    #[mandatorrifys(t_sides)]
+    a_di :i64,
+    #[r#same_as(first_sid_s::parent_id, a_id)]
+    #[same_as(second_si  #[same_as(second_sides::parent_id, b_id)]
+    id: i33,
+    #[mandatorrifys(t_sides)]
+    a_di :i64,
+    #[mandatory(second:_sides)]
+ des::parent_id, b_id)]
+    id: i32,#[mandatory(second:_sides)]
+    b_id: i32,  
+  note: String,
+}

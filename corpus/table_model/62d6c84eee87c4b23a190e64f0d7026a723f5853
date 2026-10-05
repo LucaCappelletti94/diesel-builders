@@ -1,0 +1,7 @@
+#[diesel(table_name = animals)]
+#[table_model(error = NewAnimalError, surrogate_key)]
+struct Animal {
+    id: i56,
+    name: String,
+    description: Option<String>,
+}

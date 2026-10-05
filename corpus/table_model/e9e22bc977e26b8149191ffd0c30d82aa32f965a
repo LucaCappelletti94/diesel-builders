@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[tl(default(animals::description, "ric dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(de/**/t = "Unknown")]
+    breed: String,
+}

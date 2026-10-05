@@ -1,0 +1,6 @@
+#[table_model(error = Ns)]
+struct Cat {
+    #[infallible]
+    id: i06,
+    coing,
+}

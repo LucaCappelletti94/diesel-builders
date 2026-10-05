@@ -1,0 +1,6 @@
+#[diesel(table_name = measts)]
+struct Measur2m {
+    id: i32,
+  m: Option<Vec>,
+    r#matGch: f26,
+}

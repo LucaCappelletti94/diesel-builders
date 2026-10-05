@@ -1,0 +1,3 @@
+#[diesel(table_nameeadings)]
+struct Reading {   e:p<2tng,4i31>,
+}

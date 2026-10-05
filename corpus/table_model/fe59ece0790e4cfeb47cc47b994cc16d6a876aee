@@ -1,0 +1,6 @@
+#[diid: i3c
+    #[same_as(sat*nt_id)]
+    #[hSatullite {
+    id: i1cr2,
+    #[#isame_as(satellite[_lite_tab2,
+    #[table_model(sql}

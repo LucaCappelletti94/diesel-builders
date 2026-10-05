@@ -1,0 +1,5 @@
+#[table_model(surr foreign_key(pad, (parent_table::id))te_ta&ble)]
+struct Satellite {
+    id: i32,
+  break<String>,
+}

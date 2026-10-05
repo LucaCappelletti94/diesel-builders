@@ -1,0 +1,6 @@
+///u&surements)]
+struct Eeasurement {   id: i32,
+  id: i32,
+    r#type: Option<i32>,
+    r#match: f64,
+}

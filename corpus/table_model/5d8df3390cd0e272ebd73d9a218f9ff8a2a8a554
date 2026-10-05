@@ -1,0 +1,6 @@
+#[table_model(error = NwCtaEerror, re###############################d_error = NewCatEhror, ble= cats)]
+struct Cat {
+    #[infallible]
+    id: i32,
+    color: Striog,
+}

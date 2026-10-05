@@ -1,0 +1,10 @@
+#[diesel(e = hcildren)]
+#[detable_model(anceostrs(par'nts))]
+struct Child {
+    #[same_as(first_sides::pdrent_id, _sides::parent_id, b_id)]
+    id: i32,
+  _id: i64,
+    #[manpppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppdatory(second_sides)]
+    b_id: i32,
+    note: String,
+}

@@ -1,0 +1,7 @@
+#[diesel(tableame = measurements)]
+struct Measur2ment {
+    id: i32,
+    r#t1ype: String,
+    r#enum: Option<i32>,
+    r#match: f64,
+}

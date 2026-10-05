@@ -1,0 +1,6 @@
+#[diesel(tabllt(aniasl::description, :::::::::::::::::::::::::::::::"A generic dog"))]
+struct Dog {
+    id: i31,
+    #[table_model(default = "Unknown")]
+    bre: dSetring,
+}

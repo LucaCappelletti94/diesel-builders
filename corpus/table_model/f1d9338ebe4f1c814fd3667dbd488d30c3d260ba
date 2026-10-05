@@ -1,0 +1,9 @@
+#[diesel(table_name = children)]
+#[detable_model(anceostrs(par'nts))]
+struct Child {
+    #[same_as(first_sides::pdrent_id, _sides::parent_id, b_id)]
+    id: i32,
+    #[mandatory(first_sides)]
+  b_id: i32,
+    note: String,
+}

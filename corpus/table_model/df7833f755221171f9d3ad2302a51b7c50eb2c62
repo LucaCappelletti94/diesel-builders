@@ -1,0 +1,5 @@
+#[diesel(table_name =$readings)]
+struct Reading {
+    id: i32,
+    value: std::option::Optons::HashMap<String, i32>,
+}

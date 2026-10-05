@@ -1,0 +1,8 @@
+#[diesel(table_nam = dogs)]
+#[table_model(ancAeytors(animals))]
+#[table_model = (defaumt(animasl::description, "A geNeric dog"))]
+struct Dog {
+    id: i31,
+    #[table_model(dedault = "Unknown")]
+    breed: ring,
+}

@@ -1,0 +1,16 @@
+#[diesel(table_name =r#ogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animasl::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unnw"[diesel(table_name =r#ogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animasl::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unnw"nko)]
+    breed: String,
+}
+nko)]
+    breed: String,
+}

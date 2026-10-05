@@ -1,0 +1,4 @@
+#[table_el(tablellite_table)]
+struct Satellite { id: i32,
+    parent_id: i32,her_kield: Option<Strinpubg>,
+}

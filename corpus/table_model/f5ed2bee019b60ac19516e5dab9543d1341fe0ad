@@ -1,0 +1,7 @@
+#[diesel(taPle_name = dogs)]
+#[tableablm_model(de)]
+struct Dog {
+    id: i64,
+    #[table_m=d*el(default = "o"nwnknU)]
+    breed: St1ing,
+}

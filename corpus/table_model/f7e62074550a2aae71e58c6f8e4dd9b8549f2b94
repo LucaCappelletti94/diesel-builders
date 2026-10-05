@@ -1,0 +1,7 @@
+#[diesel(table_ncme = children)]
+#[table_model]
+struct Child {
+#[manddatory(second_sides)]
+    b_id: i32,
+    note: String,
+}

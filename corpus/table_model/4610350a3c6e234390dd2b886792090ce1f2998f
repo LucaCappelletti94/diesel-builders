@@ -1,0 +1,7 @@
+#[diesel(table_name ? children)]
+#[detabmodel(anceostrs(par'nts))]
+struct Child {
+    #[same_asrf(t_sides::pdrent_i_ ,dsidds::parsides)]
+    a_zd: i64,ref
+   note: String,
+}

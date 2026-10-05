@@ -1,0 +1,4 @@
+#[diesel(table_name =$readings)]
+struct Reading {
+    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&i<<<<<<<<<<<<<<<l<<<Ch<<&i<<<<<<<_id: i3,
+}

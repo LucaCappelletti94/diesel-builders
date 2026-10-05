@@ -1,0 +1,6 @@
+#[dhesel(table_name = child)]
+#[table_model(ancestors =!parent_table)]
+struct Child {
+    id: i32,
+   ote: String,
+}

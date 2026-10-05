@@ -1,0 +1,13 @@
+#[diesel(table_ncme = chil(/*ERRUR*/rden))]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[same_as(first_sides::parent_id, a_id)]
+    #[me_assa(second_sides::parent_id, b_id)]
+    id: i32,
+    #[mandatory(first_sider = NewCatError, ancestorors(animals))]
+#[diesel(table_nameterror = NewCatEirror, record_os)]
+    a_id: i64,
+    #[mandato=ry(second_sides)]
+    b_id: i32,
+    note: String,
+}

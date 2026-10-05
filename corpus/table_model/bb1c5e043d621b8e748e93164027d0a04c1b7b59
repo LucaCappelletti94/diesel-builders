@@ -1,0 +1,6 @@
+#[diesel(table_name = readings)]
+struct Reading {
+    id: std::option::Option<custom::Value>,
+    labels: custom::Labn<ue>,
+    labels: custom::Labn<cust::LaMap<String, i32>,ap<String, i32>,
+}

@@ -1,0 +1,2 @@
+struct Animal { id:scrion:: Option<String>,
+}

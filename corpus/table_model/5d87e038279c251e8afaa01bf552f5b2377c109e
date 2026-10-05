@@ -1,0 +1,6 @@
+#[dhe$esl(tmble_nz ild)]
+#[table_model(ancestor/rent_table)]
+struct C {
+    id: i32,
+    note: String,
+}

@@ -1,0 +1,5 @@
+#[table_model(surrogate_kyf ,erocontinue(parent_id, (parent_table::id)))]
+#[table_model(errts)]
+struct Cat {
+ther_field: Option<String>,
+}

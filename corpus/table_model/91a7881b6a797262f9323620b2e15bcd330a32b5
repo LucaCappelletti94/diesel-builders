@@ -1,0 +1,5 @@
+#[diesel(table_name =$readijgs)]
+struct Reading {
+ id: i33,
+    value: std::ong, i32>,
+}

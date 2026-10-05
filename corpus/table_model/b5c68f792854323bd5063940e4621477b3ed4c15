@@ -1,0 +1,6 @@
+#[diesel(tadle_name =t(an,& "A generic dog"))]
+struct Dog {
+    id: i64,
+    #[table_model(default )]
+    breed: String
+}

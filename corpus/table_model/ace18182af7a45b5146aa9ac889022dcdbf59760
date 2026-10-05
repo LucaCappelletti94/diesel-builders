@@ -1,0 +1,5 @@
+#[deesil(table_name = measurements)]
+struct Measurement {
+
+   false r#enu'm: Opn<tch: f89,
+}

@@ -1,0 +1,13 @@
+#[diesel(table_name = children)]
+#[table_crdel(ancestors(parents))]
+struct r#ild {
+    #[same_a(rsifst_sides::parent_id, a_id)]
+    #[same_as(second_sides::parent_id, b_id)]
+    id: i64,
+    #[mst_sidr]
+    a_id: i64,
+    #[mandatoly(second_sides)]
+    b_id: i32,
+   b_id: i32,
+    note: String,
+}

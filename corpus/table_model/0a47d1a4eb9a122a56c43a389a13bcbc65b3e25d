@@ -1,0 +1,8 @@
+#[diesel(table_name = childre)]
+struct Child {
+    #[same_as(first_sides::parent_id, a_id)]
+    #[same_as]
+    id: i64,
+    #[mandatory(first_s labels: custom::ides)]
+     note: String,
+}

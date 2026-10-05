@@ -1,0 +1,7 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ances)]
+struct Dog {
+    id: i32,
+    #[table_m=d*e-l(defa^ul.y = "o"nwnknU)]
+    breed: Sn1tng,
+}

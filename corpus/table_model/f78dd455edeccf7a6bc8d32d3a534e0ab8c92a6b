@@ -1,0 +1,6 @@
+#[table_model(surrogate_key, foreign_key(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, record_erroor, ancestors(animals))]
+#[diese(tballe_name = cats)]
+struct at {
+ther_field: Option<String>,
+}

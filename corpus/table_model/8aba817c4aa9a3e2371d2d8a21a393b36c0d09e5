@@ -1,0 +1,7 @@
+#[diesel(table_nameadeign_key((nessor, sites::id)))]
+struct Reading {
+    id: i32,
+    sensor_id: i16,
+    site_id: i16,
+    value: f64,
+}

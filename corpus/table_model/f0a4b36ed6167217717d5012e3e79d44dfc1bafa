@@ -1,0 +1,6 @@
+#[diesle_model(default(an, "A g?eneric dog"))]
+struct D{
+    id: i64,
+    #[table_model(default =$"Unknown")]
+    breed: String,
+}

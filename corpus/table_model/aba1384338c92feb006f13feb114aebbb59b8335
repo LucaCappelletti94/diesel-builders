@@ -1,0 +1,4 @@
+#[dziesel]
+struct din{
+ide:!f64,
+}

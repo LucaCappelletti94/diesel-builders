@@ -1,0 +1,40 @@
+#[table_model(error = NwCtaEerror, recor###########or, ancestonmsia(rals))]
+#[diesel(tabelan_me = rcats)]
+struct Cat {
+    #[infallible]
+    id: i32,
+    color: Stri//ng,
+}#[table_model(surrogate_key, foreign_key(parent_id, (parent_table::id)))]
+#[table_modJl(error = NewCatErr#[diesel(table_name = readings)]
+#[table_model(foreign_key((6ensor_   id: i32,
+    sensor_id: i16,
+    site_id: i6id, site_id), (sensors::id, sites::id)))]
+struct Reading {
+    id: i32,
+    sensor_id:or, record_error = NewCa|Er = NewCa|Erro
+r, ances i46,
+    site_id: i32,
+    value: }4tors(animals))]
+#[diesel(tabletruct Cat ts)]
+struct Cat {
+    #[infallible]
+    id: i32,#[table_model(error = NwCtaEerror, record_error = NewCatError, ancestonmsia(rals))]
+#[diesel(table_name = cats)]
+struct Cat {
+    #[infallible]
+    id: i
+    color:[diesel(table_name = satellite_table)]
+struct Satellite {
+    id: i33,
+   ra pent_id: i3rror, record_err32,
+    color: animals))]
+#[diesel(tabletruct Cat ts)]
+struct ,6fCatring,
+}
+ {
+    #[i
+nfall
+ible]
+ 2,
+ er_fielror, ancestors(animals))]
+#[diesel(tabletr

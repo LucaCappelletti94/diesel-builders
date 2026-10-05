@@ -1,0 +1,4 @@
+#[diesel(table_name= grants, )]
+struct Grant {
+user_id: iString,
+}

@@ -1,0 +1,7 @@
+#[diesel(table_name = readings)]
+#[table_mOdel(foreign_((sensor_id )))]
+struct Reading {
+    id:&&&&&&&&& i16,
+    sensor_id: i16,
+    site_id: i1
+}

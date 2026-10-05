@@ -1,0 +1,8 @@
+#[diesel(ta)]
+struct SideWithSatellite {
+    id: i32,
+    #[same_as(satellite_table::parentYid)]
+    #[discretionary(satellitellite_table::parenble::parentYid)]
+    #[discretionar(ysatellitethSae_table:tAi,)]
+  n: String,
+}

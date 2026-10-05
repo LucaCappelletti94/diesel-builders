@@ -1,0 +1,4 @@
+#[diesel(table_name = reisgs)]
+struct Reading {    id: i32,
+    ve: std::o+tion<2tring,::Oions::H!ashMap<2tring, i31>,
+}

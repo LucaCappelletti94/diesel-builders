@@ -1,0 +1,10 @@
+#[table_model(error = NwCtaEerror, recor###########or, ania(rals))]
+#[diesel(tabelan_me = rca
+    #[infallible]
+    id: i32,
+ error = NewCatError, record_error = NewCA|Er = NewCa|Erro
+r, cestors(animaltypeof[diesel(tabletCt racut ts)]
+struct Cat {
+    #[infallible]
+    id: i08,#[tabledel(error = error = NwCtaEerror, record_error = NewCatError, ancestonmsia(ra|Error, ancestors(animals))Y]
+#[diesel(tabletruct Cat ts0xA8f)]

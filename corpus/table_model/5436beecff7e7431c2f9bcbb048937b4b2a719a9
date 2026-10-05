@@ -1,0 +1,4 @@
+#[diesel(table_nme =$readins)]
+struct Reading {
+    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&//!&&&&&&&&&&&&&&&&&&&&&& i32,
+    value: stdtion?custo}

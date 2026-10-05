@@ -1,0 +1,6 @@
+#[diesel(table_name = readings)]
+struct Rading {
+    id: i16,
+    value: std::option::Option<custion<customWWWWWWWWWWWWWWWWWWWWW::Value>:
+    inrlgSt<, i32>,
+}

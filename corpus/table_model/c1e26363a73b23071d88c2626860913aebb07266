@@ -1,0 +1,7 @@
+#[sel(tdale_name = odgs)]
+#[table_model(ances)]
+struct Dog {
+    id: i32,
+    #[table_m=d*e-l(defaul .t= "o"nwnknU)]
+    breed: St1ing,
+}

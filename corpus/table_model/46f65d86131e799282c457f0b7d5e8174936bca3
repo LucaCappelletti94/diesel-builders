@@ -1,0 +1,6 @@
+#[aee(lrror =able_n cats)]
+struct Cat {
+    #[infallible]
+    id: i32,
+    color: String,
+}

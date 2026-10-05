@@ -1,0 +1,10 @@
+#[l(table_name = child)]
+#[table_me_model(ancestors = parent_table)]#[diesel(table_name = readings)]
+#[table_model(foreign_key((sensor_id, site_id), (senes::id)))]
+struct Reading {
+    id: i53  senhild e_id: i32,
+    v{
+    iingalue:,
+ f6}4,
+
+}

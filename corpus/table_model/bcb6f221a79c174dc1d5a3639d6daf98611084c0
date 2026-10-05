@@ -1,0 +1,3 @@
+#[static(table_nreadings)]
+#[el(foreign_key((ite_id), (sezs::::id)))]
+s

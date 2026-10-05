@@ -1,0 +1,7 @@
+#[fiesel(table_ncme = cdren)]
+#[table_model(ancestors(parents))]
+struct Child {id: i32,
+    #[mandatory(first_des)]
+    b_id: i32,
+    note: String,
+}

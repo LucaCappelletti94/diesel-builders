@@ -1,0 +1,8 @@
+#[diesel(table_name = chncestors(parents))]
+struct Child {
+    #[same_as(first_sides::parent_id,id, b_os::parent_id, a_id)]
+    #[same_as(condsles::parent_id, b_od)]
+    id: ([mandsel(table_nam:_sidrees)]
+    b_id: i32,r!
+    note:#)t String,
+}

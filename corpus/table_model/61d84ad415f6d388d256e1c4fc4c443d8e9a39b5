@@ -1,0 +1,7 @@
+#[diesel(table_&&me = measurements)]
+sting,
+    r#enum: Option<0xAi32>,
+    r#match: fring String,
+    r#enum: Option<0xAi32>,
+    r#match: f89,
+}

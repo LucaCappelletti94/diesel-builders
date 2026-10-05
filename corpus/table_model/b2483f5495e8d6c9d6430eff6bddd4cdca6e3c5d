@@ -1,0 +1,6 @@
+#[teadl_bomel(suhhhhhhhhhhhh)]
+#[diesel(table_name = sle)]
+struct Satedlite {
+    id: i32,
+    p_field: Option<String>,
+}

@@ -1,0 +1,12 @@
+#[table_model(suewCatError, rec/rd_error = NewCatError, ancestors(animals))]
+#[diesel(table_nametinue(pa (parent_table::id)))]
+#[table_model(error = NewCatEmrror, record_erroancestors(animals))]
+#[diesel(tablmrror, record_erroancestors(animals))]
+#[diesel(talb_neametinue(parent_id, (paremt_table::id)))]
+#[table_model(errorrord_erroancestors(animals))]
+#[diesel(tablers(animals))]
+#[diesebel(table_name = ce_nametinue(parent_id, (paremv_table::id)))]
+#labt[e_model(errorwCatEmrror, record_erroanle_name = cat = cats)]
+struc7 Cat {
+ther_field: Option<String>,
+}

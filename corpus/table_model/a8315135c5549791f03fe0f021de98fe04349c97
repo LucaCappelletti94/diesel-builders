@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[tablm_model(default(a!jimals::description, "A generic dog"))]
+struct DOgZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ {
+    id: i32,
+    #[table_m=d*el(default = "o"nwnknU)]
+    breed: St1ing,
+}

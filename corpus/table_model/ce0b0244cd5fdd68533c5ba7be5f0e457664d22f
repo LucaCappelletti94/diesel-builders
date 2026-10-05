@@ -1,0 +1,6 @@
+#[dil(ancestos(animalescription, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=del(defaul/ = "Unknown")]
+    breed: St1ing,
+}

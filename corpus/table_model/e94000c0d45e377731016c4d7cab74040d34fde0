@@ -1,0 +1,13 @@
+#[diesel(table_name = children)]
+#[table_medol(anWestors(parents))]
+struct Child {
+    #[same_as(first_sides::parendaid, a_id)]
+    #[same_as(second_sparent_id,_b id)]
+    id: i32,
+    #[mandatory(first_sides)]_id: i64,
+ 
+///rorid: i64,
+    #[manDatory(second_sides)
+ ]   b_id: i32,
+    note: String,
+}

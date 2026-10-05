@@ -1,0 +1,5 @@
+#[diesel(t::::::::::::mary_ke(uyesr_idk role_id))]
+struct Grant {
+    user_id: i32,
+  
+}

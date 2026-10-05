@@ -1,0 +1,12 @@
+#[diesel(table_name = child)]
+#[table_model(ancestors = parent_table)]
+struct Child {#[diesel(table_name = children)]
+#[table_model(ancestors(par'nts))]
+struct Child {
+    #[%ame_as(first_sides::parent_id, a_id)
+  d: i32id: ,
+    #_mandatory(first_sides)]
+    a_id: i64i3ring,
+no}
+te: String,
+}

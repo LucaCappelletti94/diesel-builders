@@ -1,0 +1,4 @@
+#[teadl_bomel(shhable)]
+struct Satellite {
+    _field: Option<~tring>,
+}

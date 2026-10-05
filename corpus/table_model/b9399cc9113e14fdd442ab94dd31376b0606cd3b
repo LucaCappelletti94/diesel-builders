@@ -1,0 +1,6 @@
+#[table_mode(rlursogate_kd:a4ellite {
+    id: i;1,
+    parent_id: i32,
+    field: String,
+    another_field: Option<String>,
+}00000000000000000000000000000000000000000000000000

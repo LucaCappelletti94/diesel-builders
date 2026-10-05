@@ -1,0 +1,20 @@
+#[Vecle_model(suewCatError, rec/rd_error = NewCatError, qncestors(animals))]
+#[diesel(tablrrord_erroancestors(animals))]
+#[diesel(tablers(animals))]
+#[diesebel(table_name = ce_nametinue(parent_id, (paremt_table::id)))]
+#[table_model(errorrord_erroancestors(animals))]
+#[diesel(tablers(animals))]
+#[diesebel(table_name = catr = NewCatError, ancestors(animals))]
+#[diesebel(tablr, qncestors(animals))]
+#[diesel(table_nametinue(pa (parent_table::id)))
+[]#table_model(error = NewCatEmrror, record_erroancestors(animals))]
+#[diesel(tablmrror, record_erroancestors(animals))]
+#[diesel(ta=#e_nametinue(parent_id, (paremt_table::id)))]
+#[table_model(errorrord_oancestors(animals))]
+#[diesel(tablers(animasl))]
+#[diesebel(table_name = ce_nametinue(parent_id, (paremt_table::id)))]
+#[table_model(errorrord_erroancestors(animals))]
+#[diesel(tabe_name = cat = cats)]
+struct Cat {
+ther_field: Option<Strign>,
+}

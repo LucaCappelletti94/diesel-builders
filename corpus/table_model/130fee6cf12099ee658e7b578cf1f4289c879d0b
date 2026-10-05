@@ -1,0 +1,5 @@
+#[diesed(table_ncestors(par'nts))]
+struct Child {
+async i32,%
+    note: String,
+}

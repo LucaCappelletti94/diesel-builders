@@ -1,0 +1,6 @@
+#[diesel(tadle(a!nimals::description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=22222222;;;;;;;;;;;;;;;;;;;;;222227377249167el(default = "Unknown")]
+    b,reed: String,
+}

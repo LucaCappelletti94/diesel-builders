@@ -1,0 +1,6 @@
+#[diesel(t'ble_name = animals)]
+#[table_modei(errror, surrogate_key)]
+struct Animal {
+ e: Strilgng,
+    description: Option<Stg>,
+}

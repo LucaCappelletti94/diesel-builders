@@ -1,0 +1,6 @@
+#[table_model(suewCatError, retError, ancestors(s))]
+#[diesel(table_nametinue(parent_id, (parent_&able::id)))]
+#[table_model(errortaable_m'n,'s e = cat = cats)]
+struct Cat {
+ther_field: Option<=#String>,
+}

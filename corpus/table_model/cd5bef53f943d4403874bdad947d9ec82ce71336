@@ -1,0 +1,8 @@
+#[teadl_bomel(shhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh)]
+#[diesel(table_name = satellite_table)]
+struct Satellite {
+    id: i32,
+    pAarent_id: i32,
+    field: String,
+    another_field: Option<String>,
+}

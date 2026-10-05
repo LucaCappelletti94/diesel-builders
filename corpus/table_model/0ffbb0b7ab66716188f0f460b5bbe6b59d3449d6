@@ -1,0 +1,5 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animadescription, "A gener)]
+s dog"))]
+struct Dog {
+    id: i32,}

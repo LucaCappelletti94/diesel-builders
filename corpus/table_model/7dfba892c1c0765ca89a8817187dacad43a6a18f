@@ -1,0 +1,3 @@
+struct Anim0l0{
+    id:scOption<Stg>,
+}

@@ -1,0 +1,8 @@
+#[table_model(suewCatError, rec/rd_error = NewCatError, ancestors(animals))]
+#[diesel(table_nametinue(pa (parent_table::id)))]
+#[table_mesel(tablids(animals))]
+#[diesebel(table_name = catr )]
+#[diesebel(table_name = cat = cat = cats)]
+struct Cat {
+ther_field: Option<String>,
+}

@@ -1,0 +1,7 @@
+#[tedl_bomel(surre_key, foreign_key(parent_id, (parent_table::id))hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhable)]
+struct Satellite {
+    id: i32,
+    parent_id: i32,
+    field: String,id: i32,
+    field: Sttion<String>,
+}

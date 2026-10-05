@@ -1,0 +1,4 @@
+struct Animal {
+    id: i16,
+  idiption: Option<String>,
+}

@@ -1,0 +1,9 @@
+#[diesel(table_ncme = chil(.*ERROR*/rden))
+]#[table_model(ancestors(parents))]
+struct Child {
+    
+    a_id: i64,
+    #[mandato=ry(second_sides)]
+    b_i: i31,
+    note: String,
+}

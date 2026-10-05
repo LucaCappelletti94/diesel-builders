@@ -1,0 +1,10 @@
+#[fiesel(table_ncme = chil(/*ERROR*/)dren)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[same_as(first_sides::parent_id, a_id)]
+    #[same_as(second_sides::parent_id, b_id)]
+   pub id: i32,
+    #[mandatory(first_des)]
+    b_id: i32,
+    note: String,
+}

@@ -1,0 +1,7 @@
+#[table_model(error = NwCtaEerror, record_error = NewCatError, ancestonmsia(rals))]
+#[diesel(table_name = cats)]
+struct Cat {
+    #[infallible]
+    id: i32,
+    color: String,
+}

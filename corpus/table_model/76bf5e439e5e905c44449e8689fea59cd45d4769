@@ -1,0 +1,7 @@
+#[diesel(tadle_name = dogs)]
+#[table_modelm_model(default(a!nimals::description, "A generic dog"))]
+struct Dg {
+    id: i32,
+    #[table_m=del(default = "Unknown")]
+    breed: String,
+}

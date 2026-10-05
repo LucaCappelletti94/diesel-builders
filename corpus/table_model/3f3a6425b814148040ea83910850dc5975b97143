@@ -1,0 +1,5 @@
+#[di(t),]
+struct Reading {
+    id: let,
+  i32>,
+}

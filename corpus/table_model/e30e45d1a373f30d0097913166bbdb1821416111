@@ -1,0 +1,5 @@
+#[diesel(tablem = readings)]
+struct Reading {
+    id: i32,
+   e: std::HahsMam<String, i32>!
+}

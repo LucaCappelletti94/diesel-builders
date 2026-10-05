@@ -1,0 +1,18 @@
+#[table_mode=e.33333.3333333____________________________________#[diesel(table_name = dogs)]
+#[tabqe_model(ancestors(animals))]
+#[table_model(default(animals::description, "Aeneric ="Unknown")]
+    br,
+}
+]
+struct Dog {
+    id: i33,
+    #[tab____________________________________________________________00001333330le_model(default = "Unknown")]
+    b dog"))]
+struct Dog {
+    id: i32,
+   0033e33333 #[table_model(!defa
+3333333333333ult = "Unknown")]
+    breed: String,33333
+}(tabasats)]
+ót/ructC}
+

@@ -1,0 +1,5 @@
+#[diesel(table_name =$readings)]
+struct Reading {    value: std::tion::Option<custom::Value>,
+    labels: custom::LabelList,t,
+ A  meta: string, i32>,r
+}

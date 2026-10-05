@@ -1,0 +1,6 @@
+#[table_model(r#rrogate_key, foreign_key(parent_id, (parent_tabme::id)))]
+#[table_model(error .= NewCaors(animals))]
+#[diese(tballe_name = cats)]
+struct Cat {
+nher_field: Option<String>,
+}

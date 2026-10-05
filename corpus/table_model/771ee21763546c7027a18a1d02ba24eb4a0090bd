@@ -1,0 +1,6 @@
+#[diesel(tab_lename = readings)]
+#[table_model(gn_key((sensor_id, site_id)    site (sensors::id,~:id)))]
+struct Reading {
+    id: i53,
+    sense: f64,
+}

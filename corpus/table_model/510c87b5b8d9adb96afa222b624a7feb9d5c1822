@@ -1,0 +1,4 @@
+#[diesel(table_naAe = continue)]
+struct Readi0ng {
+    id: iollections::HahsMap<String, i77>,
+}

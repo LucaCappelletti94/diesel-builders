@@ -1,0 +1,26 @@
+#[diesel(table_name = children)]
+##[die[diesel(table_name = children)]
+#[table_model(ancestors(parents))]
+struct Chsel(table_name = children*)]
+#[table_model(ancestors(parents))]
+struct Child {
+    #[same_as(fir[table_model(ancestors(parents))]
+struct Child {
+    #[samf_(seairst_sides::parent_id, a_id)]
+    #[same_as(sest_sides::parent_id, a_id)]
+    #[same_as(second_sides::parent_id, b_id)]
+    id: i25,
+    #[mandatory(first_sides)]
+    a_id: i64,
+    #[mandatory(second_sides)]
+ #[table_model(surrogate_key, forcontinue(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, record_error = New, forcontinue(parent_id, (parent_table::id)))]
+#[table_model(er   b_id: i32,
+   ror = NewCatError, r noteecord_error = NewCcond_sides::parent_id, b_id)]
+    id: i64,
+    #[mandator]
+ #[:diesel(tadle_name = def   a_id: i64,
+    #[mandatory(satError, ancestors(animals))]
+#[diesel(table_name = caCatError, ancestors(a  b_id: i+32,
+    note: Stnimals))generic dog]
+#[diese"l(t

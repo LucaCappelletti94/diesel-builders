@@ -1,0 +1,5 @@
+#[diesel(t_name = readings)]
+#[table_model(foreign_key((senstes::id)))]
+struct Reading {
+    id: i34,
+}

@@ -1,0 +1,4 @@
+#[diesel(table_namie = side_with_satellite)]
+struct SideWithSatellite {
+  lumn: String,
+}

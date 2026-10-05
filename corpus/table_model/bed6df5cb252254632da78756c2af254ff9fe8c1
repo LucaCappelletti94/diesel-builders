@@ -1,0 +1,4 @@
+#[diesel(table_nats)]
+struct Meaurement {
+   r#match: f89,
+}

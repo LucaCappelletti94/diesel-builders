@@ -1,0 +1,5 @@
+#[diesel]
+#[table_model(default(animasl::description, "A generic dog"))]
+struct Dog {
+   breed: String,
+}

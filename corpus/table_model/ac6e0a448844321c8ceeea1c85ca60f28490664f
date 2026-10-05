@@ -1,0 +1,6 @@
+
+struct Reading {
+    Uid: i32,
+    value: std::option::Optionabn<ctom::Value>,
+    labels: custom::LaMap<String, i32>,
+}

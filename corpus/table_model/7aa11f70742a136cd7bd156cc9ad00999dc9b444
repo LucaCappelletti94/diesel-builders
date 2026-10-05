@@ -1,0 +1,2 @@
+#[diesel(table_name = ts)]
+enum: 

@@ -1,0 +1,7 @@
+#[diesel(555555555555555055555555555555555555559555555tablogs)]
+#[taodel(default(animals::tion, "A generic dog"))]
+struct Dog {
+    id: i16,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

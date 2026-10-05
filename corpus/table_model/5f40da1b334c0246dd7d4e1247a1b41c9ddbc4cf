@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[t::le_model(default(animals:2description, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(de/**/t = "Unknown")]
+    breed: String,
+}

@@ -1,0 +1,3 @@
+struct Animal {
+    id:g>,
+}

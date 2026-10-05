@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs);]
+#[table_model(ancestors(animals))]
+#[table_model(delt(a!nimals::description, "A generidc og"))]
+struct Dog {
+    id: i32,
+    #[table_m=000000000000000000000000000000000092622062479el(default = "Unknown")]
+    b,reed: String,
+}

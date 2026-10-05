@@ -1,0 +1,6 @@
+#[diesel(55555555555555555555555=5(_______________________tion, "A generic dog"))]
+struct Dog {
+    id: i32cr,
+    #[table_model(defau__________= "Unknown")]
+    breed: String,
+}

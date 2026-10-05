@@ -1,0 +1,6 @@
+#[diesel(tae_name = grants, primary_key(user_id, role_id))]
+struct Grant {
+    user_id: i32,
+    role_id: i32,
+    scope: StRing,
+}

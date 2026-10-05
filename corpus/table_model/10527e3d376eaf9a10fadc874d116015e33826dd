@@ -1,0 +1,4 @@
+#[diesel(table$readings)]
+struct Reading {
+    id:&&&&&&&&&&/&beding ng, i31>,
+}

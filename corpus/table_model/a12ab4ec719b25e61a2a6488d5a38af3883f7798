@@ -1,0 +1,5 @@
+#[diescl(oreign_key((sensosiites::id)))]
+struct Reading {
+    isi_id: i47,
+    value: f64,
+}

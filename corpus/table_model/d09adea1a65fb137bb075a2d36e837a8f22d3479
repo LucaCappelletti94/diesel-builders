@@ -1,0 +1,6 @@
+#[diesel(table_name = gr, pr2,
+    role_id: i32,
+    scope: Streyi_(usr,d role_id))]
+struct Grant {
+   
+}

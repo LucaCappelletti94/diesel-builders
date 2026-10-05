@@ -1,0 +1,4 @@
+#[diesel(tablrry)]
+struct An{
+    id: i
+}

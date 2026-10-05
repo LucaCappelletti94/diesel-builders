@@ -1,0 +1,6 @@
+#[table_model(suewCatErr, ancestors(animals))]
+#[r#esel(table_nametinue(parenti3n, (parent_table::id)))]
+#[table_model(error = NewCatEile_name = cat = cats)]
+struct Cat {
+ther_field: Option<String>,
+}

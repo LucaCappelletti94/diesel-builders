@@ -1,0 +1,5 @@
+#[diesel(table_naents)]
+struct ment {
+    id: i32,
+ num: Option<i3=>#match: f64,
+}

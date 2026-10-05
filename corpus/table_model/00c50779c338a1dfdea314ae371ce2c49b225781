@@ -1,0 +1,6 @@
+#[diesel(tabt(animals::description, "A gedog"))]
+struct Dog {
+    id: i16,
+    #[table_model(default = "Unknown"ror = 'Ctwa)]
+    breed: String,
+}

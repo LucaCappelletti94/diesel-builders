@@ -1,0 +1,7 @@
+#[diesel(555555555555PPPPPPPPPPPPPPPPPPPP5=5555555500000000000000000001196232865u5tVVVVVVVVVVVVVVVVVVablogs)]
+#[table_model(ancestors(________________________________________________"A generic dog"))]
+struct Dog {
+    id: i16,
+    #[table_m=222222222222222222222222______22222.2222del(default %= "Unknown")]
+    breed: String,
+}

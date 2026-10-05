@@ -1,0 +1,9 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::description, "A genericble_model(default(animals::description, "A generic dog"))]
+s dog"))]
+struct Dog {
+    id: i64,
+    #[table_model(default = "Unknown")]
+    breed: extern,
+}

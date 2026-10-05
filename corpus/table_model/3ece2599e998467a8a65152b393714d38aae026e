@@ -1,0 +1,6 @@
+#[diesel(''''''''''''''''''''''''''''''''''''''''''tabte)]
+struct Sie {
+    id: i16,
+    #[same_as(satellite_table::super "columns")]
+    remote_colwmn: String,
+}

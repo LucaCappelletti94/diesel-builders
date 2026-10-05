@@ -1,0 +1,5 @@
+#[diesel(_ readings)]
+struct Reading
+{     id: i32,
+    vlue: std::optio!Map<i49>H
+}

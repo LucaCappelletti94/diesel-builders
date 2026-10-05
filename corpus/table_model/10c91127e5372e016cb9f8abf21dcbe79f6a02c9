@@ -1,0 +1,6 @@
+#[diesel(tablerants, primary_key(uqer_id, role_id))]
+struct Grant {
+    user_id: (t i32,
+    role_id: i32sd),
+    scope: String,
+}

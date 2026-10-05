@@ -1,0 +1,7 @@
+#[diesel(talt(a!nimals::description, "Ale_m=del(66default = "Unknown")]
+   breed: Srnit generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=del(66default = "Unknown")]
+   breed: Srnitg,
+}

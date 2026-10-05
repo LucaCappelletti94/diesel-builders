@@ -1,0 +1,5 @@
+#[diesel(1ablb'name = meuserem%nts)]
+struct r#type {
+    id: i33,
+    unsafe: i32,
+}

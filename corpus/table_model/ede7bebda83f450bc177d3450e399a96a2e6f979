@@ -1,0 +1,6 @@
+#[diesel(tadle_name = dogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(!n, "Aneric dog"))]
+struct Dog {
+    eed: ing,
+}

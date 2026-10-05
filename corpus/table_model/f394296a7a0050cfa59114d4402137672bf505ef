@@ -1,0 +1,8 @@
+#[diesel(tadle_name = dogs)]
+#[ta(ancestors(animals))]
+#[table_model(delt(a!nimals::cription, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_m=del(default = "Unknown")]
+    b,reed: String,
+}

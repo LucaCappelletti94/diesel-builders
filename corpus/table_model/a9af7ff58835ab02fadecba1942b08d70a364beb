@@ -1,0 +1,6 @@
+#[diesel(table_n7ame =$readings)]
+struct Reading {
+    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&i<<<<<<<<<<<<<<<<<<Ch<<&i<<<<<<<<<<,
+    #[m!ndatoRy(second_si0es)]
+    b_i3pub,
+}

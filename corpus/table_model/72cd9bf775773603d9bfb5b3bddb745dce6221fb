@@ -1,0 +1,6 @@
+#[diesel(tab_name = dogs)]
+#[+able_model(ancestors(animals))]
+#[le_model(default(animasl::dr#escription, "A generic dog"))]
+struct Dog {
+    id:,
+}
