@@ -53,7 +53,8 @@ fuzz_target!(|input: &str| {
     }
 
     let invalid_fields = fields
-        .named.iter()
+        .named
+        .iter()
         .any(|field| diesel_builders_derive_fuzz::validate_field_attributes(field).is_err());
     let has_mandatory_discretionary_conflict = fields.named.iter().any(|field| {
         diesel_builders_derive_fuzz::extract_mandatory_table(field)
@@ -62,16 +63,13 @@ fuzz_target!(|input: &str| {
                 .is_ok_and(|table| table.is_some())
     });
 
-    match diesel_builders_derive_fuzz::derive_table_model(&model) {
-        Ok(tokens) => {
-            assert!(
-                !invalid_fields && !has_mandatory_discretionary_conflict,
-                "invalid or conflicting attributes must not expand"
-            );
-            let parsed: syn::File =
-                syn::parse2(tokens).expect("accepted input must expand to valid Rust");
-            assert!(!parsed.items.is_empty(), "expansion must emit items");
-        }
-        Err(_) => {}
+    if let Ok(tokens) = diesel_builders_derive_fuzz::derive_table_model(&model) {
+        assert!(
+            !invalid_fields && !has_mandatory_discretionary_conflict,
+            "invalid or conflicting attributes must not expand"
+        );
+        let parsed: syn::File =
+            syn::parse2(tokens).expect("accepted input must expand to valid Rust");
+        assert!(!parsed.items.is_empty(), "expansion must emit items");
     }
 });

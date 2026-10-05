@@ -392,6 +392,17 @@ struct Session {
     );
 }
 
+/// Redundant infallible markers preserve raw column identifiers.
+#[test]
+fn redundant_infallible_raw_field_expands_to_valid_rust() {
+    for attribute in ["#[infallible]", "#[table_model(infallible)]"] {
+        expansion_is_valid_rust(
+            &format!("struct Reading {{ id: i32, {attribute} r#match: String }}"),
+            "Reading",
+        );
+    }
+}
+
 /// The raw identifier model name with an explicit table expands to a parseable
 /// expansion.
 #[test]

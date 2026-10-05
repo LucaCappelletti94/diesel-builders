@@ -3,7 +3,7 @@
 #[path = "table_model/accumulated_traits.rs"]
 mod accumulated_traits;
 #[path = "table_model/attribute_parsing.rs"]
-mod attribute_parsing;
+pub(crate) mod attribute_parsing;
 #[path = "table_model/foreign_keys.rs"]
 mod foreign_keys;
 #[path = "table_model/get_column.rs"]
@@ -1258,6 +1258,8 @@ fn field_empty_value(field: &syn::Field) -> TokenStream {
 /// on a model with no error type, where the attribute is redundant. The warning
 /// is anchored to the `#[infallible]` attribute when it can be located.
 fn redundant_infallible_warning(field: &syn::Field, field_name: &Ident) -> TokenStream {
+    use syn::ext::IdentExt;
+
     let warning_msg = format!(
         "Field `{field_name}` is marked `#[infallible]` but the `TableModel` does not specify an error type, making the attribute redundant.",
     );
@@ -1283,7 +1285,8 @@ fn redundant_infallible_warning(field: &syn::Field, field_name: &Ident) -> Token
         }
     }
 
-    let const_name = syn::Ident::new(&format!("__WARN_REDUNDANT_INFALLIBLE_{field_name}"), span);
+    let const_name =
+        syn::Ident::new(&format!("__WARN_REDUNDANT_INFALLIBLE_{}", field_name.unraw()), span);
     quote! {
         const _: () = {
             #[deprecated(note = #warning_msg)]
