@@ -1,0 +1,5 @@
+error: Primary key column `id` must have a `#[same_as(mandatory_table::Column)]` attribute specifying the corresponding column in the mandatory table `mandatory_table`.
+  --> tests/ui_stable/missing_mandatory_pk_same_as.rs:15:5
+   |
+15 |     id: i32,
+   |     ^^^^^^^

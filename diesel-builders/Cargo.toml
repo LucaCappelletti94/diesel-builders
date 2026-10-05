@@ -1,0 +1,44 @@
+[package]
+name = "diesel-builders"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+description = "A type-safe builder pattern library for Diesel that handles complex table relationships."
+readme = "README.md"
+license-file.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+diesel.workspace = true
+diesel-builders-derive.workspace = true
+serde = { workspace = true, optional = true }
+tuplities.workspace = true
+typenum.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+diesel = { workspace = true, features = [
+	"sqlite",
+	"returning_clauses_for_sqlite_3_35",
+	"extras",
+] }
+rustversion = "1.0.22"
+serde_json.workspace = true
+trybuild = "1.0.114"
+validation-errors = { path = "../validation-errors" }
+
+[lints]
+workspace = true
+
+[features]
+default = ["serde", "size-32"]
+size-16 = ["diesel-builders-derive/size-16", "tuplities/size-16"]
+size-32 = ["diesel-builders-derive/size-32", "tuplities/size-32"]
+size-48 = ["diesel-builders-derive/size-48", "tuplities/size-48"]
+size-64 = ["diesel-builders-derive/size-64", "tuplities/size-64"]
+size-96 = ["diesel-builders-derive/size-96", "tuplities/size-96"]
+size-128 = ["diesel-builders-derive/size-128", "tuplities/size-128"]
+serde = ["dep:serde"]

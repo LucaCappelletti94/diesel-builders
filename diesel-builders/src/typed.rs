@@ -1,0 +1,73 @@
+//! Submodule providing the `Typed` trait.
+
+mod typed_nested_tuple;
+use std::fmt::Debug;
+
+pub use typed_nested_tuple::*;
+mod typed_nested_tuple_collection;
+pub use typed_nested_tuple_collection::*;
+mod homogeneously_typed_nested_tuple;
+pub use homogeneously_typed_nested_tuple::*;
+
+/// Trait representing an object with an associated value type.
+pub trait ValueTyped {
+    /// The value type associated with this object.
+    type ValueType: Clone + Debug + 'static;
+}
+
+/// Trait representing an object with an associated type.
+///
+/// Extends [`ValueTyped`].
+pub trait ColumnTyped: ValueTyped {
+    /// The column type associated with this object, which may be an `Option` of
+    /// the value type.
+    type ColumnType: Clone
+        + From<Self::ValueType>
+        + Into<Option<Self::ValueType>>
+        + OptionalRef<Self::ValueType>;
+}
+
+impl<C: ValueTyped + ?Sized> ValueTyped for Box<C> {
+    type ValueType = C::ValueType;
+}
+
+impl<C: ColumnTyped + ?Sized> ColumnTyped for Box<C> {
+    type ColumnType = C::ColumnType;
+}
+
+impl<C: ValueTyped + ?Sized> ValueTyped for &C {
+    type ValueType = C::ValueType;
+}
+
+impl<C: ColumnTyped + ?Sized> ColumnTyped for &C {
+    type ColumnType = C::ColumnType;
+}
+
+/// Trait providing a method to get an optional reference to another type.
+pub trait OptionalRef<Other> {
+    /// Get an optional reference to the other type.
+    ///
+    /// ```
+    /// use diesel_builders::OptionalRef;
+    ///
+    /// let required = 18;
+    /// let nullable = Some(18);
+    /// let missing: Option<i32> = None;
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&required), Some(&18));
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&nullable), Some(&18));
+    /// assert_eq!(OptionalRef::<i32>::as_optional_ref(&missing), None);
+    /// ```
+    fn as_optional_ref(&self) -> Option<&Other>;
+}
+
+impl<T> OptionalRef<T> for T {
+    fn as_optional_ref(&self) -> Option<&T> {
+        Some(self)
+    }
+}
+
+impl<T> OptionalRef<T> for Option<T> {
+    fn as_optional_ref(&self) -> Option<&T> {
+        self.as_ref()
+    }
+}

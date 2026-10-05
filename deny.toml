@@ -1,0 +1,19 @@
+[bans]
+multiple-versions = "warn"
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Zlib",
+    "Unicode-3.0",
+    "Unlicense",
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-git = [
+    "https://github.com/diesel-rs/diesel",
+    "https://github.com/LucaCappelletti94/tuplities",
+]

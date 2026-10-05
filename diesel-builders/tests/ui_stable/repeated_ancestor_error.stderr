@@ -1,0 +1,5 @@
+error: Duplicate `ancestor` in hierarchy
+  --> tests/ui_stable/repeated_ancestor_error.rs:12:34
+   |
+12 | #[table_model(ancestors(animals, animals))]
+   |                                  ^^^^^^^

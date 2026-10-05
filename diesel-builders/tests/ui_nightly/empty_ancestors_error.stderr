@@ -1,0 +1,10 @@
+error: `#[table_model(ancestors(...))]` must list at least one ancestor table
+ --> tests/ui_nightly/empty_ancestors_error.rs:4:1
+  |
+4 | / #[diesel(table_name = child_table)]
+5 | | #[table_model(ancestors())]
+6 | | pub struct Child {
+7 | |     id: i32,
+8 | |     name: String,
+9 | | }
+  | |_^

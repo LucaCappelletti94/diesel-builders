@@ -1,0 +1,7 @@
+error: Duplicate `#[infallible]` or `#[table_model(infallible)]` attribute found. Each field can only have one infallible marker.
+  --> tests/ui_stable/duplicate_infallible_mixed_error.rs:8:5
+   |
+ 8 | /     #[infallible]
+ 9 | |     #[table_model(infallible)]
+10 | |     field1: String,
+   | |__________________^

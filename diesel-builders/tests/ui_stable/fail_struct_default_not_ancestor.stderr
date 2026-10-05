@@ -1,0 +1,5 @@
+error: Table `cats` not found in ancestors or self
+  --> tests/ui_stable/fail_struct_default_not_ancestor.rs:15:23
+   |
+15 | #[table_model(default(cats::description, "A cat?".to_string()))]
+   |                       ^^^^^^^^^^^^^^^^^

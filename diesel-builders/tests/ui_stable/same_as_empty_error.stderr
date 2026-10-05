@@ -1,0 +1,5 @@
+error: Expected `#[same_as(ancestor::column)]` with parentheses
+  --> tests/ui_stable/same_as_empty_error.rs:15:5
+   |
+15 |     #[same_as]
+   |     ^^^^^^^^^^

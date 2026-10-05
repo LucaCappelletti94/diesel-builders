@@ -1,0 +1,857 @@
+//! Generate foreign key implementations for triangular relations.
+
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{Field, Ident};
+
+use crate::table_model::attribute_parsing::{
+    ForeignKeyAttribute, extract_discretionary_table, extract_mandatory_table,
+    extract_same_as_columns,
+};
+
+/// Generate foreign key implementations for triangular relations.
+///
+/// This function identifies columns with `#[mandatory(Table)]` or
+/// `#[discretionary(Table)]` and pairs them with columns having
+/// `#[same_as(Table::Column)]` to generate `HostColumn` implementations,
+/// effectively automating the `fk!` macro for these cases.
+pub fn generate_foreign_key_impls(
+    fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    table_module: &Ident,
+) -> syn::Result<Vec<TokenStream>> {
+    let mut impls = Vec::new();
+
+    // 1. Identify mandatory/discretionary columns (M)
+    for field in fields {
+        let Some(field_name) = &field.ident else {
+            continue;
+        };
+
+        // Check for mandatory or discretionary table reference
+        let ref_table = if let Some(table) = extract_mandatory_table(field)? {
+            table
+        } else if let Some(table) = extract_discretionary_table(field)? {
+            table
+        } else {
+            continue;
+        };
+
+        let ref_table_name = &ref_table
+            .segments
+            .last()
+            .ok_or_else(|| {
+                syn::Error::new_spanned(
+                    &ref_table,
+                    "Referenced table path must have at least one segment",
+                )
+            })?
+            .ident;
+
+        // 2. Find same_as columns (C) referencing the same table
+        for other_field in fields {
+            let Some(other_field_name) = &other_field.ident else {
+                continue;
+            };
+
+            if field_name == other_field_name {
+                continue;
+            }
+
+            for group in extract_same_as_columns(other_field)? {
+                // Check for disambiguators in the group
+                // A disambiguator is a path with a single segment that matches
+                // the current field name. If there are any
+                // single-segment paths in the group, at least
+                // one must match `field_name`.
+                let disambiguators: Vec<_> =
+                    group.iter().filter(|p| p.segments.len() == 1).collect();
+
+                if !disambiguators.is_empty() {
+                    let matches_current_field = disambiguators
+                        .iter()
+                        .any(|p| p.segments.first().is_some_and(|s| s.ident == *field_name));
+
+                    if !matches_current_field {
+                        continue;
+                    }
+                }
+
+                for ref_col in group {
+                    // Check if path starts with ref_table
+                    // We assume the path is like `RefTable::Column` or
+                    // `Module1::Module2::RefTable::Column` So we check if the
+                    // path excluding the last segment matches ref_table
+
+                    let Some(table_name) =
+                        ref_col.segments.iter().rev().nth(1).map(|segment| &segment.ident)
+                    else {
+                        continue;
+                    };
+
+                    // Construct a path from table_path_segments to compare with
+                    // ref_table This is a bit heuristic. We
+                    // check if ref_table ends with the table name found
+                    // in same_as. Or better, we check if the segments match.
+
+                    if ref_table_name == table_name {
+                        // Generate HostColumn implementations directly
+                        let host_cols =
+                            quote! { #table_module::#field_name, #table_module::#other_field_name };
+                        let ref_cols = quote! {
+                            <<#table_module::#field_name as diesel_builders::ForeignPrimaryKey>::ReferencedTable as diesel::Table>::PrimaryKey,
+                            #ref_col
+                        };
+
+                        impls.push(quote! {
+                            impl diesel_builders::HostColumn<
+                                diesel_builders::typenum::U0,
+                                ( #host_cols ),
+                                ( #ref_cols )
+                            > for #table_module::#field_name {}
+                        });
+
+                        // 3. Impl HostColumn for col 1
+                        impls.push(quote! {
+                            impl diesel_builders::HostColumn<
+                                diesel_builders::typenum::U1,
+                                ( #host_cols ),
+                                ( #ref_cols )
+                            > for #table_module::#other_field_name {}
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(impls)
+}
+
+/// Generate explicit foreign key and foreign primary key implementations from
+/// `#[table_model(foreign_key)]` attributes.
+pub fn generate_explicit_foreign_key_impls(
+    foreign_keys: &[ForeignKeyAttribute],
+    table_module: &Ident,
+) -> syn::Result<Vec<TokenStream>> {
+    let mut impls = Vec::new();
+
+    // Track host columns mapping to tables for FPK generation
+    // Key: Host Column Ident (String)
+    // Value: (Host Ident, List of unique Ref Table Paths)
+    let mut host_col_to_refs: std::collections::HashMap<String, (syn::Ident, Vec<syn::Path>)> =
+        std::collections::HashMap::new();
+
+    // Pass 1: Collect candidates
+    for fk in foreign_keys {
+        let ref_cols = &fk.referenced_columns;
+
+        if fk.host_columns.len() == 1
+            && ref_cols.len() == 1
+            && let Some(host_col_ident) = fk.host_columns.first()
+            && let Some(referenced_column) = ref_cols.first()
+            && let Some(ref_table) = crate::utils::extract_table_path_from_column(referenced_column)
+        {
+            let entry = host_col_to_refs
+                .entry(host_col_ident.to_string())
+                .or_insert_with(|| (host_col_ident.clone(), Vec::new()));
+
+            let ref_table_str = quote!(#ref_table).to_string();
+            if !entry.1.iter().any(|t| quote!(#t).to_string() == ref_table_str) {
+                entry.1.push(ref_table);
+            }
+        }
+    }
+
+    // Set of columns that will receive FPK implementation
+    let fpk_column_names: std::collections::HashSet<String> = host_col_to_refs
+        .iter()
+        .filter(|(_, (_, tables))| tables.len() == 1)
+        .map(|(k, _)| k.clone())
+        .collect();
+
+    // Pass 2: Generate implementations
+    for fk in foreign_keys {
+        let ref_cols = &fk.referenced_columns;
+
+        if fk.host_columns.len() != ref_cols.len() {
+            let message = "Mismatched number of host and referenced columns.";
+            return Err(match ref_cols.first() {
+                Some(referenced_column) => syn::Error::new_spanned(referenced_column, message),
+                None => syn::Error::new(proc_macro2::Span::call_site(), message),
+            });
+        }
+
+        // If this is a single column FK that will become an FPK, skip
+        // HostColumn generation to avoid conflict with blanket
+        // implementation.
+        if fk.host_columns.len() == 1
+            && let Some(host_col_ident) = fk.host_columns.first()
+            && fpk_column_names.contains(&host_col_ident.to_string())
+        {
+            continue;
+        }
+
+        let host_cols_tokens: Vec<_> =
+            fk.host_columns.iter().map(|c| quote!(#table_module::#c)).collect();
+
+        for (idx, host_col_ident) in fk.host_columns.iter().enumerate() {
+            let idx_type = crate::utils::typenum_ident(idx);
+            let host_col = quote!(#table_module::#host_col_ident);
+            impls.push(quote! {
+                impl ::diesel_builders::HostColumn<
+                    ::diesel_builders::typenum::#idx_type,
+                    ( #(#host_cols_tokens,)* ),
+                    ( #(#ref_cols,)* )
+                > for #host_col {}
+            });
+        }
+    }
+
+    // Pass 3: Generate FPKs for unique mappings
+    for (_, (host_col_ident, tables)) in host_col_to_refs {
+        if tables.len() == 1
+            && let Some(ref_table) = tables.first()
+            && let Some(stream) =
+                generate_fpk_impl(&syn::parse_quote!(#table_module::#host_col_ident), ref_table)
+        {
+            impls.push(stream);
+        }
+    }
+
+    Ok(impls)
+}
+
+/// Generate a foreign primary key implementation for a column.
+///
+/// This function generates:
+/// 1. `ForeignPrimaryKey` implementation for the column
+/// 2. A helper trait with a method to fetch the foreign record
+///
+/// # Arguments
+/// * `column` - The column path (e.g., `table_b::c_id`)
+/// * `referenced_table` - The referenced table type (e.g., `table_c`)
+pub fn generate_fpk_impl(column: &syn::Path, referenced_table: &syn::Path) -> Option<TokenStream> {
+    use syn::ext::IdentExt;
+    // Extract column name for method generation
+    let last_segment = column.segments.last()?;
+    let column_name = last_segment.ident.unraw().to_string();
+
+    // Extract referenced table name for method generation
+    let last_segment = referenced_table.segments.last()?;
+    let referenced_table_name = last_segment.ident.to_string();
+
+    // Generate method name based on column name
+    let stripped = column_name.strip_suffix("_id");
+    let method_name = match stripped {
+        Some(stripped) if !stripped.is_empty() => stripped.to_string(),
+        _ => format!("{column_name}_fk"),
+    };
+    let method_ident = syn::Ident::new(&method_name, proc_macro2::Span::call_site());
+
+    // Generate trait name
+    // Extract table name from column path (second-to-last segment)
+    let table_name_segment =
+        column.segments.iter().rev().nth(1).map(|segment| segment.ident.unraw().to_string())?;
+
+    // Convert table_name to CamelCase for trait name
+    let trait_name = format!(
+        "FK{}{}",
+        crate::utils::snake_to_camel_case(&table_name_segment),
+        crate::utils::snake_to_camel_case(&column_name)
+    );
+    let trait_ident = syn::Ident::new(&trait_name, proc_macro2::Span::call_site());
+
+    // Generate documentation
+    let trait_doc = format!("Trait to get the foreign record referenced by `{column_name}`.");
+    let method_doc = format!(
+        "Fetches the foreign `{referenced_table_name}` record for `{column_name}` through [`GetForeignExt::foreign`](::diesel_builders::GetForeignExt::foreign)."
+    );
+
+    Some(quote! {
+        impl ::diesel_builders::ForeignPrimaryKey for #column {
+            type ReferencedTable = #referenced_table::table;
+        }
+
+        #[doc = #trait_doc]
+        pub trait #trait_ident<Conn>: ::diesel_builders::GetForeign<
+            Conn,
+            (#column,),
+            (<#referenced_table::table as ::diesel::Table>::PrimaryKey,),
+        > {
+            #[doc = #method_doc]
+            #[doc = ""]
+            #[doc = "# Arguments"]
+            #[doc = ""]
+            #[doc = "* `conn` - A mutable reference to the database connection."]
+            #[doc = ""]
+            #[doc = "# Errors"]
+            #[doc = "Returns a `diesel::QueryResult` error if the query fails or no matching record is found."]
+            #[inline]
+            fn #method_ident(
+                &self,
+                conn: &mut Conn,
+            ) -> ::diesel::QueryResult<<#referenced_table::table as ::diesel_builders::TableExt>::Model>
+            {
+                <Self as ::diesel_builders::GetForeign<
+                    Conn,
+                    (#column,),
+                    (<#referenced_table::table as ::diesel::Table>::PrimaryKey,),
+                >>::foreign(self, conn)
+            }
+        }
+
+        impl<T, Conn> #trait_ident<Conn> for T
+        where
+            T: ::diesel_builders::GetForeign<
+                Conn,
+                (#column,),
+                (<#referenced_table::table as ::diesel::Table>::PrimaryKey,)
+            > {}
+    })
+}
+/// Metadata for a captured foreign key relationship used in `IterForeignKey`
+/// generation.
+struct CapturedForeignKey<'a> {
+    /// Host table field identifiers forming the foreign key
+    host_fields: Vec<&'a Field>,
+    /// Referenced column paths in the target table
+    ref_cols: Vec<TokenStream>,
+    /// Unique key for grouping foreign keys that reference the same index
+    grouping_key: String,
+}
+
+/// Generates implementations of `IterForeignKey` for the table model.
+///
+/// This function analyzes both implicit (triangular relations via
+/// `#[mandatory]`/`#[discretionary]`) and explicit
+/// (`#[table_model(foreign_key)]`) foreign keys, groups them by their
+/// referenced unique index, and generates `IterForeignKey` trait
+/// implementations for each group.
+///
+/// The generated iterators yield flat tuples of references to the foreign key
+/// values, automatically handling `Option` types by filtering out `None`
+/// values.
+pub fn generate_iter_foreign_key_impls(
+    fields: &syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    foreign_keys: &[ForeignKeyAttribute],
+    ancestors: Option<&[syn::Path]>,
+    primary_key_columns: &[Ident],
+    table_module: &Ident,
+    model_ident: &Ident,
+) -> syn::Result<Vec<TokenStream>> {
+    let captured_keys = collect_foreign_keys(fields, foreign_keys, ancestors, primary_key_columns)?;
+
+    // Group foreign keys by their referenced index
+    let groups = group_by_referenced_index(captured_keys.as_slice());
+
+    // Generate an IterForeignKey impl for each unique referenced index
+    generate_impls_for_groups(groups, table_module, model_ident)
+}
+
+/// Collects all foreign key relationships (both implicit and explicit).
+fn collect_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    foreign_keys: &[ForeignKeyAttribute],
+    ancestors: Option<&[syn::Path]>,
+    primary_key_columns: &[Ident],
+) -> syn::Result<Vec<CapturedForeignKey<'a>>> {
+    let mut captured_keys = Vec::new();
+
+    // Collect implicit foreign keys from triangular relations
+    collect_triangular_foreign_keys(fields, &mut captured_keys)?;
+
+    // Collect implicit foreign keys from ancestors
+    collect_ancestor_foreign_keys(fields, ancestors, primary_key_columns, &mut captured_keys)?;
+
+    // Collect explicit foreign keys from attributes
+    collect_explicit_foreign_keys(fields, foreign_keys, &mut captured_keys)?;
+
+    Ok(captured_keys)
+}
+
+/// Collects foreign keys from ancestor relations.
+fn collect_ancestor_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    ancestors: Option<&[syn::Path]>,
+    primary_key_columns: &[Ident],
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
+) -> syn::Result<()> {
+    if let Some(ancestors) = ancestors {
+        let mut host_fields = primary_key_columns
+            .iter()
+            .map(|pk| {
+                fields.iter().find(|field| field.ident.as_ref() == Some(pk)).ok_or_else(|| {
+                    syn::Error::new_spanned(pk, "Primary key field not found in struct.")
+                })
+            })
+            .collect::<syn::Result<Vec<_>>>()?;
+        for (index, ancestor_path) in ancestors.iter().enumerate() {
+            let ancestor_table_name = crate::utils::last_segment_ident(ancestor_path)?;
+            let ref_cols = primary_key_columns
+                .iter()
+                .map(|pk| {
+                    quote! { #ancestor_path::#pk }
+                })
+                .collect();
+            let grouping_key = primary_key_columns
+                .iter()
+                .map(|pk| format!("{ancestor_table_name}::{pk}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let host_fields = if index + 1 == ancestors.len() {
+                std::mem::take(&mut host_fields)
+            } else {
+                host_fields.clone()
+            };
+            captured_keys.push(CapturedForeignKey { host_fields, ref_cols, grouping_key });
+        }
+    }
+    Ok(())
+}
+
+/// Collects foreign keys from mandatory/discretionary triangular relations.
+fn collect_triangular_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
+) -> syn::Result<()> {
+    for field in fields {
+        let Some(field_name) = &field.ident else {
+            continue;
+        };
+
+        // Check for mandatory/discretionary table reference
+        let ref_table = if let Some(table) = extract_mandatory_table(field)? {
+            table
+        } else if let Some(table) = extract_discretionary_table(field)? {
+            table
+        } else {
+            continue;
+        };
+
+        let ref_table_name = crate::utils::last_segment_ident(&ref_table)?;
+
+        // Find same_as columns that reference this table
+        for other_field in fields {
+            let Some(other_field_name) = &other_field.ident else {
+                continue;
+            };
+
+            if field_name == other_field_name {
+                continue;
+            }
+
+            for group in extract_same_as_columns(other_field)? {
+                // Check disambiguators: if there are single-segment paths in
+                // the group, at least one must match the
+                // current field name
+                let disambiguators: Vec<_> =
+                    group.iter().filter(|p| p.segments.len() == 1).collect();
+
+                if !disambiguators.is_empty() {
+                    let matches_current_field = disambiguators
+                        .iter()
+                        .any(|p| p.segments.first().is_some_and(|s| s.ident == *field_name));
+
+                    if !matches_current_field {
+                        continue;
+                    }
+                }
+
+                for ref_col in group {
+                    let Some(table_name) =
+                        ref_col.segments.iter().rev().nth(1).map(|segment| &segment.ident)
+                    else {
+                        continue;
+                    };
+
+                    if ref_table_name == table_name {
+                        // Found a triangular FK: (mandatory/discr_id,
+                        // same_as_field) ->
+                        // (RefTable::PK, RefTable::column)
+                        let ref_pk = quote!(
+                            <#ref_table::table as ::diesel::Table>::PrimaryKey
+                        );
+
+                        let col_name = crate::utils::last_segment_ident(&ref_col)?;
+                        let grouping_key = format!("{ref_table_name}::{col_name}");
+
+                        captured_keys.push(CapturedForeignKey {
+                            host_fields: vec![field, other_field],
+                            ref_cols: vec![ref_pk, quote!(#ref_col)],
+                            grouping_key,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Collects foreign keys from explicit `#[table_model(foreign_key)]`
+/// attributes.
+fn collect_explicit_foreign_keys<'a>(
+    fields: &'a syn::punctuated::Punctuated<Field, syn::token::Comma>,
+    foreign_keys: &[ForeignKeyAttribute],
+    captured_keys: &mut Vec<CapturedForeignKey<'a>>,
+) -> syn::Result<()> {
+    for fk in foreign_keys {
+        let ref_cols_paths = &fk.referenced_columns;
+
+        // Explicit multi-column foreign key
+        if fk.host_columns.len() != ref_cols_paths.len() {
+            let message =
+                "Mismatched number of host and referenced columns in foreign_key definition.";
+            return Err(match ref_cols_paths.first() {
+                Some(referenced_column) => syn::Error::new_spanned(referenced_column, message),
+                None => syn::Error::new(proc_macro2::Span::call_site(), message),
+            });
+        }
+
+        let ref_cols_tokens: Vec<_> = ref_cols_paths.iter().map(|p| quote!(#p)).collect();
+
+        // Create a unique grouping key from the referenced columns
+        // This logic ensures that FKs targeting the same sets of columns are
+        // grouped together for iteration.
+        let parts: Vec<String> =
+            ref_cols_paths.iter().map(column_grouping_label).collect::<syn::Result<Vec<_>>>()?;
+        let grouping_key = parts.join(", ");
+
+        let mut host_fields = Vec::new();
+        for host_col_ident in &fk.host_columns {
+            let host_field = fields
+                .iter()
+                .find(|f| f.ident.as_ref() == Some(host_col_ident))
+                .ok_or_else(|| {
+                    syn::Error::new_spanned(
+                        host_col_ident,
+                        "Host field not found in struct definition.",
+                    )
+                })?;
+            host_fields.push(host_field);
+        }
+
+        captured_keys.push(CapturedForeignKey {
+            host_fields,
+            ref_cols: ref_cols_tokens,
+            grouping_key,
+        });
+    }
+    Ok(())
+}
+
+/// Formats a referenced-column path as its `table::column` grouping label.
+///
+/// # Errors
+/// Fails when the path has no segments, which a parsed `syn::Path` cannot
+/// produce.
+fn column_grouping_label(path: &syn::Path) -> syn::Result<String> {
+    let Some(column) = path.segments.last() else {
+        return Err(syn::Error::new_spanned(path, "Expected a non-empty path"));
+    };
+    Ok(match path.segments.iter().rev().nth(1) {
+        Some(table) => format!("{}::{}", table.ident, column.ident),
+        None => column.ident.to_string(),
+    })
+}
+
+/// Groups foreign keys by their referenced index.
+fn group_by_referenced_index<'a, 'b>(
+    captured_keys: &'b [CapturedForeignKey<'a>],
+) -> std::collections::HashMap<&'b str, (&'b [TokenStream], Vec<&'b CapturedForeignKey<'a>>)> {
+    use std::collections::HashMap;
+
+    let mut groups: HashMap<&'b str, (&'b [TokenStream], Vec<&'b CapturedForeignKey<'a>>)> =
+        HashMap::new();
+
+    for key in captured_keys {
+        groups
+            .entry(key.grouping_key.as_str())
+            .or_insert_with(|| (key.ref_cols.as_slice(), Vec::new()))
+            .1
+            .push(key);
+    }
+
+    groups
+}
+
+/// Generates `IterForeignKey` trait implementations for each group of foreign
+/// keys.
+fn generate_impls_for_groups<'b>(
+    groups: std::collections::HashMap<
+        &'b str,
+        (&'b [TokenStream], Vec<&'b CapturedForeignKey<'_>>),
+    >,
+    table_module: &Ident,
+    model_ident: &Ident,
+) -> syn::Result<Vec<TokenStream>> {
+    let mut impls = Vec::new();
+    let mut dyn_impl_branches = Vec::new();
+
+    for (_, (ref_cols, keys)) in groups {
+        let idx_type = crate::utils::format_as_nested_tuple(ref_cols);
+
+        let Some(first_key) = keys.first() else {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Cannot generate iterator for empty key group",
+            ));
+        };
+
+        // Determine base types (inner types T for T or Option<T>) of the host
+        // fields We use the first key as a template. All keys in group
+        // target same index, implies they have compatible types.
+        let mut base_types = Vec::new();
+        for field in &first_key.host_fields {
+            let inner_ty = crate::utils::option_inner_type(&field.ty).unwrap_or(&field.ty);
+            base_types.push(quote!(#inner_ty));
+        }
+
+        // Build item types for the iterators (Nested Tuples)
+
+        // MatchSimpleIter: Nested tuple of Option<&T>
+        let simple_item_types: Vec<_> =
+            base_types.iter().map(|ty| quote!(::std::option::Option<&'a #ty>)).collect();
+        let simple_elem_ty = crate::utils::format_as_nested_tuple(&simple_item_types);
+        // Nested Dyn Index
+        let dyn_elem_ty = recursive_dyn_tuple_type(&base_types);
+
+        // Build chains
+        // (type_simple, expr_simple, type_full, expr_full)
+        let (_, simple_iter_expr, _, _) =
+            build_chain_iterators(&keys, &simple_elem_ty, &simple_elem_ty, table_module)?;
+
+        let iter_foreign_key_columns_expr =
+            build_foreign_keys_iterator(keys.as_slice(), &base_types, table_module)?;
+
+        impls.push(quote! {
+            impl ::diesel_builders::IterForeignKeys<#idx_type> for #model_ident {
+                #[inline]
+                fn iter_foreign_key_columns() -> impl Iterator<Item = <#idx_type as ::diesel_builders::HasNestedDynColumns>::NestedDynColumns> {
+                    #iter_foreign_key_columns_expr
+                }
+
+                #[inline]
+                fn iter_match_simple<'a>(&'a self) -> impl Iterator<Item = #simple_elem_ty>
+                where #idx_type: 'a
+                {
+                    #simple_iter_expr
+                }
+            }
+        });
+
+        // Add to dynamic branching logic
+
+        dyn_impl_branches.push(quote! {
+            {
+                // Check types first to avoid allocation via into_vec()
+                if ::core::any::TypeId::of::<DynIdx>() == ::core::any::TypeId::of::<#dyn_elem_ty>() {
+                    let index_any = &index as &dyn ::std::any::Any;
+                    if let Some(concrete_index) = index_any.downcast_ref::<#dyn_elem_ty>() {
+                        if <#dyn_elem_ty as ::diesel_builders::NestedDynColumns>::nested_dyn_column_names(concrete_index) == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_COLUMN_NAMES
+                        && <#dyn_elem_ty as ::diesel_builders::NestedDynColumns>::nested_dyn_column_table_names(concrete_index) == <#idx_type as ::diesel_builders::NestedColumns>::NESTED_TABLE_NAMES
+                        {
+                            // Match!
+                            let iterator = <Self as ::diesel_builders::IterForeignKeys<#idx_type>>::iter_foreign_key_columns();
+                            // Collect into Vec<SpecificDynIdx>
+                            let dyn_keys: ::std::vec::Vec<#dyn_elem_ty> = iterator.collect();
+
+                            // Safe downcast via Box<dyn Any>
+                            // We box the vector of specific type.
+                            let boxed: ::std::boxed::Box<dyn ::std::any::Any> = ::std::boxed::Box::new(dyn_keys);
+                            // Attempt to downcast to Vec<DynIdx>. Since TypeId matches, this MUST succeed.
+                            if let Ok(vec) = boxed.downcast::<::std::vec::Vec<DynIdx>>() {
+                                return vec.into_iter();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Generate IterDynForeignKeys impl
+    impls.push(quote! {
+        impl<DynIdx> ::diesel_builders::IterDynForeignKeys<DynIdx> for #model_ident
+        where
+            DynIdx: ::diesel_builders::NestedDynColumns + ::diesel_builders::TypedNestedTuple + 'static,
+            DynIdx::NestedTupleValueType: 'static,
+        {
+            fn iter_foreign_key_dyn_columns(index: DynIdx) -> impl Iterator<Item = DynIdx> {
+                #(#dyn_impl_branches)*
+
+                // No match found
+                ::std::vec::Vec::new().into_iter()
+            }
+        }
+    });
+
+    Ok(impls)
+}
+
+/// Builds chained iterator types and expressions for multiple foreign key
+/// instances. Returns (`SimpleType`, `SimpleExpr`, `FullType`, `FullExpr`).
+fn build_chain_iterators(
+    keys: &[&CapturedForeignKey<'_>],
+    simple_elem_ty: &TokenStream,
+    full_elem_ty: &TokenStream,
+    table_module: &Ident,
+) -> syn::Result<(TokenStream, TokenStream, TokenStream, TokenStream)> {
+    let mut simple_iter_type = quote!(::std::iter::Empty<#simple_elem_ty>);
+    let mut simple_iter_expr = quote!(::std::iter::empty());
+
+    let mut full_iter_type = quote!(::std::iter::Empty<#full_elem_ty>);
+    let mut full_iter_expr = quote!(::std::iter::empty());
+
+    for key in keys {
+        let (s_expr, s_type, f_expr, f_type) =
+            build_single_key_iterators(key, simple_elem_ty, full_elem_ty, table_module)?;
+
+        simple_iter_type = quote!(::std::iter::Chain<#simple_iter_type, #s_type>);
+        simple_iter_expr = quote!(#simple_iter_expr.chain(#s_expr));
+
+        full_iter_type = quote!(::std::iter::Chain<#full_iter_type, #f_type>);
+        full_iter_expr = quote!(#full_iter_expr.chain(#f_expr));
+    }
+
+    Ok((simple_iter_type, simple_iter_expr, full_iter_type, full_iter_expr))
+}
+
+/// Builds iterator expressions and types for a single foreign key instance.
+///
+/// # Errors
+/// Fails when a host field has no name, which named-field collection prevents.
+fn build_single_key_iterators(
+    key: &CapturedForeignKey<'_>,
+    simple_elem_ty: &TokenStream,
+    full_elem_ty: &TokenStream,
+    table_module: &Ident,
+) -> syn::Result<(TokenStream, TokenStream, TokenStream, TokenStream)> {
+    // Simple Iterator: Always yields `Option<&T>` (nested tuple).
+    let mut simple_val_tokens = Vec::new();
+
+    // Full Iterator: Yields `&T` or skips if any column is missing.
+    // We construct a match guard: (val1, val2) -> Some((v1, v2)) or None
+    let mut full_match_arms = Vec::new();
+    let mut full_construction_vars = Vec::new();
+
+    for (i, field) in key.host_fields.iter().enumerate() {
+        let field_ident = field
+            .ident
+            .as_ref()
+            .ok_or_else(|| syn::Error::new_spanned(field, "Field must have a name"))?;
+        let col_path = quote!(#table_module::#field_ident);
+        let accessor = quote!(::diesel_builders::GetColumn::<#col_path>::get_column_ref(self));
+        // Note: accessors borrow self.
+
+        let is_optional = crate::utils::is_option(&field.ty);
+
+        let var_name = syn::Ident::new(&format!("v_{i}"), proc_macro2::Span::call_site());
+
+        if is_optional {
+            simple_val_tokens.push(quote!(#accessor.as_ref()));
+            full_match_arms
+                .push((quote!(#accessor), quote!(::std::option::Option::Some(#var_name))));
+        } else {
+            simple_val_tokens.push(quote!(::std::option::Option::Some(#accessor)));
+            full_match_arms.push((quote!(#accessor), quote!(#var_name)));
+        }
+        full_construction_vars.push(quote!(#var_name));
+    }
+
+    // Simple Iter
+    let simple_tuple_expr = crate::utils::format_as_nested_tuple(&simple_val_tokens);
+    let simple_iter_expr = quote!(::std::iter::once(#simple_tuple_expr));
+    let simple_iter_type = quote!(::std::iter::Once<#simple_elem_ty>);
+
+    // Full Iter: match (...) { (Some(v), ...) => Some(nested_tuple), _ => None
+    // }
+    let match_exprs: Vec<_> = full_match_arms.iter().map(|(e, _)| e).collect();
+    let match_pats: Vec<_> = full_match_arms.iter().map(|(_, p)| p).collect();
+
+    // Tuple of expressions: (&self.f1, self.f2_ref, ...)
+    let match_target = quote!((#(#match_exprs,)*));
+    // Tuple pattern: (Some(v0), v1, ...)
+    let match_pattern = quote!((#(#match_pats,)*));
+
+    let full_tuple_val = crate::utils::format_as_nested_tuple(&full_construction_vars);
+
+    let full_opt_expr = quote! {
+        match #match_target {
+            #match_pattern => ::std::option::Option::Some(#full_tuple_val),
+            _ => ::std::option::Option::None,
+        }
+    };
+
+    let full_iter_expr = quote!(::std::option::Option::into_iter(#full_opt_expr));
+    let full_iter_type = quote!(::std::option::IntoIter<#full_elem_ty>);
+
+    Ok((simple_iter_expr, simple_iter_type, full_iter_expr, full_iter_type))
+}
+
+/// Builds an iterator expression that returns column tuples (Nested Tuples of
+/// Boxes).
+fn build_foreign_keys_iterator(
+    keys: &[&CapturedForeignKey<'_>],
+    base_types: &[TokenStream],
+    table_module: &syn::Ident,
+) -> syn::Result<TokenStream> {
+    let mut items = Vec::new();
+
+    for key in keys {
+        // For each foreign key, create a tuple of HOST table column instances
+        let host_columns: Vec<_> = key
+            .host_fields
+            .iter()
+            .map(|host_field| {
+                let name = &host_field.ident;
+                quote! {#table_module::#name}
+            })
+            .collect();
+
+        items.push(recursive_dyn_tuple_expr(&host_columns, base_types)?);
+    }
+
+    Ok(quote! {
+        [#(#items),*].into_iter()
+    })
+}
+
+// Helpers for nested tuples
+
+/// Recursively builds a nested tuple expression from a slice of expressions
+/// used to build a Dynamic Column Index
+fn recursive_dyn_tuple_expr(
+    exprs: &[TokenStream],
+    types: &[TokenStream],
+) -> syn::Result<TokenStream> {
+    Ok(match (exprs, types) {
+        ([], []) => quote! { () },
+        ([single_expr], [single_type]) => {
+            quote! { (::diesel_builders::DynColumn::<#single_type>::from(#single_expr),) }
+        }
+        ([head_expr, tail_exprs @ ..], [head_type, tail_types @ ..]) => {
+            let tail_tuple = recursive_dyn_tuple_expr(tail_exprs, tail_types)?;
+            quote! { (::diesel_builders::DynColumn::<#head_type>::from(#head_expr), #tail_tuple) }
+        }
+        _ => {
+            return Err(syn::Error::new(
+                proc_macro2::Span::call_site(),
+                "Mismatched lengths between expressions and types in recursive_dyn_tuple_expr",
+            ));
+        }
+    })
+}
+
+/// Recursively builds the type of a nested dynamic column tuple.
+fn recursive_dyn_tuple_type(types: &[TokenStream]) -> TokenStream {
+    match types {
+        [] => quote! { () },
+        [single] => quote! { (::diesel_builders::DynColumn<#single>,) },
+        [head, tail @ ..] => {
+            let tail_tuple = recursive_dyn_tuple_type(tail);
+            quote! { (::diesel_builders::DynColumn<#head>, #tail_tuple) }
+        }
+    }
+}

@@ -1,0 +1,38 @@
+[package]
+name = "diesel-builders-derive-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+rust-version = "1.88"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Detached from the repository workspace so fuzzer profiles never mix with the
+# library's LTO and sanitizer builds.
+[workspace]
+
+# Keep line tables so sanitizer stack traces resolve to source lines.
+[profile.release]
+debug = 1
+
+[dependencies]
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "table_model"
+path = "fuzz_targets/table_model.rs"
+harness = false
+
+[[bin]]
+name = "relationship_attributes"
+path = "fuzz_targets/relationship_attributes.rs"
+harness = false
+
+[[bin]]
+name = "index"
+path = "fuzz_targets/index.rs"
+harness = false

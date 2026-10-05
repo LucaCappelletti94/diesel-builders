@@ -1,0 +1,32 @@
+//! Submodule defining and implementing traits for Diesel columns.
+
+mod columns_collection;
+mod homogeneously_typed_nested_columns;
+mod nested_columns;
+mod nested_columns_collection;
+mod non_empty_nested_projection;
+mod non_empty_projection;
+mod tuple_eq_all;
+mod tuple_to_order;
+
+pub use columns_collection::ColumnsCollection;
+pub use homogeneously_typed_nested_columns::HomogeneouslyTypedNestedColumns;
+pub use nested_columns::{HasNestedDynColumns, NestedColumns, NestedDynColumns};
+pub use nested_columns_collection::NestedColumnsCollection;
+pub use non_empty_nested_projection::NonEmptyNestedProjection;
+pub use non_empty_projection::NonEmptyProjection;
+pub use tuple_eq_all::TupleEqAll;
+pub use tuple_to_order::TupleToOrder;
+use tuplities::prelude::*;
+
+use crate::TypedNestedTuple;
+
+/// A trait representing a collection of Diesel columns.
+pub trait Columns: NestTuple<Nested: Default + TypedNestedTuple> {}
+
+impl<T> Columns for T
+where
+    T: NestTuple<Nested: NestedColumns>,
+    <<T::Nested as NestedColumns>::NestedTables as FlattenNestedTuple>::Flattened: NestTuple,
+{
+}

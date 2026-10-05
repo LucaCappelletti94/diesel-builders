@@ -1,0 +1,5 @@
+error: Expected table name: #[mandatory(table_name)]
+ --> tests/ui_stable/mandatory_missing_table_error.rs:9:5
+  |
+9 |     #[mandatory]
+  |     ^^^^^^^^^^^^

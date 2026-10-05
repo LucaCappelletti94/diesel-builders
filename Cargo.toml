@@ -1,0 +1,87 @@
+[workspace]
+resolver = "2"
+
+members = ["diesel-builders", "diesel-builders-derive", "validation-errors"]
+
+[workspace.package]
+authors = ["Luca Cappelletti"]
+edition = "2024"
+license-file = "LICENSE"
+repository = "https://github.com/lucacappelletti94/diesel-builders"
+keywords = [
+	"diesel",
+	"orm",
+	"builder-pattern",
+	"type-safety",
+	"code-generation",
+]
+categories = [
+	"database",
+	"development-tools::code-generation",
+	"development-tools::libraries",
+]
+version = "0.1.0"
+rust-version = "1.88"
+
+[workspace.dependencies]
+diesel = { version = "2.3.13", git = "https://github.com/diesel-rs/diesel", branch = "main" }
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+diesel-builders = { version = "0.1.0", path = "diesel-builders" }
+diesel-builders-derive = { version = "0.1.0", path = "diesel-builders-derive" }
+thiserror = "2.0.18"
+typenum = "1"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+tuplities = { version = "0.2", git = "https://github.com/LucaCappelletti94/tuplities", branch = "main", default-features = false, features = [
+	"flatten-nest",
+] }
+
+[workspace.lints.rust]
+missing_docs = "forbid"
+unused_macro_rules = "forbid"
+unconditional_recursion = "forbid"
+unreachable_patterns = "forbid"
+unused_import_braces = "forbid"
+unused_must_use = "forbid"
+dead_code = "deny"
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+unreadable_literal = "allow"
+missing_errors_doc = "forbid"
+missing_panics_doc = "forbid"
+new_ret_no_self = "allow"
+struct_excessive_bools = "allow"
+should_panic_without_expect = "allow"
+doc_markdown = "warn"
+unnecessary_cast = "forbid"
+trait_duplication_in_bounds = "forbid"
+needless_lifetimes = "forbid"
+redundant_clone = "forbid"
+redundant_closure = "forbid"
+extra_unused_type_parameters = "forbid"
+type_repetition_in_bounds = "forbid"
+clone_on_copy = "forbid"
+panic = "deny"
+todo = "deny"
+as_conversions = "deny"
+as_pointer_underscore = "deny"
+as_underscore = "deny"
+missing_docs_in_private_items = "deny"
+unimplemented = "deny"
+assertions_on_result_states = "deny"
+big_endian_bytes = "deny"
+cfg_not_test = "deny"
+clone_on_ref_ptr = "forbid"
+dbg_macro = "deny"
+pedantic = { level = "deny", priority = -1 }
+redundant_guards = "deny"
+complexity = { level = "deny", priority = -1 }
+style = { level = "deny", priority = -1 }
+perf = { level = "deny", priority = -1 }
+
+[profile.mutants]
+inherits = "test"
+debug = "none"

@@ -1,0 +1,461 @@
+//! Submodule defining the `Descendant` trait.
+
+use diesel::{
+    Identifiable, QueryResult, RunQueryDsl, Table,
+    associations::HasTable,
+    query_builder::{DeleteStatement, IntoUpdateTarget},
+    query_dsl::methods::{ExecuteDsl, FindDsl, LoadQuery},
+};
+use tuplities::prelude::{NestTuple, NestedTupleInto, NestedTuplePushBack};
+use typenum::Unsigned;
+
+use crate::{
+    GetNestedColumns, NestedBundlableTables, NestedColumns, TableExt, TypedColumn,
+    TypedNestedTuple, get_model::GetModel, load_query_builder::LoadFirst, tables::NestedTables,
+};
+
+/// Marker trait for root table models (tables with no ancestors).
+///
+/// This trait should be derived on Model structs to automatically generate
+/// the `Descendant` implementation for their associated table type.
+pub trait Root: TableExt {}
+
+/// A trait marker for getting the ancestor index of a table.
+pub trait AncestorOfIndex<T: DescendantOf<Self>>: Descendant {
+    /// Tuple index marker of the ancestor table in the descendant's ancestor
+    /// list.
+    type Idx: Unsigned;
+}
+
+/// A trait for Diesel tables that have ancestor tables.
+/// This trait enforces that all tables in an inheritance hierarchy share the
+/// same root ancestor (and thus the same primary key type).
+pub trait DescendantOf<T: Descendant>: Descendant<Root = T::Root> {}
+
+impl<T> DescendantOf<T> for T where T: Descendant {}
+
+/// A trait for Diesel tables that have ancestor tables.
+/// This trait enforces that the `Self` table is descendant of all of the
+/// tables in the `NestedAncestors` tuple.
+pub trait DescendantOfAll<NestedAncestors>: Table {}
+
+impl<Head: Descendant, T> DescendantOfAll<(Head,)> for T where T: Descendant + DescendantOf<Head> {}
+impl<Head, Tail, T> DescendantOfAll<(Head, Tail)> for T
+where
+    Head: Descendant,
+    T: Descendant + DescendantOf<Head> + DescendantOfAll<Tail>,
+{
+}
+
+/// A column from an ancestor table.
+pub trait AncestorColumnOf<T: DescendantOf<Self::Table>>: TypedColumn<Table: Descendant> {}
+impl<T, C> AncestorColumnOf<T> for C
+where
+    T: DescendantOf<C::Table>,
+    C: TypedColumn<Table: Descendant>,
+{
+}
+
+/// A collection of columns from ancestors of the provided descendant table.
+pub trait AncestorColumnsOf<T> {}
+
+impl<T, A: NestTuple> AncestorColumnsOf<T> for A where A::Nested: NestedAncestorColumnsOf<T> {}
+
+/// A nested collection of columns from ancestors of the provided descendant
+/// table.
+pub trait NestedAncestorColumnsOf<T>: TypedNestedTuple {}
+
+impl<T> NestedAncestorColumnsOf<T> for () {}
+impl<T, A> NestedAncestorColumnsOf<T> for (A,)
+where
+    A: AncestorColumnOf<T>,
+    T: DescendantOf<A::Table>,
+{
+}
+impl<T, CHead, CTail> NestedAncestorColumnsOf<T> for (CHead, CTail)
+where
+    T: DescendantOf<CHead::Table>,
+    CHead: AncestorColumnOf<T>,
+    CTail: NestedAncestorColumnsOf<T>,
+    (CHead, CTail): NestedColumns,
+{
+}
+
+/// A trait for a model associated to a diesel table which is descended from
+/// another table.
+pub trait ModelDescendantOf<Conn, T: Descendant>: HasTable<Table: DescendantOf<T>> {
+    /// Returns the ancestor model associated to this descendant model.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::ancestors::ModelDescendantOf;
+    /// use schema::{Profile, User, users};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = Profile::find(&1, &mut conn)?;
+    /// let user = ModelDescendantOf::<SqliteConnection, users::table>::ancestor(&profile, &mut conn)?;
+    /// assert_eq!(user, User { id: 1, name: "Ada".into(), age: 20, nickname: Some("Ace".into()) });
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model>;
+}
+
+/// Helper trait to execute ancestor queries with the table generic at the
+/// method instead of at the trait-level like in [`ModelDescendantOf`].
+pub trait ModelDescendantExt<Conn> {
+    /// Returns the ancestor model associated to this descendant model.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `diesel::QueryResult` which may contain an error if the query
+    /// fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let profile = Profile::find(&1, &mut conn)?;
+    /// let user: User = profile.ancestor(&mut conn)?;
+    /// assert_eq!(user.id, 1);
+    /// assert_eq!(user.name, "Ada");
+    /// assert_eq!(user.age, 20);
+    /// assert_eq!(user.nickname.as_deref(), Some("Ace"));
+    ///
+    /// let mut fresh = connection()?;
+    /// let child: Child = children::table::builder()
+    ///     .mandatory(sides::table::builder())
+    ///     .discretionary(sides::table::builder())
+    ///     .child_label("short")
+    ///     .insert(&mut fresh)?;
+    /// let parent: Parent = child.ancestor(&mut fresh)?;
+    /// assert_eq!(parent.id, child.id);
+    /// assert_eq!(parent.label, "short");
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn ancestor<M>(&self, conn: &mut Conn) -> diesel::QueryResult<M>
+    where
+        M: HasTable<Table: TableExt<Model = M> + Descendant>,
+        Self: ModelDescendantOf<Conn, M::Table>,
+    {
+        <Self as ModelDescendantOf<Conn, M::Table>>::ancestor(self, conn)
+    }
+
+    /// Deletes the root table record associated with this descendant model,
+    /// which will cascade and delete all descendants including this instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `diesel::QueryResult` which may contain an error if the delete
+    /// operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let ada = profiles::table::try_builder()?.display_name("Ada").visits(3).insert(&mut conn)?;
+    /// let grace =
+    ///     profiles::table::try_builder()?.display_name("Grace").visits(1).insert(&mut conn)?;
+    /// assert_eq!(ada.id, 1);
+    /// assert_eq!(grace.id, 2);
+    ///
+    /// let deleted = ada.delete(&mut conn)?;
+    /// assert_eq!(deleted, 1);
+    /// assert!(!Profile::exists(&ada.id, &mut conn)?);
+    /// assert!(!User::exists(&ada.id, &mut conn)?);
+    /// assert!(Profile::exists(&grace.id, &mut conn)?);
+    /// assert!(User::exists(&grace.id, &mut conn)?);
+    /// assert_eq!(User::find(&grace.id, &mut conn)?.name, "Grace");
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>
+    where
+        Self: ModelDelete<Conn>,
+    {
+        <Self as ModelDelete<Conn>>::delete(self, conn)
+    }
+}
+
+impl<M, Conn> ModelDescendantExt<Conn> for M {}
+
+impl<Conn, T, M> ModelDescendantOf<Conn, T> for M
+where
+    T: Descendant,
+    M: HasTable<Table: DescendantOf<T>>
+        + GetNestedColumns<<M::Table as TableExt>::NestedPrimaryKeyColumns>,
+    T::NestedPrimaryKeyColumns: LoadFirst<Conn>,
+    <<M::Table as TableExt>::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType:
+        NestedTupleInto<<T::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType>,
+{
+    fn ancestor(&self, conn: &mut Conn) -> diesel::QueryResult<<T as TableExt>::Model> {
+        let descendant_pk_values = self.get_nested_columns();
+        <T::NestedPrimaryKeyColumns as LoadFirst<Conn>>::load_first(descendant_pk_values, conn)
+    }
+}
+
+/// A trait for finding a model by its ID.
+pub trait ModelFind<Conn>: HasTable<Table: TableExt>
+where
+    for<'a> &'a Self: Identifiable,
+{
+    /// Finds a model by its ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID to search for.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails or if no matching record is found.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::{Post, User};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let ada = User::find(&1, &mut conn)?;
+    /// assert_eq!(ada, User { id: 1, name: "Ada".into(), age: 20, nickname: Some("Ace".into()) });
+    /// let third = Post::find(&3, &mut conn)?;
+    /// assert_eq!(third.title, "Third");
+    /// assert_eq!(third.user_id, 2);
+    /// assert_eq!(User::find(&99, &mut conn), Err(diesel::result::Error::NotFound));
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn find(
+        id: <&Self as Identifiable>::Id,
+        conn: &mut Conn,
+    ) -> QueryResult<<Self::Table as TableExt>::Model>;
+
+    /// Returns whether a model with the given ID exists.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The ID to search for.
+    /// * `conn` - A mutable reference to the Diesel connection to use for the
+    ///   query.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   query fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::{Profile, User};
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// assert!(User::exists(&1, &mut conn)?);
+    /// assert!(User::exists(&2, &mut conn)?);
+    /// assert!(!User::exists(&3, &mut conn)?);
+    /// assert!(Profile::exists(&1, &mut conn)?);
+    /// assert!(!Profile::exists(&2, &mut conn)?);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn exists(id: <&Self as Identifiable>::Id, conn: &mut Conn) -> QueryResult<bool> {
+        use diesel::OptionalExtension;
+        match Self::find(id, conn).optional()? {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
+    }
+}
+
+impl<Conn, M> ModelFind<Conn> for M
+where
+    M: HasTable<Table: TableExt>,
+    Conn: diesel::connection::LoadConnection,
+    for<'query> &'query M: Identifiable,
+    M::Table: for<'query> FindDsl<<&'query M as Identifiable>::Id>,
+    for<'query> <M::Table as FindDsl<<&'query M as Identifiable>::Id>>::Output:
+        LoadQuery<'query, Conn, <Self::Table as TableExt>::Model>,
+{
+    fn find(
+        id: <&Self as Identifiable>::Id,
+        conn: &mut Conn,
+    ) -> QueryResult<<Self::Table as TableExt>::Model> {
+        M::Table::default().find(id).get_result(conn)
+    }
+}
+
+/// A trait for deleting a model from its root table, which cascades to all
+/// descendants.
+pub trait ModelDelete<Conn>: HasTable<Table: Descendant> {
+    /// Deletes the root table record associated with this descendant model,
+    /// which will cascade and delete all descendants including this instance.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `diesel::QueryResult` which may contain an error if the delete
+    /// operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use diesel_builders::ModelDelete;
+    /// use schema::*;
+    ///
+    /// let mut conn = connection()?;
+    /// let ada = profiles::table::try_builder()?.display_name("Ada").visits(3).insert(&mut conn)?;
+    /// let grace =
+    ///     profiles::table::try_builder()?.display_name("Grace").visits(1).insert(&mut conn)?;
+    ///
+    /// let deleted = ModelDelete::<SqliteConnection>::delete(&grace, &mut conn)?;
+    /// assert_eq!(deleted, 1);
+    /// assert!(!User::exists(&grace.id, &mut conn)?);
+    /// assert!(!Profile::exists(&grace.id, &mut conn)?);
+    /// assert_eq!(User::find(&ada.id, &mut conn)?.name, "Ada");
+    /// assert!(Profile::exists(&ada.id, &mut conn)?);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize>;
+}
+
+impl<Conn, M> ModelDelete<Conn> for M
+where
+    M: HasTable<Table: Descendant>,
+    for<'query> &'query M: Identifiable,
+    Conn: diesel::Connection,
+    <M::Table as Descendant>::Root: for<'query> FindDsl<<&'query M as Identifiable>::Id>,
+    for<'query> <<M::Table as Descendant>::Root as FindDsl<<&'query M as Identifiable>::Id>>::Output:
+        IntoUpdateTarget<Table = <M::Table as Descendant>::Root>,
+    for<'query> DeleteStatement<
+        <M::Table as Descendant>::Root,
+        <<<M::Table as Descendant>::Root as FindDsl<<&'query M as Identifiable>::Id>>::Output as
+        IntoUpdateTarget>::WhereClause,
+    >: ExecuteDsl<Conn>,
+{
+    fn delete(&self, conn: &mut Conn) -> diesel::QueryResult<usize> {
+        let root_table: <M::Table as Descendant>::Root = Default::default();
+        diesel::delete(root_table.find(self.id())).execute(conn)
+    }
+}
+
+/// A trait for upserting (insert or update) a model.
+///
+/// This trait allows inserting a model or updating it if it already exists,
+/// based on a conflict on the primary key.
+pub trait ModelUpsert<Conn>: HasTable<Table: TableExt> {
+    /// Upserts the model (insert or update on conflict).
+    ///
+    /// If a record with the same primary key exists, it is updated.
+    /// Otherwise, a new record is inserted.
+    ///
+    /// # Arguments
+    ///
+    /// * `conn` - A mutable reference to the Diesel connection.
+    ///
+    /// # Returns
+    ///
+    /// * The inserted or updated model.
+    ///
+    /// # Errors
+    ///
+    /// * Returns a `diesel::QueryResult` which may contain an error if the
+    ///   upsert operation fails.
+    ///
+    /// ```
+    /// # include!("doctest_setup.rs");
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use schema::User;
+    ///
+    /// let mut conn = connection_with_data()?;
+    /// let mut ada = User::find(&1, &mut conn)?;
+    /// ada.name = "Ada Lovelace".into();
+    /// ada.age = 36;
+    /// let upserted = ada.upsert(&mut conn)?;
+    /// assert_eq!(upserted.id, 1);
+    /// assert_eq!(upserted.name, "Ada Lovelace");
+    /// assert_eq!(upserted.age, 36);
+    /// assert_eq!(upserted.nickname, Some("Ace".into()));
+    /// assert!(!User::exists(&3, &mut conn)?);
+    ///
+    /// let hopper = User { id: 3, name: "Hopper".into(), age: 85, nickname: None };
+    /// let inserted = hopper.upsert(&mut conn)?;
+    /// assert_eq!(inserted.id, 3);
+    /// assert_eq!(User::find(&3, &mut conn)?.age, 85);
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn upsert(&self, conn: &mut Conn) -> QueryResult<<Self::Table as TableExt>::Model>
+    where
+        Self: Sized;
+}
+
+/// A trait marker for getting the ancestor tables of a descendant table.
+pub trait NestedAncestorsOf<T: Descendant<NestedAncestors = Self>>: NestedTables {}
+
+/// A trait for Diesel tables that have ancestor tables.
+pub trait Descendant: TableExt {
+    /// The ancestor tables of this table.
+    type NestedAncestors: NestedAncestorsOf<Self> + NestedTuplePushBack<Self>;
+    /// The root of the ancestor hierarchy. When the current
+    /// table is the root, this is itself.
+    type Root: Root<NestedPrimaryKeyColumns: TypedNestedTuple<
+        NestedTupleColumnType = <Self::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleColumnType,
+        NestedTupleValueType = <Self::NestedPrimaryKeyColumns as TypedNestedTuple>::NestedTupleValueType,
+    >>;
+}
+
+/// A trait for Diesel tables that have ancestor tables, including themselves.
+pub trait DescendantWithSelf: Descendant + AncestorOfIndex<Self> {
+    /// The ancestor tables of this table, including itself.
+    type NestedAncestorsWithSelf: NestedBundlableTables<
+        NestedModels: GetModel<Self> + GetModel<Self::Root>,
+    >;
+}
+
+impl<T> DescendantWithSelf for T
+where
+    T: Descendant + AncestorOfIndex<Self>,
+    T::NestedAncestors: NestedTuplePushBack<Self>,
+    <T::NestedAncestors as NestedTuplePushBack<Self>>::Output:
+        NestedBundlableTables<NestedModels: GetModel<T> + GetModel<T::Root>>,
+{
+    type NestedAncestorsWithSelf = <T::NestedAncestors as NestedTuplePushBack<Self>>::Output;
+}
+
+impl<T> NestedAncestorsOf<T> for () where T: Descendant<NestedAncestors = ()> {}
+
+impl<T, A> NestedAncestorsOf<T> for (A,)
+where
+    A: AncestorOfIndex<T>,
+    T: Descendant<NestedAncestors = (A,)>
+        + DescendantOf<A>
+        + diesel::query_source::TableNotEqual<A>,
+{
+}
+
+impl<T, Head, Tail> NestedAncestorsOf<T> for (Head, Tail)
+where
+    (Head, Tail): NestedTables,
+    Head: AncestorOfIndex<T>,
+    T: Descendant<NestedAncestors = (Head, Tail)>
+        + DescendantOf<Head>
+        + diesel::query_source::TableNotEqual<Head>,
+{
+}

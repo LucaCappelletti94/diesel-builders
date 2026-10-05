@@ -1,0 +1,2 @@
+#[diesel(table_name = dogs)]
+#[table_model(surrogate_key)]

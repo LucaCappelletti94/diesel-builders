@@ -1,0 +1,5 @@
+error: Column path in `#[same_as(...)]` must be in the format `table::column`
+  --> tests/ui_nightly/same_as_under_segment_error.rs:15:15
+   |
+15 |     #[same_as(parent_id)]
+   |               ^^^^^^^^^

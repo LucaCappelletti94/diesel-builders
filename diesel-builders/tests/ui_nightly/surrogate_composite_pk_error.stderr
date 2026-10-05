@@ -1,0 +1,11 @@
+error: `surrogate_key` is not supported for composite primary keys
+  --> tests/ui_nightly/surrogate_composite_pk_error.rs:4:1
+   |
+ 4 | / #[diesel(table_name = users)]
+ 5 | | #[diesel(primary_key(id, name))]
+ 6 | | #[table_model(surrogate_key)]
+ 7 | | pub struct User {
+ 8 | |     pub id: i32,
+ 9 | |     pub name: String,
+10 | | }
+   | |_^

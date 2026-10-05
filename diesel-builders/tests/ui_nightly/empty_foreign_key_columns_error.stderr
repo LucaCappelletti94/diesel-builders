@@ -1,0 +1,5 @@
+error: `foreign_key(...)` requires at least one referenced column
+ --> tests/ui_nightly/empty_foreign_key_columns_error.rs:5:39
+  |
+5 | #[table_model(foreign_key(other_id, ()))]
+  |                                       ^

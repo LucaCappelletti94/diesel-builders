@@ -1,0 +1,6 @@
+.git
+**/target
+**/mutants.out*
+fuzz/corpus
+fuzz/artifacts
+fuzz/coverage

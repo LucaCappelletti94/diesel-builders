@@ -1,0 +1,70 @@
+//! Submodule defining and implementing the `NestedTables` trait.
+
+use tuplities::prelude::*;
+
+use crate::{
+    HasNestedTables, NestedColumns, NestedTableModels, TableExt, columns::NestedColumnsCollection,
+};
+
+/// Trait for recursive definition of the `Tables` trait.
+pub trait NestedTables: FlattenNestedTuple<Flattened: NestTuple> {
+    /// The associated nested models.
+    type NestedModels: IntoNestedTupleOption<IntoOptions = Self::OptionalNestedModels>
+        + FlattenNestedTuple
+        + NestedTableModels<NestedTables = Self>;
+    /// The associated nested optional models.
+    type OptionalNestedModels: NestedTupleOption<Transposed = Self::NestedModels>
+        + FlattenNestedTuple
+        + HasNestedTables<NestedTables = Self>
+        + Default;
+    /// The associated nested insertable models.
+    type NestedNewValues: FlattenNestedTuple;
+    /// The associated nested primary key columns collection.
+    type NestedPrimaryKeyColumnsCollection: NestedColumnsCollection;
+    /// The chained nested columns of all nested tables.
+    type ChainedNestedRecords: NestedColumns;
+}
+
+impl NestedTables for () {
+    type NestedModels = ();
+    type OptionalNestedModels = ();
+    type NestedNewValues = ();
+    type NestedPrimaryKeyColumnsCollection = ();
+    type ChainedNestedRecords = ();
+}
+
+impl<T> NestedTables for (T,)
+where
+    T: TableExt,
+    (T::Model,): IntoNestedTupleOption<IntoOptions = (Option<T::Model>,)>,
+    (Option<T::Model>,): NestedTupleOption<Transposed = (T::Model,)>,
+{
+    type NestedModels = (T::Model,);
+    type OptionalNestedModels = (Option<T::Model>,);
+    type NestedNewValues = (T::NewValues,);
+    type NestedPrimaryKeyColumnsCollection = (T::NestedPrimaryKeyColumns,);
+    type ChainedNestedRecords = T::NewRecord;
+}
+
+impl<Head, Tail> NestedTables for (Head, Tail)
+where
+    Head: TableExt,
+    Tail: NestedTables,
+    (Head, Tail): FlattenNestedTuple<Flattened: NestTuple<Nested = (Head, Tail)>>,
+    (Head::Model, Tail::NestedModels): NestedTableModels<NestedTables = Self>
+        + IntoNestedTupleOption<IntoOptions = (Option<Head::Model>, Tail::OptionalNestedModels)>,
+    (Option<Head::Model>, Tail::OptionalNestedModels):
+        FlattenNestedTuple + NestedTupleOption<Transposed = (Head::Model, Tail::NestedModels)>,
+    (Head::NewValues, Tail::NestedNewValues): FlattenNestedTuple,
+    (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection):
+        NestedColumnsCollection,
+    Head::NewRecord: NestedTupleChain<Tail::ChainedNestedRecords, Chained: NestedColumns>,
+{
+    type NestedModels = (Head::Model, Tail::NestedModels);
+    type OptionalNestedModels = (Option<Head::Model>, Tail::OptionalNestedModels);
+    type NestedNewValues = (Head::NewValues, Tail::NestedNewValues);
+    type NestedPrimaryKeyColumnsCollection =
+        (Head::NestedPrimaryKeyColumns, Tail::NestedPrimaryKeyColumnsCollection);
+    type ChainedNestedRecords =
+        <Head::NewRecord as NestedTupleChain<Tail::ChainedNestedRecords>>::Chained;
+}
