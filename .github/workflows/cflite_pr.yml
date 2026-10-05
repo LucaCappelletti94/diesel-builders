@@ -28,6 +28,8 @@ jobs:
           toolchain: nightly-2026-10-03
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz --version 0.13.2 --locked -j 2
+      - name: Test structural generator
+        run: cargo test --manifest-path fuzz/Cargo.toml --lib model_input::tests
       - name: Build fuzz targets
         run: cargo fuzz build -O --debug-assertions --fuzz-dir fuzz
       - name: Replay committed seeds

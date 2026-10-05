@@ -8,4 +8,6 @@ Procedural macros for [`diesel-builders`](https://github.com/LucaCappelletti94/d
 
 `TableModel` generates the Diesel table, checked builders, column traits, and relationship implementations from a model definition. Declare related query groups with `diesel::allow_tables_to_appear_in_same_query!`.
 
+Raw identifiers are supported for model and column names, including columns marked `#[infallible]` or `#[table_model(infallible)]`.
+
 `index!` and `unique_index!` describe indexed column groups for relationship queries. See the [executable model examples](https://github.com/LucaCappelletti94/diesel-builders#examples) for attribute syntax and builder usage.

@@ -1,12 +1,14 @@
 # Fuzz targets for `diesel-builders-derive`
 
-The targets source-include the derive modules from `diesel-builders-derive` so they exercise the production parser and expansion code directly. Each target below takes UTF-8 text. Non-UTF-8 inputs are rejected by the harness before the body runs.
+The targets source-include the derive modules from `diesel-builders-derive` so they exercise the production parser and expansion code directly. `table_model` consumes raw bytes. The other targets consume UTF-8 text and reject non-UTF-8 inputs before the body runs.
 
 ## Input encodings
 
-- `table_model`. The full Rust source of a struct definition carrying `#[diesel]` or `#[table_model]` container attributes. The body parses it as a `syn::DeriveInput` and runs the full `TableModel` derive expansion.
+- `table_model`. A byte decision tape generates a `syn::DeriveInput` with at most four recursive type or default-expression layers, 32 fields, eight attributes per container or field, and four entries per relationship list. Choices cover identifiers, generics, primitive and custom types, defaults, primary and foreign keys, inheritance, keyed `same_as`, mandatory and discretionary relations, SQL overrides, and malformed attributes. Tuple structs, unit structs, enums, and unions exercise rejected model shapes.
 - `relationship_attributes`. One `#[...]` attribute per line, every line parseable as a `syn::Attribute`. Each attribute is applied to the container and to every field of a fixed two-field template struct before the expansion runs.
 - `index`. The token stream inside an `index!(...)` or `unique_index!(...)` invocation. A comma-terminated list of column types with an optional trailing comma. The marker trait is picked from the input length so both `IndexedColumn` and `UniquelyIndexedColumn` are exercised.
+
+`table_model` reads model identity, visibility, body kind, generics, container attributes, and fields in that order. Field choices read identity, visibility, type, and attributes. Exhausted input supplies zero choices, and `fuzz/src/model_input.rs` defines the selectors.
 
 ## Invariants
 
@@ -17,6 +19,8 @@ The targets source-include the derive modules from `diesel-builders-derive` so t
 ## Seed corpus
 
 `fuzz/seeds/<target>/` holds the committed starting corpus. One input per file, in that target's encoding, plus a `<target>.options` file that carries the `[libfuzzer]` `max_len` cap. `.clusterfuzzlite/build.sh` zips each directory into `<target>_seed_corpus.zip` and fails the build when a target has no seeds or no options.
+
+Decode a `table_model` seed or crash input into model source with `cargo run --manifest-path fuzz/Cargo.toml --example decode_model -- <input-path>`. The `table_model` byte budget is `max_len = 2048`.
 
 ## Local replay
 

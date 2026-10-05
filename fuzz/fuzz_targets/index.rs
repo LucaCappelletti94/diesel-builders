@@ -20,7 +20,7 @@ fuzz_target!(|input: &str| {
         Ok(tokens) => tokens,
         Err(_) => return,
     };
-    let trait_path: proc_macro2::TokenStream = if input.len() % 2 == 0 {
+    let trait_path: proc_macro2::TokenStream = if input.len().is_multiple_of(2) {
         quote::quote! { ::diesel_builders::IndexedColumn }
     } else {
         quote::quote! { ::diesel_builders::UniquelyIndexedColumn }
@@ -35,7 +35,9 @@ fuzz_target!(|input: &str| {
     // since it can never legally appear as an impl target either; that is
     // a legitimate rejection this reference parse alone cannot predict.
     let parsed_columns: syn::punctuated::Punctuated<syn::Path, syn::Token![,]> =
-        match syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated.parse2(body.clone()) {
+        match syn::punctuated::Punctuated::<syn::Path, syn::Token![,]>::parse_terminated
+            .parse2(body.clone())
+        {
             Ok(columns) => columns,
             Err(_) => {
                 diesel_builders_derive_fuzz::expand_index(body, &trait_path)
