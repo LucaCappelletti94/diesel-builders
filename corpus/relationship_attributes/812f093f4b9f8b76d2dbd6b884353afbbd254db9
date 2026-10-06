@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_model(foreign_key(s(ensord, site_d)))]

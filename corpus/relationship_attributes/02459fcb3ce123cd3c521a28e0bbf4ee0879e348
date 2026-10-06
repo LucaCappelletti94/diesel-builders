@@ -1,0 +1,4 @@
+#[_as(ani-als._sides)]
+#[discretionary(secon::s::name, (b::x, b::y))]
+#[same_as(satellitename, (bb::y))]
+#[same_as(satellite_table::par1nt_id6)]

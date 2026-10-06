@@ -1,0 +1,3 @@
+#[table_model(d~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string()))]
+#[table_model(default = "Guest")]
+#[table_model(sql_name = "columns")]

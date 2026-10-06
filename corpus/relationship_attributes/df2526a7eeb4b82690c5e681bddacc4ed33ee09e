@@ -1,0 +1,5 @@
+#[modtable_model(error mror = NewAnimalError)]
+#[table_model(error = NewAnimalError)]
+#[table_model(error = NewAnimalError)]
+#[table_mododel(recwAnima~lError)]
+#[bnfallible]

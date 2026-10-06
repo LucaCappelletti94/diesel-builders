@@ -1,0 +1,1 @@
+#[_m=den(foreign_key((sensor_id,:id)))]

@@ -1,0 +1,5 @@
+#[maname_as]
+#[diesel]
+#[tableas]
+#[diesel]
+#[table_model(fo)]

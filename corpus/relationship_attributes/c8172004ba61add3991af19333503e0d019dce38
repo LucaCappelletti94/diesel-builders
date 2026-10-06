@@ -1,0 +1,4 @@
+#[mand0tory()]
+#[same_as]
+#[diesel(!!ccmme "x")]
+#[ta(bla(y (a::b)))]

@@ -1,0 +1,3 @@
+#[mand_as]
+#[diesel(colu= _name = "x")]
+#[table_model(foreign(,_e)k(y (ab)))]

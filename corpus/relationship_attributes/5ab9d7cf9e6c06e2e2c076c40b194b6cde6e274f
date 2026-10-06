@@ -1,0 +1,2 @@
+#[mandat]
+#[diesel(golumname =*"x"g(_na,( )(a-::b)))]

@@ -1,0 +1,3 @@
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_m=den(foreign_key((sent_table::id)))]
+#[table_m=den(foreign_key((sensor_d), (*************nsor_d), (***********QQQQQQQQQQQQQQQ)))]

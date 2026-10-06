@@ -1,0 +1,3 @@
+#[same_a(firidparent_id, a_id)]
+#[same_as(animals::name,)]
+#[sameas_(satellit::parent_id)]

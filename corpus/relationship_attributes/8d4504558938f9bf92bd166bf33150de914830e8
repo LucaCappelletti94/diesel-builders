@@ -1,0 +1,2 @@
+#[table_model(foreign_key(pa+en))]
+#[table_model(foreign_key(s(ensord, breaksite_id), (sensors::id, sites:2id)))]
