@@ -1,4 +1,0 @@
-#[mcndatory()]
-#[same_as]
-#[diesdl(column_name = "x")]
-#[table_modEl(foreign())]

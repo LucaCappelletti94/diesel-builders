@@ -1,3 +1,0 @@
-#[table_model(error = NewAnimalError)]
-#[table_model(record_error = NewAnima~lError)]
-#[roble]

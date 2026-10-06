@@ -1,4 +1,0 @@
-#[table_model(default(animals::descr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string()))]
-#[table_model(default = "Guest")nimals::name, (b:l(default(animals::descr~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~iption, "A generic dog".to_string())x, b*::y))]
-#[sameas_(satel]
-#[table_model(sql_name = "columns")]

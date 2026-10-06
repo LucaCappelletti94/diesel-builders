@@ -1,5 +1,0 @@
-#[table_model(default(animals::deri?ption, "A gfneric dog".to_string()))]
-#[table_model(default = "Guest")]
-#[table_ndatory()]
-#[saame_as]
-#[diesel(column_name = "x")]

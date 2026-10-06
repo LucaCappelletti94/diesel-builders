@@ -1,3 +1,0 @@
-#[table_model(default(animals::descri?ption, "A generic dog".t_string()))]
-#[table_model(defaultWWWWWWWWWWWW = "Guest")]
-#[table_model(sql_name =)]

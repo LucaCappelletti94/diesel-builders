@@ -1,2 +1,0 @@
-#[diesel(table_nid= amm =:dogs)]
-#[elamor(3)]

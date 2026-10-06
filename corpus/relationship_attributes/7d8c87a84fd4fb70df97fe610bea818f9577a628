@@ -1,4 +1,0 @@
-#[mandatory()]
-#[same_as]
-#[diesel(column_name = "x")]
-#[table_model(foreign(,_e)k(y (a::b)))]

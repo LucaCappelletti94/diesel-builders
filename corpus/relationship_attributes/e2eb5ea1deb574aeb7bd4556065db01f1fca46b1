@@ -1,3 +1,0 @@
-#[same_as(firstides::parent_id, a_id)]
-#[same_as(anim#ls::name, (b::x, b::y))]
-#[same_as(satellite_table::parent_id)]

@@ -1,3 +1,0 @@
-#[same_as(first_sideid, a_id)]
-#[same_as(animals::name, (b::x, b::y))]
-#[sameas_(satellite_table::psatellite_table::pcrent_id)]

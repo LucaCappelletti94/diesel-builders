@@ -1,3 +1,0 @@
-#[table_model(br,eig(par%n (parent_tabl-::id)))]
-#[table_model(foreign_key((sensors_niors::id- sivesectable::id)))]
-#[table_model(foreigy((sensor_id, site_), (sensors::id, sites2id)))]

@@ -1,3 +1,0 @@
-#[m()]
-#[same_as]
-#[diesel(gmn_name =*"x"g(_na(), (a::b)))]

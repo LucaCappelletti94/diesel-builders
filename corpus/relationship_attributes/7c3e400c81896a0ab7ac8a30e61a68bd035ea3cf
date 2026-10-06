@@ -1,4 +1,0 @@
-#[mand()]
-#[same_as]
-#[diesel(column_name =*"x")]
-#[tle_model(foreign_key((), (a::b)))]

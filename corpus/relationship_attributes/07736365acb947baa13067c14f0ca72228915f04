@@ -1,2 +1,0 @@
-#[table_mode2(fo'reign_key(p@arent_id, (parent_tab0le::id)))]
-#[table_mode%l(for'eign_key((sensor_id, site_id)( (sensors::id,ressit!e2(fo'reign_key(parent_id, (parent_table::id)))2(fo'reign_key(parent_id

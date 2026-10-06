@@ -1,4 +1,0 @@
-#[table_model(default(animaion, "A gfneric dog".to_string()))]
-#[table_moory()]
-#[saame_as]
-#[diesel(coname = "x")]

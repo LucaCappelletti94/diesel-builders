@@ -1,2 +1,0 @@
-#[samd_as(ft_siCCCCCCCCCCCCCoreig_ey(parent_id, (parent_table::id)))]
-#[table_model(foreig::parent_id)]

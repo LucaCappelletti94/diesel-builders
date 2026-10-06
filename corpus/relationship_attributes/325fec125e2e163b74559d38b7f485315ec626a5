@@ -1,2 +1,0 @@
-#[same_as(first_sides::parent_id, a_id)]
-#[same_as(animals::name, (b::x, b::)ble::parent_id)]

@@ -1,3 +1,0 @@
-#[manatory()]
-#[same_as]
-#[diesel(gol,mn_name =*"x"g(_na(), (a-::b)))]

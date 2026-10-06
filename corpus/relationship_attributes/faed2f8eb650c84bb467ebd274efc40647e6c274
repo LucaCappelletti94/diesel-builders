@@ -1,5 +1,0 @@
-#[mandatory()]
-#[samel(column_name = "x")]
-#[tabndatory()]
-#[samel(column_name = "x")]
-#[table_model(foreign(,_'''''''''''''''''''''''''''''')le_model(foreign(,_'''''''''''''''''''''''''''''')))]

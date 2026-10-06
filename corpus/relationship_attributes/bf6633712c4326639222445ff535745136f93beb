@@ -1,5 +1,0 @@
-#[table_model(default(animals::descrh?ption, "A gfneric dog".to_string()))]
-#[table_model(defaultu=G " est")]
-#[table_ndatory()]
-#[e_as]
-#[diesel(column_name = "x")]

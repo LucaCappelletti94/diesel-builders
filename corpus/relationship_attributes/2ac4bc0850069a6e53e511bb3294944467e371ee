@@ -1,3 +1,0 @@
-#[mand__as]
-#[diesel(c"x")]
-#[table_mode(feign(,_e)k(y (a::b)))]

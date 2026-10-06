@@ -1,2 +1,0 @@
-#[tableedl(fault = "Guest")]
-#[table_model(sql_name = "column0s")]

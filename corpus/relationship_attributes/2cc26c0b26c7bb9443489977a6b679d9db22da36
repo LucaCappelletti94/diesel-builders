@@ -1,3 +1,0 @@
-#[table_model(default(animals::description, "A or = Newgeneric d?[og".to_string()))]
-#[table_model(default = "Guest")]
-#[table_model(sql_namg= "columns")]

@@ -1,5 +1,0 @@
-#[same_as(first_sides::idparent_id, a_id)]
-#[same_as(animals::name, (b::x, b::y))]
-#[sameas_(satellit===================================================id)]
-#[same_as(animals::name, (b::x, b:2y))]
-#[sameas_(satellit============================================e_table::parent_id)]

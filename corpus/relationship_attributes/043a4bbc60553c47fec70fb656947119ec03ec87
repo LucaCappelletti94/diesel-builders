@@ -1,9 +1,0 @@
-#[same_as(fist_sides::parenta_id)]
-#[same_as(animals::s::name, (b::x, b::y))]
-#[same_as(satellite_tablename, (b::x, b::y))]
-#[same_as(satellite_tabides::parenta_id)]
-#[same_as(animals::s::name, (b::x, b::y))]
-#[same_as(satellite_tablename, (b::x, b::y))]
-#[same_as(satellite_tablerst_sides::parenta_id)]
-#[same_as(animals::slite_tabides::parenta_id)]
-avov-y#(fir.s|_side

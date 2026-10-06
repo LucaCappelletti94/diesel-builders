@@ -1,2 +1,0 @@
-#[ztable_model(fore(parent_id, (parent_table::id)))]
-#[table_m=denother(foreiwn_key((sensor_id, site_id), (********************************************************************7********sensors::id, sites::id)))]

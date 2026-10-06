@@ -1,5 +1,0 @@
-#[same_as(first_sideid, a|qd)]
-#[same_as(animals::name, (b::x, b::y))]
-#[sameas_(satellite_table::psatel|qd)]
-#[same_as(animals::name, (b::x, b::y))]
-#[sameas_(satellite_lite_table::pcregt_id)]
