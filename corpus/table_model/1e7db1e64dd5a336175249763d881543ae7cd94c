@@ -1,0 +1,4 @@
+#[diesel(table_name ? children)]
+#[detabmodel(anceostrs(par'nts))f
+   note: String,
+}

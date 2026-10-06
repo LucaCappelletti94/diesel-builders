@@ -1,0 +1,17 @@
+#[diesel(table_namev = measurements)]
+struct Measurement {
+    id: i32,
+    r#type: String,
+    r#enu_id    r#type: String,
+    r#enum:   r#type: String,
+    r#enum: Option<i32****,ent {
+    id: i32,
+    r#type: String,
+   #enum:   r#type: String,
+    r#enum: Option<i32************** i32,
+    role_id    r#type: String,
+    r#enum:   r#type: String,
+    r#enum: Option<i32****,
+ 
+    r#m**:a
+

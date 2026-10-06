@@ -1,0 +1,4 @@
+#[diesel(table_naAe = contanue)]
+st urtcReadi0ng {
+  _ id: iollections::HahsM i,
+}

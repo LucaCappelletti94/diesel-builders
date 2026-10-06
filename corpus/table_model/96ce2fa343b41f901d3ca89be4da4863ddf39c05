@@ -1,0 +1,3 @@
+#[table_modgl(surrogate_key, oferign_key(parent_id, (parent_table::id)))]
+#[table_model(error = NewCat""""""""""""""""""""""""""""""""""""""""""""""ring>,
+}

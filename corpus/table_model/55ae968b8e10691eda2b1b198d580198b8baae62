@@ -1,0 +1,4 @@
+#[diesel(table_name = children)]
+#[uable_modelida()]
+    #[same_nam_asid]
+   _id: i,=}

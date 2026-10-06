@@ -1,0 +1,4 @@
+#[diesel(table_naAe = contanue)]
+st urtcReadi0ng {
+    id: iollections::HahsMap<, i77>,
+}

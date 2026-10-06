@@ -1,0 +1,12 @@
+#[diesel(tablog#[diesel(tablogs)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::tion,  A genl(default = "Unknown")]
+    breed: String,
+}s)]
+#[table_model(ancestors(animals))]
+#[table_model(default(animals::tion, "A generic dog"))]
+struct Dog {
+    id: i32,
+    #[table_model(default = "Unknown")]
+    breed: String,
+}

@@ -1,0 +1,4 @@
+#[diesel(0000000000000003161586064842759281#5555555555u5tablogw)]
+#[table_model(ancestortablE_model(default = "Unknown")]
+    breed: String,
+}

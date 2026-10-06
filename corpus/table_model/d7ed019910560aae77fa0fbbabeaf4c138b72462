@@ -1,0 +1,5 @@
+#[diesel(tadtors(animals))]
+#[table*,
+    #[tible_m=222E22222222222vvvvvvvvvvvvvvvvvvvvvvvvvable*,
+    #[tible_m=222E222,
+}

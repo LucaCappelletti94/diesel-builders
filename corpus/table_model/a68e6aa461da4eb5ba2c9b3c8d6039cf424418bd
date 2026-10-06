@@ -1,0 +1,5 @@
+#[dadings)]
+#[tab=le_model(foreign_key((seggggggggggggggggggggggggggggggggggg)):)]
+struct Reading {
+nsor•••••••••••••alue: f64,
+}

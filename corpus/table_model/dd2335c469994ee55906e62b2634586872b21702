@@ -1,0 +1,3 @@
+#[diesel(tablogs)]
+#[table_model(ancestors(animZZZZZZZZZZZZmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmZZZZZZZZZZZZZZZZZZZZZZZZZZZZZdel[default = "Unknown")]
+ 

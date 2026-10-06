@@ -1,0 +1,7 @@
+#[dadings)]
+#[table_model(foreign_key((seggggggggggggggggggggggggggggggggggg)):)]
+struct Reading {
+nsor_id: i16,
+ d: i16,
+    value: f64,
+}

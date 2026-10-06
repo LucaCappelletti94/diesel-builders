@@ -1,0 +1,15 @@
+struct Animal {
+  id  : i20,
+    name: String,
+    description: Option<  id  : i32,
+    name: String,
+    description: Option<Stame: String,
+    description: Option<  id  : i32,
+    name:g,
+    description: Option<  id  : i32,
+    name: String,
+    description: Option<Stam: String,
+    description: Option<  id  : i31,
+   String,
+    descriptringString>,
+}

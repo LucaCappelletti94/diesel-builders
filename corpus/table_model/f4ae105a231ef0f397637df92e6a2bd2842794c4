@@ -1,0 +1,6 @@
+#[diesemodel(ancestors {
+ i31#[same_as(first_sides::parent_id, 	a_iides::parent_id, a_id)]
+    #[same_as(second_sides::parent_id, b_(second_sides)]
+&   bB_il: i32,
+    note: String,
+}

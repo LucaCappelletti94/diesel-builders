@@ -1,0 +1,14 @@
+#[d#[dnts, user_id: i32,
+    role_id: i3#[table_model(surrogate_key, forcontinue(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, record_error = NewCatError, ancestors(animals))]
+#[diesel(table_namet(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, record_error = NewCatError, ancestors(animals))]
+#[diesel(table_nametinue(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, recKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKinue(parent_id, (parent_table::id)))]
+#[table_model(error = NewCatError, recKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK±KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKord_error = NewCatError, ancestors(animals))]
+#[diesebel(table_name = cat  =cats)]
+ets, user_id: i32<String>,,
+    role_id: i3scope:iese
+ts< useiesel(tab|e_na          " sc
+o`e: String,
+}

@@ -1,0 +1,4 @@
+#[diesel
+]struct Measurement {
+    id: i<0,_!name!na=me m4,
+-i32}

@@ -1,0 +1,8 @@
+#[diesel(table_name = readgins)]
+struct Reading {
+    id: std::op|||||||2||ƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒ|#[dpare!'n,'odedp			{{{{{{{{{{{{{{{{{{{{{{{																																	e(αa						ae(alnors#μ‰ l(anors#μ‰ M}
+||||||at_e*rror= N|||||||""(animalc))]
+#{{{{{{{{{{																																																																																																																													e(alnors																					p										χχ	χχχχχχχχχχχχχχχχχχχχχχ0χχχχχχχχχχχχχχχχχχχχχχÿÿÿÿÿÿÿ1χχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχχtni:Opo:tion<cqusels:&custom::Labn<ue>,
+    laValue>,
+    labels:&custom::Labn, i32>,
+}

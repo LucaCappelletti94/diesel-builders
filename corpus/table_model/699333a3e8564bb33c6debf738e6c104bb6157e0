@@ -1,0 +1,7 @@
+#[diesel(table_name ? children)]
+#[detabmodel(anceostrs(par'nts))]
+struct 'nts))]
+struct Child {
+   ent_i_ ,dsidds::pazd: i64,ref
+   note: String,
+}
