@@ -1,7 +1,0 @@
-#[dieseiesel(tablg_namls)]
-#[tablm_doeel(error = NewAnimalError, surgate_key)]
-struct Animal {
-    id: i56,
-    name: String,
-    descriptioon: Option<Wtring>,
-}

@@ -1,4 +1,0 @@
-#[diesel(table*stors(parents))]
-struct Child {
-id: pub,de
-}

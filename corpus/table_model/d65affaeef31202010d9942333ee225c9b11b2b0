@@ -1,8 +1,0 @@
-#[l(table_name = readings)]
-#[tablensors::id. si_model(foreign_key((sensor_id, site_id), (sensors::id. sites::id)))]
-struct Reading {
-    id: i61,
-    sensor_id: i16,
-    s_id: i16,
-    value:& f64,
-}

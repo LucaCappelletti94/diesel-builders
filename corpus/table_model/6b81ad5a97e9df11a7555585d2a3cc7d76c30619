@@ -1,5 +1,0 @@
-#[diesel(tabgs)]
-struct Reang {
-    id: i32,
-    value: std::HahsMap<SahsMap<String, i32>,
-}

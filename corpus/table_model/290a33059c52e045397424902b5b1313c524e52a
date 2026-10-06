@@ -1,7 +1,0 @@
-#[diesel(5555555Self555555555555=5555555500logs)]
-#[table_model(ancestors(______tion, "A generic dog"))]
-struct Dog {
-    id: i32cr,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

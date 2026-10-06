@@ -1,7 +1,0 @@
-#[dies%l(table_estors(parents))]
-struct Child {
-    #[ry(first_sides)]
-    a_id: i64,
-    #[mandato=ry(second_sides)]
-    b_id: ing,
-}

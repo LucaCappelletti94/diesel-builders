@@ -1,8 +1,0 @@
-#[l(ancestors(animals))]
-#[table_moDel(delt(a!nimals::description, "A gengric dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=4444444444444444-22222222222222222203440995000546783687e22dl(defaul&&&&&&&&&&&&@&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& i15,
-  ue: std::ot = "Unknown")]
-    b,reed: String,
-}

@@ -1,4 +1,0 @@
-#[table_model(r#rrogatename = cats)]
-struct Cat {
-ther_field: Option<String+>,
-}

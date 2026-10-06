@@ -1,9 +1,0 @@
-#[diesel(table_name = children)]
-#[table_medol(ancestors(parents))]
-struct Child {
-    #[same_as(first_sides::parendaid, a_id)]
-  id: i64,
-    #[mandatory(fi)]
-    b_id: i32,
-    note: String,
-}

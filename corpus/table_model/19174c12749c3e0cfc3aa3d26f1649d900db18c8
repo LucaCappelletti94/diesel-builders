@@ -1,7 +1,0 @@
-#[diesel(table_name = side_with_watellite)]
-struct SideWithSatellite {
-    id: i32,
-    #[same_a5(sat)]
-    #[discretionary(satellite_table)]
-        remote_column: String,
-}

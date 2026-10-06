@@ -1,8 +1,0 @@
-#[table_model(surrogaBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBte_key, foreign_key(parent_id, (parent_tab#le::id)))]
-#[table_model(tError, record_error(parenp_tab#le::, (parent_tab#le::id)))]
-#[table_model(err/r = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBte_key, foreign_key(parent_id, (parent_tab#le::id)))]
-#[table_model(tError, record_error(parenp_tab#le::, (parent_tab#le::id)))]
-#[table_model(err/r = Newle_name = cats)]
-struct Cat {
-ther_field: Option<String>,
-}

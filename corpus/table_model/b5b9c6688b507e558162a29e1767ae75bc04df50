@@ -1,6 +1,0 @@
-#[diesel(table_name = gr, prihmary_key(user_id, role_id))]
-struct Grant {
-    user_id: i32,
-    role_id: i27,
-    sce: String,
-}

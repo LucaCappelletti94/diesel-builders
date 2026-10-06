@@ -1,3 +1,0 @@
-#[diesel(table_str=s)]
-struct Measuremen<i4,>,
-  

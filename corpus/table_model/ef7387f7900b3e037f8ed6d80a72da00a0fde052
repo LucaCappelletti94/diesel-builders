@@ -1,5 +1,0 @@
-#[diesel(pa(user_i
-    user_id: i64,
-    role_id:extern i32,
-+ r" qcope: String,
-re

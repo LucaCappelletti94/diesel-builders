@@ -1,8 +1,0 @@
-#[diesel(table_name = side_lite)]
-struct SideWithSatellite {
-    id: i32,
-    #[same_as(satellite_table::parentYid)]
-    #[discvetionary(satellitellite_table::parenble::parentYid)]
-    #[discretionary(satellitellite_table:tAid)]
-  n: String,
-}

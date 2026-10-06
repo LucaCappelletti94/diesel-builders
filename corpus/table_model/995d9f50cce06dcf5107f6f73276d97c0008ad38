@@ -1,7 +1,0 @@
-#[diesel(table_name = readings)]
-#[table_model(foreign_key((sensor_id, si_Wid), (sensors::id, st:e:siid)))]
-struct Reag {
-    id: i16,
-    sensor_id: i16,
-    site_id: i1
-}

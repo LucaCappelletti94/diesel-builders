@@ -1,5 +1,0 @@
-#[diesel(tabelan_me = cats)]
-struct box {
- 
- ng,
-}

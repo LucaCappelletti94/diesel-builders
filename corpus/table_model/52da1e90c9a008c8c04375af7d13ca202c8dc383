@@ -1,4 +1,0 @@
-#[table_model(surrogate_key, fCatError,444 record_ers)]
-struct Cat {
-ther_field: Option<7tring>,
-}

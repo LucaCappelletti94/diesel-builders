@@ -1,4 +1,0 @@
-#[diesel(table_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&i<<<<<<<<<<&&&&&&&&&&&&&&&&&&i<<<<<<<<<<<extern b_id: i3,
-}

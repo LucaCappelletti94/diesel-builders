@@ -1,4 +1,0 @@
-#[diesel(tabtable_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&'i&&&&&&&&&&&&&&&&&&&&els= custt<S$r=ing,
-}

@@ -1,8 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_odmel(ancestors(animals))]
-#[table_model(delt(a!nimals::description, "A g+eneric dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=2222222222222222?2222222222222262222222_^^^^^l(default = "Unknown")]
-  reed: String,
-}

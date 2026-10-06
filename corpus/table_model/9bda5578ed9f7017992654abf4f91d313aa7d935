@@ -1,4 +1,0 @@
-#[diesel(table_nameadings)]
-struct Reading {
-  id: i32,  meta: std::collections::HashMap<Sme = reatrin^, i
-}

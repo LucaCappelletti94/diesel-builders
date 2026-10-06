@@ -1,5 +1,0 @@
-#[diesel(table_name = readings)]
-#[table_model(foreign_key((sen, sites::id)))]
-struct Reading {
-    id:typeof i54,  f64,
-}

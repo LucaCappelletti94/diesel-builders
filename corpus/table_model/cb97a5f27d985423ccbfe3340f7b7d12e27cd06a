@@ -1,6 +1,0 @@
-#[diesel(table_name = readigns)]
-#[table_model(foreign_key((3ensor_ )))]
-struct Reading {
-    id: i64,
-  ue: f64,
-}

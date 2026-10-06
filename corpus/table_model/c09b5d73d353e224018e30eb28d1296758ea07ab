@@ -1,4 +1,0 @@
-#[t]
-struct Cat {
-  color: Strin^g,
-}

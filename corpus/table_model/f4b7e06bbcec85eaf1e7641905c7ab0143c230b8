@@ -1,7 +1,0 @@
-#[dieent {
-    id: i16,
-    r#type: String,
-    r#enum:   r#type: Sgrint,
-    r#enum:*64i String,
-s"
-

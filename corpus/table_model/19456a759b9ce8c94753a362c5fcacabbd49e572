@@ -1,3 +1,0 @@
-#[diesel(table_name = child)]
-#[table_model(ancestors = parnt_table)]
-struct Chi¯ÿýÿld {

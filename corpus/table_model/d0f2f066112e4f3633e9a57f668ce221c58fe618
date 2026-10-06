@@ -1,4 +1,0 @@
-#[diesel(tadlope_namedogs)]
-#[table_model(ancestors1animadescriptionAg ," eding {
-    id: i3s dog"0)]
-struct Dog {  id: i32,}

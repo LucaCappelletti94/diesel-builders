@@ -1,9 +1,0 @@
-#[die__________________________table_model(ancestors(animalMMMMMMMMMMMMMMMMMMMMMMM))]
-#[table_m__________________________________sel(table_namg = docs)]
-#[table_model(ancestors(animalsMMMMMMMMMMMMMMMMMMMMMLMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM))]
-#[table_model(default(animals::description, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_model(defau32,= "Unknown")]
-    breed: String,
-}

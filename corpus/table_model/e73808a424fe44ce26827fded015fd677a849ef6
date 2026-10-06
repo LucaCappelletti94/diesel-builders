@@ -1,6 +1,0 @@
-#[die(telasble_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&tion<custom::,
- n<custom::Value>,
-    labels: custom::LabelList<S$ring, i32>,
-}

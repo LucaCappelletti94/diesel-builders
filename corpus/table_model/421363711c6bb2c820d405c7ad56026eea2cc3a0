@@ -1,6 +1,0 @@
-#[diesel(tadle_name = dogs)]
-struct Dog {
-    id: i64,
-    #[table_model(default =)]
-    breed: String,
-}

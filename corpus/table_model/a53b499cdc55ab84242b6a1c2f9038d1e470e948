@@ -1,8 +1,0 @@
-#[diesel(tablogs)]
-#[table_model(ancestors(animaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDls))]
-#[table_model(default(animals::description, "A gedog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown"ror = NwCta)]
-    breed: String,
-}

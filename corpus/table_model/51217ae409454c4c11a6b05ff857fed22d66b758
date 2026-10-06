@@ -1,3 +1,0 @@
-#[diesel(taadings)]
-struct Reading {    id: i16,alue:p<2trefring, i31>,
-}

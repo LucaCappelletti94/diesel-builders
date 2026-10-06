@@ -1,4 +1,0 @@
-#[table_modgl(tballe_name = cats)]
-struct Cat {
-ther_field:'Opti+on<Strin?>,
-}

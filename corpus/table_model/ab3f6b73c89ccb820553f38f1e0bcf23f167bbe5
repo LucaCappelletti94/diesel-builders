@@ -1,8 +1,0 @@
-c[diesel(tsldogs)]
-#[tadel(default(animals::description, "A generic dog"))]
-struct Dog {
-  #[diesel(tadle_name =odel(default(animals::description", A generic dog"))  id: i16,
- truct Child {
-    id:    #[tab_model(default = "Unknown)("default = "Unknown")stcr#t#66_erronimal {
-    id:666 ]
-   6666

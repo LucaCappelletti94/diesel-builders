@@ -1,5 +1,0 @@
-#[table_model((parent_id, (parent_tab)))]
-#[table_model(error = NewCatError, rme = cats)]
-struct Cat {
-ther_field: Opti,
-}

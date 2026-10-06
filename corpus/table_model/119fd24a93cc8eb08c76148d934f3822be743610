@@ -1,8 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_model(ancestors(animals))]
-#[table_model(delt(a!nimals::description, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[tegba=_l2222222222222222-222222222222222222222222222del(default = "Unknown")]
-    b,reed: String,
-}

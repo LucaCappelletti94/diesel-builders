@@ -1,6 +1,0 @@
-#[diesel(table_name =mals)]
-#[table_mdel(err)]
-struct Animal {
-    id: i16,
-    nale: Str777777777tion<String>,
-}

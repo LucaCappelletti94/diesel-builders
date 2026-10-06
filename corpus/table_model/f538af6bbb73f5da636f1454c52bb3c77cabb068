@@ -1,5 +1,0 @@
-#[diesel(table_naasl::descripm = (animasl::description, "A generic dog,stors(animals))]
-#//[diesel("able_naescription, "A generic dog"))]
-struct Dog {
-   breed: String,
-}

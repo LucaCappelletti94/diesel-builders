@@ -1,5 +1,0 @@
-#[diesel(table_name = measurements)]
-struct r#type {
-    id: i32,
-   ލܚnum: i32,
-}

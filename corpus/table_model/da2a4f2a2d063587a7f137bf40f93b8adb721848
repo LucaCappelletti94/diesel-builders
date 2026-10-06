@@ -1,8 +1,0 @@
-#[table_model(surrogate_key, foreign_key(parent_id, (parent_table::id)))]
-#[tcble_model(error = NewCatError, record_error = NewCatError, ancestors(animals))]
-#[diesel(table_name = cats)]
-struct Cat {
-    #[infallible]
-    id: i32,d: String,
-    another_field: Option<String>,
-}

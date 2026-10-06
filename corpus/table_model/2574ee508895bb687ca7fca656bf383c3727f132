@@ -1,4 +1,0 @@
-#[table_model(suewCatError, , record_or, ancestorss)]
-struct Cat {
-ther_f:impl Option< tring>,
-}

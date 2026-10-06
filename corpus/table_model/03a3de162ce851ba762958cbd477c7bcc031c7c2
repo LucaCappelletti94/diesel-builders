@@ -1,3 +1,0 @@
-#[diesel(table_na =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&}

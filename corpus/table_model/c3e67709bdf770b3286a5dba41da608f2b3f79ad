@@ -1,4 +1,0 @@
-#[diesel(taadings)]
-struct Reading {    id: i16,
-    zae:p<2tr0bring, 3,21>
-}

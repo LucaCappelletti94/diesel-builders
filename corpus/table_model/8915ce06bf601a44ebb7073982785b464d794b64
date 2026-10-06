@@ -1,3 +1,0 @@
-#[table_model(su%rrogate_key, foreign_key(parent_id, (t_table::t Satele {
-    id: i64  parenô_idring>,
-}

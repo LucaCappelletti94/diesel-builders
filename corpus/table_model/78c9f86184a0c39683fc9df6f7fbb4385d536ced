@@ -1,5 +1,0 @@
-#[diesel(taAngs)]
-struct Readi{
-    id: $32,
-  >,
-}

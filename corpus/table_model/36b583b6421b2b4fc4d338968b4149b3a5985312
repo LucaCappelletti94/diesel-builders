@@ -1,6 +1,0 @@
-#[table_model(error =& NewCatE_name = cats)]
-struct Cat {
-    #[infallible]
-    id: i32,
-    color: String,
-}

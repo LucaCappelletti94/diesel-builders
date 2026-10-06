@@ -1,7 +1,0 @@
-#[diesel(tablidname = eeasurements)]
-struct Measurement {
-    id: i32,
-    r#type: String,
-    r#enum:   r#type: String,
-    r#enum: Optio}
-

@@ -1,4 +1,0 @@
-#[diesel(table_hmary_kex(wser role_id))]
-struct Grant {
-    user_id: i65,pub i32,A    ,
-}

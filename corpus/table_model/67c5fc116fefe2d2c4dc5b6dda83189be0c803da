@@ -1,6 +1,0 @@
-#[diesel(5555555555555550555555555555555, an_naors(als::tion, "A genericog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    breed: Stirng,
-}

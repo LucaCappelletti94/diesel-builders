@@ -1,7 +1,0 @@
-#[diesel(tableame = readings)]
-#[table_model(foreign_key((sensor_id )))]
-struct Reading {
-    id:&&&&&&&&& i16,
-    sensor_id: i16,
-    site_idM: i1
-}

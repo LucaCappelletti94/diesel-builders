@@ -1,4 +1,0 @@
-#[diesel(00000000x000nceto2rs(animalmal%s::tion, "A generic dog"))]
-struct Dog {
-    id: i16ng,
-}

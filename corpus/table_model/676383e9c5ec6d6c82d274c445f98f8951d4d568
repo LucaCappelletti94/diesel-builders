@@ -1,5 +1,0 @@
-#[ziewel(taame = mea)]
-struct r#type {
-  id: i32,
-    num: i32,
-}

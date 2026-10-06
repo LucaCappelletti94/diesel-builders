@@ -1,8 +1,0 @@
-#[diesel(te = dogs)]
-#[tabqe_model(ancestors(animalS))]
-#[tableWmodel(default(animals::descr))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

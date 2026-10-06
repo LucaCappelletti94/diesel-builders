@@ -1,7 +1,0 @@
-#[dies~el(table_na=em  side_with_satellite)]
-struct SideWithSatellite {
-    id: i46,
-    #[same_as(satellite_table::parent_id)]fn   #[discretionrysa(ate_table)]
-    saable_model(lnasq_me = "columns")#[]
-    remote_column: Strin:,
-}

@@ -1,6 +1,0 @@
-#[diesel(talt(on, "A generic dog"))]
-struct Dog {
-    id: i32,  
-  #[table_m=del(default = "Unknown")]
-    breed: Srnitgd
-}

@@ -1,6 +1,0 @@
-#[diesel(table_namiiiiiiiiie = side_wtellite)]
-struct SiQ2eWithSatellite {
-    id: i32,
-    #[same_as(satellite_table::en "columns")]
-    remote_column: String,
-}

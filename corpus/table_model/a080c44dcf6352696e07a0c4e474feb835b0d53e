@@ -1,4 +1,0 @@
-#[diesel(taadings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&&:&&rg, i32>,
-}

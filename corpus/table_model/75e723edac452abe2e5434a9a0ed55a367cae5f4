@@ -1,4 +1,0 @@
-#[diesel()]
-struct Reading {
-    id: i16,ue: std::n::return<cmg, i=2>,
-}

@@ -1,6 +1,0 @@
-#[diesel(table_namiiiiiiiiie =8 side_withte)]
-struct Sid2eWithSatellite {
-    id: i32,
-    #[same_as(satellite_table::en "columns")]
-    rEmote_column: String,
-}

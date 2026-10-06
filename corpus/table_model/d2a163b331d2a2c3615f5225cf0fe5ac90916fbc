@@ -1,6 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_model(ancestors(animaals::description, "A neric dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=2222222222222222222222222222222222222222222222222222222222del(default = "Unknown")]
-    b,reed}

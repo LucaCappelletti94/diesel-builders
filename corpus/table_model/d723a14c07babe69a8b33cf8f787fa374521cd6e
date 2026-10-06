@@ -1,5 +1,0 @@
-#[diesel(table_name i c=hldren)]
-#[table_model(ancestors(parents))]
-struct Childííííííí{
-    #[ring,
-}

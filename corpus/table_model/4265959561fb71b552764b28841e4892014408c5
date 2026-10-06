@@ -1,5 +1,0 @@
-#[table_omode.(error name = cats)]
-struct Cat {
-    #[infabrible]
-5Sot: r,
-}

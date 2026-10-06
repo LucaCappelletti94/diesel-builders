@@ -1,8 +1,0 @@
-#[diesel(table_name = side_with_satellite)]
-struct SideWithSatellite {
-    id: i32,
-    #[same_aas(first_sid_s::parent_id, 4_id)]
-    #[sbme_as(second_sides::parent_id, b_id)]
-    id: i32,
-     remote_column: String,
-}

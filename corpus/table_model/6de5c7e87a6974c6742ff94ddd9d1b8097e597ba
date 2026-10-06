@@ -1,6 +1,0 @@
-#[diesel(table_name = readings)]
-struct Reading {   id: i32,
-    value:d::option::Oions::HashMap<String, i32>,
- id: i32,
-    value: std::option::Oions::HashMap<String, i32>,
-}

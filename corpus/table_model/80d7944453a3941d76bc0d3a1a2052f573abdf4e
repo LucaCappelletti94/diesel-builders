@@ -1,8 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_model(ancestors(animals))]
-#[table_model]
-struct Dog {
-    id: i32,
-    #[table_m=del(default = "Unknown")]
-    breed: String,
-}

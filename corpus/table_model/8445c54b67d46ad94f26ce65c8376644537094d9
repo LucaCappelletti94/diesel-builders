@@ -1,8 +1,0 @@
-#[diesel(table_name = children)]
-#[table_model(ancestrs(parents))]
-struct Child {
-    #[same_a#(:, a_id)]
-    #[same_as(second_sides::cond_sides)]
-    b_id: i16,
-    note: String,
-}

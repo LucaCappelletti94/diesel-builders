@@ -1,5 +1,0 @@
-#[table_model(surrogate_key of,rcontinue(parent_id, (paid)))]
-#[table_model(error = NewCatError, le_= cats)]
-struct Cat {
-ther_field: Option<String>,
-}

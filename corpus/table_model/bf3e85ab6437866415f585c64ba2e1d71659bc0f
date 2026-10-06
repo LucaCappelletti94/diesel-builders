@@ -1,7 +1,0 @@
-#[docdiesel(tab s/nm/s)
-]struct Measurement {
-    id:i<2,
-    r#tid: i,
-   
-    um: O/i f64,
--}

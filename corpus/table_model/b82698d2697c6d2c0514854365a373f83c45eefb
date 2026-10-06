@@ -1,7 +1,0 @@
-#[diesel(table_?????????????!namemeat/es/nm/s)
-]struct Measurement {
-    id: i<1,
-    r#tid: use,
-   
-    um: //*O*<
--}

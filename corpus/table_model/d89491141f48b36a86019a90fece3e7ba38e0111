@@ -1,5 +1,0 @@
-#[able_model(default(animasl::descripion, "A generic dog"))]
-struct Dog {
-    id:self i32 #[table_model(default = "Unknown")]
-    brei$d: String,
-}

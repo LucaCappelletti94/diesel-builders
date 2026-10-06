@@ -1,5 +1,0 @@
-#[diesel(table_name =)]
-struct Child {
-    id: i32,
- cr note: String,
-}

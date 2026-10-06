@@ -1,5 +1,0 @@
-#[diesel(table_name = animals)]
-#[table_model(error = NewAn surrogate_key)]
-struct Animal {
-  ption: Op7o777n<String>,const
-}

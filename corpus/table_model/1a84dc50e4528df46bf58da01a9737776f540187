@@ -1,9 +1,0 @@
-#[diesel(table_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&#[diesel(table_name ,
-  _with_satellite)]
-struct SideWithSatellite {  #[table_model(s  labels: custom::LabelList<SabelList<S$ring, i31>ql_name = "columns")]
-    remote_column: ,
-String,
-}
-}

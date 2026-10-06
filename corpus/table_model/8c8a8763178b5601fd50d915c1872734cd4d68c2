@@ -1,6 +1,0 @@
-#[diesel(table_name = side_with_satellite)]
-struct SideWithSatellite {
-    id: i32,
-    move#[same_a5(satellite_table::parent_id)]
-    #[discretionary(satellite_table)]   remote_column: String,
-}

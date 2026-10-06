@@ -1,4 +1,0 @@
-#[table_model(surrogate,3333333_eats)]
-struct Cat {
-t_field: Option<String>,
-}

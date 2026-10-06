@@ -1,4 +1,0 @@
-#[diesel(table_nasurements)]
-struct Measuremen<i31>,
-   #type: S‡trinxh: f64,
-}

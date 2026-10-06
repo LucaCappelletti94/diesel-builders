@@ -1,5 +1,0 @@
-#[table_m( Ndts)]
-struct Cat {
-    #[inf]
-  :,
-}

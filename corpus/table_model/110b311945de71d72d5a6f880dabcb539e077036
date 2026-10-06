@@ -1,3 +1,0 @@
-#[diesel(talt(,3a!nimals::description, "A generic dog"))]
-struct Dog {
-    id: i3}

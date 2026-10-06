@@ -1,6 +1,0 @@
-struct Anim<l {
-    id: i32,
-   / n#[diesel(table_name = children)me: /struc,
-  ]
-#[table_model(s(parents))  /name: /st]
-ruc

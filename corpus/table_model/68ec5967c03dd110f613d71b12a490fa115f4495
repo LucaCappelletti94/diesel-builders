@@ -1,9 +1,0 @@
-#[diesel(table_name = side_with_satellite)]
-struct SideWithSatellite {
-    id: i32,
-    #[same_as(satellite_table::parent_id)]
-    #[dicsertionary(satellite_table)]
-    satellite_id: i32,
-    #[table_model(sql_name = c"llumns")]
-    remote_column: String,
-}

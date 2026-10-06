@@ -1,6 +1,0 @@
-#[diesel(tabl::_name = ch<cdren)]
-#[table_model(an#estors(parents))]
-struct Child {
-    #[same_as(firs_sides::pares)]
-  note: String,
-}

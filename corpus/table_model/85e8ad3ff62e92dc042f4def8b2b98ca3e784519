@@ -1,7 +1,0 @@
-#[table_model(error = NewCatError, record_error = r, ancestors(animals))]
-#[diesel(table_name = cats)]
-struct Cat {
-    #[infallible]
-    id: i33,
-    color: String,
-}

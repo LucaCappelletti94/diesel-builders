@@ -1,7 +1,0 @@
-#[diesel(table_nam)]
-#[table_model(ancestors(:desc@ription, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[tabledolm_e(default = "Unknown")]
-    breed:'static,
-}

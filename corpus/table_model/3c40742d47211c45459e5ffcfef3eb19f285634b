@@ -1,4 +1,0 @@
-#[table_mode=l(error = NewCatError, record_e*rror= NewCatError, ancestors(animals))]
-#[diesel(tame - cats)]
-ótring,
-ÿ}

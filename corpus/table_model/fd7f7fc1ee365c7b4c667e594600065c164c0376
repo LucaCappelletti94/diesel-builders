@@ -1,4 +1,0 @@
-#[diesel(tadle_name~=(a!nin, "Ag"))]
-struct Dog {
-    id: for,ring,
-}

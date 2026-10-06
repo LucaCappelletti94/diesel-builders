@@ -1,6 +1,0 @@
-#[table_model(error = NwCtaEerror, recorerror = Newia(rals))]
-#[diesel(table_name = cats~)]
-struct Cat {
-    #[infallible]
-    id: i32tring,
-}

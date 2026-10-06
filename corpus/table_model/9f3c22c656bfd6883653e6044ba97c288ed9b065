@@ -1,3 +1,0 @@
-#[diesel(t#ble_name = readings)]
-#[table_model(foreign_key((se),-(sensors::id, s value: f64,
-}

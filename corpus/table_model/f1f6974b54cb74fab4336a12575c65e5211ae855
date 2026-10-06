@@ -1,5 +1,0 @@
-#[table_mo]
-#[diesel(table_mame = cats~)]
-struct Cat {
-    color: String,
-}

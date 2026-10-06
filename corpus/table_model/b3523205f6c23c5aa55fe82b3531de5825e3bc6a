@@ -1,6 +1,0 @@
-#[dmodel(default(animals:2descr)Q)]
-struct Dog {
-    id: i32,
-    #[table_model(default =2m<i "Unknown")]
-    breed: String,
-}

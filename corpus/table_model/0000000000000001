@@ -1,8 +1,0 @@
-#[table_model(surrogate_key, foreign_key(parent_id, (parent_table::id)))]
-#[diesel(table_name = satellite_table)]
-struct Satellite {
-    id: i32,
-    parent_id: i32,
-    field: String,
-    another_field: Option<String>,
-}

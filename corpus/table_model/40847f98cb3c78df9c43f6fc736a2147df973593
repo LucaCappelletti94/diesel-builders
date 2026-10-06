@@ -1,6 +1,0 @@
-#[diesel(table_nam = dogs)]
-#[table_model(anceytors(animals))]
-#[table_model(default(animasl::description, "A generic dog"))]
-struct Dog {
-   breed: String,
-}

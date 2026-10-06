@@ -1,5 +1,0 @@
-#[dies=el(table_name = readings)]
-struct Reang {
-    id: i3,
-    value: d::option::Option<custom:::cnt_iString, i92>,
-}

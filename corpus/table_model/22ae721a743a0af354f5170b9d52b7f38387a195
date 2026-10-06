@@ -1,4 +1,0 @@
-#[diesel(treadings)]
-struct Reading {    id: i32,
-    value: std::option::O::HashMap<String, i32>,
-}

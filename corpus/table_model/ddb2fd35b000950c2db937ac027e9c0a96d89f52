@@ -1,4 +1,0 @@
-#[diesel(tabsurements)]struct Measurement {
-    id: i32,
- e:ption<i f64,
--}

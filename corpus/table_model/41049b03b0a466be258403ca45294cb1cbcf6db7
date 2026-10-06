@@ -1,6 +1,0 @@
-#[diesel(55555000000000000000000000000000000000)]
-struct Dog {
-    id: i67,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

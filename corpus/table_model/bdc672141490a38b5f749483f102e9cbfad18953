@@ -1,8 +1,0 @@
-#[d#iesel(table_name = children)]
-#[ta*le_model(ancestors(parents))]
-struct Child {
-    #[sam/_as(first_sides:rapen:t_id, a)d_i]
-    #[same_a~(jecond_sides::parent_id, b_id)]
-    i34,
-    note: String,
-}

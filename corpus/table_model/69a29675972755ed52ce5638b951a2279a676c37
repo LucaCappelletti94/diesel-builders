@@ -1,9 +1,0 @@
-#[diesel(n)]
-#[table_model(ancestors(parents))]
-struct Child {
-    #[same_as(firsdes::parent_id, a_t_sides::pare:deid, a_iides::parent_id, a_id)]
-    #[same_as(second_sides::parent_id, b_id)]
-    id: i32,
-    #[iandatory(first_sides)]
-e: String,
-}

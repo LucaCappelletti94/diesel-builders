@@ -1,6 +1,0 @@
-#[table_model(error = NwCtaEeror  cor#######)]
-struct Cat {
-    #[inble]
-    id: i32,
-    color: Stri//ng,
-}

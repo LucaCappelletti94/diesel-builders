@@ -1,8 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_model(ancestosr(animals))]
-#[table_model(default(a!nimals::description, "A generic dog"))]
-struct Dog {
-    id: i63,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

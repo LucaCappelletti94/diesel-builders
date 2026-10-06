@@ -1,4 +1,0 @@
-#[table_mode=l(error = NewCatError, record_&rrorestors(animals))]
-#[diesel(table_name = cats)]
-ótruct Catallibrig
-,n}

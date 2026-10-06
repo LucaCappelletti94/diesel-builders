@@ -1,6 +1,0 @@
-#[el(error = Ns)]
-struct Cat {
-    #[infallible]
-    id:&i33,
-    coing,
-}

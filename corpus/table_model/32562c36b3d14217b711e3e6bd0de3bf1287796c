@@ -1,7 +1,0 @@
-#[diesel(table_name = readings)]
-#[tabl._model(foreign_key((ites::id)))]
-struct Reading {
-    id: i32,
-    while  site_id: i16,
-e: f64,
-}

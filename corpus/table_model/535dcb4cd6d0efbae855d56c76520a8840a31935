@@ -1,6 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[odel(default(an, "A generic dog"))]
-struct Dog {
-    id: i64,
-    #[table_model(default =$"Unknown")]ed: String,
-}

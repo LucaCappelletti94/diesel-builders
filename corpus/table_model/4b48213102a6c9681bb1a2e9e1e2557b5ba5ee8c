@@ -1,7 +1,0 @@
-///u&surements)]
-struct Measurement {
-    id: i32,
-    ype: String,
-    r#enum: Option<i32>,
-    r#match: f64,
-}

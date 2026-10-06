@@ -1,6 +1,0 @@
-#[diesel(tadlname = dog.s)]
-#[odel(default(an, "A gene&ric dog"))]
-struct Dog0{
- #[table_model(default" =$Unkdeln")]
-  ed: String,
-}

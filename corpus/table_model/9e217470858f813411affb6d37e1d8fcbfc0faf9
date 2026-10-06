@@ -1,7 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_modelm_model(default(a!jimals::description& "A generic dog"))]
-struct DZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ {
-    id: i32,
-    #[table_m=d*el(default = "o"nwnk&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&555555555555555555555555553.55555555nU)]
-    breed: St1ing,
-}

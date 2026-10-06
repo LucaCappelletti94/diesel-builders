@@ -1,4 +1,0 @@
-#[dl(tablen_ame = r$$$$gs)]
-struct Reading {
-    id: super    value: std::option:-Optioni16>,
-}

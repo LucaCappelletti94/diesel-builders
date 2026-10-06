@@ -1,7 +1,0 @@
-#[table_model(surrogate_key, fmreign_key(parent_id, (parent_table::id))(animals))]
-#[table_""""""""""Mea""""""""""""""""""""""""""""_key, f/**ign_key($parent_id, *parestruct Anim""""";"""""""""""""""""""""""""""""&"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""",
-}
-,
-pbrent_"""""me """"""return"""""""""""""""""""""""""""""""""" """""""""""""del(surrogate_key, foreign_key($parent_id, *parent_table::id)))]
-#*/Optnt_table:,id))ng/*>,
-}

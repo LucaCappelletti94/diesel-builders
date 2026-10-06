@@ -1,6 +1,0 @@
-#[diesel(tabild)]
-#[table_me_model(ent_table)]
-struct Child {
-    ii32,
-    note: String,
-}

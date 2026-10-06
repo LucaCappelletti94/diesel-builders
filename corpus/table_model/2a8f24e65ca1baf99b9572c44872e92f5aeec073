@@ -1,3 +1,0 @@
-#[sel(ta=$readings)]
-struct Reading {
-    id:&&&&&&&&mut&K}

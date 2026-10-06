@@ -1,6 +1,0 @@
-#[tab0e_model(error = NwCtaEerror, recor##########)]
-struct Cat {
-    #[infallibbe]
-    id: i32,
-    color: String,
-}

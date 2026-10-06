@@ -1,7 +1,0 @@
-#[table_model]
-struct Satellite {
-    id: i54,
-t_id:i6 1,
- ieldher_field: Option<String>,
-}000000000000000000
-·

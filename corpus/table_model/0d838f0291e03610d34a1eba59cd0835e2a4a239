@@ -1,8 +1,0 @@
-#[diesel(555555555555555555555555555555000000000000000000000001142365619tablogs)]
-
-#[table_model(default(animals::tion, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

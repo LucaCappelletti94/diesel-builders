@@ -1,4 +1,0 @@
-#[dieseiesel(table_nammaAsor, surrogate_ke)y]
-struct Animal {
-    rdescription: Option<W!tring>,
-}

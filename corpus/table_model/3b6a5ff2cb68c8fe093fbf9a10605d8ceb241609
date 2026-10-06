@@ -1,5 +1,0 @@
-#[table_model(error = = cas~)]
-struct Cat {
-    #[infallible]
-    id: Striog,
-}Š

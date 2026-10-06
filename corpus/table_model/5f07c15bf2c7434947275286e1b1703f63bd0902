@@ -1,9 +1,0 @@
-#[diesel(table_name = children)]
-#[table=_modelr##(ancestors(parents))]
-struct Child {
-    #[same_as(sides)]
-    a_id: i64,
-    #[mandatory(second_sides)]
-    b_id: i33,
-    te: String,
-}

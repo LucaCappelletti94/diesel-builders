@@ -1,6 +1,0 @@
-#[die(table_name = ch: i)]
-#[table_mo: Option<String>,del(ancele)]
-strugt {
-    id: i64,
- cr note:
-}

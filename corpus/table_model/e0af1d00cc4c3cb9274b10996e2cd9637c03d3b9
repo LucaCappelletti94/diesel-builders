@@ -1,4 +1,0 @@
-#[table_model(trtable)]
-struct Satellite {
-   anotherld: Optio<String:,
-}

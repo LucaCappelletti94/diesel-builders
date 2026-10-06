@@ -1,8 +1,0 @@
-#[diesel(tableWname = chil(/*-#[diesel(table_name = reEb4le_namearenadings)]
-struct Reading {
-    id: i32,
-    valut_table)]
-.struce: std::option::Option<custom::Value>,_model(ancestors(animals))]
-#[table_model(default(animals:
-    labels: custom::LabelList,
-    meta: std::collectiot ns

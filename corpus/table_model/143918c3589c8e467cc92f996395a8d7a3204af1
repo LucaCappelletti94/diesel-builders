@@ -1,4 +1,0 @@
-#[diesel(5555555ult(an, "A gcg"))]
-struct Dog {
- reed: Sring,
-}

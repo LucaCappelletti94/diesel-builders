@@ -1,5 +1,0 @@
-#[tabodel(name c st=a~)]
-struct Cat {
- trait   #[infallible]
- g,
-}

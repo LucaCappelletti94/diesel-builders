@@ -1,4 +1,0 @@
-#[diesel(tabeadings)]
-struct Reading {    id: i32,
-    value:p<2tring, i31>,
-}

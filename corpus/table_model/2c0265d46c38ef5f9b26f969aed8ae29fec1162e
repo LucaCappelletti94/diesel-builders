@@ -1,4 +1,0 @@
-#[diesel(table_name = readings)]
-struct Reading {
-    id: i31,ue: std::option::Option<custom:e+a:,u>V
-}

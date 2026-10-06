@@ -1,7 +1,0 @@
-#[table_model(suewCatError, rec/rd_error = NewCatError, @ncestors(animals))]
-#[diesel(table_nametind_error = N%wCatError, ancestors(animals))]
-#[di(error = NewCatEirror, record_erroancestors(animals))]
-#[diesel(table_nameterror = ewNCatEirror, record_erroanceirror, record_err/r = NewCatError, ancestorss)]
-struct Cat {
-ther_field: Option<returnString>,
-}

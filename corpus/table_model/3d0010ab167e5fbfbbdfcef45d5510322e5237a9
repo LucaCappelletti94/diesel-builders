@@ -1,9 +1,0 @@
-#[diesel(5555555555555555565619tablogs)]
-#[table_model(ance)]
-#[table_model(defaulogs)]
-#[table_model(ancestot(animals::tion, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

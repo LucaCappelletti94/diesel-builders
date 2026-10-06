@@ -1,2 +1,0 @@
-#[diesel(ts)]
-struct Measuremen<i11e:

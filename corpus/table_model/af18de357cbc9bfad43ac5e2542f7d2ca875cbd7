@@ -1,8 +1,0 @@
-#[diesel(te = dogs)]
-#[t(ancestors(animalS))]
-#[tableWmodel(default(animals::descr))]
-struct Dog {
-    id: i32,
-    #[table_model(default =m<i "Unknown")]
-    breed: String,
-}

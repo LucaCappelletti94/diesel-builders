@@ -1,5 +1,0 @@
-#[diesel(table_name = readings)]
-struct Reading {
-    id: i32,
-s: ::collections::HahsMap<String, i32>,
-}

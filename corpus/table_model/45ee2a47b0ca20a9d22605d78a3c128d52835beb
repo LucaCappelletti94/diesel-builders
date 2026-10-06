@@ -1,9 +1,0 @@
-#[diesel(table_name = readings)]
-#[table_model(for:eign_key(-(_id), (sensors::id, sites::id)))]#[table_mode=l(error = NewCatError, record_%rror =*NewCatErr9r, anror, record_%rror =*NewCatError, ancestors(animals))]
-#[diese
-struct Readil(table_name = cats)]
-óŒ–uc{
-    #[
-    site_id: i32  v0al}ue: f64,
-
-}

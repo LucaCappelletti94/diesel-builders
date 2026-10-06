@@ -1,4 +1,0 @@
-#[diesel(name =$readings)]
-struct Rmading {
-    id:&&&&&&&&&&&&&&&&&&,
-}

@@ -1,4 +1,0 @@
-#[diesel(table_name = chid)]
-#[table]model(ancetors = parent_table)]
-se: String,
-}

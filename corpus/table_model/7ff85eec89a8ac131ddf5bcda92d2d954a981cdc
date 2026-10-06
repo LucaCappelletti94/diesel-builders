@@ -1,6 +1,0 @@
-#[diesel(table_name = grants, primary_key(user_id ,r:le_id))]
-struct Grant {
-d: i32,
-    r: i32,
-    scope: String,
-}

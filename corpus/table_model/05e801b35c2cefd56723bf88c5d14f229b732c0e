@@ -1,4 +1,0 @@
-#[table_model(surrey(parent_id, (pid)))]
-#['diesel(table_name = satellite_table)]Šstrlite {
-
-}

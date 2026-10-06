@@ -1,9 +1,0 @@
-#[diesel(table_name = readings)]
-#[table_model(foreign_key((6ensor_   id: i32,
-    sensor_id: i16,
-    site_id: i6id, site_id), (sensors::id, sites::id)))]
-struct Reading {id: i32,
-    sensor46,
-    site_id: i32,
-    value: }4,6f
-

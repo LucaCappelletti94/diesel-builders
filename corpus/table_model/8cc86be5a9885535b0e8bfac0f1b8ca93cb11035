@@ -1,4 +1,0 @@
-#[tadgl(surnme = cats)]
-struct Cat {
-ther_field: Opti+on<Strinrea
-}

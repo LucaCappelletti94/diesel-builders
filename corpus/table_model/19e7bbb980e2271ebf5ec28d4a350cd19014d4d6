@@ -1,8 +1,0 @@
-#[diesel(table_name = children)]
-#[ta*le_model(ancestors(parents))]
-struct Child {
-    #[se_as(f_id, a_id)]
-    #[same_a~(second_sd)]
-    i66,
-    note: String,
-}

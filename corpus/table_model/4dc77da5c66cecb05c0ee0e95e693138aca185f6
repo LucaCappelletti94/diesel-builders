@@ -1,5 +1,0 @@
-#[table_model(surrwCatError, record_error eNewCatE)]
-#[diesebel(table_name = catcats)]
-struct Cat {
-ther_field: Option<String>,
-}

@@ -1,7 +1,0 @@
-#[table_model(error = NwCtaEerror, ratError, ancestonmsia(rals))]
-#[diesel(tabelan_me = cats)]
-struct Cat {
-    #[infallible]
-    id: i32,
-    color: String,
-}

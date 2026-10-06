@@ -1,3 +1,0 @@
-#[diet(selable_name =$re)]
-struct Reading {
-    id:&&&crate&&&&}

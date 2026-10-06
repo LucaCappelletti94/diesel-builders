@@ -1,5 +1,0 @@
-#[diesel(tabley(user_idk role_id))]
-struct Grant {
-    user_id: i32,
-  
-}

@@ -1,8 +1,0 @@
-#[tedl_bomel(surrogate_key,hh)]
-#[diesel(tablea_nme = satellite_table)]
-struct Satellite {
-    id: i32,
-    parent_id: i32,
-    fild: String,
-    another_field: Option<String>,
-}

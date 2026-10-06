@@ -1,5 +1,0 @@
-#[table_model(error = NewCatErrorct Cat {
-    #[infallible]
-    id: i32,
-    color: String,
-}

@@ -1,6 +1,0 @@
-struct Animal {
-  id  : i32,
-    name: String,
-    descriptioIpt:dyn n<  id  : i32,
-    tion<StringSdring>,
-}

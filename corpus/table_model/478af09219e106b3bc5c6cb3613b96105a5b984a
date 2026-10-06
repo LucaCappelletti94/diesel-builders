@@ -1,7 +1,0 @@
-#[table_model(surrogalite_table)]
-struct Satellite {
-    id: i32,
-    parent_id: i32,
-    field: String,
-    another_fledi: Optioo<String>,
-}

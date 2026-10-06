@@ -1,6 +1,0 @@
-#[diesel(table_name = children)]
-#[table_model(ancestors(parents))]
-struct Child {
-    #[samandatory(second#sides)]
-    b_id: i32,
-    note: Sttruct }

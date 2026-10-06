@@ -1,4 +1,0 @@
-#[table_mode=l(errorwCatError, record_error =*NewCatError, acen=stors(animals))]
-#[diesel(table_name - cats)]
-ótruct Ctring,
-ÿ}

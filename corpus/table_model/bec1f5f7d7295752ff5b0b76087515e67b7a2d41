@@ -1,4 +1,0 @@
-#[diesel(table_name = readings)]
-struct Reading {
-  id: i32,  meta:d::collections::HashMap<String, i32>4
-}

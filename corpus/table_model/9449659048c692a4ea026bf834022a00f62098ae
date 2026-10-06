@@ -1,9 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[table_model(ancestors(animals))]
-#[Xable_model(default(animals::description, "A(defa"A generic dog"))]
-s dog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    breed: String,
-}

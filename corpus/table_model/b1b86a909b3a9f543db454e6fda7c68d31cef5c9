@@ -1,7 +1,0 @@
-#[table_model(suorogate_key, fowCatErrwCatError, ancestors(animals))]
-#[diesel(table_name = cats)]
-struct Cat {
-    #[infallible]
-    id: i32,d: String,
-    another_field: Option<String>,
-}

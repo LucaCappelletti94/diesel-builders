@@ -1,4 +1,0 @@
-#[diesel(tabladings)]
-struct Readocdind {    id: i19,
-  g :option::O<ions::HashMap<String, i32>,
-}

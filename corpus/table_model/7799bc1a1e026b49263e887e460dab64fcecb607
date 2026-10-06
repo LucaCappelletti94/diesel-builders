@@ -1,5 +1,0 @@
-#[diesel(table_name = readinms)]
-struct Readang {
-    id: std::option::Option<cus::Labn<ue>,
-g, i32>,
-}

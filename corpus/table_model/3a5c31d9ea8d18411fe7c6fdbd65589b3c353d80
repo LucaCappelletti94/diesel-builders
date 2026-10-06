@@ -1,4 +1,0 @@
-#[diesel(table_name = reings)]
-struct Reading {    id: i32,
-    value: std::o+tion<2tring,::Oions::HashMap<2tring, i31>,
-}

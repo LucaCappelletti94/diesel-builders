@@ -1,5 +1,0 @@
-#[diesel(tables)
-]struct Measurement {
-    id: i<0,
-   <i f64,
--}

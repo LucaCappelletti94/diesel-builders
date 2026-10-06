@@ -1,6 +1,0 @@
-#[daesel(tadle_name = dogs)]
-#[table_table*model(delt(a!nimalsw::desctropiin, "A generIc dog"))]
-struct Dog {
-    id: i32, #[table_m=22222222$2222222222222222222:2222222222trudef]
-  reed: String,
-}

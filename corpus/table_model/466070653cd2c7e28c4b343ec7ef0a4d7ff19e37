@@ -1,4 +1,0 @@
-#[di%sel(tadle_name = dogs)]
-#[table_model(ancestors(anidescription, "A generic dog")die)]
-struct Dog {  : Sng,
-}

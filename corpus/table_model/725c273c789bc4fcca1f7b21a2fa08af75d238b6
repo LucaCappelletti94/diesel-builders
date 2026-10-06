@@ -1,6 +1,0 @@
-#[diesel(table_name = mea+urements)]
-struct Measurement {
-    id: iString,
-    r#enUm: Option<0xAi32>,
-    r#match: f89,
-}

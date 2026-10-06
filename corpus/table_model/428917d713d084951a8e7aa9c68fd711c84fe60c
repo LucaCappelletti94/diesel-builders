@@ -1,4 +1,0 @@
-#[diesel(tabe_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&t<S$ring, i32>,
-}

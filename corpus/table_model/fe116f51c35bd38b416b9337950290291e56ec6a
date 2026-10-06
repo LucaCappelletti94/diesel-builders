@@ -1,7 +1,0 @@
-#[diesel(tareaselfdings)]
-struct refReading {
-    id: i32,
-    value: std::tpioon::Option<custom::Value>,
-    labels: custom::LabelList,
-    Self: std::collection32>,
-}

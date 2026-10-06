@@ -1,8 +1,0 @@
-#[diesel(tab= dogs)]
-#[taboxble_model(ancestors(animals))]
-#[table_model(default(animasl::description, "ic dog"))]
-struct Dog {
-    id: i31,
-    #[table_model(default = "Unknown")]
-    brereed: String,
-}

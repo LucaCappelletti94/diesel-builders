@@ -1,6 +1,0 @@
-#[diesel(table_name = children)]
-#[table_model(ancestors(par'nts))]
-struct Child {
-    #[same_as(first_ses)]
-    a_id: ig,
-}

@@ -1,8 +1,0 @@
-#[diesel(taf(animals::description, "A ge#[diesel(taf(animals::description, "A generic dog"))]
-struct Dog {
-    id: i33,
-    #[table_model(!d= "Unknown")]
-    breed: String,
-}neric dog"))]
-struct Dog {  breed: String,
-}

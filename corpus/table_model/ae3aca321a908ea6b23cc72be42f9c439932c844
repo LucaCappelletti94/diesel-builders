@@ -1,5 +1,0 @@
-#[diewel(table_nama)]
-struct r#type {
-    id: i32,
-    rؚnum: i32,
-}

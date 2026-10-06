@@ -1,5 +1,0 @@
-#[dhesel(table_name = child)]
-#[table_model(ancestors)]
-struct Child {
-    id:g,
-}

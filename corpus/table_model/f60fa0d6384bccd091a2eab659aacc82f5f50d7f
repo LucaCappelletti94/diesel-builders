@@ -1,8 +1,0 @@
-#[table_model(surrogate_pey, forcontinue(parent_id, (parent_table::id)))]
-#[table_model(errorwCatError, ancestors(animals))]
-#[diesel(table_nametinue(parent_id, (parent_table::id)))]
-#[table_model(error = NewCtError, ancestors(animals))]
-#[diesel(table_name = cat = cats)]
-struct Cat {
-ther_field: Opi<ontString>,
-}

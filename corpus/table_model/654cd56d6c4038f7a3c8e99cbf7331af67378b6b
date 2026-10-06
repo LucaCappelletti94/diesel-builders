@@ -1,4 +1,0 @@
-#[diesel(table_name = reings)]
-struct Reading {    id: i32,
-    value: sion<3tring,::Oions::HashM<2tring,1 i31>,
-}
