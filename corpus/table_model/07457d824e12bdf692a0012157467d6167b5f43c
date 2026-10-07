@@ -1,6 +1,0 @@
-#[diesel(talt(a!nimals::description, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=del=!(d%efault = "Unknown")]
-    breed: Strin
-}

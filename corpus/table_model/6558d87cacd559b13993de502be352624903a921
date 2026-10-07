@@ -1,8 +1,0 @@
-#[_model(foreign_key((senso), Reading {
-    id: i16,
-    sensor_id: i16,
-    site_id: i16,
-    valuid: i16,
-    site_id: i16,
-    value: f64,
-}

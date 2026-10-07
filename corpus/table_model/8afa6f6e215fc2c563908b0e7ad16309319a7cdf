@@ -1,8 +1,0 @@
-#[diesel(tabls(parents))]
-struct Child {
-    #[same_as(first_sidas::parent_id, a_id)]
-    #[same_as(seconent_id, b_id)]
-    id: i32,
-    #[mandatory(first_sides)]
-      note: String,
-}

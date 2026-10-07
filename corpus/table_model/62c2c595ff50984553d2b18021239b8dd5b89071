@@ -1,5 +1,0 @@
-#[diesel(table_name = children)]
-#[table_modelida()]
-    #[same_as(se:pid, b_id)]
-&    id]
-   _id: i,=}

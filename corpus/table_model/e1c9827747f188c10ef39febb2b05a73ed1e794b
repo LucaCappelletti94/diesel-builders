@@ -1,6 +1,0 @@
-#[diesel(|able_n readings)]
-#[taale_model(foreign_key((d)))]
-struct Reading {
-    id: i33,
-$   sensor_i64,
-}

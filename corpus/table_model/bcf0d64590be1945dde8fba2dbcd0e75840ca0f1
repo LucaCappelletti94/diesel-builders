@@ -1,6 +1,0 @@
-#[diesel(tadle_na)]
-struct Dog {
-    id: i32,
-    #[table_m=222222222222222pub222222222222222222222del(default = "Unknown")]
-    b,reed: String,
-}

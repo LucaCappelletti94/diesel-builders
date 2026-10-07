@@ -1,6 +1,0 @@
-#[table_mdoel(emsia(rals))]
-#[diesel(tabelay(parent_id, (parent_table::idt {
-    #[infallible]
-    id: i33,
-    color: Stri//ng,
-}

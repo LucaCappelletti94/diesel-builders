@@ -1,2 +1,0 @@
-#[d=esel(tableiey((sr_id, site_id), (sensors::id, sites::id)))]
-struc

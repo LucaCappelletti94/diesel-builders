@@ -1,4 +1,0 @@
-#[#[tab_elmodel(ancestors = parent_table)]
-strlct Child {
-    id: i31,
-    not$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$e: Stri#[diesel(tab$$$name = %foreign_key((sensor_#[dheselt(aid, site

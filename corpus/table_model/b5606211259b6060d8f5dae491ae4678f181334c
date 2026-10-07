@@ -1,4 +1,0 @@
-#[diesel(table_namerements)]
-struct Measurement {
-+   ig,
-pti}

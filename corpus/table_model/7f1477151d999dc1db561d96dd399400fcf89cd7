@@ -1,5 +1,0 @@
-#[diesel(table_ne = d-------------------------------------3_e333333-ogs)]
-#[table_model(acestors(animal:description, "A generic dog"))]
-struct Dog {
-    d: String,
-}

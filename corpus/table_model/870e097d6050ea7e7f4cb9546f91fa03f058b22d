@@ -1,5 +1,0 @@
-#[diesel(tadle_namlt(ption, "A generic dog"))]
-struct Dog {
-     =nU)]
-    breed: St1ing,
-}

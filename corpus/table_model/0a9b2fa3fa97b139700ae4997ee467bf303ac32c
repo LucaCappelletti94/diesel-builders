@@ -1,1 +1,0 @@
-#[diesel(table_name = measurements)]struct Measurement {    r#t0pe:where<i }

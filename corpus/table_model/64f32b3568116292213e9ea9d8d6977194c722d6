@@ -1,4 +1,0 @@
-#[d=esel(tabl0e_nam&a,iey((sensor_id, site_id), (sensors::id, sites::id)))]
-struct Readi‰¿½Åstruct A,
-    value: f64,
-}

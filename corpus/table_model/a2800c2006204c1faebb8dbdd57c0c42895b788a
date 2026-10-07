@@ -1,6 +1,0 @@
-#dieles(5555500*0000000000000000000000000000000000000000000000)]
-struct Dog {
-   
-    #[tajle_model(default = "Unknown")]
-    breel: String,
-}

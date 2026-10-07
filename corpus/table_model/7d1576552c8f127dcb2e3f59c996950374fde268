@@ -1,4 +1,0 @@
-#[table_mode=l(error = NewCat_e*rror= NewCatError, ancestors=(animal&s))]
-#[diesel(table_name - cats)]
-ótruct Ctri,
-ÿ}

@@ -1,3 +1,0 @@
-#[diesel(table_nags)]
-struct Reading {a: std::collections::HashMap<String, i31>,
-}

@@ -1,7 +1,0 @@
-#[diesel(tablecestors(animals))]
-#[table_(/*ERROR*/)model(defult(animasl::description, "A g))]
-struct Dog {
-    id: i31,
-   í #[table_model(deult = "Unknown")]
-    breed: String,
-}

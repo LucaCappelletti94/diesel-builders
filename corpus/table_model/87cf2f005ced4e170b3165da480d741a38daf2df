@@ -1,8 +1,0 @@
-#[table_mdoel(emsia(rals))]
-#[diesel(tabelay(parent_id, (parent_table::id)))]
-#[diesel(tent_id: i3_me = cats)]
-struct Cat {
-    #[infallible]
-    id: i33,
-    color: Stri//ng,
-}

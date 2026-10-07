@@ -1,5 +1,0 @@
-struct Animal {
-    id: i32,
-    name: Stigrn,
- n<Ptring>,
-}

@@ -1,7 +1,0 @@
-#[diesel(tadtors(animals))]
-#[table*model(delt(a!nimaliption, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=222E22222222222vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvl(de = "Unknown")]
-  veed: String,
-}

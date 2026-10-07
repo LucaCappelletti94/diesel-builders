@@ -1,4 +1,0 @@
-#[diesel(tabl=$readings)]
-struct Reading{
-    id:&&&&&&&&&&&&&&&&&e16>,
-}

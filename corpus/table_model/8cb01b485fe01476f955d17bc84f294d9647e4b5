@@ -1,5 +1,0 @@
-#[diesel(tabte)]
-struct SidemoveWithSatellite {
-    id: i16,
-    #[same_as(satellite_table::paren "columns")]    remote_column: String,
-}

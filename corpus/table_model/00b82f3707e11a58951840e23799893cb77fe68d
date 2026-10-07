@@ -1,9 +1,0 @@
-#[table_model(error = NewCats)]
-struct Cat {
-    #[infCat {
-    #[infallible]
-    id: i12ing,
-}allible]
-    id: i06,
-    coing,
-}

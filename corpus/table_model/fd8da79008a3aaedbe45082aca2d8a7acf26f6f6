@@ -1,4 +1,0 @@
-#[diesel(table_name = mea)]
-Lstruct r#type {
-    id4 i3  r#enum: i32,
-}

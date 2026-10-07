@@ -1,4 +1,0 @@
-struct r#type {
-    id: i32,
-    r#enum: i32,
-}

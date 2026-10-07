@@ -1,5 +1,0 @@
-#[diesel(table_name = side_with_satellite)]
-struct SideWithSatellite {
-    id: i32,   #[same_as(satellite_ = "columns")]
-    remote_coyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyylumn: String,
-}

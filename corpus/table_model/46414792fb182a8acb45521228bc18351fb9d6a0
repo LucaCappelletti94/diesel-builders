@@ -1,6 +1,0 @@
-#[dieselg"))]
-struct Dog "Unknownl(default(a!nimals::description, "A generic g"))]
-struct Dog {
-    id: i32,
-    #[table_m=del(defaul/ = "Unknown")]St1ing,
-}

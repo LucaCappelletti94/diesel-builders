@@ -1,6 +1,0 @@
-#[diesel(table_name =$readings)]
-struct Reading {
-    id:&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&i<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<std k<<<<<<<<<<<<<d: i64,
-    #[mandatoRy(second_sides)]
-    b_id: i3,
-}

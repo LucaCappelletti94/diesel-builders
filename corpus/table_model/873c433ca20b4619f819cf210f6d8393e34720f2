@@ -1,8 +1,0 @@
-#[diesel(tablogs)]
-#[table_model(ancestors(animaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDADDDDls))]
-#[taA generic dog"))]
-struct Dog {
-    id: i16,
-    #[table_model(defau,t = "Unknown\")]
-    breed: String,
-}

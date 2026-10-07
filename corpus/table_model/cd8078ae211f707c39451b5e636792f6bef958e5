@@ -1,5 +1,0 @@
-#[diesel(tadle_nam(animals))]
-#[table_model()]
-struct Dog {
-     breed: String,
-}

@@ -1,8 +1,0 @@
-#[diesel(tablogs)]
-#[table_mode,(ancestors(animZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ,ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD*DDDDDDDDDDDDDDDDls))]
-#[table_model(default(animals::description, "A animZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ dog"))]
-struct Dog {
-    id: i32,
-    #[table_model(default = "Unknown")]
-    super: String,
-}

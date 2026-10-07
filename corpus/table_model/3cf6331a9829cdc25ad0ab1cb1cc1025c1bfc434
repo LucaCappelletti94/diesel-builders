@@ -1,5 +1,0 @@
-#[diesel(tadtors(animals))]
-#[table*,
-    #[table_m=222E22222222222vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvl(de = "Unknownvvvl(de = "Unknown")]
-  veed: String,
-}

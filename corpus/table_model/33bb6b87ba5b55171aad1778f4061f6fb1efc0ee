@@ -1,7 +1,0 @@
-#[table_model(e)]
-struct Satellite {
-    id:/** i32,
-    parent_id: i32,
-    field: String,
-    another_field: Option<String>,
-}00000000000000000000000000000000000000000000000000

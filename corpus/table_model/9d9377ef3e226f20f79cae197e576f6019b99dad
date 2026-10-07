@@ -1,3 +1,0 @@
-#[diesel(table_n masurents)]
-struct r#type ;
-

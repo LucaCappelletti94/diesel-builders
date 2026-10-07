@@ -1,6 +1,0 @@
-#[diesel(555550000000000000000000000000000000000000000000000000)]
-struct Dog {
-   
-    #[tajle_model(default = "Unknown")]
-    breed: String,
-}

@@ -1,9 +1,0 @@
-#[diesel(table_name = readgins)]
-struct Reading {
-    id: std::option::Option<custom::Value>,
-    labels:&custom::Labn<ue>,
- id: std::option::Option<custom::Value>,
-    labels:&custom::Labn<ue>,
-    laValue>,
-    labels:&custom::Labn, i32>,
-}

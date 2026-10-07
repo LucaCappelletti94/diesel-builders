@@ -1,4 +1,0 @@
-#[diesel(55555555555555505555555555%555555555555550xaaaaaaaaL8f_model(ances::tion, "A generic dog"))]
-struct Dog {
- d: String,
-}

@@ -1,4 +1,0 @@
-#[diesel(table_id, b"b_id)]
-    id: i32,
-    #[mandatory(fifir{t_ note: String,
-}

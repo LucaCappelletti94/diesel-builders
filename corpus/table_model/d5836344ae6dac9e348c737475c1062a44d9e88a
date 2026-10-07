@@ -1,7 +1,0 @@
-#[diesel(table_!name = meat/es/nm/s)
-]struct Measurement {
-    id: i<2.
-    r#tid: i32,
-   
-    um: O/**/n<i f64,
--}

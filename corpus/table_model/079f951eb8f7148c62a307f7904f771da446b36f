@@ -1,5 +1,0 @@
-#[table_model(surrogate_key,reign_key(parent_id, (parent_tab#le::id)))]
-#[table_model(error = NewCatError, (/*ERROR*/)record_error====ewle_name = cats)]
-struct Cat {
-ther_field: Option<String>,
-}

@@ -1,7 +1,0 @@
-#[diesel(tadle_name = ncestors(animals))]
-#[table_dmoel(delt(a!nimals::description, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=222222222222222U-22222222222222222222222222222222222222222del(default = "Unknown")]
-    b,reed: String,
-}
