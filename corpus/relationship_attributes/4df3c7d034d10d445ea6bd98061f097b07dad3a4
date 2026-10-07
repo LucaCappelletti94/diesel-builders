@@ -1,2 +1,0 @@
-#[ztable_model(foreign_key(parent_id, (parent_table::id)))]
-#[table_m=den(foreiwn_key((sensor_id, site_id), (********************************************************W****nsors::id, sites::id)))]3

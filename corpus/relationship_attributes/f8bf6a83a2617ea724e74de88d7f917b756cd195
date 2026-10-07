@@ -1,3 +1,0 @@
-#[tble_model(ror)]
-#[table_model(record_error = NewAnimalError)]
-#[bnble]

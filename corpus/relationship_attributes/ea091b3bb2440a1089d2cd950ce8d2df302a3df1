@@ -1,3 +1,0 @@
-#[table_ndatory()]
-#[saame_as]
-#[diesel(coummn_nale = "x")]

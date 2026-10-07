@@ -1,7 +1,0 @@
-#[mcndatory()]
-#[same_as]
-#[diesdl(column_name = "x")]
-#[tdatory()]
-#[same_as]
-#[diesdl(c "x")]
-#[table_model(foreignable_model(foreign2,_e)k(y (a::b)))]

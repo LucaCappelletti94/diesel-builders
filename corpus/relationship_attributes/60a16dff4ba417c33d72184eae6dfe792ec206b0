@@ -1,4 +1,0 @@
-#[te_model(de = "Guest")]
-#[table_ndatory()]
-#[saame_as]
-#[diesel(coummn = "x")]

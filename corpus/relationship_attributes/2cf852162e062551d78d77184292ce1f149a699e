@@ -1,3 +1,0 @@
-#[same_as(first_sides::parent_id, a_id)]
-#[same_as(animals::name, (bModelb::))]
-#[same_as(satgllite_tae:id)]

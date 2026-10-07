@@ -1,2 +1,0 @@
-#[manda_]
-#[diesel(golumn_name =*"x"g((), ()))]

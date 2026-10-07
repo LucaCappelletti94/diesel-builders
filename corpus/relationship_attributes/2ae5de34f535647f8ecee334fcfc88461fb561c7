@@ -1,3 +1,0 @@
-#[_as(animals::s::name, (b::x, b))]
-#[same_as(satellite_tablename, (b::r#x::y))]
-#[same_as(sae_table::parent_id2)]

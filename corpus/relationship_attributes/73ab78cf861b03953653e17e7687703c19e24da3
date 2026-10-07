@@ -1,2 +1,0 @@
-#[mae_as]
-#[diesel(column_name =*"x"gn_key((),:( :ab)))]

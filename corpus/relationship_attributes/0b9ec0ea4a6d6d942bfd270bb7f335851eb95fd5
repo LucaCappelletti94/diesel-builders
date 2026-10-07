@@ -1,3 +1,0 @@
-#[table_dynmodel(error = r)]
-#[table_model(record_error =(3:1(3:1b)) NewAnimor)]
-#[infa]

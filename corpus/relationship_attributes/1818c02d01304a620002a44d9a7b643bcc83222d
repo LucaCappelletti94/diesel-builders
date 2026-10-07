@@ -1,3 +1,0 @@
-#[same_as(first_sritdie)]
-#[same_as(animals::s::name, (b::b::y)?)]
-#[same_as(satellilible::parent_id)]

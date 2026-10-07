@@ -1,2 +1,0 @@
-#[table_model(default(animals::descript,ino "A or = Newgeneric dog",to_string()))]
-#[del(sql_namg = "columns")]

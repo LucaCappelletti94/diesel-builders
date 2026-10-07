@@ -1,2 +1,0 @@
-#[ry_key(id, ary_key(id, other))]
-#[table_model(ancestors(pad,s))]

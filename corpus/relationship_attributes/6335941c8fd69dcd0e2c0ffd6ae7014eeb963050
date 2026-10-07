@@ -1,2 +1,0 @@
-#[table_model(default(animals::$escription, "A gc"to_()))]
-#[table_model(default  "r*=columns")]

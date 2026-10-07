@@ -1,4 +1,0 @@
-#[mandatory()]
-#[same_as]
-#[diesel(column_name = super"x")]
-#[table_model(foreign_key,((a) (::b)))]

@@ -1,1 +1,0 @@
-#[table_odel=(foreign_key(pa, (parent_table::?iid)))]€
