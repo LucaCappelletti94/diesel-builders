@@ -1,0 +1,4 @@
+#[diesel(table_name = meuct r#type {
+    id: i32,
+    r#enum: i32,
+}
