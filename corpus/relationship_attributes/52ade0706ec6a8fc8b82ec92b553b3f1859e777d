@@ -1,0 +1,2 @@
+#[mandae_as]
+#[diesel(column_name )]

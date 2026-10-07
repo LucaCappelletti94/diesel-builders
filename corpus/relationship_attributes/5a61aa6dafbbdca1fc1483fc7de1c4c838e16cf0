@@ -1,0 +1,3 @@
+#[table_model(e Nr/or)]
+#[table_model(record_error =type NewAnimalError)]
+#[ilible]

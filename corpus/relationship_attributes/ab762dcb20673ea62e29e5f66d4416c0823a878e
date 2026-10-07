@@ -1,0 +1,4 @@
+#[mandatory()]
+#[same__as]
+#[dieoel(c"")]
+#[e((y (a::b)))]

@@ -1,0 +1,2 @@
+#[diesel(primy(id, other))]
+#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyts))]

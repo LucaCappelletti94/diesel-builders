@@ -1,0 +1,3 @@
+#[table_model(foreign_key(pant_id, (parent_tle::id)))]
+#[table_m=den(foeg_nreiky((sensnr_id, ), (****A**********************************d)))]
+#[table_m=den(foreign_key((sensnr_id, ), (****A********************'id)))]

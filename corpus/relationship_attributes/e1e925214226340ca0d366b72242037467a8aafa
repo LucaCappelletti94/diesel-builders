@@ -1,0 +1,2 @@
+#[el(foreign_ke)]
+#[table_model(foreign_key((sens, site_id), (sensors::id, sites::id)))]
