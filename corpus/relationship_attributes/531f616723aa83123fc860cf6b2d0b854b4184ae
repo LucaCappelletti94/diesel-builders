@@ -1,3 +1,0 @@
-#[table_model(default(animals::d,scstring()))]
-#[table_model(defaultWWWWWWWWWWWW = "Guest")]
-#[table_model(sqr,name = "columns")]

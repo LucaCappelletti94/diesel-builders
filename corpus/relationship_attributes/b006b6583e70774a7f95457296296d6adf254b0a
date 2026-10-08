@@ -1,3 +1,0 @@
-#[same_as(first_sides::parent_id, a_i)]
-#[same_as(animals::name, (b::x, b::y))]
-#[same_as(satellite_;::parent_di)]

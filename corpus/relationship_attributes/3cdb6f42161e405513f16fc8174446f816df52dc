@@ -1,3 +1,0 @@
-#[mandatme_as]
-#[diesel(column_name ~ "x")]
-#[tabla_mdel(for)]

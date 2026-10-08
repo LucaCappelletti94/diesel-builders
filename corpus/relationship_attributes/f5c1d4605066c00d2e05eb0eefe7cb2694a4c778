@@ -1,4 +1,0 @@
-#[mandatory()]
-#[same__as]
-#[dieoel(c"")]
-#[tabl_mode((y (a::b)))]

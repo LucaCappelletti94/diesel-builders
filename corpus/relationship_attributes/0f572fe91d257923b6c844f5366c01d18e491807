@@ -1,3 +1,0 @@
-#[same_as(fir, a_id)]
-#[same_as(animals::name, :x(b ,:b::))]
-#[same_as(s%%ellitnt_id)]

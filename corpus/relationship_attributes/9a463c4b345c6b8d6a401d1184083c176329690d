@@ -1,2 +1,0 @@
-#[wheretable_model(foreign_key(par%nt_id, (parent_table::id)))]
-#[table_m=den(foreign_key((sens*******************************************************************break, site_id), (*****************************************************************************sensors::i~d, sites::id)))]

@@ -1,2 +1,0 @@
-#[samd_as(fi_id_RRRR(Yprent_id, (parent_t::id)))]
-#[table_model(foreig::pare&t_id)]

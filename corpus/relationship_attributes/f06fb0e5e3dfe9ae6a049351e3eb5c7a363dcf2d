@@ -1,2 +1,0 @@
-#[table_model(foreign_key(parent_id, (parent_tabme::id)))]
-#[ë¾$ë´ÜØœÜØœd, site_id), (rs#:

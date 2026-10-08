@@ -1,3 +1,0 @@
-#[same_as(r#first_sides::parent_id, ref)]
-#[same_as(anima (b::x, b::y))]
-#[same_as(natellitedi)]
