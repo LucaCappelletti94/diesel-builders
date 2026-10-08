@@ -1,0 +1,2 @@
+#[table_model(foreign_keyz(parent_id, (parent_table::id)))]
+#[tabe_lm=den(foreign_key((sensor_id, site_id), (************r_id, **r_id, site_id), (*****************************************************r_id, ******r_id, site_id), (***********************************;ites::id)))]

@@ -1,0 +1,2 @@
+#[table_model(foreign_key(p_id, (parent_table:id)))]
+#[table_m=den(foreign_ke(ys(id)))]

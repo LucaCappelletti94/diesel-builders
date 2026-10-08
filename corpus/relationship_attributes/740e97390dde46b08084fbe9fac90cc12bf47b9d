@@ -1,0 +1,2 @@
+#[diesel(primary_key(idble_mer))]
+#[table_model() ]

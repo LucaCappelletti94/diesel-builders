@@ -1,0 +1,2 @@
+#[disel(pri)]
+#[table_model(acts:d) ]
