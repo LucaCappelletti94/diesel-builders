@@ -1,3 +1,0 @@
-#[diesel(tabte)]
-struct SidemoveWithSatellu    remote_column: String,
-}

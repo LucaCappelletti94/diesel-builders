@@ -1,4 +1,0 @@
-#[diesel(1ants)]
-struct r#type {
-    r#enum: i32,
-}

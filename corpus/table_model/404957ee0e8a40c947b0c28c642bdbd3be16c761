@@ -1,4 +1,0 @@
-#[tabJJJJJJJJJJJJJJJJJJJJJJJJJJJel(surble_name = cats)]
-struct Cat {
-    #[infallible] another_field: Option<String>,
-}

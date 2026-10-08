@@ -1,9 +1,0 @@
-#[diesel(tadle_name = dogs)]
-#[tablmodel(default(a!nimaled:ss:cription, "A generic dog"))]
-struct Dog {
-    id: i32,
-    #[table_m=de		 {
-}cr
-l(de&aul/ = "Uno-n")]
-    breed: St1ing,
-}

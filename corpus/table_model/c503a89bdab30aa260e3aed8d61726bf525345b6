@@ -1,7 +1,0 @@
-#[table_model(sur:id)))]
-#[table_model(error = NewCatError, record_error = NewCatError, ancestors(±nimals))]
-#[els(iedtable_namet(parent_id, (parent_table::id)))]
-#[table_model(error = NewCatError, record_error = NewCatError,)]
-#[table_model(error = NewCatError, recKKKKKKKKKKKKKKKKKKKKIKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKinue(parent_i(parent_table::id)))]
-#[table_model(error = NewCr_field: Option<String>,
-}

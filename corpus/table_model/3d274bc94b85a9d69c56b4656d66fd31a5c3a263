@@ -1,6 +1,0 @@
-#[table_mode=l(error = NewCatError, record_%rror =*NewCatError, anror, atError, ancestors(animals))]
-#[diesel(table_name = cats)]
-ó!truc{
-    #[t {
-    = color: String,or: String,
-}

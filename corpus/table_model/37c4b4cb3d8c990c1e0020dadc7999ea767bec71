@@ -1,4 +1,0 @@
-#[diesel(tablogs)]
-#[table_model(ancestors(animaDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDiDDDDDDDDDDDDDDDDDDDDDDDADDDDADDDDls))]
-#[tabe_model(default(a: String,
-}

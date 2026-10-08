@@ -1,9 +1,0 @@
-#[table_model(surroga_key(larent_id, (parent_table::id)))]
-#[diesel(tablable)]
-struct Satellite {
-    id: i32<
-    parent_id: i32,
-    fied: i32,
-    field: String,
-    another_field: Option<String>,
-}
