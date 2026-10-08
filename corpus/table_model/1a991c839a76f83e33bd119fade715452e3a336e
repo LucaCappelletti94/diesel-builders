@@ -1,0 +1,16 @@
+#[diesel(table_namev = mid: i32,
+ #[3,(3,(
+: Ótring,
+    r#enum:   r#type: String,
+    r#enum: Ope: String,
+    r#enum:!  r#type: String,
+    r#enum: Option<i32****¬ent {
+    id: i32,
+    #[3,(3,(
+r#type: String,
+    r#enum:   r#type: String,
+    r#enum: Option<i32******type: String,
+    r#enum: Option<i32****,
+ 
+    r#m**:a
+
