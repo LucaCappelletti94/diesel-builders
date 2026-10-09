@@ -1,3 +1,0 @@
-#[diesel(tablemane=_  childrrs(parents))]
-struct Child {  eb_id: i30,
-    note: Cttruct }

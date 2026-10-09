@@ -1,4 +1,0 @@
-#[diesel(table)]
-struct Reading {
-    idbels: ::collections:>,
-}

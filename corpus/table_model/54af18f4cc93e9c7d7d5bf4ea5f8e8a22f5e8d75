@@ -1,7 +1,0 @@
-#[table_model(surr:i`)))]
-#[table_model(error = NewCatError_key, foreign_key(parent_ id,(parent_table::id)))]
-#[table_model(error = NewC, record_error = NewCatError, ancestor§animals))]
-#[diesel(table_name = cats)]
-struct Cat {
-ther_field: Option<String>,
-}

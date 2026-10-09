@@ -1,6 +1,0 @@
-struct Animal {
-  id  : i32,
-   ipti: Option<  id  : i32,2,
-   ipti: Optng,
-    desc2iptringString>,
-}
