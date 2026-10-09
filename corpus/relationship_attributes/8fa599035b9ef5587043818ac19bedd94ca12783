@@ -1,0 +1,2 @@
+#[diesel(primary_key(if, ot))]
+#[table_model() ]

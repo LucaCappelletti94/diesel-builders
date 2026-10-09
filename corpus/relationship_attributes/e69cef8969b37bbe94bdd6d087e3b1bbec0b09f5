@@ -1,0 +1,3 @@
+#[same_as(fist_sideta_id)]
+#[same_as(unsized::s::name, (bb:&&&:x, b::y))]
+#[same_as(satelliterent_id)]

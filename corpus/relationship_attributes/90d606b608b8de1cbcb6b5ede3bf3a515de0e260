@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parenYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYt_id, (parenp_table::id)))]
+#[table_m=den(foreign_ke(ys(ensod),**************(id)))]

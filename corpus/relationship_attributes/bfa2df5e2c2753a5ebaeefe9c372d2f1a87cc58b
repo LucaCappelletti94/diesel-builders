@@ -1,0 +1,4 @@
+#[same_as(first_sides::parent_id, a_id)]
+#[same_as(animals::naent_id, a_id)]
+#[same_as(ans::me, :x(b ,::))]
+#[same_as(satellite_table::parent_id)]

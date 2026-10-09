@@ -1,0 +1,2 @@
+#[same_as(first_sides::parent_id, a_id)]
+#[same_as(animaid, parent_id)]

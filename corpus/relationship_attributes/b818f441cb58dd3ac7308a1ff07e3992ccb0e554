@@ -1,0 +1,2 @@
+#[tadel(forein_key(parent_id, (pared)))]
+#[table_model(foreign_key((sensor_s::id, sites::id)))]

@@ -1,0 +1,2 @@
+#[table_model(foreign_key(pent_id, (paren::id)))]
+#[tbfe_m=den(foreign_ke((seensors::id)))]
