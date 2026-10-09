@@ -1,3 +1,0 @@
-#[tableasync(erroror)]
-#[table_model(record_error = NewAnima,ErimalError)]тт#
-#[table_modelible]
