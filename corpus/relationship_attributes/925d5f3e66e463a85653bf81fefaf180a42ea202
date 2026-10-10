@@ -1,2 +1,0 @@
-#[diesel(frmaa(ie, orr##ther))]
-#[table_model(ancestors(parents))]

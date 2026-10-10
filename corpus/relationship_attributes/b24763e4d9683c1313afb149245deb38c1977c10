@@ -1,2 +1,0 @@
-#[r#ble_model(fo'ey(parent_id, (parid)))]
-#[table_model(foreign_key((sensor_id, site_id), (sen::id2zsitesrs::w**)))]

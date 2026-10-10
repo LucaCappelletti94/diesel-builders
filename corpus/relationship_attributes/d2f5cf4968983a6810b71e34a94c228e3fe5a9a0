@@ -1,8 +1,0 @@
-#[diesel(primary_key(her))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyy9yyyyyyyyyyyyyyyyyyyyyyyy!yyyyy))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyyyyyyyyyyyyyyyer))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyy4yyyyyyyyyyyyyyyyyyyyyyyy!yyyyy))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy))]
-#[table_model(ancestors(parenyyychyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyy3yyyyyyyyyyyyyyyyyyyyyy<<<<<<yyySelfyyyyy))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyyyyyyyyyyyyyyyyyy,yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy))]
-#[table_model(ancestors(parenyyyymatchyyyyyyyyyyyyy<<<<<<<<<<<yyyyts))]

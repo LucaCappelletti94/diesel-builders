@@ -1,2 +1,0 @@
-#[diesel(prmary_key(id, ||||?|||er|||||||||||1||||||?|||er))]
-#[table_model(ancestors(parents))]

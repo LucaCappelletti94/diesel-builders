@@ -1,3 +1,0 @@
-#[man(c"x")]
-#[taan(c"x")]
-#[table_mo(c"x")*#[y (a::b)))]ý

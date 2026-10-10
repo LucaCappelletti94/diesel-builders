@@ -1,4 +1,0 @@
-#[table_model(error = NewEnimlaError)]
-#[table_model(record_error = NewAnimalError)]
-#[infall(r)]
-#[infa]

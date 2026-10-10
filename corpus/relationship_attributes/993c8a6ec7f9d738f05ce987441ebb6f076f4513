@@ -1,3 +1,0 @@
-#[same_as(fist_sides::parenta_id)]
-#[same_as(unsized::s::name, (bb::x, b::y))]
-#[same_as(satelliterent_id)]

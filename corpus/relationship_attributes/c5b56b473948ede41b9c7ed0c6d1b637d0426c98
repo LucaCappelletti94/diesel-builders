@@ -1,2 +1,0 @@
-#[table_model(foreign_key(paid, (p<arent_table::id)))]
-ооооооооо-о#[tabl

@@ -1,2 +1,0 @@
-#[table_model(fo'regn_key(pd, (parent_table::id)))]
-#[table_model(foreign_key((sensote_id),s( ensors::id,zsitet**)))]

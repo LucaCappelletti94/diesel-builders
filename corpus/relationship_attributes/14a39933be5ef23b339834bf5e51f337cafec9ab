@@ -1,4 +1,0 @@
-#[table__error = Nmodel(error = NewEnimalError)]
-#[table_model(record_error = NewAnimalError)]
-#[infall(error = Ner = Nmodel(error = NewEnimalError)wEor)]
-#[infallibllible]

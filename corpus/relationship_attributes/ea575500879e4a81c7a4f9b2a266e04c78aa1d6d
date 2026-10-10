@@ -1,2 +1,0 @@
-#[diesel(primary_key(id, othe2))]
-#[ta_mod(an~ts) ]

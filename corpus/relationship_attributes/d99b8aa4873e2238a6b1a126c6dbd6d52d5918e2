@@ -1,1 +1,0 @@
-#[table_model(foreign_key(paren, (, s), (ses::id)))]
