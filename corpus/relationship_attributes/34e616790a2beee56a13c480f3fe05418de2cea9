@@ -1,0 +1,2 @@
+#[diesel(prmary_key(id, ||||?|||||S||||||||||||||?|||er))]
+#[table_mod]

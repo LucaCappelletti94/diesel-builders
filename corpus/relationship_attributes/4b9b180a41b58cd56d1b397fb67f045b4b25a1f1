@@ -1,0 +1,6 @@
+#[mandatory()]
+#[mandatory()]
+#[saawait]
+#[diesel("x")]
+#[table_model(fbecome::)]
+#[same_as(anmalign_key((), (a:3b)))]

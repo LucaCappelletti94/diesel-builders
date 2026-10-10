@@ -1,0 +1,2 @@
+#[table_model(error = NewAnimalErr/o_error = NewAnimr)]
+#[infallible]

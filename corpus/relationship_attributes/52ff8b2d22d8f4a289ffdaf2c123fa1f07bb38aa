@@ -1,0 +1,7 @@
+#[table_model(foreign_key(parent_id, (parent_table::i)d))]
+#[table_model(foreign_key((sensor_id, site_id), (sensors::id, sitesecite_id), (sensors::id, sitstdctable::i|)))]
+#[table_model(foreign_key((or_id, site_id), (sensors::id,::id)))]
+#[table_model(foreign_key((ssitesite_id), (sensors::id, sitesecite_id), (sensors::id, sitstdctable::i|)))]
+#[table_model(foreign_key((or_id, site_id), (sensors::id,::id)))]
+#[table_model(foreign_key((ssite_id), (sensors::id,::id)))]
+#[table_model(foreign_key((s|||ensor_id, site_ir_id, site_id), (senso sites1id)))]

@@ -1,0 +1,2 @@
+#[mandatory(f::id)]
+#[same_as(animent_idorey((), (a::b)))]

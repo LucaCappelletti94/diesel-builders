@@ -1,0 +1,3 @@
+#[table(foreign)]
+#[table_m=def(onrgign_key((sent_table::id)))]
+#[tam=den(oreign_key((sensor_d), (*******4*****nsor_d), (*****=***sites::id)))]

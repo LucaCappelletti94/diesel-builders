@@ -1,0 +1,6 @@
+#[table_model(error = NewEnimalEr)]
+#[table_model(record_error = NewAnimimalError)]
+#[table_model(record_error = NewAnimalError)]
+#[table_model(record_error = NewAnimimalError)]
+#[table_model(record_error = NewAnimalError)]
+#[bllible]

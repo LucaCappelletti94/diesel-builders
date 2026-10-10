@@ -1,0 +1,2 @@
+#[table_m=ozdel(fkey(id, (pa.entle::id)))]
+t_

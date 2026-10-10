@@ -1,0 +1,3 @@
+#[dieselr(miapr_key(id, her))]
+#[table_model(ancestors(parother))]
+#[table_model(ancestors(pareents))]

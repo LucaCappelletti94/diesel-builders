@@ -1,0 +1,2 @@
+#[same_as(fir_key(parent_i (e::id)))]
+#[table_model(forei>pa:regnt_id)]

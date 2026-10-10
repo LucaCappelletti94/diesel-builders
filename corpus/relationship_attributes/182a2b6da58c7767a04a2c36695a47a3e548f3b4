@@ -1,0 +1,3 @@
+#[diesel(primary_key(her))]
+#[table_model(ancestors(parenyyyymatchyyyyyyyyyy,yyyyyyyyyyyyyyyyyyyyyyyyyyyyyy))]
+#[table_model(ancestors(parenyyyymyyyyyyyyyyyyyts))]

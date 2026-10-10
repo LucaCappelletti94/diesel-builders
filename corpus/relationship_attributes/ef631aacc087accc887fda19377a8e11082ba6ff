@@ -1,0 +1,8 @@
+#[modtable_model(errr = NlError)]
+#[table_model(error = NewAnimalError)]
+#[table_model(error = NewAnimalError)]
+#[table_mododel(recwAnimor mror = NlError)]
+#[table_model(error = NewAnimalError)]
+#[table_model(error = NewAnimalError)]
+#[table_mododel(recwAnima~lError)]
+#[bnfallible]

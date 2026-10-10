@@ -1,0 +1,2 @@
+#[diesel(table_nid_n=:dogs)]
+#[eba_]

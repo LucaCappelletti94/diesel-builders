@@ -1,0 +1,2 @@
+#[same_as(first_sides::_id, else)]
+#[same_as(anim==d)]

@@ -1,0 +1,2 @@
+#[table_model(fo'regn_key(pd))]
+#[table_model(foreign_key((sensote_id),s( ensors::i,zsite**)))]

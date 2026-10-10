@@ -1,0 +1,3 @@
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_m=def(onreign_key((sent_table::id)))]
+#[table_m=den(oreign_key((sensor_d), (*************nsor_d), (*****=***sites::id)))]

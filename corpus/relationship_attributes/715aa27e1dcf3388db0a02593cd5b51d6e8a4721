@@ -1,0 +1,4 @@
+#[man]
+#[same_as]
+#[diesel(c"x")]
+#[table_model()]

@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parent_id, (parent_table::id)))]
+#[table_m=den(foreign_key((senso2_id, site_id), (************r_id, site_id), (*********************seynfrs::id, sites::id)))]
