@@ -1,5 +1,0 @@
-#[di_sel(tablogs)]
-struct Dog {    id: i32,
-    #[table_model(default = "Unknown")]
-    d: String,
-}
