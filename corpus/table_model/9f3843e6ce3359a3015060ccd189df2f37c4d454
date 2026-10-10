@@ -1,0 +1,4 @@
+#[able_model(surrogate_key, foreign_key(parentge::id)))]
+#trable_model(error = NewCatError_key, foreign_key(parent_ id,(parent_table::id)))]
+#[table_model(error = NewC, record_error = NewCat//ey(parent_ id,(parent_table::id)ion<String>,
+}
