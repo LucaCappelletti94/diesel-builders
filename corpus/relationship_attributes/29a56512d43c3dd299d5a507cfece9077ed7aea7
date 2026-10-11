@@ -1,0 +1,2 @@
+#[mandame]
+#[diesel(colu=_ n(y (a::b)))]

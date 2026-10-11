@@ -1,0 +1,4 @@
+
+#[table_model(record_error =alErrr)]
+#[table_model(record_error =wor)]
+#[infallible]
