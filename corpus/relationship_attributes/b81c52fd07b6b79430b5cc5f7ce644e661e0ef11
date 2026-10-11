@@ -1,1 +1,0 @@
-#[diesel(table_name =bla= 2okey)]

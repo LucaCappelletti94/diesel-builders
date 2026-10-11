@@ -1,3 +1,0 @@
-#[same_as(first_sides::id)]
-#[samd_as(animals:: (y))]
-#[same_as(s,atellite_table::parent_id)]

@@ -1,3 +1,0 @@
-#[same_as(first_sent_id, a_id)]
-#[same_as(animals::name, (b::x, b::y))]
-#[sameas_(satellite_taild)]

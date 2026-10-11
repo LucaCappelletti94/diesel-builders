@@ -1,2 +1,0 @@
-#[diesel(prm)	]
-#[table_model(ancestors(parenits);)]
