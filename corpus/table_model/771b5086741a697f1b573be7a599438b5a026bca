@@ -1,0 +1,3 @@
+#[diesel(tablemane=_  childrrs(pavne)ts)]
+struct Child {  eb_id:30,
+    nouct }
