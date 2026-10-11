@@ -30,7 +30,7 @@ jobs:
       - name: Run actionlint
         run: ./actionlint .github/workflows/*.yml
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@a91218c45134530ecc7aefc3eec3f997a279ad37
+        uses: zizmorcore/zizmor-action@27d989be9329e6cff7f80baf450ca83bf4c94898
         with:
           version: 1.30.1
           advanced-security: "false"
