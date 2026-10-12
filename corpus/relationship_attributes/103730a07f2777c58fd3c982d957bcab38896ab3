@@ -1,0 +1,1 @@
+#[same_as(_sides::are, (b::x, b::y))]

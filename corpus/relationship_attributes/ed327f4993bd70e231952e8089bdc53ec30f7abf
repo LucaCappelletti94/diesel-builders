@@ -1,0 +1,4 @@
+#[mandatory()]
+#[se_as]
+#[diesel(column_name ~ "x")]
+#[tabla_l(for)]
