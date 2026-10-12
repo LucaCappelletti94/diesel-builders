@@ -1,2 +1,0 @@
-#[samd_as(fi_iRRRR(Yprent_id, (pid)))]
-#[table_model(foreig::pqre&t_id)]

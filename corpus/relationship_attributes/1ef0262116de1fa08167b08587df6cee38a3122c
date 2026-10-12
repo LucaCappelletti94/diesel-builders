@@ -1,3 +1,0 @@
-#[same_as]
-#[diesel(coluer"x")]
-#[table_model(fey,((a) (:;b)))]

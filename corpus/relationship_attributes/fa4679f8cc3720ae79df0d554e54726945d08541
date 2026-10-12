@@ -1,2 +1,0 @@
-#[diesel(tab)]
-#[table_model(surrogate_key)]

@@ -1,2 +1,0 @@
-#[table_model(foreign_key(parent_id, (ble::id)))]
-#[tan(for((sens:id)))]

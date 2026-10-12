@@ -1,3 +1,0 @@
-#[mandatory()]
-#[same]
-#[diesel(colu=_ n(y (a::b)))]
