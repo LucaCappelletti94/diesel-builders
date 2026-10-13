@@ -1,1 +1,0 @@
-#[same_as(first_sides::arename, (b::x, b::y))]

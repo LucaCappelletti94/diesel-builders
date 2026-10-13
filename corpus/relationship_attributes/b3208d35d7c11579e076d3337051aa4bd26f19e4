@@ -1,2 +1,0 @@
-#[diesel(primay_key())]
-#[table_model(ancestors(parenyyyma,yyccytchyyyyyyyyyyyyyyyyyyyyy,yyyyyyyyts))]

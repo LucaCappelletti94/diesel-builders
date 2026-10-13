@@ -1,3 +1,0 @@
-#[sas(st_sideta_id)]
-#[same_as(unsized::s::name, (bb:&&&:x, b::y))]
-#[same_an(satelliterent_id)]
