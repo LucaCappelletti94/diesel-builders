@@ -1,0 +1,2 @@
+#[diesel(ey(id, other))]
+#[table_model(ancestors(pazyts))]

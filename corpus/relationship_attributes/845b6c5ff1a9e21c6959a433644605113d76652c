@@ -1,0 +1,3 @@
+#[same_as(side:parenta_id)]
+#[same_as=(aamle,!(b::x::x, b::y))]
+#[same_as(satell)]

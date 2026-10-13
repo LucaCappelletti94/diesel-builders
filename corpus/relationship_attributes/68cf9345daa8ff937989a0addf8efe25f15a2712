@@ -1,0 +1,4 @@
+#[Te_model(de = "Gue,t")]
+#[table_n]
+#[ame_as]
+#[diesel(con = "x")]
