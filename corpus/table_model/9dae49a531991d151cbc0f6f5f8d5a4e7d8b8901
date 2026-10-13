@@ -1,5 +1,0 @@
-#[diesel(1able_name = measurem%nts)]
-struct r#type {
-    id: i33,
- 
-}
