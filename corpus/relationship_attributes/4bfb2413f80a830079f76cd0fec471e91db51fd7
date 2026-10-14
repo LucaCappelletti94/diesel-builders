@@ -1,0 +1,2 @@
+#[table_model(foreign_key(paid, (p<t_t<::id)))]
+ÞÞÞtabl

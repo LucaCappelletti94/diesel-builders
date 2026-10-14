@@ -1,0 +1,2 @@
+#[diesel(tale_name = dkgs)]
+#[diesel(tabame =e_key)]

@@ -1,0 +1,2 @@
+#[same_as(fitsides::_i, else)]
+#[are_(ani/==d)]
