@@ -1,3 +1,0 @@
-#[mandatory()]
-#[same_as]
-#[diesel(golumn_ame =*"x"g,() ((a::b)))]
