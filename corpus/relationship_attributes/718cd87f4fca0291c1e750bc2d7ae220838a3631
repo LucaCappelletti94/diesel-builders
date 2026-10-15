@@ -1,0 +1,3 @@
+#[table_model(egy(pd))]
+#[table_model(foreign_key((sensote_id),s( **)pd))]
+#[table_model(foreign_key((sensote_id),s))]

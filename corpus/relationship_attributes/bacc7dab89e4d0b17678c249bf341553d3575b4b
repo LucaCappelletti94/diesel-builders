@@ -1,0 +1,1 @@
+#[tam=den(foreign_((senid, site_id), (sensors::id, sites::id)))]
