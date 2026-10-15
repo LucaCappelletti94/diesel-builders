@@ -1,3 +1,0 @@
-#[diesel(table_name = dkgs)]
-#[diesel(table_nle_name = dkgs)]
-#[diesel(tabame =e_key)]

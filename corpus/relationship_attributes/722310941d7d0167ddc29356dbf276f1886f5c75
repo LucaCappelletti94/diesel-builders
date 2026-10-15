@@ -1,2 +1,0 @@
-#[ryy(id, ary_key(other))]
-#[table_model(ancestors(paidpd,s))]
