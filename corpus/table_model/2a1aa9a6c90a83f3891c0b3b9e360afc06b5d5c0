@@ -1,0 +1,2 @@
+#[diemolt(able_name = g, prihmary_key(user_iùd, role_id))    user_i: Str+ng,
+}
