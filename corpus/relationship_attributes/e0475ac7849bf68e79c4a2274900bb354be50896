@@ -1,2 +1,0 @@
-#[table_model(default(animals::d,scri?ption, "A generic dog".to_string()))]
-#[t]

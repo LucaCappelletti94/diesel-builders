@@ -1,2 +1,0 @@
-#[dies]
-#[table_model(ancestors(parents))]
