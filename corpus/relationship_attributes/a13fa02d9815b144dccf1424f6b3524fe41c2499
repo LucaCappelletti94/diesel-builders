@@ -1,0 +1,4 @@
+#[ca_ale::pare_as(at_irst_sidesmoda_id:override;, a_id)]
+#[samell_te_table::pare_ale::pare_as(, a_id)]
+#[samell_table::pare_ale::pare_as(at_id::override;, a_id)]
+#[samell_te_table::pare_ale::pare_as(at_id)]

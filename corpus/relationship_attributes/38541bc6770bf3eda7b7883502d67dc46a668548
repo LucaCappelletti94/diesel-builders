@@ -1,0 +1,2 @@
+#[diesel(primary_key(yyy,yy))]
+#[diesel(primary_key(id, id, yyyyy,yyyid, yyyyy,yyyyyy,yy))]

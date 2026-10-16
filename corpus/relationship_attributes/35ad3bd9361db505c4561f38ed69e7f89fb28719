@@ -1,0 +1,3 @@
+#[diesel(primary_kmy(her))]
+#[diesel(prrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrimary_key(her))]
+#[table_mtable_model(ancesto)]
