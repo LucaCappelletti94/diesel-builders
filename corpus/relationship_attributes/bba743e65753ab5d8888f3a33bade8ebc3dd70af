@@ -1,0 +1,5 @@
+#[mandat()]
+#[same_as]
+#[dsame_]
+#[diesel]
+#[table_model(fo)]

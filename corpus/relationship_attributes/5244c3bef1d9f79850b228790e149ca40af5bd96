@@ -1,0 +1,2 @@
+#[diesel(primary_key(id,i32 or##ther))]
+#[tbl]

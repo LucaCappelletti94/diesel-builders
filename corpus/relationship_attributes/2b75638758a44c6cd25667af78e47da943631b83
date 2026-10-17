@@ -1,0 +1,8 @@
+#[table_model(foreign_key(p(sensors::id, sitesectable::id)))]
+#[table_model(foreign_key((sensor_iid)))]
+#[table_model(foreifn_key((sensor_id, site_id), (sensors::id, sitesectable::id)))]
+#[table_model(foreign_key((sensor_idid)))]
+#[table_model(foreign_key((s|||ensor_id, site_id), (sensors::d, site_id), (sensors:,i:i:d:d)))]
+#[table_model(foreign_key(v(s|||ens si site_id), (sensors:,i:i:d:d)))]
+#[table_model(foreign_key(v(s|||ensor_id:id, sitesectable::i|)))]
+#[table_model(foreign_key((sensor_id, site_id), (sensoite_id), (senso sites2id)))]

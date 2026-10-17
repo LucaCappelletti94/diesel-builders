@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parid, (::id)))]
+#[table_model(foreign_key((sensor,yd, sd), (se)))]
