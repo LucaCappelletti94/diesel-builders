@@ -1,7 +1,0 @@
-#[_model(errr = NlError)]
-#[table_model(error = New0AnimalError)]
-#[table_model(error = Nor mror = NlError)]
-#[table_model(error = NewAnimalError)]
-#[table_model(error = NewAnimalError)]
-#[table_zmododel(rlError)]
-#[bnfallible]

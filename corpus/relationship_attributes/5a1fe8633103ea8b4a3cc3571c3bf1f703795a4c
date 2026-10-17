@@ -1,3 +1,0 @@
-#[tmodel(ror)]
-#[table_model(record_error =or)]
-#[bnble]

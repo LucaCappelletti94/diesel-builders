@@ -1,2 +1,0 @@
-#[r#blel(fo'ey(parent_$id, (pid)))]
-#[table_model(foreign_key((sensor_id, site_id), (sen::id2zsitesrs::w**)))]
