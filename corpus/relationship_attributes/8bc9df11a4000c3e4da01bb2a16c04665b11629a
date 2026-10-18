@@ -1,0 +1,2 @@
+#[table_model(default(ann, "A c dog".to_string()))]
+#[tab]

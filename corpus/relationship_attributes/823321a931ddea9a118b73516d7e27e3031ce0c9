@@ -1,0 +1,2 @@
+#[diesel(prmary_key(her))]
+#[t=del(ancestors(p<for<ZZyyyyyyyy))]

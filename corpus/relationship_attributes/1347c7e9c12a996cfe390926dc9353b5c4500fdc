@@ -1,0 +1,1 @@
+#[tab_m=den(foreign_key((senso3_id, site_id), (id, site_id), (***********eynfid, sites::id)))]
