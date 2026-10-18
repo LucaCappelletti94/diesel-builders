@@ -1,7 +1,0 @@
-struct A
-    name: Stigrn,
-    description: Option<String>,
-d: i32,
-    name: Stigrn,
-    descng>,
-}
