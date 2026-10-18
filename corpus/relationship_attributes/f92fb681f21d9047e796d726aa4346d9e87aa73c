@@ -1,3 +1,0 @@
-#[same_as(fisdname, (b::x, as(fist_sita_id)B::y))]
-#[same_as(satellite_tablename, (b::x, b::y))]
-#[same_as(s_id)]

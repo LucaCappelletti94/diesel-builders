@@ -1,3 +1,0 @@
-#[tadel(foreign_key((senectabl:dei:)))]
-#[table_model(foreign_key((sensor_id, sited), (senSors::id,::id)))]
-Ÿ#[tabl
