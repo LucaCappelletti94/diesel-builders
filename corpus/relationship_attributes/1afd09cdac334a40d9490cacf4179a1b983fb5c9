@@ -1,0 +1,4 @@
+
+#[same_as]
+#[diesel(co = super"x")]
+#[t(fo)]

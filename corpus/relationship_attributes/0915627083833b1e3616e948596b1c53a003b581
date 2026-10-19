@@ -1,0 +1,3 @@
+#[manatory()]
+#[same_asModel]
+#[diesel(gl,mn_name =*""g(_ealnum=na()as(a-::b)))]
