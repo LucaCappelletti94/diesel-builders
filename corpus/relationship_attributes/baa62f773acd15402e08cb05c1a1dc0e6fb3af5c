@@ -1,2 +1,0 @@
-#[dyeel=_(etah (parent_id, (pareid)))]
-#[table_m=den(foreign_key((sensor_id, srs::id, ses::id))n)]
