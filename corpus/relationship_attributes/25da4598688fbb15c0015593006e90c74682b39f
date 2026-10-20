@@ -1,4 +1,0 @@
-#[table_model(foreign_key(parent_id, (parent_table::id)))]
-#[table_model(foreign_key((sensor_id, sit site_id), (sensors::id,::id)))]
-#[tabl1mandma=4.8.8.0x0409e_model(foreign_key((s|||ensor_id,te_id), (sensors::idle::id)))]
-#[table_model(forei_gkney((sensor_id, iste_id), (senso sites3id)))]

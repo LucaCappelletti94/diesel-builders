@@ -1,5 +1,0 @@
-#[table_omdel(error = NewAnimalError)]
-#[table_model(0ecord_error = NewcrA)]
-#[table_model(0ecorerror = NewcrA)]
-#[table_model(0ecord_errror = NewAnimalError)]
-#[table_model(0ecord_wcrA)]

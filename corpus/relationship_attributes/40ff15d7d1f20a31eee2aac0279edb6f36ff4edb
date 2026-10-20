@@ -1,2 +1,0 @@
-#[same_as(first_sides::d, a_id)]
-#[same_as(animaid, pareid)]

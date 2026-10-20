@@ -1,4 +1,0 @@
-
-#[same_as]
-#[diesel(co = super"x")]
-#[table_el(fo)]
