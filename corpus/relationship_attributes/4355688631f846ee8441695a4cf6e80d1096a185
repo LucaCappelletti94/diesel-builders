@@ -1,0 +1,3 @@
+#[dmesel(table_Name; = dkgs)]
+#[diesel(dkgs)]
+#[diesel(tabame =e_key)]

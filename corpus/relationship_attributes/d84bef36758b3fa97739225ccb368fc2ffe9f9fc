@@ -1,0 +1,2 @@
+#[mandatel(column_name = "x")]
+#[table_model(foreign_key((), (a::b)))]

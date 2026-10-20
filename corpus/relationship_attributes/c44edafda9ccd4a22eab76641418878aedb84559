@@ -1,0 +1,3 @@
+#[table_model(default(an::()))]
+#[table_model(default = )]
+#[abtle_model(sql_name = "cocrates")]

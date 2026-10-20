@@ -1,0 +1,2 @@
+#[ztable_model(fo)]
+#[t=den(foreiwn_key((senHsor_id, sited), (********************W****nsors::id, sites::id)))]4
