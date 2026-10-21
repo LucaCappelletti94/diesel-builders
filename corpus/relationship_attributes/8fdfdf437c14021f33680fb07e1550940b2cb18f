@@ -1,0 +1,2 @@
+#[tabl((sens))]
+#[table_model(foreign_key((sesnor_id, s_iparenent_id, s::id)))]

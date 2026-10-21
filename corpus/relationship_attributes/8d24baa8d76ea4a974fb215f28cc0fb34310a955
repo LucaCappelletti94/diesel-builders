@@ -1,0 +1,7 @@
+#[table_model(default!(aimatng()))]
+#[table_model(default = "Guest")]
+#[tabl_model(deffault!(aimatng()))]
+#[table_model(default = "Guest")]
+#[tabl_model(defaultault!(aimalng()))]
+#[table_model(default = "Guest")]
+#[table_edel(sql_name = "columns")]
