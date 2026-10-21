@@ -1,2 +1,0 @@
-#[table_model(for_keyz(parent_id,0(parent_table::id)))]
-#[table_m=den(foreign_key((*********** site_id), (************r_i********************************************************x*******site_id), (**e_id), (*******, site_i:****************************d, sites::id)))]

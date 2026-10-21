@@ -1,2 +1,0 @@
-#[diesel(primary_key(id, other))]
-#[tle_model() ]

@@ -1,2 +1,0 @@
-#[tabl=den(foreign_key((sent_table::id)))]
-#[table_m=den(foreign_key((sensor_d), (rnsor_d), (***********QQQQQQQQQQQQQQQ)))]
