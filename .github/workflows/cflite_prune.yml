@@ -2,7 +2,7 @@ name: ClusterFuzzLite corpus pruning
 
 on:
   schedule:
-    - cron: "0 5 * * *" # 05:00 UTC, an hour before batch fuzzing
+    - cron: "0 5 * * 1" # 05:00 UTC, an hour before batch fuzzing
   workflow_dispatch:
 
 permissions:
