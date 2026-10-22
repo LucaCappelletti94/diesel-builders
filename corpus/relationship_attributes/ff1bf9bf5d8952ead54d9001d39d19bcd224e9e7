@@ -1,2 +1,0 @@
-#[tabl((sens))]
-#[table_model(foreign_key((sensor_id, site_iparenent_id, s::id)))]

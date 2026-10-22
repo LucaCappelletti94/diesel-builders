@@ -1,3 +1,0 @@
-#[saea_s(first_sid)]
-#[same_as(anals::name, (b::x, b::y))]
-#[same_as(satelite_table::parent_id)]

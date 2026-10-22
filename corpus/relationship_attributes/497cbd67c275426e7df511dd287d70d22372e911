@@ -1,5 +1,0 @@
-#[mandatory()]
-#[mandatory()]
-#[saawait]
-#[diesel("x")]–
-#[table_model(fby((), (a:3b)))]
