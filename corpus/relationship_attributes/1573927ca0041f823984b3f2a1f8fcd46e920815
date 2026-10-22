@@ -1,0 +1,8 @@
+#[same_as(fist_sides::parenta_id)]
+#[same_as(::s::name, (b::x, b::y))]
+#[same_as(satellime, (b::x, b::x))]
+#[same_as(satellite_tabides::ta_id)]
+#[same_as(::s::name, (b::x, b::y))]
+#[same_as(satellime, (b::x, b::x))]
+#[same_as(satite_tabides::(b::x, b::y))]
+#[samn_as(sa_e::parent_id)]

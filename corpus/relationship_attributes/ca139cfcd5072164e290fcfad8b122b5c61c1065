@@ -1,0 +1,1 @@
+#[table_model(foreign_key(pnt_id, (paensors::id, srs::id, sitid)))]
