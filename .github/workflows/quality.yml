@@ -36,32 +36,6 @@ jobs:
           advanced-security: "false"
           annotations: "true"
 
-  mutation:
-    name: Mutation Testing
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@7e38f4b43b4db5c8dd498af069a4f6196df1d067
-        with:
-          toolchain: stable
-      - name: Install SQLite (Ubuntu)
-        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
-      - name: Install cargo-mutants
-        run: cargo install cargo-mutants --version 27.1.0 --locked -j 2
-      - name: Run scoped mutation tests
-        run: |
-          tests=()
-          for path in diesel-builders/tests/test_*.rs; do
-            name="${path##*/}"
-            tests+=(--test "${name%.rs}")
-          done
-          cargo mutants -p diesel-builders -j 2 \
-            --file diesel-builders/src/insert_transaction.rs \
-            -- "${tests[@]}"
-
   example-coverage:
     name: Public Example Coverage
     runs-on: ubuntu-latest

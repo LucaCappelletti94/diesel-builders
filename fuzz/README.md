@@ -40,4 +40,4 @@ cargo fuzz run -O --debug-assertions --fuzz-dir fuzz table_model \
 
 ## ClusterFuzzLite wiring
 
-`.clusterfuzzlite/Dockerfile` pins the `base-builder-rust` image by digest and installs `cargo-fuzz 0.13.2`. `build.sh` builds with `CARGO_BUILD_JOBS=2` and copies each binary, options file, and seed zip to `$OUT`. The `cflite_*.yml` workflows run PR and batch fuzzing against the `fuzz-corpus` storage branch, and `cflite_pr.yml` replays the committed seeds deterministically on every pull request.
+`.clusterfuzzlite/Dockerfile` pins the `base-builder-rust` image by digest and installs `cargo-fuzz 0.13.2`. `build.sh` builds with `CARGO_BUILD_JOBS=2` and copies each binary, options file, and seed zip to `$OUT`. The `cflite_batch.yml` and `cflite_prune.yml` workflows run batch fuzzing and corpus pruning against the `fuzz-corpus` storage branch on Monday, each with manual dispatch available.
