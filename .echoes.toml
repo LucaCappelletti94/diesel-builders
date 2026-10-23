@@ -1,0 +1,6 @@
+threshold = 2
+min-tokens = 0
+functions = true
+fn-min-tokens = 30
+context-blocks = true
+context-min-tokens = 30

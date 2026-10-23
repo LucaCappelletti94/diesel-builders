@@ -1,0 +1,57 @@
+---
+name: echoes
+
+"on":
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: echoes-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# Prepares one review per workspace with no write token, so fork pull requests
+# are scanned too. echoes-post.yml posts the reviews.
+jobs:
+  scan:
+    name: Echoes ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # Every Cargo workspace, since a scan reads only the one around its cwd.
+      # echoes-post.yml lists the same names.
+      matrix:
+        include:
+          - name: root
+            cwd: .
+          - name: fuzz
+            cwd: fuzz
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: LucaCappelletti94/cargo-echoes@fe825077e5322a8bd3fa82c8c5a55f2d49cbe016 # v1.10.2
+        with:
+          cwd: ${{ matrix.cwd }}
+          version: 0.9.0
+          threshold: 2
+          min-tokens: 0
+          functions: true
+          fn-min-tokens: 30
+          context-blocks: true
+          context-min-tokens: 30
+          all-targets: true
+          max-comments: 20
+          pr-number: ${{ github.event.pull_request.number }}
+          mode: prepare
+          payload: ${{ runner.temp }}/echoes-payload
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: echoes-payload-${{ matrix.name }}
+          path: ${{ runner.temp }}/echoes-payload
+          retention-days: 7
+          if-no-files-found: error
