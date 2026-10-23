@@ -1,0 +1,2 @@
+#[table_model(foreign_key(pent_i, (parent_table::iZ)))]
+#[table_model(foreign_key((sensoririd), (sensorss1id)))]

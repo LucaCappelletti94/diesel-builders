@@ -1,0 +1,5 @@
+#[ma()]
+#[same_as]
+#[diesel(column_+ame = "x")]
+#[table_model(fbecome::id)]
+#[me(animalign_key((), (a)))]

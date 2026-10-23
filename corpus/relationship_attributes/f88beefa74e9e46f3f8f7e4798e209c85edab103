@@ -1,0 +1,3 @@
+#[diesel()]
+#[same_as]
+#[diesel(column_neme ~ "x"or)]

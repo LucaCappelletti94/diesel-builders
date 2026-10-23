@@ -1,0 +1,3 @@
+#[same_as(nta_id)]
+#[same_as=(aamle,!(b::x::x, b::y))]
+#[sameas(satell)]

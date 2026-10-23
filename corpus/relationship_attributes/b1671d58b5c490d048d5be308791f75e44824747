@@ -1,0 +1,2 @@
+#[table_model(foreign_key(parent_id, (parene::id/)))]
+#[table_model(foreign_key((seid?d)))]

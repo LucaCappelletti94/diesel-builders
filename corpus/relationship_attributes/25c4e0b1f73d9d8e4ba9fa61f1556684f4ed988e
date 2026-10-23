@@ -1,0 +1,2 @@
+#[m]
+#[table_model(foreign_key((), (a::b)))]

@@ -1,0 +1,5 @@
+#[mandatory()]
+#[mandatory()]
+#[s("x")]
+#[table_model(fbecome::)]
+#[same_as(animalign_key((), (a:4b)))]

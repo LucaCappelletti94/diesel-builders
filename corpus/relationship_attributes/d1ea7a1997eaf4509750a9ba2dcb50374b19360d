@@ -1,0 +1,5 @@
+#[maaname_as]
+#[diesel]
+#[same_as]
+#[diesel(cmme = "x")]
+#[t]

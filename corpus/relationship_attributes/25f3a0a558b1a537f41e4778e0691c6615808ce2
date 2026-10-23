@@ -1,0 +1,3 @@
+#[same_as]
+#[dseiel(c"x")]
+#[table_model(fn(,_e)k(y (:b)))]
