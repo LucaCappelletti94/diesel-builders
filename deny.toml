@@ -15,5 +15,5 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-git = [
     "https://github.com/diesel-rs/diesel",
-    "https://github.com/LucaCappelletti94/tuplities",
+    "https://github.com/connetto-rs/tuplities",
 ]

@@ -1,8 +1,8 @@
 # Diesel Builders
 
-[![CI](https://github.com/LucaCappelletti94/diesel-builders/workflows/Rust%20CI/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
-[![Security Audit](https://github.com/LucaCappelletti94/diesel-builders/workflows/Security%20Audit/badge.svg)](https://github.com/LucaCappelletti94/diesel-builders/actions)
-[![Codecov](https://codecov.io/gh/LucaCappelletti94/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/LucaCappelletti94)
+[![CI](https://github.com/connetto-rs/diesel-builders/workflows/Rust%20CI/badge.svg)](https://github.com/connetto-rs/diesel-builders/actions)
+[![Security Audit](https://github.com/connetto-rs/diesel-builders/workflows/Security%20Audit/badge.svg)](https://github.com/connetto-rs/diesel-builders/actions)
+[![Codecov](https://codecov.io/gh/connetto-rs/diesel-builders/branch/main/graph/badge.svg)](https://codecov.io/gh/connetto-rs/diesel-builders)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A type-safe builder pattern library for [Diesel](https://diesel.rs) handling complex table relationships (inheritance chains, DAGs, triangular dependencies) with compile-time guarantees for insertion order and referential integrity. It provides fluent APIs for getting/setting column values and associated builders and models, executing foreign key queries, and [`serde`](https://github.com/serde-rs/serde) support.
@@ -21,7 +21,7 @@ The `TableModel` derive macro generates Diesel's [`table!`](https://docs.rs/dies
 
 ```toml
 [dependencies]
-diesel-builders = {git = "https://github.com/LucaCappelletti94/diesel-builders.git", branch = "main" }
+diesel-builders = {git = "https://github.com/connetto-rs/diesel-builders.git", branch = "main" }
 ```
 
 ## Supported Patterns
