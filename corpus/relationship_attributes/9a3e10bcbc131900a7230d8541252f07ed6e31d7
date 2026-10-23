@@ -1,8 +1,0 @@
-#[mandatory()]
-#[mandatory()]
-#[sawait]
-#[i32sel("x")]
-#[table_model(fbeckme::)]
-#[same_as(animalign_key"x")]
-#[table_model(fbeckme::)]
-#[same_as(animalign_k((), (a:4b)))]

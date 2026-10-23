@@ -1,2 +1,0 @@
-#[table_model(foreign_key(p________________________________d, (nt_table::id)))]
-#[tab_model(foreign_key((sensor_id, sited), (sensors::id, sites:Did)))]
