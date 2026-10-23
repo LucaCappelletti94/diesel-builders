@@ -1,0 +1,43 @@
+---
+name: echoes-post
+
+"on":
+  workflow_run: # zizmor: ignore[dangerous-triggers] the job reads only the scan's payload
+    workflows: [echoes]
+    types: [completed]
+
+permissions: {}
+
+# This job holds a write token, so it never checks out or runs pull request
+# code. The action posts only to the open pull request whose head the scan built.
+jobs:
+  post:
+    name: Post ${{ matrix.name }}
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      # The workspace names of the matrix in echoes.yml.
+      matrix:
+        name:
+          - root
+          - fuzz
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: echoes-payload-${{ matrix.name }}
+          path: ${{ runner.temp }}/echoes-payload
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - uses: LucaCappelletti94/cargo-echoes@fe825077e5322a8bd3fa82c8c5a55f2d49cbe016 # v1.10.2
+        with:
+          mode: post
+          payload: ${{ runner.temp }}/echoes-payload
+          max-comments: 20
