@@ -33,7 +33,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: LucaCappelletti94/cargo-echoes@fe825077e5322a8bd3fa82c8c5a55f2d49cbe016 # v1.10.2
+      - uses: LucaCappelletti94/cargo-echoes@8bcdcfd96e0e13ee226b859297c303caa8b1c36a # v1.10.3
         with:
           cwd: ${{ matrix.cwd }}
           version: 0.9.0
