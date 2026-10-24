@@ -64,6 +64,14 @@ pub enum ValidationErrorKind {
         /// The underlying error.
         error: Box<dyn core::error::Error + Send + Sync>,
     },
+    /// A check constraint evaluated to false.
+    #[error("Fields {fields:?} must satisfy `{check}`")]
+    CheckViolated {
+        /// The fields the check constraint reads.
+        fields: &'static [&'static str],
+        /// The SQL expression of the check constraint.
+        check: &'static str,
+    },
 }
 
 impl AsRef<str> for ValidationErrorKind {
@@ -99,6 +107,7 @@ impl AsRef<str> for ValidationErrorKind {
                 "Field must be greater than or equal to value"
             }
             ValidationErrorKind::Generic { .. } => "Generic validation error",
+            ValidationErrorKind::CheckViolated { .. } => "Fields must satisfy a check constraint",
         }
     }
 }
@@ -157,6 +166,7 @@ impl DatabaseErrorInformation for ValidationError {
             | ValidationErrorKind::MustBeStrictlyGreaterThan(field1, _)
             | ValidationErrorKind::MustBeGreaterThan(field1, _) => Some(*field1),
             ValidationErrorKind::Generic { fields, .. } => fields.first().copied(),
+            ValidationErrorKind::CheckViolated { fields, .. } => fields.first().copied(),
         }
     }
 
@@ -581,6 +591,39 @@ impl ValidationError {
     ) -> Self {
         ValidationError { table, kind: ValidationErrorKind::Generic { fields, error } }
     }
+
+    /// Creates a new validation error for a check constraint that evaluated to
+    /// false.
+    ///
+    /// # Arguments
+    ///
+    /// * `table` - The name of the table where the error occurred.
+    /// * `fields` - The fields the check constraint reads.
+    /// * `check` - The SQL expression of the check constraint.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use validation_errors::{ValidationError, ValidationErrorKind};
+    ///
+    /// let error = ValidationError::check_violated("intervals", &["start", "end"], "start + 1 < end");
+    /// assert_eq!(
+    ///     error.to_string(),
+    ///     "Table `intervals`: Fields [\"start\", \"end\"] must satisfy `start + 1 < end`"
+    /// );
+    /// assert!(matches!(
+    ///     error.kind(),
+    ///     ValidationErrorKind::CheckViolated { fields: ["start", "end"], check: "start + 1 < end" }
+    /// ));
+    /// ```
+    #[must_use]
+    pub fn check_violated(
+        table: &'static str,
+        fields: &'static [&'static str],
+        check: &'static str,
+    ) -> Self {
+        ValidationError { table, kind: ValidationErrorKind::CheckViolated { fields, check } }
+    }
 }
 
 #[cfg(test)]
@@ -815,6 +858,12 @@ mod tests {
         let dummy = DummyError;
         let err = ValidationError::generic("table", vec!["field1", "field2"], Box::new(dummy));
         assert_eq!(err.column_name(), Some("field1"));
+
+        let err =
+            ValidationError::check_violated("table", &["field1", "field2"], "field1 < field2");
+        assert_eq!(err.column_name(), Some("field1"));
+        assert_eq!(err.message(), "Fields must satisfy a check constraint");
+        assert_eq!(ValidationError::check_violated("table", &[], "true").column_name(), None);
     }
 
     #[test]
